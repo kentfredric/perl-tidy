@@ -120,9 +120,10 @@ OPTIONS - OVERVIEW
     two leading dashes for long names, but one may be used.
 
     Most parameters which serve as on/off flags can be negated with a
-    leading "n" (for the short name) or a leading "no" (for the long name).
-    For example, the flag to have perl check syntax using perl -c is -syn or
-    --check-syntax. The flag to skip this is -nsyn or --nocheck-syntax.
+    leading "n" (for the short name) or a leading "no" or "no-" (for the
+    long name). For example, the flag to have perl check syntax using perl
+    -c is -syn or --check-syntax. The flag to skip this is -nsyn or
+    --nocheck-syntax or --no-check-syntax.
 
     Options may not be bundled together. In other words, options -q and -g
     may NOT be entered as -qg.
@@ -1808,9 +1809,10 @@ HTML OPTIONS
         temporary file when Pod::Html is used; see "FILES". Also, Pod::Html
         creates temporary files for its cache.
 
-        If there is a single pod text section (one =cut line), the pod text
-        will be at the top of the html output and the perl code will follow.
-        Otherwise, the order of pod text and perl code will be unchanged.
+        NOTE: Perltidy counts the number of "=cut" lines, and either moves
+        the pod text to the top of the html file if there is one "=cut", or
+        leaves the pod text in its original order (interleaved with code)
+        otherwise.
 
         Most of the flags accepted by pod2html may be included in the
         perltidy command line, and they will be passed to pod2html. In some
@@ -1862,6 +1864,12 @@ HTML OPTIONS
         Use this flag to specify the extra file extension of the content
         file when html frames are used. The default is "src". See
         "Specifying File Extensions".
+
+    The -hent, or --html-entities flag
+        This flag controls the use of Html::Entities for html formatting. By
+        default, the module Html::Entities is used to encode special
+        symbols. This may not be the right thing for some browser/language
+        combinations. Use --nohtml-entities or -nhent to prevent this.
 
     Style Sheets
         Style sheets make it very convenient to control and adjust the
@@ -2037,8 +2045,8 @@ SWITCHES WHICH MAY BE NEGATED
         sbl okw ola oll pvl q opt sbc sfs ssc sts se st sob 
         t tac tbc toc tp tsc tqw w
 
-    Equivalently, the prefix 'no' on the corresponding long names may be
-    used.
+    Equivalently, the prefix 'no' or 'no-' on the corresponding long names
+    may be used.
 
 LIMITATIONS
     Parsing Limitations

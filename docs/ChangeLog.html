@@ -54,11 +54,37 @@
 <P>
 <H2><A NAME="2002 xx xx">2002 xx xx</A></H2>
 <PRE>
+ -Fixed bug where an __END__ statement would be mistaken for a label
+ if it is immediately followed by a line with a leading colon. Thanks
+ to John Bayes.
+</PRE>
+<PRE>
+
+ -Implemented guessing logic for brace types when it is ambiguous.  This
+ has been on the TODO list a long time.  Thanks to Boris Zentner for
+ an example.</PRE>
+<PRE>
+ -Long options may now be negated either as '--nolong-option' 
+ or '--no-long-option'.  Thanks to Philip Newton for the suggestion.</PRE>
+<PRE>
+ -added flag --html-entities or -hent which controls the use of
+ Html::Entities for html formatting.  Use --nohtml-entities or -nhent to
+ prevent the use of Html::Entities to encode special symbols.  The
+ default is -hent.  Html::Entities when formatting perl text to escape
+ special symbols.  This may or may not be the right thing to do,
+ depending on browser/language combinations.  Thanks to Gurak Bursoy for
+ this suggestion.</PRE>
+<PRE>
+ -Bareword strings with leading '-', like, '-foo' now count as 1 token
+ for horizontal tightness.  This way $a{'-foo'}, $a{foo}, and $a{-foo}
+ are now all treated similarly.  Thus, by default, OLD: $a{ -foo } will
+ now be NEW: $a{-foo}.  Suggested by Mark Olesen.</PRE>
+<PRE>
  -added 2 new flags to control spaces between keywords and opening parens:
    -sak=s  or --space-after-keyword=s,  and
    -nsak=s or --nospace-after-keyword=s, where 's' is a list of keywords.</PRE>
 <PRE>
- The NEW default list of keywords which get a space is:</PRE>
+ The new default list of keywords which get a space is:</PRE>
 <PRE>
    &quot;my local our and or eq ne if else elsif until unless while for foreach
      return switch case given when&quot;</PRE>
@@ -74,7 +100,7 @@
 <PRE>
         push pop shift unshift join split die</PRE>
 <PRE>
- but did not have 'our'.  So, if you prefer to make perltidy behave
+ but did not have 'our'.  Example: if you prefer to make perltidy behave
  exactly as before, you can include the following two lines in your
  .perltidyrc file:</PRE>
 <PRE>
@@ -83,6 +109,32 @@
 <PRE>
  -Corrected html error in .toc file when -frm -html is used (extra &quot;);
   browsers were tolerant of it.</PRE>
+<PRE>
+ -Improved alignment of chains of binary and ?/: operators. Example:
+  OLD:
+    $leapyear =
+      $year % 4     ? 0
+      : $year % 100 ? 1
+      : $year % 400 ? 0
+      : 1;
+  NEW:
+    $leapyear =
+        $year % 4   ? 0
+      : $year % 100 ? 1
+      : $year % 400 ? 0
+      : 1;</PRE>
+<PRE>
+ -improved breakpoint choices involving '-&gt;'</PRE>
+<PRE>
+ -Corrected tokenization of things like ${#} or ${©}. For example,
+  ${©} is valid, but ${© } is a syntax error.</PRE>
+<PRE>
+ -Corrected minor tokenization errors with indirect object notation.
+  For example, 'new A::()' works now.</PRE>
+<PRE>
+ -Minor tokenization improvements; all perl code distributed with perl 5.8 
+  seems to be parsed correctly except for one instance (lextest.t) 
+  of the known bug.</PRE>
 <P>
 <H2><A NAME="2002 11 30">2002 11 30</A></H2>
 <PRE>

@@ -7,9 +7,16 @@
 
 =head2 2002 xx xx
 
+ -Fixed bug where an __END__ statement would be mistaken for a label
+ if it is immediately followed by a line with a leading colon. Thanks
+ to John Bayes.
+ 
  -Implemented guessing logic for brace types when it is ambiguous.  This
  has been on the TODO list a long time.  Thanks to Boris Zentner for
  an example.
+
+ -Long options may now be negated either as '--nolong-option' 
+ or '--no-long-option'.  Thanks to Philip Newton for the suggestion.
 
  -added flag --html-entities or -hent which controls the use of
  Html::Entities for html formatting.  Use --nohtml-entities or -nhent to
@@ -70,8 +77,15 @@
 
  -improved breakpoint choices involving '->'
 
- -Minor tokenization improvements; all perl code distributed with perl 5.8 is
-  parsed correctly except for one instance (lextest.t) of the known bug.
+ -Corrected tokenization of things like ${#} or ${©}. For example,
+  ${©} is valid, but ${© } is a syntax error.
+
+ -Corrected minor tokenization errors with indirect object notation.
+  For example, 'new A::()' works now.
+
+ -Minor tokenization improvements; all perl code distributed with perl 5.8 
+  seems to be parsed correctly except for one instance (lextest.t) 
+  of the known bug.
 
 =head2 2002 11 30
 

@@ -20,7 +20,6 @@
 		<LI><A HREF="#xml output">XML Output</A></LI>
 		<LI><A HREF="#documentation">Documentation</A></LI>
 		<LI><A HREF="#html writer">HTML writer</A></LI>
-		<LI><A HREF="#tokenization issues">Tokenization issues</A></LI>
 	</UL>
 
 </UL>
@@ -60,30 +59,6 @@ documents or quoted strings.  The tokenizer outputs interpolation
 information for here docs; it still needs to be updated to do this for
 multi-line quotes.  Then code needs to be written to scan for and markup
 identifiers.</P>
-<P>
-<H2><A NAME="tokenization issues">Tokenization issues</A></H2>
-<P>There are some subtle issues with distinguishing block types that should
-be addressed to make the tokenizer more correct, even though they do not
-interfere with code beautification.  For example, in most cases the type
-of a brace is known when it is encountered. But given this coding
-</P>
-<PRE>
-
- sub something {
-     {
-        bla, bla
-     }
-     ..
- }</PRE>
-<P>we have to examine the first couple of tokens of the interior 
-braces to see if it is a code block or anonymous hash reference.  This
-needs to be done.  Also, brace types of something like ${ ... } are
-not currently labeled as code blocks because this simplifies formatting.
-However, this should be done eventually for correctness.</P>
-<P>Token type 'M' (for Method) has been reserved for subroutine definition
-names.  It needs to be implemented; I've patched around this in the html
-writer for now.  I'm considering new token types for prototypes and
-attributes, to simplify parsing and formatting.</P>
 
 </BODY>
 

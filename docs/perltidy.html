@@ -168,10 +168,10 @@ names are convenient for keyboard input, while the long names are
 self-documenting and therefore useful in scripts.  It is customary to
 use two leading dashes for long names, but one may be used.</P>
 <P>Most parameters which serve as on/off flags can be negated with a
-leading ``n'' (for the short name) or a leading ``no'' (for the long
+leading ``n'' (for the short name) or a leading ``no'' or ``no-'' (for the long
 name).  For example, the flag to have perl check syntax using <STRONG>perl -c</STRONG>
 is <STRONG>-syn</STRONG> or <STRONG>--check-syntax</STRONG>.  The flag to skip this is
-<STRONG>-nsyn</STRONG> or <STRONG>--nocheck-syntax</STRONG>.</P>
+<STRONG>-nsyn</STRONG> or <STRONG>--nocheck-syntax</STRONG> or <STRONG>--no-check-syntax</STRONG>.</P>
 <P>Options may not be bundled together.  In other words, options <STRONG>-q</STRONG> and
 <STRONG>-g</STRONG> may NOT be entered as <STRONG>-qg</STRONG>.</P>
 <P>Option names may be terminated early as long as they are uniquely identified.
@@ -1820,9 +1820,9 @@ the pod2html utility).  Any code sections are formatted by perltidy, and
 the results then merged.  Note: perltidy creates a temporary file when
 Pod::Html is used; see <A HREF="#files">FILES</A>.  Also, Pod::Html creates temporary
 files for its cache.
-<P>If there is a single pod text section (one =cut line), the pod text will
-be at the top of the html output and the perl code will follow.
-Otherwise, the order of pod text and perl code will be unchanged.</P>
+<P>NOTE: Perltidy counts the number of <CODE>=cut</CODE> lines, and either moves the
+pod text to the top of the html file if there is one <CODE>=cut</CODE>, or leaves
+the pod text in its original order (interleaved with code) otherwise.</P>
 <P>Most of the flags accepted by pod2html may be included in the perltidy
 command line, and they will be passed to pod2html.  In some cases,
 the flags have a prefix <CODE>pod</CODE> to emphasize that they are for the
@@ -1871,6 +1871,13 @@ See <A HREF="#specifying file extensions">Specifying File Extensions</A>.
 Use this flag to specify the extra file extension of the content file when html
 frames are used.  The default is ``src''.
 See <A HREF="#specifying file extensions">Specifying File Extensions</A>.
+<P></P>
+<DT><STRONG><A NAME="item_The_%2Dhent%2C_or_%2D%2Dhtml%2Dentities_flag">The <STRONG>-hent</STRONG>, or <STRONG>--html-entities</STRONG> flag</A></STRONG><BR>
+<DD>
+This flag controls the use of Html::Entities for html formatting.  By
+default, the module Html::Entities is used to encode special symbols.
+This may not be the right thing for some browser/language
+combinations.  Use --nohtml-entities or -nhent to prevent this.
 <P></P>
 <DT><STRONG><A NAME="item_Style_Sheets">Style Sheets</A></STRONG><BR>
 <DD>
@@ -2029,7 +2036,7 @@ dot is added, and the backup file will be <EM>somefile.pl~</EM>  .</P>
     f fll frm hsc html ibc icb icp iob isbc lp log lal x lsl pod bl 
     sbl okw ola oll pvl q opt sbc sfs ssc sts se st sob 
     t tac tbc toc tp tsc tqw w</PRE>
-<P>Equivalently, the prefix 'no' on the corresponding long names may be
+<P>Equivalently, the prefix 'no' or 'no-' on the corresponding long names may be
 used.</P>
 <P>
 <HR>

@@ -130,7 +130,7 @@
 .\" ========================================================================
 .\"
 .IX Title "PERLTIDY 1"
-.TH PERLTIDY 1 "2003-01-04" "perl v5.6.1" "User Contributed Perl Documentation"
+.TH PERLTIDY 1 "2003-02-20" "perl v5.6.1" "User Contributed Perl Documentation"
 .UC
 .SH "NAME"
 perltidy \- a perl script indenter and reformatter
@@ -269,10 +269,10 @@ self-documenting and therefore useful in scripts.  It is customary to
 use two leading dashes for long names, but one may be used.
 .PP
 Most parameters which serve as on/off flags can be negated with a
-leading \*(L"n\*(R" (for the short name) or a leading \*(L"no\*(R" (for the long
+leading \*(L"n\*(R" (for the short name) or a leading \*(L"no\*(R" or \*(L"no\-\*(R" (for the long
 name).  For example, the flag to have perl check syntax using \fBperl \-c\fR
 is \fB\-syn\fR or \fB\-\-check\-syntax\fR.  The flag to skip this is
-\&\fB\-nsyn\fR or \fB\-\-nocheck\-syntax\fR.
+\&\fB\-nsyn\fR or \fB\-\-nocheck\-syntax\fR or \fB\-\-no\-check\-syntax\fR.
 .PP
 Options may not be bundled together.  In other words, options \fB\-q\fR and
 \&\fB\-g\fR may \s-1NOT\s0 be entered as \fB\-qg\fR.
@@ -2056,9 +2056,9 @@ the results then merged.  Note: perltidy creates a temporary file when
 Pod::Html is used; see \*(L"\s-1FILES\s0\*(R".  Also, Pod::Html creates temporary
 files for its cache.
 .Sp
-If there is a single pod text section (one =cut line), the pod text will
-be at the top of the html output and the perl code will follow.
-Otherwise, the order of pod text and perl code will be unchanged.
+\&\s-1NOTE:\s0 Perltidy counts the number of \f(CW\*(C`=cut\*(C'\fR lines, and either moves the
+pod text to the top of the html file if there is one \f(CW\*(C`=cut\*(C'\fR, or leaves
+the pod text in its original order (interleaved with code) otherwise.
 .Sp
 Most of the flags accepted by pod2html may be included in the perltidy
 command line, and they will be passed to pod2html.  In some cases,
@@ -2112,6 +2112,12 @@ See \*(L"Specifying File Extensions\*(R".
 Use this flag to specify the extra file extension of the content file when html
 frames are used.  The default is \*(L"src\*(R".
 See \*(L"Specifying File Extensions\*(R".
+.IP "The \fB\-hent\fR, or \fB\-\-html\-entities\fR flag" 4
+.IX Item "The -hent, or --html-entities flag"
+This flag controls the use of Html::Entities for html formatting.  By
+default, the module Html::Entities is used to encode special symbols.
+This may not be the right thing for some browser/language
+combinations.  Use \-\-nohtml\-entities or \-nhent to prevent this.
 .IP "Style Sheets" 4
 .IX Item "Style Sheets"
 Style sheets make it very convenient to control and adjust the
@@ -2293,7 +2299,7 @@ The following list shows all short parameter names which allow a prefix
 \&    sbl okw ola oll pvl q opt sbc sfs ssc sts se st sob 
 \&    t tac tbc toc tp tsc tqw w
 .Ve
-Equivalently, the prefix 'no' on the corresponding long names may be
+Equivalently, the prefix 'no' or 'no\-' on the corresponding long names may be
 used.
 .SH "LIMITATIONS"
 .IX Header "LIMITATIONS"

@@ -149,10 +149,10 @@ self-documenting and therefore useful in scripts.  It is customary to
 use two leading dashes for long names, but one may be used.
 
 Most parameters which serve as on/off flags can be negated with a
-leading "n" (for the short name) or a leading "no" (for the long
+leading "n" (for the short name) or a leading "no" or "no-" (for the long
 name).  For example, the flag to have perl check syntax using B<perl -c>
 is B<-syn> or B<--check-syntax>.  The flag to skip this is
-B<-nsyn> or B<--nocheck-syntax>.
+B<-nsyn> or B<--nocheck-syntax> or B<--no-check-syntax>.
 
 Options may not be bundled together.  In other words, options B<-q> and
 B<-g> may NOT be entered as B<-qg>.
@@ -2294,7 +2294,7 @@ The following list shows all short parameter names which allow a prefix
     sbl okw ola oll pvl q opt sbc sfs ssc sts se st sob 
     t tac tbc toc tp tsc tqw w
 
-Equivalently, the prefix 'no' on the corresponding long names may be
+Equivalently, the prefix 'no' or 'no-' on the corresponding long names may be
 used.
 
 =head1 LIMITATIONS

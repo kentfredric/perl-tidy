@@ -61,7 +61,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.43 2003/02/06 14:58:35 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.44 2003/04/30 21:09:34 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 sub streamhandle {
@@ -316,12 +316,17 @@ EOM
         my $stderr_stream      = $input_hash{'stderr'};
         my $user_formatter     = $input_hash{'formatter'};
 
-        # future checks on $user_formatter go here
         if ($user_formatter) {
+
+            # if the user defines a formatter, there is no output stream,
+            # but we need a null stream to keep coding simple
+            unless ($destination_stream) {
+                $destination_stream = Perl::Tidy::DevNull->new();
+            }
         }
 
         # see if ARGV is overridden
-        if ($argv) {
+        if ( defined($argv) ) {
 
             my $rargv = ref $argv;
             if ( $rargv eq 'SCALAR' ) { $argv = $$argv; $rargv = undef }
@@ -396,6 +401,10 @@ EOM
             $perltidyrc_stream, $is_Windows,
             $Windows_type,      $rpending_complaint
           );
+
+        if ($user_formatter) {
+            $rOpts->{'format'}='user';
+        }
 
         # there must be one entry here for every possible format
         my %default_file_extension = (
@@ -488,6 +497,10 @@ EOM
 
             # we'll stuff the source array into ARGV
             unshift( @ARGV, $source_stream );
+
+            # No special treatment for source stream which is a filename.
+            # This will enable checks for binary files and other bad stuff.
+            $source_stream = undef unless ref($source_stream);
         }
 
         # use stdin by default if no source array and no args
@@ -969,6 +982,7 @@ sub process_command_line {
     @option_string = qw(
       html!
       noprofile
+      no-profile
       npro
       recombine!
     );
@@ -1361,7 +1375,7 @@ sub process_command_line {
     foreach $i (@ARGV) {
 
         $i =~ s/^--/-/;
-        if ( $i =~ /^-(npro|noprofile)$/ ) {
+        if ( $i =~ /^-(npro|noprofile|no-profile)$/ ) {
             $saw_ignore_profile = 1;
         }
 
@@ -1671,6 +1685,9 @@ sub expand_command_abbreviations {
 
         # loop over each item in @ARGV..
         foreach $word (@ARGV) {
+
+            # convert any leading 'no-' to just 'no'
+            if ( $word =~ /^(-[-]?no)-(.*)/ ) { $word = $1 . $2 }
 
             # if it is a dash flag (instead of a file name)..
             if ( $word =~ /^-[-]?([\w\-]+)(.*)/ ) {
@@ -2449,7 +2466,7 @@ sub process_this_file {
     }
 
     # finish up
-    $beauty->finish_formatting();
+    eval { $beauty->close_formatter() };
     $truth->report_tokenization_errors();
 }
 
@@ -3323,7 +3340,8 @@ smallest possible script which produces this message, along with the
 Your efforts are appreciated.  
 Thank you!
 EOM
-            my $added_semicolon_count = $formatter->get_added_semicolon_count();
+            my $added_semicolon_count = 0;
+            eval {$added_semicolon_count = $formatter->get_added_semicolon_count()};
             if ( $added_semicolon_count > 0 ) {
                 $self->warning(<<EOM);
 
@@ -4151,9 +4169,7 @@ sub pod_to_html {
         elsif ( $line =~ /<!-- pERLTIDY sECTION -->(.*)$/ ) {
             $line = $1;
 
-            # Only mix code and pod sections if we saw multiple =cut's.
-            # Otherwise, we'll put the pod out first and then
-            # the code, because it's less confusing.
+            # Intermingle code and pod sections if we saw multiple =cut's.
             if ( $self->{_pod_cut_count} > 1 ) {
                 my $rpre_string = shift(@$rpre_string_stack);
                 if ($$rpre_string) {
@@ -4168,10 +4184,16 @@ sub pod_to_html {
                     warn
 "Problem merging html stream with pod2html; order may be wrong\n";
                 }
-
-                # The rest of the comment has an <hr>; we
-                # only want it if we are printing some code.
                 $html_print->($line);
+            }
+
+            # If didn't see multiple =cut lines, we'll put the pod out first
+            # and then the code, because it's less confusing.
+            else {
+
+                # since we are not intermixing code and pod, we don't need
+                # or want any <hr> lines which separated pod and code
+                $html_print->($line) unless ($line=~/^\s*<hr>\s*$/i);
             }
         }
 
@@ -4519,9 +4541,8 @@ sub markup_tokens {
     my $self = shift;
     my ( $rtokens, $rtoken_type, $rlevels ) = @_;
     my ( @colored_tokens, $j, $string, $type, $token, $level );
-    my $rlast_level     = $self->{_rlast_level};
-    my $rin_toc_package = $self->{_rlast_level};
-    my $rpackage_stack  = $self->{_rpackage_stack};
+    my $rlast_level    = $self->{_rlast_level};
+    my $rpackage_stack = $self->{_rpackage_stack};
 
     for ( $j = 0 ; $j < @$rtoken_type ; $j++ ) {
         $type  = $$rtoken_type[$j];
@@ -4597,8 +4618,8 @@ sub markup_html_element {
     my $self = shift;
     my ( $token, $type ) = @_;
 
-    return $token if ( $type eq 'b' );    # skip a blank
-    return $token if ( $token =~ /^\s*$/ );
+    return $token if ( $type eq 'b' );    # skip a blank token
+    return $token if ( $token =~ /^\s*$/ );    # skip a blank line
     $token = escape_html($token);
 
     # get the short abbreviation for this token type
@@ -4642,7 +4663,7 @@ sub escape_html {
     return $token;
 }
 
-sub finish_formatting {
+sub close_formatter {
 
     # called after last line
     my $self = shift;
@@ -5778,8 +5799,8 @@ sub set_leading_whitespace {
     if ( $type eq '=>' ) {
         $gnu_arrow_count{$total_depth}++;
 
-        # BUBBA: tentatively treating '=>' like '=' for estimating breaks
-        # this could use some experimentation
+        # tentatively treating '=>' like '=' for estimating breaks
+        # TODO: this could use some experimentation
         $last_gnu_equals{$total_depth} = $max_index_to_go;
     }
 
@@ -6068,7 +6089,7 @@ sub excess_line_length {
       token_sequence_length( $ifirst, $ilast ) - $rOpts_maximum_line_length;
 }
 
-sub finish_formatting {
+sub close_formatter {
 
     # flush buffer and write any informative messages
     my $self = shift;
@@ -7716,7 +7737,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.43 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.44 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -8692,7 +8713,7 @@ sub undo_lp_ci {
 
         my ( $ibeg, $ibeg_next, $ibegm, $iend, $iendm, $ipad, $line,
             $pad_spaces, $tok_next, $has_leading_op_next, $has_leading_op );
-        
+
         # looking at each line of this batch..
         foreach $line ( 0 .. $max_line - 1 ) {
 
@@ -8913,9 +8934,7 @@ sub undo_lp_ci {
 
                     # cannot do the pad if a later line would be
                     # outdented more
-                    if ( $levels_to_go[$ibg] + $ci_levels_to_go[$ibg] <
-                        $lsp )
-                    {
+                    if ( $levels_to_go[$ibg] + $ci_levels_to_go[$ibg] < $lsp ) {
                         $ok_to_pad = 0;
                         last;
                     }
@@ -9967,7 +9986,7 @@ sub send_lines_to_vertical_aligner {
 
     # loop to prepare each line for shipment
     my $n_last_line = @$ri_first - 1;
-    my $in_comma_list; 
+    my $in_comma_list;
     for my $n ( 0 .. $n_last_line ) {
         my $ibeg = $$ri_first[$n];
         my $iend = $$ri_last[$n];
@@ -10130,7 +10149,7 @@ sub send_lines_to_vertical_aligner {
         Perl::Tidy::VerticalAligner::flush() if ($is_outdented_line);
 
         # send this new line down the pipe
-        my $forced_breakpoint= $forced_breakpoint_to_go[$iend];
+        my $forced_breakpoint = $forced_breakpoint_to_go[$iend];
         Perl::Tidy::VerticalAligner::append_line(
             $lev,
             $level_end,
@@ -11571,7 +11590,7 @@ sub terminal_type {
             }
 
             # Do not break before a possible file handle
-            if ( $next_nonblank_type eq 'Z' )  {
+            if ( $next_nonblank_type eq 'Z' ) {
                 $bond_str = NO_BREAK;
             }
 
@@ -11584,7 +11603,7 @@ sub terminal_type {
             #    $msg
             #    );
             #
-            # But this program fails: 
+            # But this program fails:
             #    my $msg="hi!\n";
             #    print
             #    (
@@ -11593,7 +11612,7 @@ sub terminal_type {
             #    );
             #
             # This is normally only a problem with the 'extrude' option
-            if ( $next_nonblank_type eq 'Y' && $token eq '(') {
+            if ( $next_nonblank_type eq 'Y' && $token eq '(' ) {
                 $bond_str = NO_BREAK;
             }
 
@@ -16335,7 +16354,7 @@ sub check_fit {
         #       $self->{"dfi"},  $self->{"aa"}, $self->rsvd,     $self->{"rd"},
         #       $self->{"area"}, $self->{"id"}, $self->{"sel"} );
 ## MOVED BELOW AS A TEST
-        ##next if ($jmax < $maximum_field_index && $j==$jmax-1); 
+        ##next if ($jmax < $maximum_field_index && $j==$jmax-1);
 
         $pad = length( $$rfields[$j] ) - $old_line->current_field_width($j);
 
@@ -16373,7 +16392,7 @@ sub check_fit {
         }
 
         # TESTING PATCH moved from above to be sure we fit
-        next if ($jmax < $maximum_field_index && $j==$jmax-1); 
+        next if ( $jmax < $maximum_field_index && $j == $jmax - 1 );
 
         # looks ok, squeeze this field in
         $old_line->increase_field_width( $j, $pad );
@@ -18532,7 +18551,7 @@ sub dump_token_types {
     # adding NEW_TOKENS: add a comment here
     print $fh <<'END_OF_LIST';
 
-Here is a list of the token types currently used.  
+Here is a list of the token types currently used for lines of type 'CODE'.  
 For the following tokens, the "type" of a token is just the token itself.  
 
 .. :: << >> ** && .. ||  -> => += -= .= %= &= |= ^= *= <>
@@ -18567,7 +18586,7 @@ The following additional token types are defined:
     P    (unused, but -html uses it to label pod text)
     t    type indicater such as %,$,@,*,&,sub
     w    bare word (perhaps a subroutine call)
-    i    identifier of some type (with leading %, $, @, *, &, sub )
+    i    identifier of some type (with leading %, $, @, *, &, sub, -> )
     n    a number
     v    a v-string
     F    a file test operator (like -e)
@@ -18580,6 +18599,22 @@ The following additional token types are defined:
     pp   pre-increment operator ++
     mm   pre-decrement operator -- 
     A    : used as attribute separator
+    
+    Here are the '_line_type' codes used internally:
+    SYSTEM         - system-specific code before hash-bang line
+    CODE           - line of perl code (including comments)
+    POD_START      - line starting pod, such as '=head'
+    POD            - pod documentation text
+    POD_END        - last line of pod section, '=cut'
+    HERE           - text of here-document
+    HERE_END       - last line of here-doc (target word)
+    FORMAT         - format section
+    FORMAT_END     - last line of format section, '.'
+    DATA_START     - __DATA__ line
+    DATA           - unidentified text following __DATA__
+    END_START      - __END__ line
+    END            - unidentified text following __END__
+    ERROR          - we are in big trouble, probably not a perl script
 END_OF_LIST
 }
 
@@ -20177,9 +20212,12 @@ EOM
                 }
 
                 # check for a statement label
-                elsif (( $next_nonblank_token eq ':' )
+                elsif (
+                       ( $next_nonblank_token eq ':' )
                     && ( $$rtokens[ $i_next + 1 ] ne ':' )
-                    && label_ok() )
+                    && ( $i_next <= $max_token_index )    # colon on same line
+                    && label_ok()
+                  )
                 {
                     if ( $tok !~ /A-Z/ ) {
                         push @lower_case_labels_at, $input_line_number;
@@ -20290,8 +20328,31 @@ EOM
 
                     scan_bare_identifier();
                     if ( $type eq 'w' ) {
-                        error_if_expecting_OPERATOR("bareword")
-                          if ( $expecting == OPERATOR );
+
+                        if ( $expecting == OPERATOR ) {
+
+                            # don't complain about possible indirect object
+                            # notation.
+                            # For example:
+                            #   package main;
+                            #   sub new($) { ... }
+                            #   $b = new A::;  # calls A::new
+                            #   $c = new A;    # same thing but suspicious
+                            # This will call A::new but we have a 'new' in
+                            # main:: which looks like a constant.
+                            #
+                            if ( $last_nonblank_type eq 'C' ) {
+                                if ( $tok !~ /::$/ ) {
+                                    complain(<<EOM);
+Expecting operator after '$last_nonblank_token' but found bare word '$tok'
+       Maybe indirectet object notation?
+EOM
+                                }
+                            }
+                            else {
+                                error_if_expecting_OPERATOR("bareword");
+                            }
+                        }
 
                         # mark bare words immediately followed by a paren as
                         # functions
@@ -22450,7 +22511,13 @@ sub scan_bare_identifier_do {
     my $pos_beg = $$rtoken_map[$i_beg];
     pos($input_line) = $pos_beg;
 
-    if ( $input_line =~ m/\G\s*((?:\w*(?:'|::)))*(?:->)?(\w+)/gc ) {
+    #  Examples:
+    #   A::B::C
+    #   A::
+    #   ::A
+    #   A'B
+    ##if ( $input_line =~ m/\G\s*((?:\w*(?:'|::)))*(?:->)?(\w+)/gc ) {
+    if ( $input_line =~ m/\G\s*((?:\w*(?:'|::)))*(?:(?:->)?(\w+))?/gc ) {
 
         my $pos  = pos($input_line);
         my $numc = $pos - $pos_beg;
@@ -22460,8 +22527,18 @@ sub scan_bare_identifier_do {
         # ($,%,@,*) including something like abc::def::ghi
         $type = 'w';
 
+        my $sub_name = "";
+        if ( defined($2) ) { $sub_name = $2; }
         if ( defined($1) ) {
             $package = $1;
+
+            # patch: don't allow isolated package name which just ends
+            # in the old style package separator (single quote).  Example:
+            #   use CGI':all';
+            if ( !($sub_name) && substr( $package, -1, 1 ) eq '\'' ) {
+                $pos--;
+            }
+
             $package =~ s/\'/::/g;
             if ( $package =~ /^\:/ ) { $package = 'main' . $package }
             $package =~ s/::$//;
@@ -22473,7 +22550,6 @@ sub scan_bare_identifier_do {
                 $type = 'k';
             }
         }
-        my $sub_name = $2;
 
         # if it is a bareword..
         if ( $type eq 'w' ) {
@@ -23115,7 +23191,23 @@ sub scan_identifier_do {
             elsif ( ( $tok eq '#' ) && ( $identifier eq '$' ) ) {    # $#array
                 $identifier .= $tok;    # keep same state, a $ could follow
             }
-            elsif ( $tok eq '{' ) {     # skip something like ${xxx} or ->{
+            elsif ( $tok eq '{' ) {
+
+                # check for something like ${#} or ${©}
+                if (   $identifier eq '$'
+                    && $i + 2 <= $max_token_index
+                    && $$rtokens[ $i + 2 ] eq '}'
+                    && $$rtokens[ $i + 1 ] !~ /[\s\w]/ )
+                {
+                    my $next2 = $$rtokens[ $i + 2 ];
+                    my $next1 = $$rtokens[ $i + 1 ];
+                    $identifier .= $tok . $next1 . $next2;
+                    $i += 2;
+                    $id_scan_state = '';
+                    last;
+                }
+
+                # skip something like ${xxx} or ->{
                 $id_scan_state = '';
 
                 # if this is the first token of a line, any tokens for this

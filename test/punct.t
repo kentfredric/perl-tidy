@@ -1,3 +1,6 @@
+%# = ( foo => 'bar', baz => 'buz' );
+print keys(%#), "\n";
+
 # The $$ at end of line is a punctuation variable and should become type 'i'.
 # Therefore, the trailing '&' should become type '&'.
 $pid16
