@@ -5,7 +5,7 @@
  suggested improvement, please send a note to perltidy at
  users.sourceforge.net.  
 
-=head2 2002 09 20
+=head2 2002 09 22
  
  -New option '-b' or '--backup-and-modify-in-place' will cause perltidy to
  overwrite the original file with the tidied output file.  The original

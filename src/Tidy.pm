@@ -61,10 +61,9 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.29 2002/09/22 02:26:29 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.30 2002/09/24 13:46:50 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
-# Preloaded methods go here.
 sub streamhandle {
 
     # given filename and mode (r or w), create an object which:
@@ -78,8 +77,8 @@ sub streamhandle {
     # ----------------     -----------------
     # '-'                  (STDIN if mode = 'r', STDOUT if mode='w')
     # string               IO::File
-    # ARRAY  ref           IO::ScalarArray          
-    # STRING ref           IO::Scalar
+    # ARRAY  ref           Perl::Tidy::IOScalarArray (formerly IO::ScalarArray)
+    # STRING ref           Perl::Tidy::IOScalar      (formerly IO::Scalar)
     # object               object 
     #                      (check for 'print' method for 'w' mode)
     #                      (check for 'getline' method for 'r' mode)
@@ -91,28 +90,30 @@ sub streamhandle {
     # handle a reference
     if ($ref) {
         if ( $ref eq 'ARRAY' ) {
-            eval "use IO::ScalarArray";
-            confess <<EOM if $@;
-------------------------------------------------------------------------
-Your call to Perl::Tidy::perltidy has an ARRAY reference, which requires
-IO::ScalarArray.  Please install it and try again.  Trace follows:
-------------------------------------------------------------------------
-
-$@
-EOM
-            $New = sub { IO::ScalarArray->new(@_) };
+##            eval "use IO::ScalarArray";
+##            confess <<EOM if $@;
+##------------------------------------------------------------------------
+##Your call to Perl::Tidy::perltidy has an ARRAY reference, which requires
+##IO::ScalarArray.  Please install it and try again.  Trace follows:
+##------------------------------------------------------------------------
+##
+##$@
+##EOM
+##.            $New = sub { IO::ScalarArray->new(@_) };
+            $New = sub { Perl::Tidy::IOScalarArray->new(@_) };
         }
         elsif ( $ref eq 'SCALAR' ) {
-            eval "use IO::Scalar";
-            confess <<EOM if $@;
-------------------------------------------------------------------------
-Your call to Perl::Tidy::perltidy has an SCALAR reference, which requires
-IO::Scalar.  Please install it and try again.  Trace follows:
-------------------------------------------------------------------------
-
-$@
-EOM
-            $New = sub { IO::Scalar->new(@_) };
+##            eval "use IO::Scalar";
+##            confess <<EOM if $@;
+##------------------------------------------------------------------------
+##Your call to Perl::Tidy::perltidy has an SCALAR reference, which requires
+##IO::Scalar.  Please install it and try again.  Trace follows:
+##------------------------------------------------------------------------
+##
+##$@
+##EOM
+##            $New = sub { IO::Scalar->new(@_) };
+            $New = sub { Perl::Tidy::IOScalar->new(@_) };
         }
         else {
 
@@ -2503,6 +2504,141 @@ sub do_syntax_check {
 
 #####################################################################
 #
+# This is a stripped down version of IO::Scalar
+# Given a reference to a scalar, it supplies either:
+# a getline method which reads lines (mode='r'), or
+# a print method which reads lines (mode='w')
+#
+#####################################################################
+package Perl::Tidy::IOScalar;
+use Carp;
+sub new {
+    my ( $package, $rscalar, $mode ) = @_;
+    my $ref=ref $rscalar;
+    if ($ref ne 'SCALAR') {
+        confess <<EOM;
+------------------------------------------------------------------------
+expecting ref to SCALAR but got ref to ($ref); trace follows:
+------------------------------------------------------------------------
+EOM
+
+    }
+    if ($mode eq 'w') {
+       $$rscalar = "";
+       return bless [$rscalar,$mode], $package;
+    }
+    elsif ($mode eq 'r') {
+
+       # Convert a scalar to an array.
+       # This avoids looking for "\n" on each call to getline
+       my @array = map {$_ .= "\n"} split /\n/, ${$rscalar};
+       my $i_next=0;
+       return bless [\@array,$mode,$i_next], $package;
+    }
+    else {
+        confess <<EOM;
+------------------------------------------------------------------------
+expecting mode = 'r' or 'w' but got mode ($mode); trace follows:
+------------------------------------------------------------------------
+EOM
+    }
+
+}
+sub getline {
+    my $self   = shift;
+    my $mode   = $self->[1];
+    if ($mode ne 'r') {
+        confess <<EOM;
+------------------------------------------------------------------------
+getline call requires mode = 'r' but mode = ($mode); trace follows:
+------------------------------------------------------------------------
+EOM
+    }
+    my $i = $self->[2]++;
+    my $line = $self->[0]->[$i];
+    return $self->[0]->[$i];
+}
+sub print {
+    my $self   = shift;
+    my $mode   = $self->[1];
+    if ($mode ne 'w') {
+        confess <<EOM;
+------------------------------------------------------------------------
+print call requires mode = 'w' but mode = ($mode); trace follows:
+------------------------------------------------------------------------
+EOM
+    }
+    ${$self->[0]} .= $_[0];
+}
+sub close { return }
+
+#####################################################################
+#
+# This is a stripped down version of IO::ScalarArray
+# Given a reference to an array, it supplies either:
+# a getline method which reads lines (mode='r'), or
+# a print method which reads lines (mode='w')
+#
+#####################################################################
+package Perl::Tidy::IOScalarArray;
+use Carp;
+sub new {
+    my ( $package, $rarray, $mode ) = @_;
+    my $ref=ref $rarray;
+    if ($ref ne 'ARRAY') {
+        confess <<EOM;
+------------------------------------------------------------------------
+expecting ref to ARRAY but got ref to ($ref); trace follows:
+------------------------------------------------------------------------
+EOM
+
+    }
+    if ($mode eq 'w') {
+       @$rarray = ();
+       return bless [$rarray,$mode], $package;
+    }
+    elsif ($mode eq 'r') {
+       my $i_next=0;
+       return bless [$rarray,$mode,$i_next], $package;
+    }
+    else {
+        confess <<EOM;
+------------------------------------------------------------------------
+expecting mode = 'r' or 'w' but got mode ($mode); trace follows:
+------------------------------------------------------------------------
+EOM
+    }
+}
+sub getline {
+    my $self   = shift;
+    my $mode   = $self->[1];
+    if ($mode ne 'r') {
+        confess <<EOM;
+------------------------------------------------------------------------
+getline requires mode = 'r' but mode = ($mode); trace follows:
+------------------------------------------------------------------------
+EOM
+    }
+    my $i = $self->[2]++;
+    my $line = $self->[0]->[$i];
+    return $self->[0]->[$i];
+}
+sub print {
+    my $self   = shift;
+    my $mode   = $self->[1];
+    if ($mode ne 'w') {
+        confess <<EOM;
+------------------------------------------------------------------------
+print requires mode = 'w' but mode = ($mode); trace follows:
+------------------------------------------------------------------------
+EOM
+    }
+    push @{$self->[0]}, $_[0];
+}
+sub close { return }
+
+#####################################################################
+#
 # the Perl::Tidy::LineSource class supplies an object with a 'get_line()' method
 # which returns the next line to be parsed
 #
@@ -4385,7 +4521,7 @@ sub new {
     $last_unadjusted_indentation = 0;
 
     $saw_VERSION_in_this_file = !$rOpts->{'pass-version-line'};
-    $saw_END_or_DATA_            = 0;
+    $saw_END_or_DATA_         = 0;
 
     @block_type_to_go            = ();
     @type_sequence_to_go         = ();
@@ -6576,7 +6712,7 @@ sub set_white_space_flag {
         # If this becomes too much of a problem, we might give up and just clip
         # them at zero.
         ## $levels_to_go[$max_index_to_go] = ( $level > 0 ) ? $level : 0;
-        $levels_to_go[$max_index_to_go] = $level; 
+        $levels_to_go[$max_index_to_go] = $level;
         $nesting_depth_to_go[$max_index_to_go] = ( $slevel >= 0 ) ? $slevel : 0;
         $lengths_to_go[ $max_index_to_go + 1 ] =
           $lengths_to_go[$max_index_to_go] + length($token);
@@ -6851,7 +6987,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.29 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.30 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -7410,8 +7546,7 @@ sub set_white_space_flag {
                         $last_nonblank_token eq '}'
                         && (
                             $is_block_without_semicolon{
-                                $last_nonblank_block_type
-                            }
+                                $last_nonblank_block_type }
                             || $last_nonblank_block_type =~ /^sub\s+\w/
                             || $last_nonblank_block_type =~ /^\w+:$/ )
                     )
@@ -8323,8 +8458,8 @@ sub output_line_to_go {
         # non-blank, non-comment lines at this level
         $last_last_line_leading_level = $last_line_leading_level;
         $last_line_leading_level      = $levels_to_go[$imin];
-        if ($last_line_leading_level < 0) {$last_line_leading_level=0}
-        $last_line_leading_type       = $types_to_go[$imin];
+        if ( $last_line_leading_level < 0 ) { $last_line_leading_level = 0 }
+        $last_line_leading_type = $types_to_go[$imin];
         if (   $last_line_leading_level == $last_last_line_leading_level
             && $last_line_leading_type ne 'b'
             && $last_line_leading_type ne '#'
@@ -22565,7 +22700,7 @@ to perltidy.
 
 =head1 VERSION
 
-This man page documents Perl::Tidy version 20020920.
+This man page documents Perl::Tidy version 20020922.
 
 =head1 AUTHOR
 
@@ -22578,5 +22713,3 @@ The perltidy(1) man page describes all of the features of perltidy.  It
 can be found at http://perltidy.sourceforge.net.
 
 =cut
-
-

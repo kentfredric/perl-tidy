@@ -97,6 +97,11 @@ default options.  The output will be in files with an appended <EM>.tdy</EM>
 extension.  For any file with an error, there will be a file with extension
 <EM>.ERR</EM>.</P>
 <PRE>
+  perltidy -b file1.pl file2.pl</PRE>
+<P>Modify <EM>file1.pl</EM> and <EM>file1.pl</EM> in place, and backup the originals to
+<EM>file1.pl.bak</EM> and <EM>file2.pl.bak</EM>.  If <EM>file1.pl.bak</EM> and/or <EM>file2.pl.bak</EM>
+already exist, they will be overwritten.</P>
+<PRE>
   perltidy -gnu somefile.pl</PRE>
 <P>Execute perltidy on file <EM>somefile.pl</EM> with a style which approximates the
 GNU Coding Standards for C programs.  The output will be <EM>somefile.pl.tdy</EM>.</P>
@@ -217,6 +222,11 @@ when desired with <STRONG>-nse</STRONG> on the command line.
 Change the extension of the output file to be <EM>.ext</EM> instead of the
 default <EM>.tdy</EM>.  If the <STRONG>-html</STRONG> option is used, this will change
 the extension to be <EM>.ext</EM> instead of the default <EM>.html</EM>.
+<P>If the extension <CODE>ext</CODE> begins with <CODE>A-Z</CODE>, <CODE>a-z</CODE>, or <CODE>0-9</CODE>, then it
+will be appended to the filename with an intermediate '.' (or '_' on
+some systems).  Otherwise, it will be appended directly.  Thus, for
+example, using <CODE>-oext=htm</CODE> and <CODE>-oext=.htm</CODE>  on <EM>somefile.pl</EM> with
+both produce <EM>somefile.pl.htm</EM></P>
 <P></P>
 <DT><STRONG><A NAME="item_%2Dopath%3Dpath%2C_%2D%2Doutput%2Dpath%3Dpath"><STRONG>-opath</STRONG>=path,    <STRONG>--output-path</STRONG>=path</A></STRONG><BR>
 <DD>
@@ -236,6 +246,25 @@ appear in whatever directory contains <EM>somefile.pl</EM>.</P>
 <P>This parameter will be ignored if output is being directed to standard output,
 or if it is being specified explicitly with the <STRONG>-o=s</STRONG> parameter.</P>
 <P></P>
+<DT><STRONG><A NAME="item_%2Db%2C_%2D%2Dbackup%2Dand%2Dmodify%2Din%2Dplace"><STRONG>-b</STRONG>,    <STRONG>--backup-and-modify-in-place</STRONG></A></STRONG><BR>
+<DD>
+Modify the input file or files in-place and save the original with the
+extension <EM>.bak</EM>.  Any existing <EM>.bak</EM> file will be deleted.  See next item
+for changing the default backup extension.
+<P>A <STRONG>-b</STRONG> flag will be ignored if input is from standard input, or
+if the <STRONG>-html</STRONG> flag is set.</P>
+<P></P>
+<DT><STRONG><A NAME="item_%2Dbext%3Dext%2C_%2D%2Dbackup%2Dfile%2Dextension%3"><STRONG>-bext</STRONG>=ext,    <STRONG>--backup-file-extension</STRONG>=ext</A></STRONG><BR>
+<DD>
+Change the extension of the backup file to be something other than the
+default <EM>.bak</EM>.
+<P>If the extension <CODE>ext</CODE> begins with <CODE>A-Z</CODE>, <CODE>a-z</CODE>, or <CODE>0-9</CODE>, then it
+will be appended to the filename with an intermediate '.' (or '_' on
+some systems).  Otherwise, it will be appended directly.  For example,
+suppose the file is <EM>somefile.pl</EM>.  If <CODE>ext=old</CODE>, the backup file will
+be <EM>somefile.pl.old</EM>.  If <CODE>ext=~</CODE>, then the backup file will be
+<EM>somefile.pl~</EM>  .</P>
+<P></P>
 <DT><STRONG><A NAME="item_%2Dw%2C_%2D%2Dwarning%2Doutput"><STRONG>-w</STRONG>,    <STRONG>--warning-output</STRONG></A></STRONG><BR>
 <DD>
 Setting <STRONG>-w</STRONG> causes perltidy to include any non-critical warning
@@ -253,10 +282,8 @@ perltidy as a filter from within the editor using something like</P>
 <PRE>
  :n1,n2!perltidy -q</PRE>
 <P>where <CODE>n1,n2</CODE> represents the selected text.  Without the <STRONG>-q</STRONG> flag,
-any error messages will mess up your screen.  Besides, it is common to
-run perltidy on incomplete blocks from an editor, and you don't want to
-see any complaints about that.  (Or maybe you do; in that case, be
-prepared to use your ``undo'' key).</P>
+any error message may mess up your screen, so be prepared to use your
+``undo'' key.</P>
 <P></P>
 <DT><STRONG><A NAME="item_%2Dlog%2C_%2D%2Dlogfile"><STRONG>-log</STRONG>,    <STRONG>--logfile</STRONG></A></STRONG><BR>
 <DD>
@@ -894,6 +921,11 @@ Otherwise, your edits will be lost when you rerun perltidy with <STRONG>-csc</ST
 example, you could simply change <CODE>## end</CODE> to be <CODE>## End</CODE>, since the test is
 case sensitive.  You may also want to use the <STRONG>-ssc</STRONG> flag to keep these
 modified closing side comments spaced the same as actual closing side comments.
+<P></P>
+<LI>
+Temporarily generating closing side comments is a useful technique for
+exploring and/or debugging a perl script, especially one written by someone
+else.  You can always remove them with <STRONG>-dcsc</STRONG>.
 <P></P></UL>
 <DT><STRONG><A NAME="item_Static_Block_Comments">Static Block Comments</A></STRONG><BR>
 <DD>
@@ -1384,7 +1416,7 @@ default it will break after each '=&gt;' because the container is now
 broken.  To reform a one-line container, the parameter <STRONG>-cab=2</STRONG> would
 be needed.</P>
 <P>The flag <STRONG>-cab=3</STRONG> can be used to prevent these commas from being
-treated specially.  In this case, an item such as <CODE>&quot;01&quot; =</CODE> 31&gt; is
+treated specially.  In this case, an item such as ``01'' =&gt; 31 is
 treated as a single item in a table.  The number of fields in this table
 will be determined by the same rules that are used for any other table.
 Here is an example.
@@ -1893,7 +1925,7 @@ it frequently.</P>
 <P>The following list shows all short parameter names which allow a prefix
 'n' to produce the negated form:</P>
 <PRE>
-    D anl asc aws bbb bbc bbs bli boc bok bol bot syn ce csc 
+    D anl asc aws b bbb bbc bbs bli boc bok bol bot syn ce csc 
     dac dbc dcsc dnl dws dp dpro dsm dsc ddf dln dop dsn dtt dwls dwrs 
     f fll hsc html ibc icb icp iob isbc lp log lal x lsl bl 
     sbl okw ola oll pvl q opt sbc sfs ssc sts se st sob 
@@ -1929,27 +1961,26 @@ in any way.  And, of course, it does not modify pod documents.
 <HR>
 <H1><A NAME="files">FILES</A></H1>
 <DL>
-<DT><STRONG><A NAME="item_Special_files_when_standard_input_or_standard_outp">Special files when standard input or standard output are used</A></STRONG><BR>
+<DT><STRONG><A NAME="item_Special_files_when_standard_input_is_used">Special files when standard input is used</A></STRONG><BR>
 <DD>
 When standard input is used, the log file, if saved, is <EM>perltidy.LOG</EM>,
 and any errors are written to <EM>perltidy.ERR</EM> unless the <STRONG>-se</STRONG> flag is
-set.  These are saved in the current working directory.  If syntax
-checking is used, a temporary copy of the input file will be created,
-but it will be removed when perltidy finishes.
-<P>When standard output and syntax checking are used, a temporary copy of the
-output file will be created.  It will be removed when perltidy finishes.</P>
+set.  These are saved in the current working directory.
 <P></P>
 <DT><STRONG><A NAME="item_Files_overwritten">Files overwritten</A></STRONG><BR>
 <DD>
 The following file extensions are used by perltidy, and files with these
-extensions may be overwritten or deleted: <EM>.tdy</EM>, <EM>.ERR</EM>, <EM>.LOG</EM>, <EM>.TEE</EM>.
+extensions may be overwritten or deleted: <EM>.ERR</EM>, <EM>.LOG</EM>, <EM>.TEE</EM>,
+and/or <EM>.tdy</EM>, <EM>.html</EM>, and <EM>.bak</EM>, depending on the run type and
+settings.
 <P></P>
 <DT><STRONG><A NAME="item_Files_extensions_limitations">Files extensions limitations</A></STRONG><BR>
 <DD>
 Perltidy does not operate on files for which the run could produce a file with
-a duplicated file extension.  These extensions are <EM>.tdy</EM>, <EM>.LOG</EM>, <EM>.ERR</EM>,
-<EM>.TEE</EM>.  The purpose of this rule is to prevent generating
-confusing filenames such as <EM>somefile.tdy.tdy.tdy</EM>.
+a duplicated file extension.  These extensions include <EM>.LOG</EM>, <EM>.ERR</EM>,
+<EM>.TEE</EM>, and perhaps <EM>.tdy</EM> and <EM>.bak</EM>, depending on the run type.  The
+purpose of this rule is to prevent generating confusing filenames such as
+<EM>somefile.tdy.tdy.tdy</EM>.
 <P></P></DL>
 <P>
 <HR>
@@ -1958,7 +1989,7 @@ confusing filenames such as <EM>somefile.tdy.tdy.tdy</EM>.
 <P>
 <HR>
 <H1><A NAME="version">VERSION</A></H1>
-<P>This man page documents perltidy version 20020826.</P>
+<P>This man page documents perltidy version 20020922.</P>
 <P>
 <HR>
 <H1><A NAME="credits">CREDITS</A></H1>

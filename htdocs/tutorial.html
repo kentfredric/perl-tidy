@@ -20,7 +20,6 @@
 		<LI><A HREF="#line length and continuation indentation.">Line Length and Continuation Indentation.</A></LI>
 		<LI><A HREF="#tabs or spaces">Tabs or Spaces?</A></LI>
 		<LI><A HREF="#input/output control">Input/Output Control</A></LI>
-		<LI><A HREF="#making backups">Making Backups</A></LI>
 		<LI><A HREF="#style variations">Style Variations</A></LI>
 		<LI><A HREF="#configuration files">Configuration Files</A></LI>
 		<LI><A HREF="#error reporting">Error Reporting</A></LI>
@@ -175,7 +174,23 @@ files at once, like this for example:</P>
 <PRE>
  perltidy *.pl</PRE>
 <P>and in this case, each of the output files will be have a name equal to
-the input file with the extension <EM>.tdy</EM> appended.</P>
+the input file with the extension <EM>.tdy</EM> appended.  If you decide that
+the formatting is acceptable, you will want to backup your originals and
+then remove the <EM>.tdy</EM> extensions from the reformatted files.  There is
+an powerful perl script called <CODE>rename</CODE> that can be used for this
+purpose; if you don't have it, you can find it for example in <STRONG>The Perl
+Cookbook</STRONG>.</P>
+<P>If you find that the formatting done by perltidy is usually acceptable,
+you may want to save some effort by letting perltidy do a simple backup
+of the original files and then reformat them in place.  You specify this
+with a <STRONG>-b</STRONG> flag.  For example, the command</P>
+<PRE>
+ perltidy -b *.pl</PRE>
+<P>will rename the original files by appending a <EM>.bak</EM> extension, and then
+create reformatted files with the same names as the originals.  (If you don't
+like the default backup extension choice <EM>.bak</EM>, the manual tells how to
+change it).  Each time you run perltidy with the <STRONG>-b</STRONG> option, the previous
+<EM>.bak</EM> files will be overwritten, so please make regular separate backups.</P>
 <P>If there is no input filename specified on the command line, then input
 is assumed to come from standard input and output will go to standard
 output.  On systems with a Unix-like interface, you can use perltidy as
@@ -195,36 +210,6 @@ indicate this with the flag <STRONG>-st</STRONG>, like this:</P>
 like this:</P>
 <PRE>
  perltidy testfile.pl -o=testfile.new.pl</PRE>
-<P>One thing that you cannot do with perltidy is to reformat a script
-and overwrite the original version.  This is a safety precaution.</P>
-<P>
-<H2><A NAME="making backups">Making Backups</A></H2>
-<P>In an actual project, you will need to make a backup copy of the
-original script and then rename <EM>testfile.pl.tdy</EM> to be <EM>testfile.pl</EM>.
-While perltidy is a very reliable program, it is very important to have
-a standard procedure for backing up your script in case something goes
-wrong.  For a small project, a simple backup procedure using RCS could
-be as follows (see the <CODE>rcsintro(1)</CODE> man page).</P>
-<PRE>
-        ci -l testfile.pl
-        perltidy testfile.pl</PRE>
-<P>A good practice is to use a file comparison utility, such as diff, to 
-examine the differences between the original and reformatted files.
-Then, if no problems are seen, update to the new version using</P>
-<PRE>
-        mv testfile.pl testfile.pl.bak
-        mv testfile.pl.tdy testfile.pl</PRE>
-<P>This has the effect of keeping a historical record of the script in the
-RCS directory, and a current separate backup as <EM>testfile.pl.bak</EM>.  Of
-course, you should make regular additional backups to other media as
-well.</P>
-<P>Please do not fall into this trap:  Let's say you are working on a
-complex script, and run it through perltidy.  You open the reformatted
-script with your editor, and are so pleased to see it cleaned up that
-you immediately continue editing it.  If you forget that you are editing
-a <EM>.tdy</EM> file, your work will be lost if you inadvertently run perltidy
-again on the original script.  To avoid this, you need to rename your
-files before starting to work again.</P>
 <P>
 <H2><A NAME="style variations">Style Variations</A></H2>
 <P>Perltidy has to make some kind of default selection of formatting
@@ -289,7 +274,7 @@ extra indentation.  Consider:
                            nine  =&gt; 'IX',
                            ten   =&gt; 'X'
                            );</PRE>
-<P>which is probably easier to read.</P>
+<P>which is preferred by some.</P>
 <P></P>
 <DT><STRONG><A NAME="item_%2Dbt%2C%2Dpt%2C%2Dsbt%3A_Container_tightness"><STRONG>-bt</STRONG>,<STRONG>-pt</STRONG>,<STRONG>-sbt</STRONG>:  Container tightness</A></STRONG><BR>
 <DD>
@@ -479,13 +464,17 @@ force perltidy to send output to standard output.  This might be needed,
 for example, if the editor passes text to perltidy as temporary filename
 instead of through the standard input.  If this works, you might put the
 <STRONG>-st</STRONG> flag in your <EM>.perltidyrc</EM> file.</P>
+<P>If you have some tips for making perltidy work with your editor, and
+are willing to share them, please email me (see below) and I'll try to
+incorporate them in this document or put up a link to them.</P>
 <P>After you get your editor and perltidy successfully talking to each
 other, try formatting a snippet of code with a brace error to see what
 happens.  (Do not use the quiet flag, <STRONG>-q</STRONG>, for this test).  Perltidy
 will send one line starting with <CODE>##</CODE> to standard error output.  Your
 editor may either display it at the top of the reformatted text or at
-the bottom.  You probably cannot control this, but you need to know
-where to look when an actual error is detected.</P>
+the bottom (or even midstream!).  You probably cannot control this, and
+perltidy can't, but you need to know where to look when an actual error
+is detected.</P>
 <P>
 <H2><A NAME="writing an html file">Writing an HTML File</A></H2>
 <P>Perltidy can switch between two different output modes.  We have been
@@ -524,6 +513,7 @@ at
 Please check the perltidy
 web site <A HREF="http://perltidy.sourceforge.net">http://perltidy.sourceforge.net</A> occasionally
 for updates.</P>
+<P>The auther may be contacted at perltidy at users.sourceforge.net.</P>
 
 </BODY>
 

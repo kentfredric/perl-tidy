@@ -74,10 +74,10 @@ tested on Unix, Windows, VMS and MacPerl.
 
 <li>Please check the <a href="INSTALL.html">Installation Notes</a>
 
-<li>Download <a href="http://prdownloads.sourceforge.net/perltidy/Perl-Tidy-20020826.tgz">
+<li>Download <a href="http://prdownloads.sourceforge.net/perltidy/Perl-Tidy-20020922.tgz">
 The latest release (.tgz, Unix-style line endings)</a>
 
-<li>Download <a href="http://prdownloads.sourceforge.net/perltidy/Perl-Tidy-20020826.zip">
+<li>Download <a href="http://prdownloads.sourceforge.net/perltidy/Perl-Tidy-20020922.zip">
 The latest release (.zip, Windows-style line endings)</a>
 
 <li>Download <a href="http://www.linuxquebec.com/~nomis80/perltidy/">

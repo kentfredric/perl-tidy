@@ -3,6 +3,11 @@ Perltidy TODO List
     are of interest, but there is no particular schedule for implementing
     them.
 
+  Improved HTML formatting of pod sections
+    At present, pod text is merely formatted with italics. It would be nice
+    to properly format pod, just like pod2html. This is a high priority
+    item.
+
   Improved Vertical Alignment
     Coding modifications are underway to improve the vertical alignment
     logic.

@@ -4,6 +4,12 @@ This is a "wish-list" of features to add and things to do.  All of these
 are of interest, but there is no particular schedule for implementing
 them.  
 
+=head2 Improved HTML formatting of pod sections
+
+At present, pod text is merely formatted with italics.  It would be nice
+to properly format pod, just like pod2html.  This is a high priority
+item.
+
 =head2 Improved Vertical Alignment
 
 Coding modifications are underway to improve the vertical alignment
