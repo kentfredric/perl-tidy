@@ -3,6 +3,19 @@ Perltidy Change Log
      have hit a bug, unusual behavior, annoyance, or have a suggested
      improvement, please send a note to perltidy at users.sourceforge.net.  
 
+  2001 06 25
+
+     -html corrected to use -nohtml-bold-xxxxxxx or -nhbx to negate bold, and
+     likewise -nohtml-italic-xxxxxxx or -nhbi to negate italic.  There was
+     no way to negate these previously.  -html documentation corrections.  
+     (Suggested by  Wolfgang Weisselberg).
+
+     -Some modifications have been made which improve the -lp formatting in
+     a few cases.
+
+     -Perltidy now retains or creates a blank line after an C<=cut> to keep
+     podchecker happy (Suggested by Manfred H. Winter). 
+
   2001 06 17
 
      -Added -bli flag to give continuation indentation to braces, like this

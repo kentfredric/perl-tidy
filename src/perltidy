@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.9 2001/06/25 18:29:54 perltidy Exp $
+    $Id: perltidy,v 1.10 2001/06/27 21:57:54 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -277,8 +277,8 @@ sub main {
         # clean up and report errors
         #---------------------------------------------------------------
         $source_object->close_input_file();
-        $sink_object->close_output_file() if $sink_object;
-        $debugger_object->close_debug_file() if $debugger_object; 
+        $sink_object->close_output_file()    if $sink_object;
+        $debugger_object->close_debug_file() if $debugger_object;
 
         my $infile_syntax_ok = 0;    # -1 no  0=don't know   1 yes
         if ($output_file) {
@@ -402,7 +402,7 @@ sub process_command_line {
       maximum-whitespace-columns=i
       opening-brace-on-new-line!
       outdent-long-lines!
-      indent-closing-brace!
+      indent-closing-paren!
       outfile=s
       paren-tightness=i
       quiet!
@@ -430,6 +430,7 @@ sub process_command_line {
       opening-brace-always-on-right
       brace-left-and-indent!
       maximum-continuation-indentation=i
+      big-space-jump=i
     );
 
     # The Perltidy::HtmlWriter will add its own options to the string
@@ -481,6 +482,8 @@ sub process_command_line {
       hanging-side-comments
       nobrace-left-and-indent
       maximum-continuation-indentation=40
+      big-space-jump=24
+      noindent-closing-paren
     );
 
     #---------------------------------------------------------------
@@ -587,8 +590,8 @@ sub process_command_line {
         'bl'                 => [qw(opening-brace-on-new-line)],
         'nbl'                => [qw(noopening-brace-on-new-line)],
         'bar'                => [qw(opening-brace-always-on-right)],
-        'icb'                => [qw(indent-closing-brace)],
-        'nicb'               => [qw(noindent-closing-brace)],
+        'icp'                => [qw(indent-closing-paren)],
+        'nicp'               => [qw(noindent-closing-paren)],
         'br'                 => [qw(noopening-brace-on-new-line)],
         'nbr'                => [qw(opening-brace-on-new-line)],
         'tee-all-comments'   => [qw(tee-block-comments tee-side-comments)],
@@ -625,6 +628,7 @@ sub process_command_line {
         'hsc'                => [qw(hanging-side-comments)],
         'nhsc'               => [qw(nohanging-side-comments)],
         'bli'                => [qw(brace-left-and-indent)],
+        'bsj'                => [qw(big-space-jump)],
 
         # 'mangle' originally deleted pod and comments, but to keep it
         # reversible, it no longer does because i have removed:
@@ -684,14 +688,13 @@ sub process_command_line {
             )
         ],
 
-        # This is an undocumented placeholder for a possible style which
-        # tries to follow the GNU Coding Standards (which do not really
-        # apply to perl but which are followed by some perl
+        # this style tries to follow the GNU Coding Standards (which do
+        # not really apply to perl but which are followed by some perl
         # programmers).  This will change; I haven't used -bli yet
         # because it doesn't seem to be used as often as simply -bl; 
         'gnu-style' => [
             qw(
-            lp bl noll pt=2 bt=2 sbt=2
+            lp bl noll pt=2 bt=2 sbt=2 icp
             )
         ],
 
@@ -1431,9 +1434,9 @@ package Perltidy::LineSink;
 sub new {
 
     my ( $class, $output_file, $tee_file, $rOpts ) = @_;
-    my $fh      = undef;
-    my $fh_copy = undef;
-    my $fh_tee  = undef;
+    my $fh               = undef;
+    my $fh_copy          = undef;
+    my $fh_tee           = undef;
     my $output_file_copy = "";
     my $output_file_open = 0;
 
@@ -1480,7 +1483,7 @@ sub write_line {
 
     my $output_file_open = $self->{_output_file_open};
 
-    print $fh $_[0] if ( $self->{_output_file_open} );
+    print $fh $_[0]      if ( $self->{_output_file_open} );
     print $fh_copy $_[0] if ( $self->{_output_file_copy} );
 
     if ( $self->{_tee_flag} ) {
@@ -1516,12 +1519,12 @@ sub really_open_tee_file {
     $fh_tee = IO::File->new(">$tee_file")
       or die ("couldn't open TEE file $tee_file: $!\n");
     $self->{_tee_file_opened} = 1;
-    $self->{_fh_tee} = $fh_tee;
+    $self->{_fh_tee}          = $fh_tee;
 }
 
 sub close_output_file {
     my $self = shift;
-    close $self->{_fh} if $self->{_output_file_open};
+    close $self->{_fh}      if $self->{_output_file_open};
     close $self->{_fh_copy} if ( $self->{_output_file_copy} );
     $self->close_tee_file();
 }
@@ -1559,8 +1562,8 @@ sub new {
     bless {
         _write_diagnostics_count => 0,
         _last_diagnostic_file    => "",
-        _input_file => "",
-        _fh         => undef,
+        _input_file              => "",
+        _fh                      => undef,
     }, $class;
 }
 
@@ -1582,7 +1585,7 @@ sub write_diagnostics {
     }
 
     my $last_diagnostic_file = $self->{_last_diagnostic_file};
-    my $input_file = $self->{_input_file};
+    my $input_file           = $self->{_input_file};
     if ( $last_diagnostic_file ne $input_file ) {
         print DIAGNOSTICS "\nFILE:$input_file\n";
     }
@@ -1676,9 +1679,9 @@ sub we_are_at_the_last_line {
 sub black_box {
     my $self = shift;
     my ( $line_of_tokens, $output_line_number ) = @_;
-    my $input_line        = $line_of_tokens->{_line_text};
-    my $input_line_number = $line_of_tokens->{_line_number};
-    my $rlevels           = $line_of_tokens->{_rlevels};
+    my $input_line                   = $line_of_tokens->{_line_text};
+    my $input_line_number            = $line_of_tokens->{_line_number};
+    my $rlevels                      = $line_of_tokens->{_rlevels};
     my $structural_indentation_level = $$rlevels[0];
     my $python_indentation_level = $line_of_tokens->{_python_indentation_level};
 
@@ -1687,7 +1690,7 @@ sub black_box {
     $self->make_line_information_string( $line_of_tokens, $output_line_number );
 
     my $last_input_line_written = $self->{_last_input_line_written};
-    my $rOpts = $self->{_rOpts};
+    my $rOpts                   = $self->{_rOpts};
     if ( ( ( $input_line_number - $last_input_line_written ) >=
       $rOpts->{'logfile-gap'} )
       || ( $input_line =~ /^\s*(sub|package)\s+(\w+)/ ) )
@@ -1731,15 +1734,15 @@ EOM
 sub make_line_information_string {
     my $self = shift;
     my ( $line_of_tokens, $output_line_number ) = @_;
-    my $brace_depth = $line_of_tokens->{_curly_brace_depth};
-    my $paren_depth = $line_of_tokens->{_paren_depth};
+    my $brace_depth              = $line_of_tokens->{_curly_brace_depth};
+    my $paren_depth              = $line_of_tokens->{_paren_depth};
     my $square_bracket_depth     = $line_of_tokens->{_square_bracket_depth};
     my $input_line_number        = $line_of_tokens->{_line_number};
     my $python_indentation_level = $line_of_tokens->{_python_indentation_level};
-    my $rlevels         = $line_of_tokens->{_rlevels};
-    my $rnesting_tokens = $line_of_tokens->{_rnesting_tokens};
-    my $rci_levels      = $line_of_tokens->{_rci_levels};
-    my $rnesting_blocks = $line_of_tokens->{_rnesting_blocks};
+    my $rlevels                  = $line_of_tokens->{_rlevels};
+    my $rnesting_tokens          = $line_of_tokens->{_rnesting_tokens};
+    my $rci_levels               = $line_of_tokens->{_rci_levels};
+    my $rnesting_blocks          = $line_of_tokens->{_rnesting_blocks};
 
     my $structural_indentation_level = $$rlevels[0];
 
@@ -2077,9 +2080,9 @@ sub make_abbreviated_names {
 
     # abbreviations for color/bold/italic properties
     while ( my ( $short_name, $long_name ) = each %short_to_long_names ) {
-        ${$rexpansion}{"hc$short_name"} = ["html-color-$long_name"];
-        ${$rexpansion}{"hb$short_name"} = ["html-bold-$long_name"];
-        ${$rexpansion}{"hi$short_name"} = ["html-italic-$long_name"];
+        ${$rexpansion}{"hc$short_name"}  = ["html-color-$long_name"];
+        ${$rexpansion}{"hb$short_name"}  = ["html-bold-$long_name"];
+        ${$rexpansion}{"hi$short_name"}  = ["html-italic-$long_name"];
         ${$rexpansion}{"nhb$short_name"} = ["nohtml-bold-$long_name"];
         ${$rexpansion}{"nhi$short_name"} = ["nohtml-italic-$long_name"];
     }
@@ -2100,6 +2103,8 @@ sub check_options {
     $rOpts = shift;
 
     # X11 color names for default settings that seemed to look ok
+    # (these color names are only used for programming clarity; the hex 
+    # numbers are actually written)
     use constant ForestGreen   => "#228B22";
     use constant SaddleBrown   => "#8B4513";
     use constant IndianRed3    => "#CD5555";
@@ -2451,6 +2456,7 @@ use vars qw{
   $max_gnu_stack_index
   $gnu_position_predictor
   $line_start_index_to_go
+  $last_indentation_written
 
   @gnu_item_list
   $max_gnu_item_index
@@ -2516,7 +2522,6 @@ use vars qw{
   @want_comma_break
   @dont_align
   @interrupted_list
-  $before_pattern
   $index_start_one_line_block
   $semicolons_before_block_self_destruct
   $index_max_forced_break
@@ -2640,9 +2645,10 @@ sub new {
     $max_gnu_stack_index    = 0;
     $max_gnu_item_index     = -1;
     $gnu_stack[0] = new_lp_indentation_item( 0, -1, -1, 0, 0 );
-    @gnu_item_list           = ();
-    $gnu_sequence_number     = 0;    # this will count the output batches
-    $last_output_indentation = 0;
+    @gnu_item_list            = ();
+    $gnu_sequence_number      = 0;    # this will count the output batches
+    $last_output_indentation  = 0;
+    $last_indentation_written = 0;
 
     @block_type_to_go        = ();
     @bond_strength_to_go     = ();
@@ -2733,8 +2739,8 @@ sub write_line {
     my $self = shift;
     my ($line_of_tokens) = @_;
 
-    my $line_type  = $line_of_tokens->{_line_type};
-    my $input_line = $line_of_tokens->{_line_text};
+    my $line_type            = $line_of_tokens->{_line_type};
+    my $input_line           = $line_of_tokens->{_line_text};
     my $want_blank_line_next = 0;
 
     # handle line of code..
@@ -2759,7 +2765,7 @@ sub write_line {
 
             # pod docs should have a preceding blank line
             if ( $rOpts->{'delete-pod'} ) { $skip_line = 1; }
-            if ( $rOpts->{'tee-pod'} ) { $tee_line = 1; }
+            if ( $rOpts->{'tee-pod'} )    { $tee_line  = 1; }
             if ( !$skip_line && $line_type eq 'POD_START' ) {
                 want_blank_line();
             }
@@ -2776,19 +2782,19 @@ sub write_line {
         if ( !$skip_line ) {
             if ($tee_line) { $file_writer_object->tee_on() }
             write_unindented_line($input_line);
-            if ($tee_line) { $file_writer_object->tee_off() }
+            if ($tee_line)             { $file_writer_object->tee_off() }
             if ($want_blank_line_next) { want_blank_line(); }
         }
     }
 }
 
 sub create_one_line_block {
-    $index_start_one_line_block = $_[0];
+    $index_start_one_line_block            = $_[0];
     $semicolons_before_block_self_destruct = $_[1];
 }
 
 sub destroy_one_line_block {
-    $index_start_one_line_block = UNDEFINED_INDEX;
+    $index_start_one_line_block            = UNDEFINED_INDEX;
     $semicolons_before_block_self_destruct = 0;
 }
 
@@ -3086,8 +3092,7 @@ sub set_leading_whitespace {
 
           # TESTING- reactivated
           || ( $last_nonblank_type =~ /^[=]/ && $last_nonblank_type ne '=>'
-          && ( $last_last_nonblank_type =~ /^[\}\)\]]$/ ) ) 
-        )
+          && ( $last_last_nonblank_type =~ /^[\}\)\]]$/ ) ) )
 
         {
             check_for_long_gnu_style_lines();
@@ -3192,7 +3197,7 @@ sub check_for_long_gnu_style_lines {
 
         # item must still be open to be a candidate (otherwise it
         # cannot influence the current token)
-        next if ( $item->get_CLOSED() >= 0);
+        next if ( $item->get_CLOSED() >= 0 );
 
         my $available_spaces = $item->get_AVAILABLE_SPACES();
 
@@ -3242,7 +3247,7 @@ sub check_for_long_gnu_style_lines {
             }
         }
         $gnu_position_predictor -= $deleted_spaces;
-        $spaces_needed -= $deleted_spaces;
+        $spaces_needed          -= $deleted_spaces;
         last unless ( $spaces_needed > 0 );
     }
 }
@@ -3269,7 +3274,7 @@ sub finish_lp_batch {
         my $item = $gnu_item_list[$i];
 
         # only look for open items
-        next if ( $item->get_CLOSED() >= 0);
+        next if ( $item->get_CLOSED() >= 0 );
 
         # Tentatively remove all of the available space
         # (The vertical aligner will try to get it back later)
@@ -3664,7 +3669,7 @@ sub is_essential_whitespace {
 
       # be careful with a space around ++ and --, to avoid ambiguity as to
       # which token it applies
-      || ( ( $typer =~ /^(pp|mm)$/ ) && ( $tokenl !~ /^[\;\{\(\[]/ ) )
+      || ( ( $typer =~ /^(pp|mm)$/ )     && ( $tokenl !~ /^[\;\{\(\[]/ ) )
       || ( ( $typel =~ /^(\+\+|\-\-)$/ ) && ( $tokenr !~ /^[\;\{\(\[]/ ) )
 
       # need space after foreach my; for example, this will fail:
@@ -3897,7 +3902,7 @@ sub set_white_space_flag {
 
                         # remember where to put the space for the closing paren
                         $j_tight_closing_paren = $j_next;
-                        $ws = WS_NO;
+                        $ws                    = WS_NO;
                     }
                     else {
                         $ws = WS_YES;
@@ -3916,7 +3921,7 @@ sub set_white_space_flag {
             if ( $j == $j_tight_closing_paren ) {
 
                 $j_tight_closing_paren = -1;
-                $ws = WS_NO;
+                $ws                    = WS_NO;
             }
             else {
 
@@ -4083,8 +4088,8 @@ sub print_line_of_tokens {
     my $rci_levels      = $line_of_tokens->{_rci_levels};
     my $rnesting_blocks = $line_of_tokens->{_rnesting_blocks};
 
-    my $in_continued_quote = $line_of_tokens->{_starting_in_quote};
-    my $in_quote = $line_of_tokens->{_ending_in_quote};
+    my $in_continued_quote       = $line_of_tokens->{_starting_in_quote};
+    my $in_quote                 = $line_of_tokens->{_ending_in_quote};
     my $python_indentation_level = $line_of_tokens->{_python_indentation_level};
     my ( $token, $type, $j, $j_next );
     my ( $next_nonblank_token, $next_nonblank_token_type );
@@ -4139,9 +4144,9 @@ sub print_line_of_tokens {
 
     # create a hanging side comment if appropriate
     if ( $jmax == 0 && $$rtoken_type[0] eq '#'    # only token is a comment
-      && $last_line_had_side_comment              # last line had side comment
-      && $rOpts->{'hanging-side-comments'}        # user is allowing this
-                                                  # hanging side comment
+      && $last_line_had_side_comment          # last line had side comment
+      && $rOpts->{'hanging-side-comments'}    # user is allowing this
+                                              # hanging side comment
       )
     {
 
@@ -4353,8 +4358,6 @@ sub print_line_of_tokens {
         my $is_closing_BLOCK = ( $type eq '}' && $token eq '}' && $block_type );
 
         if ( $side_comment_follows && !$is_opening_BLOCK && !$is_closing_BLOCK )
-
-          #&& !( $type =~ /^[\}\{]$/ && $token eq $type && $block_type ) )
         {
             $no_internal_newlines = 1;
         }
@@ -4407,6 +4410,9 @@ sub print_line_of_tokens {
 
               # and we were unable to start looking for a block,
               && ( $index_start_one_line_block == UNDEFINED_INDEX )
+
+              # and this is not an anonymous sub
+              && ( $block_type !~ /^sub\W*$/ )
 
               # or if it will not be on same line as its keyword, so that
               # it will be outdented (eval.t, overload.t), and the user
@@ -4492,8 +4498,8 @@ sub print_line_of_tokens {
                   && $rOpts->{'add-semicolons'} )
                 {
 
-                    my $lev  = $levels_to_go[$max_index_to_go];
-                    my $slev = $nesting_depth_to_go[$max_index_to_go];
+                    my $lev            = $levels_to_go[$max_index_to_go];
+                    my $slev           = $nesting_depth_to_go[$max_index_to_go];
                     my $nesting_blocks =
                       $nesting_blocks_to_go[$max_index_to_go];
                     my $ci_level = $ci_levels_to_go[$max_index_to_go];
@@ -4945,12 +4951,6 @@ sub store_token_to_go {
     # Place one token into the output stream.
     # Called once per output token.
 
-    BEGIN {
-
-        # we want to line up with the added space BEFORE these tokens types:
-        $before_pattern = '^(\{|#|=>|=|\+=|\-=|=~|\*=|\/=)$';
-    }
-
     my ( $token, $type, $block_type, $no_internal_newlines, $level, $slevel,
       $nesting_blocks, $ci_level, $in_continued_quote ) = @_;
 
@@ -4977,17 +4977,21 @@ sub store_token_to_go {
 
     if ( $rOpts->{'add-whitespace'} ) {
 
-        if ( $type =~ /$before_pattern/ ) {
+        if ( vertically_align_before_token($max_index_to_go) ) {
 
             if ( ( $max_index_to_go > 1 )
               && ( $types_to_go[ $max_index_to_go - 1 ] eq 'b' )
 
               # but do not create blank field: ( align1.t and undoci.t )
               && ( $type eq '#'
-              || $matching_token_to_go[ $max_index_to_go - 2 ] !~
-              /$before_pattern/ ) )
+              || !vertically_align_before_token( $max_index_to_go - 2 ) ) )
             {
-                $matching_token_to_go[$max_index_to_go] = $type;
+                if ( $type ne 'k' ) {
+                    $matching_token_to_go[$max_index_to_go] = $type;
+                }
+                else {
+                    $matching_token_to_go[$max_index_to_go] = $token;
+                }
             }
         }
 
@@ -5014,6 +5018,18 @@ sub store_token_to_go {
     }
 }
 
+sub vertically_align_before_token {
+
+    # decide if we want to do tie vertical alignment to a token, with
+    # variable space before it
+
+    my ($i) = @_;
+    ( $types_to_go[$i] =~ /^(\{|#|=>|=|\+=|\-=|=~|\*=|\/=|&&|\|\|)$/ )
+      || ( $types_to_go[$i] eq 'k'
+      && $tokens_to_go[$i] =~ /^(if|unless|and|or)$/ );
+
+}
+
 sub want_blank_line {
     flush();
     $file_writer_object->want_blank_line();
@@ -5037,7 +5053,7 @@ sub correct_lp_indentation {
 
     # looking at each line of this batch..
     my $max_line = @$ri_first - 1;
-    my ($ibeg, $iend);
+    my ( $ibeg, $iend );
     for my $line ( 0 .. $max_line ) {
         $ibeg = $$ri_first[$line];
         $iend = $$ri_last[$line];
@@ -5056,21 +5072,21 @@ sub correct_lp_indentation {
                 next unless ( $indentation->get_ALIGN_PAREN() );
 
                 # Ok, let's see what the error is and try to fix it
-                my $actual_pos; 
+                my $actual_pos;
                 my $predicted_pos = $indentation->get_SPACES();
-                if ($i > $ibeg) {
-                  $actual_pos = total_line_length( $ibeg, $i - 1 );
+                if ( $i > $ibeg ) {
+                    $actual_pos = total_line_length( $ibeg, $i - 1 );
                 }
-                elsif ($line > 0) {
-                  my $ibegm = $$ri_first[$line-1];
-                  my $iendm = $$ri_last[$line-1];
-                  $actual_pos = total_line_length( $ibegm, $iendm ) + 1;
+                elsif ( $line > 0 ) {
+                    my $ibegm = $$ri_first[ $line - 1 ];
+                    my $iendm = $$ri_last[ $line - 1 ];
+                    $actual_pos = total_line_length( $ibegm, $iendm ) + 1;
                 }
                 else {
-                  $actual_pos = $predicted_pos;
+                    $actual_pos = $predicted_pos;
                 }
 
-                my $move_right    = $actual_pos - $predicted_pos;
+                my $move_right = $actual_pos - $predicted_pos;
 
                 # done if no error to correct
                 next unless ($move_right);
@@ -5093,16 +5109,12 @@ sub correct_lp_indentation {
                 # dependent nodes or need to move right. 
 
                 my $right_margin = 0;
-                my $ending_comma_count = 0;
                 my $have_child = $indentation->get_HAVE_CHILD();
                 if ( $have_child || $move_right > 0 ) {
                     $have_child = 0;
                     my $max_length = 0;
                     if ( $i == $ibeg ) {
                         $max_length = total_line_length( $ibeg, $iend );
-                        if ( $tokens_to_go[$iend] eq ',' ) {
-                            $ending_comma_count++;
-                        }
                     }
 
                     # look ahead at the rest of the lines of this batch..
@@ -5126,14 +5138,18 @@ sub correct_lp_indentation {
                         if ( $length_t > $max_length ) {
                             $max_length = $length_t;
                         }
-                        if ( $tokens_to_go[$iend_t] eq ',' ) {
-                            $ending_comma_count++;
-                        }
                     }
                     $right_margin =
                       $rOpts->{'maximum-line-length'} - $max_length;
                     if ( $right_margin < 0 ) { $right_margin = 0 }
                 }
+
+                # This is a simple approximate test for vertical alignment:
+                # if we broke just after an opening paren, brace, bracket,
+                # then we are probably vertically aligned.  We could
+                # set an exact flag in sub scan_list, but this is good
+                # enough.
+                my $is_vertically_aligned = ( $i == $ibeg );
 
                 # Make the move if possible ..
                 # Must not be any dependent indentation..
@@ -5142,7 +5158,7 @@ sub correct_lp_indentation {
                   # we can always move left, but we can only move right if
                   # we are sure it will not spoil vertical alignment,
                   # which is implied by ending commas
-                  && ( $move_right < 0 || !$ending_comma_count ) )
+                  && ( $move_right < 0 || !$is_vertically_aligned ) )
                 {
                     my $move =
                       ( $move_right <= $right_margin ) ? $move_right :
@@ -5316,6 +5332,7 @@ sub output_line_to_go {
             $patterns[0] = "";
             for $i ( $ibeg .. $iend ) {
 
+# if we find a new synchronization token, we are done with a field
                 if ( ( $i > $i_start ) && ( $matching_token_to_go[$i] ne ' ' ) )
                 {
 
@@ -5326,15 +5343,21 @@ sub output_line_to_go {
                         $tok .= "$nesting_depth_to_go[$i]";
                     }
 
+# concatenate the text of the consecutive tokens to form the field
                     push ( @fields,
                       join ( '', @tokens_to_go[ $i_start .. $i - 1 ] ) );
 
+                    # store the alignment token for this field
                     push ( @tokens, $tok );
+
+                    # get ready for the next batch
                     $i_start = $i;
                     $j++;
                     $patterns[$j] = "";
                 }
 
+                # continue accumulating tokens
+                # handle non-keywords..
                 if ( $types_to_go[$i] ne 'k' ) {
                     my $type = $types_to_go[$i];
 
@@ -5349,8 +5372,14 @@ sub output_line_to_go {
                             $type = 'Q';
                         }
                     }
+
+                    # minor patch to make numbers and quotes align
+                    if ( $type eq 'n' ) { $type = 'Q' }
+
                     $patterns[$j] .= $type;
                 }
+
+                # for keywords we have to use the actual text
                 else {
 
                     # a little patch to keep one-line blocks lined up
@@ -5360,8 +5389,11 @@ sub output_line_to_go {
                     $patterns[$j] .= $tok;
                 }
             }
+
+            # done with this line .. join text of tokens to make the last field
             push ( @fields, join ( '', @tokens_to_go[ $i_start .. $iend ] ) );
 
+            # we need to know the last token of this line
             my ( $terminal_type, $i_terminal ) =
               terminal_type( \@types_to_go, \@block_type_to_go, $ibeg, $iend );
 
@@ -5372,10 +5404,14 @@ sub output_line_to_go {
             # Most lines are indented according to the initial token.
             # But it is common to outdent to the level just after the
             # terminal token in certain cases...
-            my $use_terminal_indentation = 0;
-            if ( !$rOpts->{'indent-closing-brace'}
-              && $ci_levels_to_go[$ibeg] > 0 )
-            {
+            # adjust_indentation flag:
+            #       0 - do not adjust
+            #       1 - outdent
+            #      -1 - indent
+            my $adjust_indentation = 0;
+
+# Patch - really should be sure this is not a block termination here:
+            if ( $ci_levels_to_go[$ibeg] > 0 ) {
 
                 # if we are at a closing structural token..
                 if ( $tokens_to_go[$ibeg] =~ /^[\)\}\]]$/
@@ -5388,14 +5424,34 @@ sub output_line_to_go {
                   && ( $nesting_depth_to_go[$iend] + 1 ==
                   $nesting_depth_to_go[$ibeg] ) ) )
                 {
-                    $use_terminal_indentation = 1;
+
+                    if ( !$rOpts->{'indent-closing-paren'} ) {
+                        $adjust_indentation = 1;
+                    }
+                    else {
+
+                        # only indent non-blocks of the form );  };  ];
+                        if ( $i_terminal == $ibeg + 1
+                          && !$block_type_to_go[$ibeg] )
+                        {
+                            $adjust_indentation = -1;
+                        }
+                        else {
+                            $adjust_indentation = 1;
+                        }
+                    }
                 }
 
                 # and at ');', '};', '>;', and '];' of a terminal qw quote
                 elsif ( $patterns[0] =~ /^qb*;$/
                   && $fields[0] =~ /^[\)\}\]\>];$/ )
                 {
-                    $use_terminal_indentation = 1;
+                    if ( !$rOpts->{'indent-closing-paren'} ) {
+                        $adjust_indentation = 1;
+                    }
+                    else {
+                        $adjust_indentation = -1;
+                    }
                 }
             }
 
@@ -5407,12 +5463,19 @@ sub output_line_to_go {
             my $indentation;
             my $lev;
 
-            if ($use_terminal_indentation) {
+            if ( $adjust_indentation == 0 ) {
+                $indentation = $leading_spaces_to_go[$ibeg];
+                $lev         = $levels_to_go[$ibeg];
+            }
+            elsif ( $adjust_indentation == 1 ) {
                 $indentation = $reduced_spaces_to_go[$i_terminal];
                 $lev         = $levels_to_go[$i_terminal];
             }
             else {
-                $indentation = $leading_spaces_to_go[$ibeg];
+
+                # use previous indentation but use own level 
+                # to cause list to be flushed properly
+                $indentation = $last_indentation_written;
                 $lev         = $levels_to_go[$ibeg];
             }
 
@@ -5431,6 +5494,7 @@ sub output_line_to_go {
                 \@fields, \@tokens, \@patterns, $forced_breakpoint_to_go[$iend],
                 $outdent_long_lines, $is_terminal_statement
             );
+            $last_indentation_written = $indentation;
         }
     }
     prepare_for_a_new_line();
@@ -5438,10 +5502,10 @@ sub output_line_to_go {
 
 sub terminal_type {
 
-#    returns type of last token on this line (terminal token), as follows:
-#    returns # for a full-line comment
-#    returns ' ' for a blank line
-#    otherwise returns final token type
+    #    returns type of last token on this line (terminal token), as follows:
+    #    returns # for a full-line comment
+    #    returns ' ' for a blank line
+    #    otherwise returns final token type
 
     my ( $rtype, $rblock_type, $ibeg, $iend ) = @_;
 
@@ -5632,9 +5696,9 @@ sub set_bond_strengths {
         my $token      = $tokens_to_go[$i];
         my $block_type = $block_type_to_go[$i];
 
-        my $i_next     = $i + 1;
-        my $next_type  = $types_to_go[$i_next];
-        my $next_token = $tokens_to_go[$i_next];
+        my $i_next              = $i + 1;
+        my $next_type           = $types_to_go[$i_next];
+        my $next_token          = $tokens_to_go[$i_next];
         my $total_nesting_depth = $nesting_depth_to_go[$i_next];
 
         my $i_next_nonblank = ( ( $next_type eq 'b' ) ? $i + 2 : $i + 1 );
@@ -5948,11 +6012,11 @@ sub scan_list {
     # stored in the array @forced_breakpoint_to_go, which is used to set
     # final breakpoints.
 
-    my $starting_depth = $nesting_depth_to_go[0];
-    my $current_depth  = $starting_depth;
+    my $starting_depth                = $nesting_depth_to_go[0];
+    my $current_depth                 = $starting_depth;
     my @opening_structure_index_stack = ();
 
-    my @breakpoint_stack = ();
+    my @breakpoint_stack          = ();
     my $starting_breakpoint_count = $forced_breakpoint_count;
 
     my $depth;
@@ -5982,12 +6046,12 @@ sub scan_list {
     }
 
     $opening_structure_index_stack[$current_depth] = -1;
-    $breakpoint_stack[$current_depth] = $forced_breakpoint_count;
+    $breakpoint_stack[$current_depth]              = $forced_breakpoint_count;
 
     my $block_type = ' ';
     my $type       = ';';
     my $token      = ';';
-    my $i = -1;
+    my $i          = -1;
     my $next_nonblank_type;
     my $next_nonblank_token;
 
@@ -6026,8 +6090,8 @@ sub scan_list {
             $breakpoint_stack[$depth]              = $forced_breakpoint_count;
             $old_breakpoint_count_stack[$depth]    = $old_breakpoint_count;
             $breakpoint_undo_stack[$depth] = $forced_breakpoint_undo_count;
-            $last_equals_index[$depth] = undef;
-            $last_comma_index[$depth] = undef;
+            $last_equals_index[$depth]     = undef;
+            $last_comma_index[$depth]      = undef;
 
             $container_type[$depth] = $last_nonblank_token;
 
@@ -6072,7 +6136,7 @@ sub scan_list {
                 my $im2    = $i_opening - 2;
                 my $im3    = $i_opening - 3;
                 my $typem1 = $types_to_go[$im1];
-                if ( $token eq ')' )     { $i_opening_minus = $im1 }
+                if ( $token eq ')' ) { $i_opening_minus = $im1 }
                 elsif ( $typem1 eq 'k' ) { $i_opening_minus = $im1 }
                 elsif ( $typem1 eq 'b' && $im2 >= 0
                   && $types_to_go[$im2] eq 'k' )
@@ -6214,6 +6278,7 @@ sub scan_list {
                     # an open paren by a significant number of spaces.
                     # This can help save space across the page.  The
                     # constants in this are somewhat arbitrary
+
 =pod
 
 Here is an example of what this is trying to accomplish:
@@ -6388,8 +6453,8 @@ which is not as nice.
       $breakpoint_stack[$current_depth] != $forced_breakpoint_count;
     my $i_opening = $opening_structure_index_stack[$current_depth];
     set_list_breakpoints(
-        $i_opening,  $i,
-        $item_count, $identifier_count_stack[$current_depth],
+        $i_opening,                   $i,
+        $item_count,                  $identifier_count_stack[$current_depth],
         $comma_index[$current_depth], $interrupted_list[$current_depth],
         $max_length[$current_depth],
         $next_nonblank_type,
@@ -7015,7 +7080,7 @@ sub set_continuation_breaks {
         my $lowest_strength = NO_BREAK;
         my $starting_sum    = $lengths_to_go[$i_begin];
         my $i_lowest        = -1;
-        my $i_test = -1;
+        my $i_test          = -1;
 
         # loop to find next break point
         for ( $i_test = $i_begin ; $i_test <= $imax ; $i_test++ ) {
@@ -7027,8 +7092,8 @@ sub set_continuation_breaks {
               ( ( $next_type eq 'b' ) ? $i_test + 2 : $i_test + 1 );
             my $next_nonblank_type  = $types_to_go[$i_next_nonblank];
             my $next_nonblank_token = $tokens_to_go[$i_next_nonblank];
-            my $strength   = $bond_strength_to_go[$i_test];
-            my $must_break = 0;
+            my $strength            = $bond_strength_to_go[$i_test];
+            my $must_break          = 0;
 
             if (
 
@@ -7130,7 +7195,7 @@ sub set_continuation_breaks {
         push ( @i_last,
           ( $types_to_go[$i_lowest] eq 'b' ) ? $i_lowest - 1 : $i_lowest );
 
-        $i_begin = $i_lowest + 1;
+        $i_begin             = $i_lowest + 1;
         $last_break_strength = $lowest_strength;
 
         if ( ( $i_begin <= $imax ) && ( $types_to_go[$i_begin] eq 'b' ) ) {
@@ -7202,23 +7267,23 @@ sub compare_indentation_levels {
 package Perltidy::IndentationItem;
 
 # Indexes for indentation items
-use constant _SPACES             => 0;  # total leading white spaces
-use constant _LEVEL              => 1;  # the indentation 'level'
-use constant _CI_LEVEL           => 2;  # the 'continuation level'
-use constant _AVAILABLE_SPACES   => 3;  # how many left spaces available
-                                                # for this level
-use constant _CLOSED             => 4;  # index where we saw closing '}'
-use constant _COMMA_COUNT        => 5;  # how many commas at this level?
-use constant _SEQUENCE_NUMBER    => 6;  # output batch number
-use constant _INDEX              => 7;  # index in output batch list
-use constant _HAVE_CHILD         => 8;  # any dependents?
-use constant _RECOVERABLE_SPACES => 9;  # how many spaces to the right
-                                                # we would like to move to get
-                                                # alignment (negative if left)
-use constant _ALIGN_PAREN        => 10; # do we want to try to align
-                                                # with an opening structure?
-use constant _MARKED             => 11; # if visited by corrector logic
-use constant _STACK_DEPTH        => 12; # indentation nesting depth
+use constant _SPACES             => 0;     # total leading white spaces
+use constant _LEVEL              => 1;     # the indentation 'level'
+use constant _CI_LEVEL           => 2;     # the 'continuation level'
+use constant _AVAILABLE_SPACES   => 3;     # how many left spaces available
+                                           # for this level
+use constant _CLOSED             => 4;     # index where we saw closing '}'
+use constant _COMMA_COUNT        => 5;     # how many commas at this level?
+use constant _SEQUENCE_NUMBER    => 6;     # output batch number
+use constant _INDEX              => 7;     # index in output batch list
+use constant _HAVE_CHILD         => 8;     # any dependents?
+use constant _RECOVERABLE_SPACES => 9;     # how many spaces to the right
+                                           # we would like to move to get
+                                           # alignment (negative if left)
+use constant _ALIGN_PAREN        => 10;    # do we want to try to align
+                                           # with an opening structure?
+use constant _MARKED             => 11;    # if visited by corrector logic
+use constant _STACK_DEPTH        => 12;    # indentation nesting depth
 
 sub new {
 
@@ -7468,28 +7533,28 @@ sub initialize {
     $maximum_line_index  = -1;    # lines in the current group
     $maximum_field_index = -1;    # fields in the current group
 
-    $group_level = 0;
+    $group_level              = 0;
     $last_group_level_written = -1;
-    $extra_indent_ok     = 0;     # can we move all lines to the right?
-    $group_list_type     = "";
-    $zero_count          = 0;     # count consecutive lines without tokens
-    @columns             = ();    # list of columns of matching tokens
-    @starting_columns    = ();    # list of columns of matching tokens
-    @matching_tokens     = ();    # tokens being matched
-    @matching_patterns   = ();    # patterns being matched
-    $last_comment_column = 0;
+    $extra_indent_ok          = 0;     # can we move all lines to the right?
+    $group_list_type          = "";
+    $zero_count               = 0;     # count consecutive lines without tokens
+    @columns                  = ();    # list of columns of matching tokens
+    @starting_columns         = ();    # list of columns of matching tokens
+    @matching_tokens          = ();    # tokens being matched
+    @matching_patterns        = ();    # patterns being matched
+    $last_comment_column      = 0;
     $lines_since_last_side_comment      = 0;
     $last_lines_since_last_side_comment = 0;
-    $starting_jmax     = 0;
-    $maximum_jmax_seen = 0;
-    $minimum_jmax_seen = 0;
+    $starting_jmax                      = 0;
+    $maximum_jmax_seen                  = 0;
+    $minimum_jmax_seen                  = 0;
 
     # variables describing each line of the group
-    @ci = ();                     # continuation indentation
+    @ci                  = ();    # continuation indentation
     @leading_space_count = ();    # number of leading spaces
-    @fields = ();                 # reference to list of columns
-    @outdent_long_lines = ();     # flag indicating if ok to outdent long lines
-    @indentation        = ();     # indentation object
+    @fields              = ();    # reference to list of columns
+    @outdent_long_lines  = ();    # flag indicating if ok to outdent long lines
+    @indentation         = ();    # indentation object
 
     $outdented_line_count    = 0;
     $first_outdented_line_at = 0;
@@ -7646,6 +7711,11 @@ The log file warns the user if there are any such tabs.
 
         $last_comment_column = 0;
         $group_level         = $level;
+
+# wait until after the above flush to get the leading space count because it 
+        # may have been changed if the -icp flag is in effect
+        $leading_space_count = get_SPACES($indentation);
+
     }
 
     # --------------------------------------------------------------------
@@ -7667,24 +7737,10 @@ The log file warns the user if there are any such tabs.
             }
         }
 
-        # write directly if no current group and no side comment
-        if ( $maximum_line_index < 0 ) {
-
-            # Recover spaces if possible
-            if ( $extra_indent_ok && ref($indentation) ) {
-                my $extra_indentation_spaces_wanted =
-                  get_RECOVERABLE_SPACES($indentation);
-                if ($extra_indentation_spaces_wanted) {
-                    my $avail =
-                      $rOpts->{'maximum-line-length'} -
-                      ( length( $$rfields[0] ) + $leading_space_count );
-                    my $extra_leading_spaces =
-                      ( $avail > $extra_indentation_spaces_wanted ) ?
-                      $extra_indentation_spaces_wanted : $avail;
-                    $leading_space_count += $extra_leading_spaces;
-                }
-            }
-
+        # just write this line directly if no current group, no side comment,
+        # and no space recovery is needed.
+        if ( $maximum_line_index < 0 && !get_RECOVERABLE_SPACES($indentation) )
+        {
             write_leader_and_string( $leading_space_count, $$rfields[0], 0,
                 $outdent_long_lines );
             $lines_since_last_side_comment++;
@@ -7716,7 +7772,7 @@ The log file warns the user if there are any such tabs.
     {
 
         $is_hanging_side_comment = 1;
-        $jmax = $maximum_field_index;
+        $jmax                    = $maximum_field_index;
         $$rfields[$jmax] = $$rfields[1];
         $$rtokens[ $jmax - 1 ] = $$rtokens[0];
         $$rpatterns[ $jmax - 1 ] = $$rpatterns[0];
@@ -7797,12 +7853,12 @@ The log file warns the user if there are any such tabs.
       && ( length( $fields[0][$maximum_field_index] ) > 0 )  # with side comment
       )
     {
-        my @new_columns = ();
-        my @new_starting_columns = ();
-        my @new_fields = ();
+        my @new_columns           = ();
+        my @new_starting_columns  = ();
+        my @new_fields            = ();
         my @new_matching_patterns = ();
         my @new_matching_tokens   = ();
-        $new_columns[0] = $columns[0];
+        $new_columns[0]          = $columns[0];
         $new_starting_columns[0] = $starting_columns[0];
         my $j = 0;
         my $k;
@@ -7818,12 +7874,12 @@ The log file warns the user if there are any such tabs.
 
             if ( $matching_tokens[$k] eq $$rtokens[$j] ) {
                 $in_match = 1;
-                $new_matching_tokens[$j] = $matching_tokens[$k];
-                $new_fields[$j] = $current_field;
+                $new_matching_tokens[$j]   = $matching_tokens[$k];
+                $new_fields[$j]            = $current_field;
                 $new_matching_patterns[$j] = $current_pattern;
                 $current_field   = '';
                 $current_pattern = '';
-                $new_columns[ $j + 1 ] = $columns[ $k + 1 ];
+                $new_columns[ $j + 1 ]          = $columns[ $k + 1 ];
                 $new_starting_columns[ $j + 1 ] = $starting_columns[ $k + 1 ];
                 $j++;
             }
@@ -7842,13 +7898,13 @@ The log file warns the user if there are any such tabs.
             $k = $maximum_field_index;
             $current_field .= $fields[0][$k];
             $current_pattern .= $matching_patterns[$k];
-            $new_fields[$j] = $current_field;
+            $new_fields[$j]            = $current_field;
             $new_matching_patterns[$j] = $current_pattern;
-            $new_columns[ $j + 1 ] = $columns[ $k + 1 ];
+            $new_columns[ $j + 1 ]          = $columns[ $k + 1 ];
             $new_starting_columns[ $j + 1 ] = $starting_columns[ $k + 1 ];
             $maximum_field_index = $j;
             $fields[$maximum_line_index] = \@new_fields;
-            @columns = @new_columns;
+            @columns           = @new_columns;
             @starting_columns  = @new_starting_columns;
             @matching_tokens   = @new_matching_tokens;
             @matching_patterns = @$rpatterns;
@@ -7994,17 +8050,21 @@ The log file warns the user if there are any such tabs.
             }
 
             # sudden increase or decrease in whitespace space looks bad 
-            # (unless this is a list or side comment).  The number '8' 
-            # is empirical, and could be yet another parameter...
+            # (unless this is a list or side comment).  The number was
+            # initially '8', but that seems too small and it is now a parameter
             # ( eight.t )
+            # my $eight    = $group_list_type ? 12 : 8;
             my $big_jump = 0;
-            my $eight    = $group_list_type ? 12 : 8;
+            my $eight    =
+              $group_list_type ? 1.5 * $rOpts->{'big-space-jump'} :
+              $rOpts->{'big-space-jump'};
+
             if ( !$is_hanging_side_comment && $j < $jmax - 1 ) {
 
-                # a sudden increase of over 8 spaces is too much
+                # a sudden increase of over '8' spaces is too much
                 if ( $pad > $eight ) { $big_jump = 1 }
 
-                # a sudden decrease of over 8 spaces to a new low is too much
+                # a sudden decrease of over '8' spaces to a new low is too much
                 elsif ( $pad < 0 ) {
                     my $test_pad =
                       length( $$rfields[$j] ) -
@@ -8061,7 +8121,7 @@ The log file warns the user if there are any such tabs.
     $leading_space_count[$maximum_line_index] = $leading_space_count;
     $indentation[$maximum_line_index]         = $indentation;
     $outdent_long_lines[$maximum_line_index]  = $outdent_long_lines;
-    $fields[$maximum_line_index] = $rfields;
+    $fields[$maximum_line_index]              = $rfields;
 
     # initialize field lengths if starting new group
     if ( $maximum_line_index == 0 ) {
@@ -8237,7 +8297,7 @@ use overload '+' => \&plus,
 
         for my $i ( 0 .. $maximum_line_index ) {
             my $leading_space_count = $leading_space_count[$i];
-            my $gap =
+            my $gap                 =
               $columns[1] - $leading_space_count - length( $fields[$i][0] );
 
             if ( $leading_space_count > $group_leader_length ) {
@@ -8317,6 +8377,11 @@ This old coding is no longer necessary:
                 $extra_leading_spaces =
                   ( $avail > $extra_indentation_spaces_wanted ) ?
                   $extra_indentation_spaces_wanted : $avail;
+
+                # update the indentation object because with -icp the terminal
+                # ');' will use the same adjustment.
+                $object->permanently_decrease_AVAILABLE_SPACES(
+                    -$extra_leading_spaces );
             }
         }
     }
@@ -8460,7 +8525,7 @@ sub write_leader_and_string {
 
     $file_writer_object->write_code_line( $leading_string . $str . "\n" );
     $last_group_level_written = $group_level;
-    $extra_indent_ok = 0;
+    $extra_indent_ok          = 0;
 }
 
 sub get_leading_string {
@@ -8530,7 +8595,7 @@ package Perltidy::FileWriter;
 use constant MAX_NAG_MESSAGES => 6;
 
 sub write_logfile_entry {
-    my $self = shift;
+    my $self          = shift;
     my $logger_object = $self->{_logger_object};
     if ($logger_object) {
         $logger_object->write_logfile_entry(@_);
@@ -8673,8 +8738,8 @@ sub write_line {
 }
 
 sub report_line_length_errors {
-    my $self  = shift;
-    my $rOpts = $self->{_rOpts};
+    my $self                    = shift;
+    my $rOpts                   = $self->{_rOpts};
     my $line_length_error_count = $self->{_line_length_error_count};
     if ( $line_length_error_count == 0 ) {
         $self->write_logfile_entry(
@@ -8743,7 +8808,7 @@ sub really_open_debug_file {
         warn("can't open $debug_file: $!\n");
     }
     $self->{_debug_file_opened} = 1;
-    $self->{_fh} = $fh;
+    $self->{_fh}                = $fh;
     print $fh "Use -dump-token-types to get a list of token type codes\n";
 }
 
@@ -8776,9 +8841,9 @@ sub write_debug_entry {
 
     my ( $j, $num );
 
-    my $token_str = "$input_line_number: ";
+    my $token_str              = "$input_line_number: ";
     my $reconstructed_original = "$input_line_number: ";
-    my $block_str = "$input_line_number: ";
+    my $block_str              = "$input_line_number: ";
 
     #$token_str .= "$line_type: ";
     #$reconstructed_original .= "$line_type: ";
@@ -8842,7 +8907,7 @@ package Perltidy::LineBuffer;
 
 sub new {
 
-    my $class = shift;
+    my $class              = shift;
     my $line_source_object = shift;
 
     return bless {
@@ -8854,7 +8919,7 @@ sub new {
 sub peek_ahead {
     my $self = shift;
     my ($buffer_index) = @_;
-    my $line = undef;
+    my $line               = undef;
     my $input_file_copy    = $self->{_input_file_copy};
     my $line_source_object = $self->{_line_source_object};
     my $rlookahead_buffer  = $self->{_rlookahead_buffer};
@@ -8869,8 +8934,8 @@ sub peek_ahead {
 }
 
 sub get_line {
-    my $self = shift;
-    my $line = undef;
+    my $self               = shift;
+    my $line               = undef;
     my $line_source_object = $self->{_line_source_object};
     my $rlookahead_buffer  = $self->{_rlookahead_buffer};
 
@@ -9041,22 +9106,22 @@ sub new {
         _line_start_quote    => -1,
         _starting_level      => $args{starting_level},
         _know_starting_level => defined( $args{starting_level} ),
-        _tabs               => $args{tabs},
-        _indent_columns     => $args{indent_columns},
-        _look_for_hash_bang => $args{look_for_hash_bang},
-        _trim_qw            => $args{trim_qw},
-        _input_tabstr       => "",
-        _know_input_tabstr  => -1,
-        _last_line_number   => 0,
-        _saw_perl_dash_P    => 0,
-        _saw_perl_dash_w    => 0,
-        _saw_use_strict     => 0,
-        _saw_hash_bang      => 0,
-        _saw_lc_filehandle  => 0,
-        _line_buffer_object => $line_buffer_object,
-        _debugger_object    => $args{debugger_object},
-        _diagnostics_object => $args{diagnostics_object},
-        _logger_object      => $args{logger_object},
+        _tabs                => $args{tabs},
+        _indent_columns      => $args{indent_columns},
+        _look_for_hash_bang  => $args{look_for_hash_bang},
+        _trim_qw             => $args{trim_qw},
+        _input_tabstr        => "",
+        _know_input_tabstr   => -1,
+        _last_line_number    => 0,
+        _saw_perl_dash_P     => 0,
+        _saw_perl_dash_w     => 0,
+        _saw_use_strict      => 0,
+        _saw_hash_bang       => 0,
+        _saw_lc_filehandle   => 0,
+        _line_buffer_object  => $line_buffer_object,
+        _debugger_object     => $args{debugger_object},
+        _diagnostics_object  => $args{diagnostics_object},
+        _logger_object       => $args{logger_object},
     };
 
     prepare_for_a_new_file();
@@ -9627,7 +9692,7 @@ sub find_indentation_level {
         if ( $leading_whitespace eq "\t" x $structural_indentation_level ) {
             if ( $leading_whitespace eq "\t" x $structural_indentation_level ) {
                 $input_tabstr = "\t";
-                $msg = "Guessing old indentation was tab character\n";
+                $msg          = "Guessing old indentation was tab character\n";
             }
         }
 
@@ -9779,42 +9844,42 @@ sub dump_functions {
 
 sub prepare_for_a_new_file {
     $saw_negative_indentation = 0;
-    $id_scan_state       = '';
-    $statement_type      = '';     # currently either '' or 'use'
-    $last_nonblank_token = ';';    # the only possible starting state which
-    $last_nonblank_type  = ';';    # will make a leading brace a code block
-    $identifier          = '';
+    $id_scan_state            = '';
+    $statement_type           = '';     # currently either '' or 'use'
+    $last_nonblank_token      = ';';    # the only possible starting state which
+    $last_nonblank_type       = ';';    # will make a leading brace a code block
+    $identifier               = '';
     $in_quote   = 0;     # flag telling if we are chasing a quote, and what kind
     $quote_type = 'Q';
     $quote_character = "";    # character we seek if chasing a quote
     $quote_pos   = 0;  # next character index to check for case of alphanum char
     $quote_depth = 0;
     $allowed_quote_modifiers = "";
-    $paren_depth = 0;
-    $brace_depth = 0;
-    $square_bracket_depth = 0;
-    $current_package = "main";
+    $paren_depth             = 0;
+    $brace_depth             = 0;
+    $square_bracket_depth    = 0;
+    $current_package         = "main";
     @current_depth[ 0 .. 2 ] = ( 0, 0, 0 );
     $paren_type[$paren_depth] = '';
     $brace_type[$brace_depth] = ';';    # identify opening brace as code block
-    $brace_structural_type[$brace_depth]        = '';
-    $brace_context[$brace_depth]                = UNKNOWN_CONTEXT;
-    $paren_structural_type[$brace_depth]        = '';
-    $square_bracket_type[$square_bracket_depth] = '';
+    $brace_structural_type[$brace_depth]                   = '';
+    $brace_context[$brace_depth]                           = UNKNOWN_CONTEXT;
+    $paren_structural_type[$brace_depth]                   = '';
+    $square_bracket_type[$square_bracket_depth]            = '';
     $square_bracket_structural_type[$square_bracket_depth] = '';
-    $brace_package[$paren_depth] = $current_package;
-    %is_constant            = ();                # user-defined constants
-    %is_user_function       = ();                # user-defined functions
-    %is_block_function      = ();
-    %is_block_list_function = ();
-    $unexpected_error_count = 0;
-    $want_paren             = "";
-    $context                = UNKNOWN_CONTEXT;
-    @slevel_stack           = ();
-    $ci_string_in_tokenizer = "";
+    $brace_package[$paren_depth]                           = $current_package;
+    %is_constant                      = ();             # user-defined constants
+    %is_user_function                 = ();             # user-defined functions
+    %is_block_function                = ();
+    %is_block_list_function           = ();
+    $unexpected_error_count           = 0;
+    $want_paren                       = "";
+    $context                          = UNKNOWN_CONTEXT;
+    @slevel_stack                     = ();
+    $ci_string_in_tokenizer           = "";
     $continuation_string_in_tokenizer = "0";
     $in_statement_continuation        = 0;
-    @lower_case_labels_at = ();
+    @lower_case_labels_at             = ();
     $saw_v_string         = 0;     # for warning of v-strings on older perl
     $nesting_token_string = "";
     $nesting_type_string  = "";
@@ -9931,9 +9996,9 @@ current version.
 
 =cut
 
-    use constant BRACE => 0;
+    use constant BRACE          => 0;
     use constant SQUARE_BRACKET => 1;
-    use constant PAREN => 2;
+    use constant PAREN          => 2;
     my ($line_of_tokens)       = @_;
     my ($untrimmed_input_line) = $line_of_tokens->{_line_text};
 
@@ -9971,8 +10036,8 @@ current version.
     my @output_token_type = ();    # token types
     my @output_block_type = ();    # types associated with ( ) { }
 
-    my $tok  = $last_nonblank_token;
-    my $type = $last_nonblank_type;
+    my $tok             = $last_nonblank_token;
+    my $type            = $last_nonblank_type;
     my $last_nonblank_i = -1;
     my $block_type      = "";
     my $next_tok;
@@ -9996,8 +10061,8 @@ current version.
       pre_tokenize( $input_line, $max_tokens_wanted );
 
     $max_token_index = scalar(@$rpretokens) - 1;
-    push ( @$rpretokens, ' ', ' ', ' ' );    # extra whitespace simplifies logic
-    push ( @$rpretoken_map, 0, 0, 0 );       # shouldn't be referenced
+    push ( @$rpretokens,    ' ', ' ', ' ' ); # extra whitespace simplifies logic
+    push ( @$rpretoken_map, 0,   0,   0 );   # shouldn't be referenced
     push ( @$rpretoken_type, 'b', 'b', 'b' );
 
     # temporary copies while coding change is underway
@@ -10156,10 +10221,10 @@ EOM
         # test file: storrs4.pl
         my $test_tok = $tok . $$rtokens[ $i + 1 ];
 
-        if ( $is_digraph{$test_tok} && ( $test_tok ne '/=' )  # might be pattern
-          && ( $test_tok ne 'x=' )                            # might be $x
-          && ( $test_tok ne '**' )                            # typeglob?
-          && ( $test_tok ne '*=' ) )                          # typeglob?
+        if ( $is_digraph{$test_tok} && ( $test_tok ne '/=' )    # might be pattern
+          && ( $test_tok ne 'x=' )      # might be $x
+          && ( $test_tok ne '**' )      # typeglob?
+          && ( $test_tok ne '*=' ) )    # typeglob?
         {
             $tok = $test_tok;
             $i++;
@@ -10323,7 +10388,7 @@ EOM
 
                 # NOTE: camel 3 says egimosx, but 'c' is accepeted by perl
                 $allowed_quote_modifiers = '[cegimosx]';
-                $type = 'Q';
+                $type                    = 'Q';
             }
 
             elsif ( $tok =~ /^((y)|(tr))$/ ) {    # built-in functions
@@ -10332,23 +10397,23 @@ EOM
                 }
                 $in_quote = 2;    # starting first of two patterns/quotes
                 $allowed_quote_modifiers = '[cds]';
-                $type = 'Q';
+                $type                    = 'Q';
             }
 
             elsif ( $tok eq 'm' ) {    # match operator
                 if ( $expecting == OPERATOR ) {
                     unexpected( $tok, "operator", $i_tok, $last_nonblank_i );
                 }
-                $in_quote = 1;
+                $in_quote                = 1;
                 $allowed_quote_modifiers = '[cgimosx]';
-                $type = 'Q';
+                $type                    = 'Q';
             }
 
             elsif ( $tok =~ /^(q|qq|qw|qx)$/ ) {    # various quote operators
                 if ( $expecting == OPERATOR ) {
                     unexpected( $tok, "operator", $i_tok, $last_nonblank_i );
                 }
-                $in_quote = 1;
+                $in_quote                = 1;
                 $allowed_quote_modifiers = "";
 
                 # All quote types are 'Q' except possibly qw quotes.
@@ -10364,10 +10429,10 @@ EOM
                 if ( $expecting == OPERATOR ) {
                     unexpected( $tok, "operator", $i_tok, $last_nonblank_i );
                 }
-                $in_quote = 1;
+                $in_quote                = 1;
                 $allowed_quote_modifiers = '[imosx]';    # camel 3 p 147
-                $type       = 'Q';
-                $quote_type = $type;
+                $type                    = 'Q';
+                $quote_type              = $type;
             }
 
             # check for a statement label
@@ -10538,8 +10603,8 @@ EOM
                     unexpected( "String", "operator", $i_tok,
                         $last_nonblank_i );
                 }
-                $in_quote = 1;
-                $type     = 'Q';
+                $in_quote                = 1;
+                $type                    = 'Q';
                 $allowed_quote_modifiers = "";
                 redo;
             }
@@ -10559,8 +10624,8 @@ EOM
                 else { $is_pattern = ( $expecting == TERM ) }
 
                 if ($is_pattern) {
-                    $in_quote = 1;
-                    $type     = 'Q';
+                    $in_quote                = 1;
+                    $type                    = 'Q';
                     $allowed_quote_modifiers = '[cgimosx]';
                     redo;
                 }
@@ -10706,8 +10771,8 @@ EOM
                 else { $is_pattern = ( $expecting == TERM ) }
 
                 if ($is_pattern) {
-                    $in_quote = 1;
-                    $type     = 'Q';
+                    $in_quote                = 1;
+                    $type                    = 'Q';
                     $allowed_quote_modifiers = '[cgimosx]';    # TBD:check this
                     redo;
                 }
@@ -11177,7 +11242,7 @@ indentation, but only single continuation-indentation
             if ( length($nesting_block_string) > 1 ) {   # true for valid script
                 chop $nesting_block_string;
                 chop $ci_string_in_tokenizer;
-                $ci_string_sum = sum_ones($ci_string_in_tokenizer);
+                $ci_string_sum             = sum_ones($ci_string_in_tokenizer);
                 $in_statement_continuation =
                   chop $continuation_string_in_tokenizer;
 
@@ -11304,7 +11369,7 @@ indentation, but only single continuation-indentation
         push ( @tokens, substr( $input_line, $$rtoken_map[$im], $num ) );
     }
 
-    $tokenizer_self->{_in_quote} = $in_quote;
+    $tokenizer_self->{_in_quote}          = $in_quote;
     $tokenizer_self->{_rhere_target_list} = \@here_target_list;
 
     $line_of_tokens->{_rtoken_type}     = \@token_type;
@@ -11977,9 +12042,9 @@ sub peek_ahead_for_nonblank_token {
     {
         $line =~ s/^\s*//;    # trim leading blanks
         next if ( length($line) <= 0 );    # skip blank
-        next if ( $line =~ /^#/ );    # skip comment
+        next if ( $line =~ /^#/ );         # skip comment
         my ( $rtok, $rmap, $rtype ) =
-          pre_tokenize( $line, 2 );    # only need 2 pre-tokens
+          pre_tokenize( $line, 2 );        # only need 2 pre-tokens
         my $j = $max_token_index + 1;
         my $tok;
 
@@ -12409,7 +12474,7 @@ sub find_here_doc {
         if ($here_doc_expected) {
             $found_target    = 1;
             $here_doc_target = $next_token;
-            $i = $ibeg + 1;
+            $i               = $ibeg + 1;
         }
 
     }
@@ -12825,7 +12890,7 @@ scanned and handled and a value of '' is returned.
 
     # find $i_beg = index of next nonblank token,
     # and handle empty lines
-    my $blank_line = 0;
+    my $blank_line          = 0;
     my $next_nonblank_token = $$rtokens[$i_beg];
     if ( $i_beg > $max_token_index ) {
         $blank_line = 1;
@@ -13026,8 +13091,8 @@ updated id_scan_state and the next index after the identifier.
     if ( $tok_begin eq ':' ) { $tok_begin = '::' }
     my $id_scan_state_begin = $id_scan_state;
     my $identifier_begin    = $identifier;
-    my $tok     = $tok_begin;
-    my $message = "";
+    my $tok                 = $tok_begin;
+    my $message             = "";
 
     # these flags will be used to help figure out the type:
     my $saw_alpha = ( $tok =~ /[A-Za-z_]/ );
@@ -13107,7 +13172,7 @@ updated id_scan_state and the next index after the identifier.
 
                 # we've got a punctuation variable if end of line (punct.t)
                 if ( $i == $max_token_index ) {
-                    $type = 'i';
+                    $type          = 'i';
                     $id_scan_state = '';
                     last;
                 }
@@ -13159,8 +13224,8 @@ updated id_scan_state and the next index after the identifier.
 
                     if ( length($identifier) > 1 ) {
                         $id_scan_state = '';
-                        $i    = $i_save;
-                        $type = 'i';       # probably punctuation variable
+                        $i             = $i_save;
+                        $type          = 'i';    # probably punctuation variable
                         last;
                     }
                     else {
@@ -13248,7 +13313,7 @@ updated id_scan_state and the next index after the identifier.
             }
             elsif ( $tok eq '{' ) {
                 if ( $identifier eq '&' || $i == 0 ) { $identifier = ''; }
-                $i = $i_save;
+                $i             = $i_save;
                 $id_scan_state = '';
                 last;
             }
@@ -13261,8 +13326,8 @@ updated id_scan_state and the next index after the identifier.
                 }
                 else {
                     $identifier = '';
-                    $i    = $i_save;
-                    $type = '&';
+                    $i          = $i_save;
+                    $type       = '&';
                 }
                 $id_scan_state = '';
                 last;
@@ -13295,7 +13360,7 @@ updated id_scan_state and the next index after the identifier.
             }
             else {
                 $id_scan_state = '';
-                $i = $i_save;
+                $i             = $i_save;
                 last;
             }
         }
@@ -13318,8 +13383,8 @@ updated id_scan_state and the next index after the identifier.
             elsif ( $tok =~ /^[\']/ && $allow_tick ) {    # tick
 
                 if ( $is_keyword{$identifier} ) {
-                    $id_scan_state = '';    # that's all
-                    $i = $i_save;
+                    $id_scan_state = '';        # that's all
+                    $i             = $i_save;
                 }
                 else {
                     $identifier .= $tok;
@@ -13334,8 +13399,8 @@ updated id_scan_state and the next index after the identifier.
                 $identifier .= $tok;
             }
             else {
-                $id_scan_state = '';    # that's all
-                $i = $i_save;
+                $id_scan_state = '';        # that's all
+                $i             = $i_save;
                 last;
             }
         }
@@ -13349,8 +13414,8 @@ updated id_scan_state and the next index after the identifier.
                 $identifier .= $tok;
             }
             else {
-                $id_scan_state = '';    # that's all - no prototype
-                $i = $i_save;
+                $id_scan_state = '';        # that's all - no prototype
+                $i             = $i_save;
                 last;
             }
         }
@@ -13371,7 +13436,7 @@ updated id_scan_state and the next index after the identifier.
         }
         else {    # can get here due to error in initialization
             $id_scan_state = '';
-            $i = $i_save;
+            $i             = $i_save;
             last;
         }
     }

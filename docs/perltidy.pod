@@ -336,6 +336,18 @@ choose newlines will all conflict with B<-lp> and will cause B<-lp> to
 be deactivated.  These include 
 B<-io>, B<-fnl>, B<-nanl>, and B<-ndnl>.
 
+=item B<-icp>, B<--indent-closing-paren>
+
+The B<-icp> option leaves a list-termination line of the form C<);>, C<};>,
+or C<];> indented with the same indentation as the previous line.  The
+previous example with B<-icp> would give,
+
+    @month_of_year = (          # -icp
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct',
+        'Nov', 'Dec'
+        );
+
+
 =item B<-ibc>,  B<--indent-block-comments>
 
 Block comments, meaning full-line comments, normally look best when they
@@ -671,6 +683,20 @@ which is hardwired to go at the end of lines in certain cases.
 Hopefully, this restriction will be removed in the future.  Another
 example is curly braces, which should be controlled with the
 parameter B<bl> provided for that purpose.
+
+=back
+
+=head2 Styles
+
+=over 4
+
+=item B<-gnu>, B<--gnu-style>
+
+B<-gnu> gives an approximation to the GNU Coding Standards (which do
+not apply to perl) as they are sometimes implemented.  At present, this
+style overrides the default style with the following parameters:
+
+    -lp -bl -noll -pt=2 -bt=2 -sbt=2 -icp
 
 =back
 

@@ -311,13 +311,6 @@ OPTIONS
         to choose newlines will all conflict with -lp and will cause -lp to
         be deactivated. These include -io, -fnl, -nanl, and -ndnl.
 
-    -mci=n, --maximum-continuation-indentation=n
-        When the -lp method is used for list indentation, excessive space
-        could cause an undesirable compression of a table against the right
-        margin, even if there is enough space to fit. To prevent this, an
-        upper limit can be placed on the allowable increment of indentation
-        spaces with the parameter -mci=n. The default is n=40.
-
     -ibc, --indent-block-comments
         Block comments, meaning full-line comments, normally look best when
         they are indented to the same level as the code which follows them.
@@ -921,7 +914,7 @@ SEE ALSO
     perl2web(1), perlstyle(1)
 
 VERSION
-    This man page documents perltidy version 20010617.
+    This man page documents perltidy version 20010625.
 
 AUTHOR
       Steven L. Hancock
