@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.7 2001/06/17 22:45:20 perltidy Exp $
+    $Id: perltidy,v 1.8 2001/06/18 15:02:50 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -2769,6 +2769,11 @@ sub write_line {
             if ( !$skip_line && $line_type eq 'POD_START' ) {
                 want_blank_line();
             }
+
+            # patch to retain an existing blank line after =cut
+            if ($line_type eq 'POD_END') {
+               $file_writer_object->reset_consecutive_blank_lines();
+            }
         }
 
         # write unindented non-code line
@@ -3701,6 +3706,7 @@ sub set_white_space_flag {
     required after adding new token types.
 
 =cut
+
     BEGIN {
 
         # whitespace codes
@@ -5062,21 +5068,19 @@ sub correct_lp_indentation {
     }
 }
 
-=pod
-flush() is called to output any tokens in the pipeline, so that
-an alternate source of lines can be written in the correct order
-=cut
+# flush is called to output any tokens in the pipeline, so that
+# an alternate source of lines can be written in the correct order
+
 sub flush {
     output_line_to_go();
     Perltidy::VerticalAligner::flush();
 }
 
-=pod
- output_line_to_go() sends one logical line of tokens on down the
- pipeline to the VerticalAligner package, breaking the line into continuation
- lines as necessary.  The line of tokens is ready to go in the "to_go"
- arrays.
-=cut
+# output_line_to_go sends one logical line of tokens on down the
+# pipeline to the VerticalAligner package, breaking the line into continuation
+# lines as necessary.  The line of tokens is ready to go in the "to_go"
+# arrays.
+
 sub output_line_to_go {
 
     # debug stuff; this routine can be called from many points
@@ -5346,6 +5350,7 @@ sub terminal_type {
 	returns ' ' for a blank line
 	otherwise returns final token type
 =cut
+
     my ( $rtype, $rblock_type, $ibeg, $iend ) = @_;
 
     # check for full-line comment..
@@ -7951,11 +7956,11 @@ sub dump_array {
     print "(@_)\n";
 }
 
-=pod====================================================================
+=pod
 
 flush() sends the current Perltidy::VerticalAligner group down the pipeline to Perltidy::FileWriter.
 
-=cut====================================================================
+=cut
 sub flush {
 
     if ( $VALIGN_DEBUG_FLAG{APPEND0} ) {
@@ -8421,6 +8426,11 @@ sub decrement_output_line_number {
 sub get_consecutive_nonblank_lines {
     my $self = shift;
     return $self->{_consecutive_nonblank_lines};
+}
+
+sub reset_consecutive_blank_lines {
+    my $self = shift;
+    $self->{_consecutive_blank_lines} = 0;
 }
 
 sub want_blank_line {
