@@ -121,7 +121,7 @@ the long forms, though often ridiculously long, are self-documenting and
 therefore useful in configuration scripts.  You may use either one or
 two dashes ahead of the parameters.  Also, the '=' sign is optional, 
 and may be a single space instead.  However, the value of a parameter
-must NOT be adjacent to the flag, like this <STRONG>-i3</STRONG> B(WRONG).  Also,
+must NOT be adjacent to the flag, like this <STRONG>-i3</STRONG> (WRONG).  Also,
 flags must be input separately, never bundled together.</P>
 <P>
 <H2><A NAME="line length and continuation indentation.">Line Length and Continuation Indentation.</A></H2>
@@ -347,10 +347,10 @@ are normally hidden.</P>
 use the <STRONG>-npro</STRONG> flag on the command line.</P>
 <P>
 <H2><A NAME="error reporting">Error Reporting</A></H2>
-<P>Let's perform a fire drill to see how perltidy reports errors.  Try
-introducing an extra opening brace somewhere in a test file.  For
-example, introducing an extra brace in the file listed above produces
-the following message on the terminal (or standard error output):</P>
+<P>Let's run through a 'fire drill' to see how perltidy reports errors.  Try
+introducing an extra opening brace somewhere in a test file.  For example,
+introducing an extra brace in the file listed above produces the following
+message on the terminal (or standard error output):</P>
 <PRE>
  Please see file testfile.pl.ERR!</PRE>
 <P>Here is what <EM>testfile.pl.ERR</EM> contains:</P>
@@ -379,8 +379,15 @@ errors, but you can control this with input flags, as follows:</P>
        default: report errors but not warnings
  -w    report all errors and warnings
  -q    do not report either errors or warnings</PRE>
-<P>The default is generally a good choice, but if you are trying to
-locate a bug, you might find the <STRONG>-w</STRONG> flag useful.</P>
+<P>The default is generally a good choice, but it's not a bad idea to check
+programs with <STRONG>-w</STRONG> occasionally, especially if your are looking for a
+bug.  For example, it will ask if you really want '=' instead of '=~' in
+this line:
+</P>
+<PRE>
+
+    $line = s/^\s*//;</PRE>
+<P>This kind of error can otherwise be hard to find.</P>
 <P>
 <H2><A NAME="syntax checking">Syntax Checking</A></H2>
 <P>Perltidy will normally try to check itself by running <CODE>perl -c</CODE> on both

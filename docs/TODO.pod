@@ -10,11 +10,9 @@ The ability to write a tokenized script in XML format looks
 very useful.  This would allow the creation of simple utilities to
 reliably manipulate perl code.
 
-This option is probably of greatest interest right now; hopefully the
-next release will have an experimental version.  The output will be
-controlled by a switch B<--format=s>, or simply B<-f=s>, where B<s>
-would be B<html>, B<xml>, or B<tidy>.  The current B<-html> flag would
-be mapped into B<-format=html>.
+The output will be controlled by a switch B<--format=s>, or simply B<-f=s>,
+where B<s> would be B<html>, B<xml>, or B<tidy>.  The current B<-html> flag
+would be mapped into B<-format=html>.
 
 =head2 Fix numerous little formatting issues
 
@@ -22,11 +20,6 @@ There is, and always will be, a large number of relatively minor
 formatting issues that need to be addressed.  I'm working on them as
 time permits.  Some of the most interesting have to do with
 automatically deciding the best number of columns to use for a table.
-
-=head2 Further Modularization
-
-The current version, which uses just a single module, will be further
-subdivided.
 
 =head2 BUGS
 
@@ -97,6 +90,11 @@ documents or quoted strings.  The tokenizer outputs interpolation
 information for here docs; it still needs to be updated to do this for
 multiline quotes.  Then code needs to be written to scan for and markup
 identifiers.
+
+=head2 Further Modularization
+
+The current version, which uses just a single module, will be further
+subdivided.
 
 =head2 Tokenization issues
 

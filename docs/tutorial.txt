@@ -94,7 +94,7 @@ A Brief Perltidy Tutorial
     therefore useful in configuration scripts. You may use either one or two
     dashes ahead of the parameters. Also, the '=' sign is optional, and may
     be a single space instead. However, the value of a parameter must NOT be
-    adjacent to the flag, like this -i3 B(WRONG). Also, flags must be input
+    adjacent to the flag, like this -i3 (WRONG). Also, flags must be input
     separately, never bundled together.
 
   Line Length and Continuation Indentation.
@@ -338,7 +338,7 @@ A Brief Perltidy Tutorial
     -npro flag on the command line.
 
   Error Reporting
-    Let's perform a fire drill to see how perltidy reports errors. Try
+    Let's run through a 'fire drill' to see how perltidy reports errors. Try
     introducing an extra opening brace somewhere in a test file. For
     example, introducing an extra brace in the file listed above produces
     the following message on the terminal (or standard error output):
@@ -371,8 +371,14 @@ A Brief Perltidy Tutorial
      -w    report all errors and warnings
      -q    do not report either errors or warnings
 
-    The default is generally a good choice, but if you are trying to locate
-    a bug, you might find the -w flag useful.
+    The default is generally a good choice, but it's not a bad idea to check
+    programs with -w occasionally, especially if your are looking for a bug.
+    For example, it will ask if you really want '=' instead of '=~' in this
+    line:
+
+        $line = s/^\s*//;
+
+    This kind of error can otherwise be hard to find.
 
   Syntax Checking
     Perltidy will normally try to check itself by running "perl -c" on both

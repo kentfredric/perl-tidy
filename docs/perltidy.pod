@@ -862,13 +862,16 @@ C<n=20> caused this text to be truncated, as indicated by the C<...>.
 =item B<-cscw>, or B<-closing-side-comment-warnings> 
 
 This parameter is intended to help make the initial transition to the use of
-closing side comments.  It will help prevent the loss of any existing side
-comment which happens to have the closing side comment prefix.  It causes two
+closing side comments.  
+It causes two
 things to happen if a closing side comment replaces an existing, different
 closing side comment:  first, an error message will be issued, and second, the
 original side comment will be placed alone on a new specially marked comment
 line for later attention. 
 
+The intent is to avoid clobbering existing hand-written side comments
+which happen to match the pattern of closing side comments. This flag
+should only be needed on the first run with B<-csc>.
 
 =back
 
@@ -1844,7 +1847,7 @@ perlstyle(1), Perl::Tidy(3)
 
 =head1 VERSION
 
-This man page documents perltidy version 20020222.
+This man page documents perltidy version 20020225.
 
 =head1 CREDITS
 

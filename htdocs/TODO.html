@@ -14,16 +14,17 @@
 	<LI><A HREF="#perltidy todo list">Perltidy TODO List</A></LI>
 	<UL>
 
+		<LI><A HREF="#xml output">XML Output</A></LI>
 		<LI><A HREF="#fix numerous little formatting issues">Fix numerous little formatting issues</A></LI>
-		<LI><A HREF="#modularization">Modularization</A></LI>
 		<LI><A HREF="#bugs">BUGS</A></LI>
-		<LI><A HREF="#improved : formatting">Improved ?: Formatting</A></LI>
+		<LI><A HREF="#improved : formatting">improved ?: formatting</A></LI>
 		<LI><A HREF="#improved vertical alignment">Improved Vertical Alignment</A></LI>
-		<LI><A HREF="#improved indentation of parenthesized terms">Improved indentation of parenthesized terms</A></LI>
+		<LI><A HREF="#implement 'vertical tightness' parameters">Implement 'Vertical Tightness' parameters</A></LI>
 		<LI><A HREF="#documentation">Documentation</A></LI>
 		<LI><A HREF="#html writer">HTML writer</A></LI>
+		<LI><A HREF="#further modularization">Further Modularization</A></LI>
 		<LI><A HREF="#tokenization issues">Tokenization issues</A></LI>
-		<LI><A HREF="#xml">XML</A></LI>
+		<LI><A HREF="#outdent block comments as a group">Outdent block comments as a group</A></LI>
 		<LI><A HREF="#option to reformat block comments">Option to reformat block comments</A></LI>
 		<LI><A HREF="#switch/case formatting">Switch/Case formatting</A></LI>
 	</UL>
@@ -38,38 +39,73 @@
 are of interest, but there is no particular schedule for implementing
 them.</P>
 <P>
-<H2><A NAME="fix numerous little formatting issues">Fix numerous little formatting issues</A></H2>
-<P>There is a vary large number of relatively minor formatting issues that
-need to be addressed.  I'm working on them as time permits.</P>
+<H2><A NAME="xml output">XML Output</A></H2>
+<P>The ability to write a tokenized script in XML format looks
+very useful.  This would allow the creation of simple utilities to
+reliably manipulate perl code.</P>
+<P>The output will be controlled by a switch <STRONG>--format=s</STRONG>, or simply <STRONG>-f=s</STRONG>,
+where <STRONG>s</STRONG> would be <STRONG>html</STRONG>, <STRONG>xml</STRONG>, or <STRONG>tidy</STRONG>.  The current <STRONG>-html</STRONG> flag
+would be mapped into <STRONG>-format=html</STRONG>.</P>
 <P>
-<H2><A NAME="modularization">Modularization</A></H2>
-<P>Modularization work is in progress.  I hope to have some nice
-modularization patches sent by Hugh Myers integrated and tested soon.</P>
+<H2><A NAME="fix numerous little formatting issues">Fix numerous little formatting issues</A></H2>
+<P>There is, and always will be, a large number of relatively minor
+formatting issues that need to be addressed.  I'm working on them as
+time permits.  Some of the most interesting have to do with
+automatically deciding the best number of columns to use for a table.</P>
 <P>
 <H2><A NAME="bugs">BUGS</A></H2>
 <P>There are still a couple of bugs listed in the BUGS file that need
 to be fixed.  These are low priority compared to formatting
 issues, but need to be done.</P>
 <P>
-<H2><A NAME="improved : formatting">Improved ?: Formatting</A></H2>
+<H2><A NAME="improved : formatting">improved ?: formatting</A></H2>
 <P>I intend to associate an indentation level with ?: statements in a
-future release.  This will make nested ?: statements more readable.</P>
+future release.  this will make nested ?: statements more readable.</P>
 <P>
 <H2><A NAME="improved vertical alignment">Improved Vertical Alignment</A></H2>
 <P>Coding modifications are underway to improve the vertical alignment
 logic.</P>
 <P>
-<H2><A NAME="improved indentation of parenthesized terms">Improved indentation of parenthesized terms</A></H2>
-<P>Further work on indenting parenthesized terms needs to be done.  This is
-tricky because it impacts vertical alignment, so the two tasks need to
-be done more or less together.</P>
+<H2><A NAME="implement 'vertical tightness' parameters">Implement 'Vertical Tightness' parameters</A></H2>
+<P>At present, perltidy usually breaks open container when they
+contain multiple lines.  For example, using perltidy -lp,</P>
+<PRE>
+        %romanNumerals = (
+                           one   =&gt; 'I',
+                           two   =&gt; 'II',
+                           three =&gt; 'III',
+                           four  =&gt; 'IV',
+                           five  =&gt; 'V',
+                           six   =&gt; 'VI',
+                           seven =&gt; 'VII',
+                           eight =&gt; 'VIII',
+                           nine  =&gt; 'IX',
+                           ten   =&gt; 'X'
+        );</PRE>
+<P>Some prefer to keep the container unbroken, if possible, like this:</P>
+<PRE>
+        %romanNumerals = ( one   =&gt; 'I',
+                           two   =&gt; 'II',
+                           three =&gt; 'III',
+                           four  =&gt; 'IV',
+                           five  =&gt; 'V',
+                           six   =&gt; 'VI',
+                           seven =&gt; 'VII',
+                           eight =&gt; 'VIII',
+                           nine  =&gt; 'IX',
+                           ten   =&gt; 'X');</PRE>
+<P>Parameters to control this are being studied.  They could be, for
+example, <STRONG>paren-vertical-tightness</STRONG>,
+<STRONG>square-bracket-vertical-tightness</STRONG>,
+<STRONG>brace-vertical-tightness</STRONG>.  This update requires further development
+of the vertical alignment logic, and will probably be implemented
+in steps.</P>
 <P>
 <H2><A NAME="documentation">Documentation</A></H2>
-<P>A FAQ is being written to explain some of the
-more subtle formatting issues, and to give examples of different
-styles.</P>
-<P>The tokenizer needs extensive documentation before it can be released
-as a separate module.</P>
+<P>A FAQ is being written to explain some of the more subtle formatting
+issues, and to give examples of different styles.</P>
+<P>The tokenizer needs extensive documentation before it can be released as
+a separate module.</P>
 <P>
 <H2><A NAME="html writer">HTML writer</A></H2>
 <P>The HTML writer does not colorize interpolated identifiers in here
@@ -77,6 +113,10 @@ documents or quoted strings.  The tokenizer outputs interpolation
 information for here docs; it still needs to be updated to do this for
 multiline quotes.  Then code needs to be written to scan for and markup
 identifiers.</P>
+<P>
+<H2><A NAME="further modularization">Further Modularization</A></H2>
+<P>The current version, which uses just a single module, will be further
+subdivided.</P>
 <P>
 <H2><A NAME="tokenization issues">Tokenization issues</A></H2>
 <P>There are some subtle issues with distinguishing block types that should
@@ -92,7 +132,7 @@ of a brace is known when it is encountered. But given this coding
      }
      ..
  }</PRE>
-<P>you have to examine the first couple of tokens of the interior 
+<P>we have to examine the first couple of tokens of the interior 
 braces to see if it is a code block or anonymous hash reference.  This
 needs to be done.  Also, brace types of something like ${ ... } are
 not currently labeled as code blocks because this simplifies formatting.
@@ -102,10 +142,11 @@ names.  It needs to be implementd; I've patched around this in the html
 writer for now.  I'm considering new token types for prototypes and
 attributes, to simplify parsing and formatting.</P>
 <P>
-<H2><A NAME="xml">XML</A></H2>
-<P>The ability to write a tokenized script in a simple XML format looks
-very useful.  This would allow the creation of simple utilities to
-reliably manipulate perl code.</P>
+<H2><A NAME="outdent block comments as a group">Outdent block comments as a group</A></H2>
+<P>At present, the decision to outdent a long block comment, when that
+option is used, is made on a line-by-line basis.  Instead, the decision
+should be made for a sequence of comments as a group, so that the result
+is not ragged.  This is a relatively straightforward update.</P>
 <P>
 <H2><A NAME="option to reformat block comments">Option to reformat block comments</A></H2>
 <P>I'm looking into an option to use Text::Autoformat to reformat comments.

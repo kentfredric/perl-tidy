@@ -13,6 +13,7 @@
 
 	<LI><A HREF="#welcome to perltidy!">Welcome to Perltidy!</A></LI>
 	<LI><A HREF="#prerequisites">PREREQUISITES</A></LI>
+	<LI><A HREF="#download">DOWNLOAD</A></LI>
 	<LI><A HREF="#installation">INSTALLATION</A></LI>
 	<LI><A HREF="#what next">WHAT NEXT</A></LI>
 	<LI><A HREF="#feedback / bug reports">FEEDBACK / BUG REPORTS</A></LI>
@@ -25,10 +26,6 @@
 <P>Perltidy is a tool to indent and reformat perl scripts.</P>
 <P>Perltidy is free software released under the GNU General Public
 License -- please see the included file ``COPYING'' for details.</P>
-<P>There are two source distribution files, a <EM>.tgz</EM> ``tarball'' for unix
-systems and a zip file, <EM>.zip</EM> for Windows.  The only differences is
-that the line endings have been changed to &lt;cr&gt;&lt;lf&gt; for the Windows
-version.</P>
 <P>
 <HR>
 <H1><A NAME="prerequisites">PREREQUISITES</A></H1>
@@ -44,6 +41,35 @@ module:</P>
 <PRE>
   IO::Scalar
   IO::ScalarArray</PRE>
+<P>The total disk space needed after removing the installation directory
+will about 1 Mb.  (If neccessary, this could be reduced to about 320k
+by using perltidy to squeeze itself down using <STRONG>-dac --mangle</STRONG> .)</P>
+<P>
+<HR>
+<H1><A NAME="download">DOWNLOAD</A></H1>
+<P>There are two source distribution files:</P>
+<UL>
+<LI>
+A <EM>.tgz</EM> ``tarball'', with Unix-style &lt;lf&gt; line endings, and
+<P></P>
+<LI>
+A zip file, <EM>.zip</EM>, with Windows-style &lt;cr&gt;&lt;lf&gt; line endings.
+<P></P></UL>
+<P>Here are some things to watch out for:</P>
+<UL>
+<LI>
+Be sure to get the file with appropriate line endings.  For example,
+under Unix the pod utilities will not work correctly with Windows line
+endings.
+<P></P>
+<LI>
+Some browsers do unwanted transformations to files and filenames during
+download.  You can usually fix things after you figure out what
+happened.  For example, some browsers will decompress the <EM>.tgz</EM> file
+without changing the file extension.  So if it does not decompress, see
+if it may already be a <EM>.tar</EM> file.  Under Unix systems, the <STRONG>file</STRONG>
+command can tell the format.
+<P></P></UL>
 <P>
 <HR>
 <H1><A NAME="installation">INSTALLATION</A></H1>

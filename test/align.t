@@ -1,6 +1,25 @@
 # some alignment tests
 
 {
+    # from Cookbook:
+    $page  =    /Mac/            && 'm/Macintrash.html'
+             || /Win(dows )?NT/  && 'e/evilandrude.html'
+             || /Win|MSIE|WebTV/ && 'm/MicroslothWindows.html'
+             || /Linux/          && 'l/Linux.html'
+             || /HP-UX/          && 'h/HP-SUX.html'
+             || /SunOS/          && 's/ScumOS.html'
+             ||                     'a/AppendixB.html';
+
+    $self->{RM_F}       ||= "rm -f";
+    $self->{RM_RF}      ||= "rm -rf";
+    $self->{TOUCH}      ||= "touch";
+    $self->{TEST_F}     ||= "test -f";
+    $self->{CP}         ||= "cp";
+    $self->{MV}         ||= "mv";
+    $self->{CHMOD}      ||= "chmod";
+    $self->{UMASK_NULL} ||= "umask 0";
+    $self->{DEV_NULL}   ||= "> /dev/null 2>&1";
+
     s/"//                               || next;
     s/",([x\d]+),([x\d]+),([x\d]+),.*// || next;
 

@@ -6,8 +6,11 @@ Perltidy open BUGS
      This file only lists open bugs.  For bugs which have been fixed, 
      see the ChangeLog.  
 
-  A here-doc invoked through an 'e' modifier on a pattern replacement text is not recognized
+  The command-line abbreviation feature is broken.
+    This error slipped into the current release, but it will be fixed in the
+    next release.
 
+  A here-doc invoked through an 'e' modifier on a pattern replacement text is not recognized
     For example, the output of perltidy for this script has a syntax error:
 
             my $text="Hello World!\n";
@@ -18,7 +21,6 @@ Perltidy open BUGS
             print "$text\n";
 
   Limitation parsing subroutine attributes and prototypes
-
     Subroutine prototypes and attributes (a perl 5.6 feature) are not
     correctly parsed unless they are on the same line as the subroutine
     name. (Older versions of perl require the prototype to be on the same

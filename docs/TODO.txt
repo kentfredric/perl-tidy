@@ -8,21 +8,15 @@ Perltidy TODO List
     This would allow the creation of simple utilities to reliably manipulate
     perl code.
 
-    This option is probably of greatest interest right now; hopefully the
-    next release will have an experimental version. The output will be
-    controlled by a switch --format=s, or simply -f=s, where s would be
-    html, xml, or tidy. The current -html flag would be mapped into
-    -format=html.
+    The output will be controlled by a switch --format=s, or simply -f=s,
+    where s would be html, xml, or tidy. The current -html flag would be
+    mapped into -format=html.
 
   Fix numerous little formatting issues
     There is, and always will be, a large number of relatively minor
     formatting issues that need to be addressed. I'm working on them as time
     permits. Some of the most interesting have to do with automatically
     deciding the best number of columns to use for a table.
-
-  Further Modularization
-    The current version, which uses just a single module, will be further
-    subdivided.
 
   BUGS
     There are still a couple of bugs listed in the BUGS file that need to be
@@ -85,6 +79,10 @@ Perltidy TODO List
     information for here docs; it still needs to be updated to do this for
     multiline quotes. Then code needs to be written to scan for and markup
     identifiers.
+
+  Further Modularization
+    The current version, which uses just a single module, will be further
+    subdivided.
 
   Tokenization issues
     There are some subtle issues with distinguishing block types that should

@@ -52,10 +52,6 @@ because it is very good at localizing errors.
 page</a> explains how
 to precisely control the formatting details.
 
-<li> The <a href="perl2web.html">Perl2web man
-page</a> explains how
-to write html files.
-
 <li> <a href="ChangeLog.html">Change Log</a>.
 
 <li> <a href="BUGS.html">Open BUGS</a>.
@@ -68,18 +64,22 @@ to write html files.
 
 .h2 Download
 
-Perltidy should run on any system that Perl runs on.  It has been
-tested on several varieties of Unix systems, Windows 95, and VMS.
+Perltidy should run on any system with perl 5.004 or later.  It has been
+tested on Unix, Windows, VMS and MacPerl.
 
 <ul> 
 
-<li>Please check the <a href="README.html">README Installation Notes</a>
+<li>Please check the <a href="README.html">README File</a>
 
-<li>download <a href="http://prdownloads.sourceforge.net/perltidy/perltidy-20011231.tgz">
-The latest release for unix (.tgz)</a>
+<li>Please check the <a href="INSTALL.html">Installation Notes</a>
 
-<li>download <a href="http://prdownloads.sourceforge.net/perltidy/perltidy-20011231.zip">
-The latest release for Windows (.zip)</a>
+<li>download <a href="http://prdownloads.sourceforge.net/perltidy/Perl-Tidy-20020225.tgz">
+The latest release (.tgz, Unix-style line endings)</a>
+
+<li>download <a href="http://prdownloads.sourceforge.net/perltidy/Perl-Tidy-20020225.zip">
+The latest release (.zip, Windows-style line endings)</a>
+
+<li><a href="http://www.linuxquebec.com/~nomis80/perltidy/">rpm's</a> courtesy of Simon Perreault.
 
 <li> If these links are broken, 
 go 

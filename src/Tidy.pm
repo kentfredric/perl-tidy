@@ -61,7 +61,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ($VERSION=q($Id: Tidy.pm,v 1.6 2002/02/25 04:34:21 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ($VERSION=q($Id: Tidy.pm,v 1.7 2002/03/02 05:38:51 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 # Preloaded methods go here.
@@ -736,7 +736,7 @@ sub process_command_line {
     # may disappear at any time.  They are mainly for fine-tuning
     # and debugging. 
     #
-    # xsc --> maximum-space-to-comment    # for spacing side comments
+    # xsc --> maximum-space-to-comment    # UNUSED
     # fll --> fuzzy-line-length           # trivial parameter
     # iob --> ignore-old-line-breaks      # do not follow breaks in old script
     # tdy --> tidy-output                 # This is an internal flag
@@ -1441,7 +1441,8 @@ sub expand_command_abbreviations {
                     # stuff all of the words that it expands to into the
                     # new arg list for the next pass
                     foreach my $abbrev ( @{ $rexpansion->{$abr} } ) {
-                        push ( @new_argv, '--' . $abbrev . $flags );
+                        next unless $abbrev;  # for safety; shouldn't happen
+                        push ( @new_argv, '--' . $abbrev . $flags ); 
                     }
                 }
 
@@ -1932,7 +1933,7 @@ EOM
                 $quote_char = $1;
             }
             elsif ( $body =~ /\G(\s+)/gc ) {
-                push @body_parts, $part;
+                if ($part) { push @body_parts, $part; }
                 $part = "";
             }
             elsif ( $body =~ /\G(.)/gc ) {
@@ -3656,10 +3657,12 @@ use vars qw{
   $last_last_line_leading_level
 
   %block_leading_text
+  %block_leading_if_elsif_text
   %block_opening_line_number
   $csc_new_statement_ok
   $accumulating_text_for_block
   $leading_block_text
+  $leading_block_if_elsif_text
   $leading_block_text_level
   $leading_block_text_length_exceeded
   $leading_block_text_line_number
@@ -3953,6 +3956,7 @@ sub new {
 
     # variables for adding side comments
     %block_leading_text        = ();
+    %block_leading_if_elsif_text  = ();
     %block_opening_line_number = ();
     $csc_new_statement_ok      = 1;
 
@@ -4822,6 +4826,19 @@ sub check_options {
     make_static_side_comment_pattern();
     make_closing_side_comment_prefix();
     make_closing_side_comment_list_pattern();
+
+    # If closing side comments are selected, then we can safely
+    # delete old closing side comments unless closing side comment
+    # warnings are requested.  This is a good idea because it will
+    # eliminate any old csc's which fall below the line count threshold.
+    # We cannot do this if warnings are turned on, though, because we
+    # might delete some text which has been added.  So that must
+    # be handled when comments are created.
+    if ( $rOpts->{'closing-side-comments'}
+        && !$rOpts->{'closing-side-comment-warnings'} )
+    {
+        $rOpts->{'delete-closing-side-comments'} = 1;
+    }
 
     # The -lp indentation logic requires that perltidy examine large
     # blocks of code between flushing.  When the user takes control
@@ -6130,7 +6147,7 @@ sub set_white_space_flag {
          /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
      Examples:
        *VERSION = \'1.01';
-       ( $VERSION ) = '$Revision: 1.6 $ ' =~ /\$Revision:\s+([^\s]+)/;
+       ( $VERSION ) = '$Revision: 1.7 $ ' =~ /\$Revision:\s+([^\s]+)/;
      We will pass such a line straight through (by changing it
      to a quoted string) unless -npvl is used
     
@@ -6139,7 +6156,7 @@ sub set_white_space_flag {
      block sequence numbers may see a closing sequence number but not
      the corresponding opening sequence number (sidecmt.t).  Example:
 
-    my $VERSION = do { my @r = (q$Revision: 1.6 $ =~ /\d+/g); sprintf
+    my $VERSION = do { my @r = (q$Revision: 1.7 $ =~ /\d+/g); sprintf
     "%d."."%02d" x $#r, @r }; 
 
     Here, the opening brace of 'do {' will not be seen, while the closing
@@ -6699,9 +6716,13 @@ sub set_white_space_flag {
                 }
 
                 if (
-                    ( $last_nonblank_token eq '}' )
-                    && ( $last_nonblank_block_type =~
-                        /^(if|else|elsif|unless|while|for|foreach)$/ )
+                    (
+                        $last_nonblank_token eq '}'
+                        && ( $last_nonblank_block_type =~
+                            /^(if|else|elsif|unless|while|for|foreach)$/
+                            || $last_nonblank_block_type =~ /^sub\s+\w/ )
+                    )
+                    || $last_nonblank_type eq ';'
                   )
                 {
 
@@ -7479,6 +7500,28 @@ sub output_line_to_go {
 }
 
 sub reset_block_text_accumulator {
+
+    # save text after 'if' and 'elsif' to append after 'else'
+    if ($accumulating_text_for_block) {
+        if ( $accumulating_text_for_block eq 'if' ) {
+            $leading_block_if_elsif_text = 'if' . $leading_block_text;
+        }
+        elsif ( $accumulating_text_for_block eq 'elsif'
+            && $leading_block_if_elsif_text )
+        {
+            my $test_str =
+              $leading_block_if_elsif_text . ' [ elsif' . $leading_block_text;
+            if (
+                length($test_str) <=
+                $rOpts->{'closing-side-comment-maximum-text'} )
+            {
+                $leading_block_if_elsif_text = $test_str;
+            }
+            elsif ( $leading_block_if_elsif_text !~ /\.\.\.$/ ) {
+                $leading_block_if_elsif_text .= ' [...';
+            }
+        }
+    }
     $accumulating_text_for_block        = "";
     $leading_block_text                 = "";
     $leading_block_text_level           = 0;
@@ -7489,6 +7532,9 @@ sub reset_block_text_accumulator {
 sub set_block_text_accumulator {
     my $i = shift;
     $accumulating_text_for_block    = $tokens_to_go[$i];
+    if ($accumulating_text_for_block !~ /^els/) {
+        $leading_block_if_elsif_text = "";
+    }
     $leading_block_text             = "";
     $leading_block_text_level       = $levels_to_go[$i];
     $leading_block_text_line_number =
@@ -7502,13 +7548,28 @@ sub accumulate_block_text {
     # accumulate leading text, but ignore any side comments
     if ( $accumulating_text_for_block
         && !$leading_block_text_length_exceeded
-        && $types_to_go[$i] ne '#' )
+        && $tokens_to_go[$i] ne '#' )
     {
-
+        
         # do not add more characters than allowed
         if (
             length($leading_block_text) <
-            $rOpts->{'closing-side-comment-maximum-text'} )
+            $rOpts->{'closing-side-comment-maximum-text'}
+
+            # well, unless we have a closing paren before the brace we seek.
+            # This is an attempt to avoid situations where the ... are longer
+            # than the omitted right paren:
+
+            #   foreach my $item (@a_rather_long_variable_name_here) {
+            #      &whatever;
+            #   } ## end foreach my $item (@a_rather_long_variable_name_here...
+            || (
+                $tokens_to_go[$i] eq ')'
+                && ( $block_type_to_go[ $i + 1 ] eq $accumulating_text_for_block
+                    || $block_type_to_go[ $i + 2 ] eq
+                    $accumulating_text_for_block )
+            )
+          )
         {
 
             # add an extra space at each newline
@@ -7535,14 +7596,17 @@ sub accumulate_csc_text {
     # Defines and returns the following for this buffer:
 
     my $block_leading_text   = "";    # the leading text of the last '}'
+    my $block_leading_if_elsif_text   = ""; 
     my $i_block_leading_text = -1;    # index of token owning block_leading_text
     my $block_line_count     = 100;   # how many lines the block spans
     my $terminal_type        = 'b';   # type of last nonblank token
     my $i_terminal           = 0;     # index of last nonblank token
+    my $block_type = "";
 
     for my $i ( 0 .. $max_index_to_go ) {
         my $type       = $types_to_go[$i];
-        my $block_type = $block_type_to_go[$i];
+        ##my $block_type = $block_type_to_go[$i];
+        $block_type = $block_type_to_go[$i];
         my $token      = $tokens_to_go[$i];
 
         # remember last nonblank token type
@@ -7557,9 +7621,12 @@ sub accumulate_csc_text {
             if ( $token eq '}' ) {
 
                 if ( defined( $block_leading_text{$type_sequence} ) ) {
-                    $block_leading_text   = $block_leading_text{$type_sequence};
+                    $block_leading_text = $block_leading_text{$type_sequence};
+                    $block_leading_if_elsif_text =
+                      $block_leading_if_elsif_text{$type_sequence};
                     $i_block_leading_text = $i;
                     delete $block_leading_text{$type_sequence};
+                    delete $block_leading_if_elsif_text{$type_sequence};
                 }
 
                 # if we run into a '}' then we probably started accumulating
@@ -7600,6 +7667,8 @@ sub accumulate_csc_text {
                     if ( $accumulating_text_for_block eq $block_type ) {
                         $block_leading_text{$type_sequence} =
                           $leading_block_text;
+                        $block_leading_if_elsif_text{$type_sequence} =
+                          $leading_block_if_elsif_text;
                         $block_opening_line_number{$type_sequence} =
                           $leading_block_text_line_number;
                         reset_block_text_accumulator();
@@ -7618,7 +7687,10 @@ sub accumulate_csc_text {
 
         if ( $type eq 'k'
             && $csc_new_statement_ok
-            && $token =~ /^(if|elsif|unless|while|until|for|foreach)$/
+            
+            # note: else is included to allow trailing if/elsif text 
+            # to be included
+            && $token =~ /^(else|if|elsif|unless|while|until|for|foreach)$/
             && $token =~ /$closing_side_comment_list_pattern/o )
         {
             set_block_text_accumulator($i);
@@ -7642,6 +7714,16 @@ sub accumulate_csc_text {
             }
         }
     }
+
+    # Treat an 'else' block specially by adding preceding 'if' and
+    # 'elsif' text.  Otherwise, the 'end else' is not helpful,
+    # especially for cuddled-else formatting.
+    if ( $block_type eq 'else'
+        && $block_leading_if_elsif_text )
+    {
+        $block_leading_text .= '[ ' . $block_leading_if_elsif_text;
+    }
+
     return ( $terminal_type, $i_terminal, $i_block_leading_text,
         $block_leading_text, $block_line_count );
 }
@@ -7664,13 +7746,22 @@ sub add_closing_side_comment {
     #---------------------------------------------------------------
     # Step 2: make the closing side comment if this ends a block
     #---------------------------------------------------------------
+    my $have_side_comment = $i_terminal != $max_index_to_go;
 
     # if this line might end in a block closure..
     if (
         $terminal_type eq '}'
 
-        # .. and the block is not too short
-        && ( $block_line_count >= $rOpts->{'closing-side-comment-interval'} )
+        # ..and either 
+        && (
+
+            # the block is long enough 
+            ( $block_line_count >= $rOpts->{'closing-side-comment-interval'} )
+
+            # or there is an existing comment to check
+            || ( $have_side_comment
+                && $rOpts->{'closing-side-comment-warnings'} )
+        )
 
         # .. and if this is one of the types of interest
         && $block_type_to_go[$i_terminal] =~
@@ -7685,7 +7776,7 @@ sub add_closing_side_comment {
         && (
 
             # this is the last token (line doesnt have a side comment) 
-            $i_terminal eq $max_index_to_go
+            !$have_side_comment
 
             # or the old side comment is a closing side comment
             || $tokens_to_go[$max_index_to_go] =~
@@ -7705,7 +7796,7 @@ sub add_closing_side_comment {
         $token =~ s/\s*$//;    # trim any trailing whitespace
 
         # handle case of existing closing side comment
-        if ( $i_terminal != $max_index_to_go ) {
+        if ( $have_side_comment) {
 
             # warn if requested and tokens differ significantly
             if ( $rOpts->{'closing-side-comment-warnings'} ) {
@@ -7723,21 +7814,48 @@ sub add_closing_side_comment {
 
                 # any remaining difference?
                 if ( $new_csc ne $old_csc ) {
-                    warning(
-"perltidy -cscw replaced: $tokens_to_go[$max_index_to_go]\n"
-                    );
 
-                    # save the old side comment in a new trailing block comment
-                    my ( $day, $month, $year ) = (localtime)[ 3, 4, 5 ];
-                    $year  += 1900;
-                    $month += 1;
-                    $cscw_block_comment =
+                    # just leave the old comment if we are below the threshold
+                    # for creating side comments
+                    if ( $block_line_count <
+                        $rOpts->{'closing-side-comment-interval'} )
+                    {
+                        $token = undef;
+                    }
+
+                    # otherwise we'll make a note of it
+                    else {
+
+                        warning(
+"perltidy -cscw replaced: $tokens_to_go[$max_index_to_go]\n"
+                        );
+
+                        # save the old side comment in a new trailing block comment
+                        my ( $day, $month, $year ) = (localtime)[ 3, 4, 5 ];
+                        $year  += 1900;
+                        $month += 1;
+                        $cscw_block_comment =
 "## perltidy -cscw $year-$month-$day: $tokens_to_go[$max_index_to_go]";
+                    }
+                }
+                else {
+                    
+                    # No differences.. we can safely delete old comment if we
+                    # are below the threshold
+                    if ( $block_line_count <
+                        $rOpts->{'closing-side-comment-interval'} )
+                    {
+                        $token = undef;
+                        unstore_token_to_go()
+                          if ( $types_to_go[$max_index_to_go] eq '#' );
+                        unstore_token_to_go()
+                          if ( $types_to_go[$max_index_to_go] eq 'b' );
+                    }
                 }
             }
 
-            # switch to the new csc
-            $tokens_to_go[$max_index_to_go] = $token;
+            # switch to the new csc (unless we deleted it!)
+            $tokens_to_go[$max_index_to_go] = $token if $token;
         }
 
         # handle case of NO existing closing side comment
@@ -8324,7 +8442,7 @@ sub set_adjusted_indentation {
 }
 
 BEGIN {
-    @_ = qw#{ ? : => = += -= =~ *= /= && || #;
+    @_ = qw#{ ? : => = += -= =~ *= /= && || ||= #;
     @is_vertical_alignment_type{@_} = (1) x scalar(@_);
 }
 
@@ -11580,14 +11698,19 @@ sub set_continuation_breaks {
                 last
                   if ($leading_alignment_type);
 
-                # Force at least one breakpoint if old code had good break
-                # It is only called if a breakpoint is required or desired.
+                # Force at least one breakpoint if old code had good
+                # break It is only called if a breakpoint is required or
+                # desired.  This will probably need some adjustments
+                # over time.  A goal is to try to be sure that, if a new
+                # side comment is introduced into formated text, then
+                # the same breakpoints will occur.  scbreak.t
                 last
                   if (
                     $i_test == $imax                # we are at the end
                     && !$forced_breakpoint_count    #
                     && $saw_good_break              # old line had good break
-                    && $type eq ';'                 # and this line ends in a ;
+                    && $type =~ /^[#;]$/            # and this line ends in
+                                                    # ';' or side comment
                     && $i_last_break < 0        # and we haven't made a break
                     && $i_lowest > 0            # and we saw a possible break
                     && $i_lowest < $imax - 1    # (but not just before this ;)
@@ -13502,9 +13625,10 @@ sub adjust_side_comment {
             }
 
             # if this causes too much space, give up and use the minimum space
-            if ( $move > $rOpts_maximum_space_to_comment - 1 ) {
-                $move = $rOpts_minimum_space_to_comment - 1;
-            }
+## BUBBA: TESTING
+##            if ( $move > $rOpts_maximum_space_to_comment - 1 ) {
+##                $move = $rOpts_minimum_space_to_comment - 1;
+##            }
 
             # don't exceed the available space
             if ( $move > $avail ) { $move = $avail }
@@ -13517,7 +13641,6 @@ sub adjust_side_comment {
             # remember this column for the next group
             $last_comment_column = $line->get_column( $kmax - 2 );
         }
-
         else {
 
             # try to at least line up the existing side comment location

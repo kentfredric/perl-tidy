@@ -16,13 +16,13 @@
 
 		<LI><A HREF="#xml output">XML Output</A></LI>
 		<LI><A HREF="#fix numerous little formatting issues">Fix numerous little formatting issues</A></LI>
-		<LI><A HREF="#further modularization">Further Modularization</A></LI>
 		<LI><A HREF="#bugs">BUGS</A></LI>
 		<LI><A HREF="#improved : formatting">improved ?: formatting</A></LI>
 		<LI><A HREF="#improved vertical alignment">Improved Vertical Alignment</A></LI>
 		<LI><A HREF="#implement 'vertical tightness' parameters">Implement 'Vertical Tightness' parameters</A></LI>
 		<LI><A HREF="#documentation">Documentation</A></LI>
 		<LI><A HREF="#html writer">HTML writer</A></LI>
+		<LI><A HREF="#further modularization">Further Modularization</A></LI>
 		<LI><A HREF="#tokenization issues">Tokenization issues</A></LI>
 		<LI><A HREF="#outdent block comments as a group">Outdent block comments as a group</A></LI>
 		<LI><A HREF="#option to reformat block comments">Option to reformat block comments</A></LI>
@@ -43,21 +43,15 @@ them.</P>
 <P>The ability to write a tokenized script in XML format looks
 very useful.  This would allow the creation of simple utilities to
 reliably manipulate perl code.</P>
-<P>This option is probably of greatest interest right now; hopefully the
-next release will have an experimental version.  The output will be
-controlled by a switch <STRONG>--format=s</STRONG>, or simply <STRONG>-f=s</STRONG>, where <STRONG>s</STRONG>
-would be <STRONG>html</STRONG>, <STRONG>xml</STRONG>, or <STRONG>tidy</STRONG>.  The current <STRONG>-html</STRONG> flag would
-be mapped into <STRONG>-format=html</STRONG>.</P>
+<P>The output will be controlled by a switch <STRONG>--format=s</STRONG>, or simply <STRONG>-f=s</STRONG>,
+where <STRONG>s</STRONG> would be <STRONG>html</STRONG>, <STRONG>xml</STRONG>, or <STRONG>tidy</STRONG>.  The current <STRONG>-html</STRONG> flag
+would be mapped into <STRONG>-format=html</STRONG>.</P>
 <P>
 <H2><A NAME="fix numerous little formatting issues">Fix numerous little formatting issues</A></H2>
 <P>There is, and always will be, a large number of relatively minor
 formatting issues that need to be addressed.  I'm working on them as
 time permits.  Some of the most interesting have to do with
 automatically deciding the best number of columns to use for a table.</P>
-<P>
-<H2><A NAME="further modularization">Further Modularization</A></H2>
-<P>The current version, which uses just a single module, will be further
-subdivided.</P>
 <P>
 <H2><A NAME="bugs">BUGS</A></H2>
 <P>There are still a couple of bugs listed in the BUGS file that need
@@ -119,6 +113,10 @@ documents or quoted strings.  The tokenizer outputs interpolation
 information for here docs; it still needs to be updated to do this for
 multiline quotes.  Then code needs to be written to scan for and markup
 identifiers.</P>
+<P>
+<H2><A NAME="further modularization">Further Modularization</A></H2>
+<P>The current version, which uses just a single module, will be further
+subdivided.</P>
 <P>
 <H2><A NAME="tokenization issues">Tokenization issues</A></H2>
 <P>There are some subtle issues with distinguishing block types that should

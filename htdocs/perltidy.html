@@ -15,10 +15,15 @@
 	<LI><A HREF="#synopsis">SYNOPSIS</A></LI>
 	<LI><A HREF="#description">DESCRIPTION</A></LI>
 	<LI><A HREF="#examples">EXAMPLES</A></LI>
-	<LI><A HREF="#options">OPTIONS</A></LI>
+	<LI><A HREF="#options  overview">OPTIONS - OVERVIEW</A></LI>
 	<UL>
 
 		<LI><A HREF="#i/o control">I/O control</A></LI>
+	</UL>
+
+	<LI><A HREF="#formatting options">FORMATTING OPTIONS</A></LI>
+	<UL>
+
 		<LI><A HREF="#basic options">Basic Options</A></LI>
 		<LI><A HREF="#code indentation control">Code Indentation Control</A></LI>
 		<LI><A HREF="#whitespace control">Whitespace Control</A></LI>
@@ -29,11 +34,13 @@
 		<LI><A HREF="#other controls">Other Controls</A></LI>
 	</UL>
 
+	<LI><A HREF="#html options">HTML OPTIONS</A></LI>
 	<LI><A HREF="#switches which may be negated">SWITCHES WHICH MAY BE NEGATED</A></LI>
 	<LI><A HREF="#limitations">LIMITATIONS</A></LI>
 	<LI><A HREF="#files">FILES</A></LI>
 	<LI><A HREF="#see also">SEE ALSO</A></LI>
 	<LI><A HREF="#version">VERSION</A></LI>
+	<LI><A HREF="#credits">CREDITS</A></LI>
 	<LI><A HREF="#author">AUTHOR</A></LI>
 	<LI><A HREF="#copyright">COPYRIGHT</A></LI>
 	<LI><A HREF="#license">LICENSE</A></LI>
@@ -57,13 +64,17 @@
 <P>
 <HR>
 <H1><A NAME="description">DESCRIPTION</A></H1>
-<P>Perltidy reads a perl script and writes an indented, reformatted script.
-The default formatting tries to follow the recommendations in perlstyle(1).</P>
+<P>Perltidy reads a perl script and writes an indented, reformatted script.</P>
 <P>Many users will find enough information in <A HREF="#examples">EXAMPLES</A> to get 
 started.  New users may benefit from the short tutorial which
 comes with the distribution.</P>
-<P>The formatting can be controlled in detail with numerous input parameters, 
-which are described in <A HREF="#options">OPTIONS</A>.</P>
+<P>Perltidy can produce output on either of two modes, depending on the
+existance of an <STRONG>-html</STRONG> flag.  Without this flag, the output is passed
+through a formatter.  The default formatting tries to follow the
+recommendations in perlstyle(1), but it can be controlled in detail with
+numerous input parameters, which are described in <A HREF="#formatting options">FORMATTING OPTIONS</A>.</P>
+<P>When the <STRONG>-html</STRONG> flag is given, the output is passed through an HTML
+formatter which is described in <A HREF="#html options">HTML OPTIONS</A>.</P>
 <P>
 <HR>
 <H1><A NAME="examples">EXAMPLES</A></H1>
@@ -89,9 +100,9 @@ indentation (<STRONG>-i=3</STRONG>) instead of the default 4 columns.  There wil
 tabs in the reformatted script, except for any which already exist in comments,
 pod documents, quotes, and here documents.  Output will be <EM>somefile.pl.tdy</EM>.</P>
 <PRE>
-  perltidy -i=3 -t somefile.pl</PRE>
-<P>Same as the previous example, except that each set of 3 columns of indentation
-(<STRONG>-i=3</STRONG>) will be represented by one leading tab character (<STRONG>-t</STRONG>).</P>
+  perltidy -i=3 -et=8 somefile.pl</PRE>
+<P>Same as the previous example, except that leading whitespace will
+be entabbed with one tab character per 8 spaces.</P>
 <PRE>
   perltidy -ce -l=72 somefile.pl</PRE>
 <P>Execute perltidy on file <EM>somefile.pl</EM> with all defaults except use ``cuddled
@@ -102,9 +113,28 @@ the default 80 columns.</P>
 <P>Execute perltidy on file <EM>somefile.pl</EM> and save a log file <EM>somefile.pl.LOG</EM>
 which shows the nesting of braces, parentheses, and square brackets at
 the start of every line.</P>
+<PRE>
+  perltidy -html somefile.pl</PRE>
+<P>This will produce a file <EM>somefile.pl.html</EM> containing the script with
+html markup.  The output file will contain an embedded style sheet in
+the &lt;HEAD&gt; section which may be edited to change the appearance.</P>
+<PRE>
+  perltidy -html -css=mystyle.css somefile.pl</PRE>
+<P>This will produce a file <EM>somefile.pl.html</EM> containing the script with
+html markup.  This output file will contain a link to a separate style
+sheet file <EM>mystyle.css</EM>.  If the file <EM>mystyle.css</EM> does not exist,
+it will be created.  If it exists, it will not be overwritten.</P>
+<PRE>
+  perltidy -html -pre somefile.pl</PRE>
+<P>Write an html snippet with only the PRE section to <EM>somefile.pl.html</EM>.
+This is useful when code snippets are being formatted for inclusion in a
+larger web page.  No style sheet will be written in this case.</P>
+<PRE>
+  perltidy -html -ss &gt;mystyle.css</PRE>
+<P>Write a style sheet to <EM>mystyle.css</EM> and exit.</P>
 <P>
 <HR>
-<H1><A NAME="options">OPTIONS</A></H1>
+<H1><A NAME="options  overview">OPTIONS - OVERVIEW</A></H1>
 <P>The entire command line is scanned for options, and they are processed
 before any files are processed.  As a result, it does not matter
 whether flags are before or after any filenames.  However, the relative
@@ -116,8 +146,9 @@ self-documenting and therefore useful in scripts.  It is customary to
 use two leading dashes for long names, but one may be used.</P>
 <P>Most parameters which serve as on/off flags can be negated with a
 leading ``n'' (for the short name) or a leading ``no'' (for the long
-name).  For example, the flag to use tabs is <STRONG>-t</STRONG> or <STRONG>--tabs</STRONG>.  The
-flag to use no tabs (the default) is <STRONG>-nt</STRONG> or <STRONG>--notabs</STRONG>.</P>
+name).  For example, the flag to have perl check syntax using <STRONG>perl -c</STRONG>
+is <STRONG>-syn</STRONG> or <STRONG>--check-syntax</STRONG>.  The flag to skip this is
+<STRONG>-nsyn</STRONG> or <STRONG>--nocheck-syntax</STRONG>.</P>
 <P>Options may not be bundled together.  In other words, options <STRONG>-q</STRONG> and
 <STRONG>-g</STRONG> may NOT be entered as <STRONG>-qg</STRONG>.</P>
 <P>Option names may be terminated early as long as they are uniquely identified.
@@ -148,14 +179,33 @@ request outputting to the standard output.  For example,
   perltidy somefile.pl -st &gt;somefile.new.pl</PRE>
 <P>This option may only be used if there is just a single input file.  When
 this option is used, perltidy will have to create a temporary copy of
-the output file, perltidy.TMPO, to feed to perl for syntax checking,
+the output file to feed to perl for syntax checking,
 unless allow syntax checking is disabled.  This file will be deleted
 when the job finishes.  The default is <STRONG>-nst</STRONG> or <STRONG>-nostandard-output</STRONG>.</P>
 <P></P>
 <DT><STRONG><A NAME="item_%2Doext%3Dext%2C_%2D%2Doutput%2Dfile%2Dextension%3"><STRONG>-oext</STRONG>=ext,    <STRONG>--output-file-extension</STRONG>=ext</A></STRONG><BR>
 <DD>
 Change the extension of the output file to be <EM>.ext</EM> instead of the
-default <EM>.tdy</EM>.
+default <EM>.tdy</EM>.  If the <STRONG>-html</STRONG> option is used, this will change
+the extension to be <EM>.ext</EM> instead of the default <EM>.html</EM>.
+<P></P>
+<DT><STRONG><A NAME="item_%2Dopath%3Dpath%2C_%2D%2Doutput%2Dpath%3Dpath"><STRONG>-opath</STRONG>=path,    <STRONG>--output-path</STRONG>=path</A></STRONG><BR>
+<DD>
+When perltidy creates a filename for an output file, by default it merely
+appends an extension to the path and basename of the input file.  This
+parameter causes the path to be changed to <EM>path</EM> instead.
+<P>The path should end in a valid path separator character, but perltidy will try
+to add one if it is missing.</P>
+<P>For example
+</P>
+<PRE>
+
+ perltidy somefile.pl -opath=/tmp/</PRE>
+<P>will produce <EM>/tmp/somefile.pl.tdy</EM>.  Otherwise, <EM>somefile.pl.tdy</EM> will
+appear in whatever directory contains <EM>somefile.pl</EM>.</P>
+<P>If the path contains spaces, it should be placed in quotes.</P>
+<P>This parameter will be ignored if output is being directed to standard output,
+or if it is being specified explicitly with the <STRONG>-o=s</STRONG> parameter.</P>
 <P></P>
 <DT><STRONG><A NAME="item_%2Dse%2C_%2D%2Dstandard%2Derror%2Doutput"><STRONG>-se</STRONG>,    <STRONG>--standard-error-output</STRONG></A></STRONG><BR>
 <DD>
@@ -187,16 +237,6 @@ any error messages will mess up your screen.  Besides, it is common to
 run perltidy on incomplete blocks from an editor, and you don't want to
 see any complaints about that.  (Or maybe you do; in that case, be
 prepared to use your ``undo'' key).</P>
-<P></P>
-<DT><STRONG><A NAME="item_%2Dsyn%2C_%2D%2Dcheck%2Dsyntax"><STRONG>-syn</STRONG>,   <STRONG>--check-syntax</STRONG></A></STRONG><BR>
-<DD>
-This causes perltidy to run <CODE>perl -T -c</CODE> to check syntax of input and output.
-The results are written to the <EM>.LOG</EM> file, which will be saved if an error
-is detected in the output script.  The output script is not checked if the
-input script has a syntax error.  To skip syntax checking, use <STRONG>-nsyn</STRONG> or
-<STRONG>--nocheck-syntax</STRONG>.  Syntax checking is also deactivated by the <STRONG>--quiet</STRONG>
-flag, discussed above.
-<P>The default is to do a syntax check.</P>
 <P></P>
 <DT><STRONG><A NAME="item_%2Dlog%2C_%2D%2Dlogfile"><STRONG>-log</STRONG>,    <STRONG>--logfile</STRONG></A></STRONG><BR>
 <DD>
@@ -241,10 +281,8 @@ default <EM>.perltidyrc</EM>.</P>
 <P></P>
 <DT><STRONG><A NAME="item_%2Dopt%2C_%2D%2Dshow%2Doptions"><STRONG>-opt</STRONG>,   <STRONG>--show-options</STRONG></A></STRONG><BR>
 <DD>
-Write a list of all options used to the <EM>.LOG</EM> file.  This is useful for
-debugging command files.  In the list, the status of on/off
-switches is indicated by a 0 for off and a 1 for on.  Please see
-<STRONG>--dump-options</STRONG> for a simpler way to do this.
+Write a list of all options used to the <EM>.LOG</EM> file.  
+Please see <STRONG>--dump-options</STRONG> for a simpler way to do this.
 <P></P>
 <DT><STRONG><A NAME="item_%2Df%2C_%2D%2Dforce%2Dread%2Dbinary"><STRONG>-f</STRONG>,   <STRONG>--force-read-binary</STRONG></A></STRONG><BR>
 <DD>
@@ -253,6 +291,9 @@ error messages, perltidy skips files identified by the system as non-text.
 However, valid perl scripts containing binary data may sometimes be identified
 as non-text, and this flag forces perltidy to process them.
 <P></P></DL>
+<P>
+<HR>
+<H1><A NAME="formatting options">FORMATTING OPTIONS</A></H1>
 <P>
 <H2><A NAME="basic options">Basic Options</A></H2>
 <DL>
@@ -266,31 +307,67 @@ Setting <STRONG>-l=0</STRONG> is equivalent to setting <STRONG>-l=(a large numbe
 <DT><STRONG><A NAME="item_%2Di%3Dn%2C_%2D%2Dindent%2Dcolumns%3Dn"><STRONG>-i=n</STRONG>,  <STRONG>--indent-columns=n</STRONG></A></STRONG><BR>
 <DD>
 Use n columns per indentation level (default n=4).
-<P>See also <STRONG>--tabs</STRONG>.</P>
+<P></P>
+<DT><STRONG><A NAME="item_tabs">tabs</A></STRONG><BR>
+<DD>
+Using tab characters will almost certainly lead to future portability
+and maintenance problems, so the default and recommendation is not to
+use them.  For those who prefer tabs, however, there are two different
+options.
+<P>Except for possibly introducing tab indentation characters, as outlined
+below, perltidy does not introduce any tab characters into your file,
+and it removes any tabs from the code (unless requested not to do so
+with <STRONG>-fws</STRONG>).  If you have any tabs in your comments, quotes, or
+here-documents, they will remain.</P>
+<DL>
+<DT><STRONG><A NAME="item_%2Det%3Dn%2C_%2D%2Dentab%2Dleading%2Dwhitespace"><STRONG>-et=n</STRONG>,   <STRONG>--entab-leading-whitespace</STRONG></A></STRONG><BR>
+<DD>
+This flag causes each <STRONG>n</STRONG> initial space characters to be replaced by
+one tab character.  Note that the integer <STRONG>n</STRONG> is completely independent
+of the integer specified for indentation parameter, <STRONG>-i=n</STRONG>.
 <P></P>
 <DT><STRONG><A NAME="item_%2Dt%2C_%2D%2Dtabs"><STRONG>-t</STRONG>,   <STRONG>--tabs</STRONG></A></STRONG><BR>
 <DD>
-This flag defines the characters used to indicate the indentation level
-of each line of code to be tabs.  Perltidy allows two possible ways to
-represent the indentation at the beginning of each line of code.  You
-may either use one tab character per level of indentation (signified
-with the -t flag), or you may use n real space characters per level,
-(where n is defined by the -i flag).  The default is to use ASCII space
-characters because they should be properly displayed on all editors or
-viewers, even though they are not always the most convenient for
-editing. Of course, you can always rerun perltidy to change the
-indentation characters.
-<P>If you choose tabs, you will want to give the appropriate setting to
-your editor to display tabs as 4 blanks (or whatever value has been set
-with the <STRONG>-i</STRONG> command).</P>
-<P>Except for these possible tab indentation characters, Perltidy does not
-introduce any tab characters into your file, and it removes any tabs
-from the code (unless requested not to do so with <STRONG>-fws</STRONG>).  If you have
-any tabs in your comments, quotes, or here-documents, they will remain.</P>
-<P>Certain commands are incompatible with tabs, and if these are given,
-then a warning message will be given and tabs will be deactivated.  An
-example is the <STRONG>-lp</STRONG> option.</P>
-<P>The default and recommendation is <STRONG>-nt</STRONG> (or <STRONG>--notabs</STRONG>).</P>
+This flag causes one leading tab character to be inserted for each level
+of indentation.  Certain other features are incompatible with this
+option, and if these options are also given, then a warning message will
+be issued and this flag will be unset.  One example is the <STRONG>-lp</STRONG>
+option.
+<P></P></DL>
+<DT><STRONG><A NAME="item_%2Dsyn%2C_%2D%2Dcheck%2Dsyntax"><STRONG>-syn</STRONG>,   <STRONG>--check-syntax</STRONG></A></STRONG><BR>
+<DD>
+The purpose of this flag is to alert you to any situation in which the
+intput file has good syntax but the output file has bad syntax, which
+implies an error by perltidy.
+<P>This flag causes perltidy to run <CODE>perl -c -T</CODE> to check syntax of input
+and output.  (To change the flags passed to perl, see the next item,
+<STRONG>-pscf</STRONG>).  The results are written to the <EM>.LOG</EM> file, which will be
+saved if an error is detected in the output script.  The output script
+is not checked if the input script has a syntax error.</P>
+<P>If Perl reports errors in the input file, they will not be reported in
+the error output unless the <STRONG>-warning-output</STRONG> flag is given.</P>
+<P>To skip syntax checking, use <STRONG>-nsyn</STRONG> or <STRONG>--nocheck-syntax</STRONG>.  Syntax
+checking is also deactivated by the <STRONG>--quiet</STRONG> flag, discussed above.</P>
+<P>The default is to do a syntax check on most operating systems.  An
+exception is Windows 9x/Me systems, which do not handle this well.
+Another exception is when the input or output streams are not connected
+to identifiable filenames.  In the past, copies of these streams were
+saved in temporary files, but this has caused too many portability
+problems.</P>
+<P><STRONG>Please note:</STRONG> Even if this type of syntax checking is deactivated,
+perltidy will still do extensive syntax checking on its own.</P>
+<P></P>
+<DT><STRONG><A NAME="item_%2Dpscf%3Ds%2C_%2Dperl%2Dsyntax%2Dcheck%2Dflags%3D"><STRONG>-pscf=s</STRONG>, <STRONG>-perl-syntax-check-flags=s</STRONG></A></STRONG><BR>
+<DD>
+When perl is invoked to check syntax, the normal flags are <CODE>-c -T</CODE>.  In
+addition, if the <STRONG>-x</STRONG> flag is given to perltidy, then perl will also be
+passed a <STRONG>-x</STRONG> flag.  It should not normally be necessary to change
+these flags, but it can be done with the <STRONG>-pscf=s</STRONG> flag.  For example,
+if the taint flag, <CODE>-T</CODE>, is not wanted, the flag could be set to be just
+<STRONG>-pscf=-c</STRONG>.
+<P>Perltidy will pass your string to perl with the exception that it will
+add a <STRONG>-c</STRONG> and <STRONG>-x</STRONG> if appropriate.  The <EM>.LOG</EM> file will show
+exactly what flags were passed to perl.</P>
 <P></P>
 <DT><STRONG><A NAME="item_%2Dio%2C_%2D%2Dindent%2Donly"><STRONG>-io</STRONG>,   <STRONG>--indent-only</STRONG></A></STRONG><BR>
 <DD>
@@ -360,7 +437,7 @@ existence of line breaks and/or block comments between the opening and
 closing parens may cause perltidy to temporarily revert to its default
 method.</P>
 <P>Note: The <STRONG>-lp</STRONG> option may not be used together with the <STRONG>-t</STRONG> tabs option.
-If <STRONG>-t</STRONG> is specified, it will be ignored.</P>
+It may, however, be used with the <STRONG>-et=n</STRONG> tab method.</P>
 <P>In addition, any parameter which restricts the ability of perltidy to
 choose newlines will all conflict with <STRONG>-lp</STRONG> and will cause <STRONG>-lp</STRONG> to
 be deactivated.  These include 
@@ -999,13 +1076,10 @@ math operators <CODE>'+'</CODE>, <CODE>'-'</CODE>, <CODE>'/'</CODE>, and <CODE>'
 <PRE>
   -wbb=&quot;+ - / *&quot;</PRE>
 <P>These commands should work well for most of the token types that
-perltidy uses (use <STRONG>--dump-token-types</STRONG> for a list).  However, 
-for a few token types there may be conflicts with hardwired
-logic which cause unexpected results.  An example is the comma,
-which is hardwired to go at the end of lines in certain cases.
-Hopefully, this restriction will be removed in the future.  Another
-example is curly braces, which should be controlled with the
-parameter <STRONG>bl</STRONG> provided for that purpose.</P>
+perltidy uses (use <STRONG>--dump-token-types</STRONG> for a list).  However, for a
+few token types there may be conflicts with hardwired logic which cause
+unexpected results.  One example is curly braces, which should be
+controlled with the parameter <STRONG>bl</STRONG> provided for that purpose.</P>
 <P></P></DL>
 <P>
 <H2><A NAME="blank line control">Blank Line Control</A></H2>
@@ -1058,6 +1132,7 @@ a value of <STRONG>0</STRONG> is equivalent to entering a very large number.
 This parameter specifies the maximum number of consecutive blank lines
 in the output script.  The default is n=1.  If the input file has more
 than n consecutive blank lines, the number will be reduced to n.
+(This obviously does not apply to pod sections, here-documents, and quotes).
 <P></P>
 <DT><STRONG><A NAME="item_%2Dsob%2C_%2D%2Dswallow%2Doptional%2Dblank%2Dlines"><STRONG>-sob</STRONG>,  <STRONG>--swallow-optional-blank-lines</STRONG></A></STRONG><BR>
 <DD>
@@ -1120,13 +1195,17 @@ not comments).</P>
 <DT><STRONG><A NAME="item_Using_a_%2Eperltidyrc_command_file">Using a <EM>.perltidyrc</EM> command file</A></STRONG><BR>
 <DD>
 If you use perltidy frequently, you probably won't be happy until you
-create a <EM>.perltidyrc</EM> file to avoid typing commonly-used
-parameters.  Perltidy will first look in your current directory for a
-command file named <EM>.perltidyrc</EM>, and if it does not find one, it will
-look in your home directory.  If it does not find one there, it will
-look for a system-wide file <EM>/usr/local/etc/perltidyrc</EM>, and failing to
-find one there it will look for <EM>/etc/perltidyrc</EM>.  Note that the
-system-wide files do not have a leading dot.
+create a <EM>.perltidyrc</EM> file to avoid typing commonly-used parameters.
+Perltidy will first look in your current directory for a command file
+named <EM>.perltidyrc</EM>.  If it does not find one, it will continue looking
+for one in other standard locations.
+<P>These other locations are system-dependent, and may be displayed with
+the command <CODE>perltidy -dpro</CODE>.  Under Unix systems, it will look for a
+<EM>.perltidyrc</EM> file in the home directory, and then for a system-wide
+file <EM>/usr/local/etc/perltidyrc</EM>, and then it will look for
+<EM>/etc/perltidyrc</EM>.  Note that these last two system-wide files do not
+have a leading dot.  Further system-dependent information will be found
+in the INSTALL file distributed with perltidy.</P>
 <P>This file is free format, and simply a list of parameters, just as they
 would be entered on a command line.  Any number of lines may be used,
 with any number of parameters per line, although it may be easiest to
@@ -1152,31 +1231,26 @@ file which would cause some kind of dump and an exit.  These are:</P>
 file:</P>
 <UL>
 <LI>
-It may be simplest to develop and test configuration files
-with alternative names, and invoke them with <STRONG>-pro=filename</STRONG> on
-the command line.  Then rename the desired file to <EM>.perltidyrc</EM> 
-when finished.
+A very helpful command is <STRONG>--dump-profile</STRONG> or <STRONG>-dpro</STRONG>.  It writes a
+list of all configuration filenames tested to standard output, and 
+if a file is found, it dumps the content to standard output before
+exiting.  So, to find out where perltidy looks for its configuration
+files, and which one if any it selects, just enter
+<PRE>
+  perltidy -dpro</PRE>
 <P></P>
 <LI>
-The parameters in the <EM>.perltidyrc</EM>
-file can be switched off with the <STRONG>-npro</STRONG> option.
+It may be simplest to develop and test configuration files with
+alternative names, and invoke them with <STRONG>-pro=filename</STRONG> on the command
+line.  Then rename the desired file to <EM>.perltidyrc</EM> when finished.
 <P></P>
 <LI>
-The parameter <STRONG>-log</STRONG> will force a <EM>.LOG</EM> file to be written, which
-contains the path to the <EM>.perltidyrc</EM> file, if any, and a listing of
-its parameter settings.
+The parameters in the <EM>.perltidyrc</EM> file can be switched off with 
+the <STRONG>-npro</STRONG> option.
 <P></P>
 <LI>
-The parameter <STRONG>-opt</STRONG> will force a <EM>.LOG</EM> file to be
-written with a complete listing of all option flags in use for a run,
-taking into account the default settings, the <EM>.perltidyrc</EM> file, plus
-any command line options.
-<P></P>
-<LI>
-The
-commands <STRONG>-dump-options</STRONG>, <STRONG>-dump-defaults</STRONG>, <STRONG>-dump-long-names</STRONG>,
-and <STRONG>-dump-short-names</STRONG>, all described below, may all be helpful
-in certain instances.
+The commands <STRONG>-dump-options</STRONG>, <STRONG>-dump-defaults</STRONG>, <STRONG>-dump-long-names</STRONG>,
+and <STRONG>-dump-short-names</STRONG>, all described below, may all be helpful.
 <P></P></UL>
 <DT><STRONG><A NAME="item_Creating_a_new_abbreviation">Creating a new abbreviation</A></STRONG><BR>
 <DD>
@@ -1290,15 +1364,15 @@ block is something like this,
         if ($x &gt; 0) { $y = 1 / $x }</PRE>
 <P>where the contents within the curly braces is short enough to fit
 on a single line.</P>
-<P>With few exceptions, Perltidy retains existing one-line blocks, if it
+<P>With few exceptions, perltidy retains existing one-line blocks, if it
 is possible within the line-length constraint, but it does not attempt
-to form new ones.  In other words, Perltidy will try to follow the
+to form new ones.  In other words, perltidy will try to follow the
 one-line block style of the input file.</P>
 <P>If an existing one-line block is longer than the maximum line length,
 however, it will be broken into multiple lines.  When this happens, perltidy
 checks for and adds any optional terminating semicolon (unless the <STRONG>-nasc</STRONG>
 option is used) if the block is a code block.</P>
-<P>The main exception is that Perltidy will attempt to form new one-line
+<P>The main exception is that perltidy will attempt to form new one-line
 blocks following the keywords <CODE>map</CODE>, <CODE>eval</CODE>, and <CODE>sort</CODE>, because
 these code blocks are often small and most clearly displayed in a single
 line.</P>
@@ -1306,7 +1380,7 @@ line.</P>
 a '=&gt;' symbol, which is sometimes called a ``comma-arrow''.  To force
 perltidy to introduce breaks in a one-line block containing comma
 arrows, use the <STRONG>--break-after-comma-arrows</STRONG>, or <STRONG>-baa</STRONG>, flag.  For
-example, given the following single line, Perltidy will not add any line
+example, given the following single line, perltidy will not add any line
 breaks:</P>
 <PRE>
     bless { B =&gt; $B, Root =&gt; $Root } =&gt; $package;   -nbaa (default)</PRE>
@@ -1328,7 +1402,10 @@ the problem.</P>
 <DD>
 The following flags are available for debugging:
 <P><STRONG>--dump-defaults</STRONG> or <STRONG>-ddf</STRONG> will write the default option set to standard output and quit</P>
-<P><STRONG>--dump-options</STRONG> or <STRONG>-dop</STRONG>  will write current option set to standard output and quit.</P>
+<P><STRONG>--dump-profile</STRONG> or <STRONG>-dpro</STRONG>  will write the name of the current 
+configuration file and its contents to standard output and quit.</P>
+<P><STRONG>--dump-options</STRONG> or <STRONG>-dop</STRONG>  will write current option set to standard
+output and quit.</P>
 <P><STRONG>--dump-long-names</STRONG> or <STRONG>-dln</STRONG>  will write all command line long names (passed 
 to Get_options) to standard output and quit.</P>
 <P><STRONG>--dump-short-names</STRONG>  or <STRONG>-dsn</STRONG> will write all command line short names 
@@ -1355,18 +1432,150 @@ Use <STRONG>--nolook-for-autoloader</STRONG>, or <STRONG>-nlal</STRONG>, to deac
 <P>Likewise, if the SelfLoader module is used, perltidy will continue formatting
 code after seeing a __DATA__ line.
 Use <STRONG>--nolook-for-selfloader</STRONG>, or <STRONG>-nlsl</STRONG>, to deactivate this feature.</P>
-<P></P>
-<DT><STRONG><A NAME="item_Writing_an_HTML_file">Writing an HTML file</A></STRONG><BR>
+<P></P></DL>
+<P>
+<HR>
+<H1><A NAME="html options">HTML OPTIONS</A></H1>
+<DL>
+<DT><STRONG><A NAME="item_The_%2Dhtml_master_switch">The <STRONG>-html</STRONG> master switch</A></STRONG><BR>
 <DD>
 The flag <STRONG>-html</STRONG> causes perltidy to write an html file with extension
-<EM>.html</EM>.  
-So, for example, the following command
+<EM>.html</EM>.  So, for example, the following command
 <PRE>
         perltidy -html somefile.pl</PRE>
 <P>will produce a syntax-colored html file named <EM>somefile.pl.html</EM>
 which may be viewed with a browser.</P>
-<P>Documentation for this option has been moved to a separate man
-page, perl2web(1).</P>
+<P><STRONG>Please Note</STRONG>: In this case, perltidy does not do any formatting to the
+input file, and it does not write a formatted file with extension
+<EM>.tdy</EM>.  This means that two perltidy runs are required to create a
+fully reformatted, html copy of a script.</P>
+<P></P>
+<DT><STRONG><A NAME="item_The_%2Dpre_flag_for_code_snippets">The <STRONG>-pre</STRONG> flag for code snippets</A></STRONG><BR>
+<DD>
+When the <STRONG>-pre</STRONG> flag is given, only the pre-formatted section, within
+the &lt;PRE&gt; and &lt;/PRE&gt; tags, will be output.  This simplifies inclusion
+of the output in other files.  The default is to output a complete
+web page.
+<P></P>
+<DT><STRONG><A NAME="item_The_%2Dnnn_flag_for_line_numbering">The <STRONG>-nnn</STRONG> flag for line numbering</A></STRONG><BR>
+<DD>
+When the <STRONG>-nnn</STRONG> flag is given, the output lines will be numbered.
+<P></P>
+<DT><STRONG><A NAME="item_Style_Sheets">Style Sheets</A></STRONG><BR>
+<DD>
+Style sheets make it very convenient to control and adjust the
+appearance of html pages.  The default behavior is to write a page of
+html with an embedded style sheet.
+<P>An alternative to an embedded style sheet is to create a page with a
+link to an external style sheet.  This is indicated with the
+<STRONG>-css=filename</STRONG>,  where the external style sheet is <EM>filename</EM>.  The
+external style sheet <EM>filename</EM> will be created if and only if it does
+not exist.  This option is useful for controlling multiple pages from a
+single style sheet.</P>
+<P>To cause perltidy to write a style sheet to standard output and exit,
+use the <STRONG>-ss</STRONG>, or <STRONG>--stylesheet</STRONG>, flag.  This is useful if the style
+sheet could not be written for some reason, such as if the <STRONG>-pre</STRONG> flag
+was used.  Thus, for example,
+</P>
+<PRE>
+
+  perltidy -html -ss &gt;mystyle.css</PRE>
+<P>will write a style sheet with the default properties to file
+<EM>mystyle.css</EM>.</P>
+<P>The use of style sheets is encouraged, but a web page without a style
+sheets can be created with the flag <STRONG>-nss</STRONG>.  Use this option if you
+must to be sure that older browsers (roughly speaking, versions prior to
+4.0 of Netscape Navigator and Internet Explorer) can display the
+syntax-coloring of the html files.</P>
+<P></P>
+<DT><STRONG><A NAME="item_Controlling_HTML_properties">Controlling HTML properties</A></STRONG><BR>
+<DD>
+Syntax colors may be changed from their default values by flags of the either
+the long form, <STRONG>-html-color-xxxxxx=n</STRONG>, or more conveniently the short form,
+<STRONG>-hcx=n</STRONG>, where <STRONG>xxxxxx</STRONG> is one of the following words, and <STRONG>x</STRONG> is the
+corresponding abbreviation:
+<PRE>
+      Token Type             xxxxxx           x 
+      ----------             --------         --
+      comment                comment          c
+      number                 numeric          n
+      identifier             identifier       i
+      bareword, function     bareword         w
+      keyword                keyword          k
+      quite, pattern         quote            q
+      here doc text          here-doc-text    h
+      here doc target        here-doc-target  hh
+      punctuation            punctuation      pu
+      parentheses            paren            p
+      structural braces      structure        s
+      semicolon              semicolon        sc
+      colon                  colon            co
+      comma                  comma            cm
+      label                  label            j
+      sub definition name    subroutine       m
+      pod text               pod-text         pd</PRE>
+<P>A default set of colors has been defined, but they may be changed by providing
+values to any of the following parameters, where <STRONG>n</STRONG> is either a 6 digit 
+hex RGB color value or an ascii name for a color, such as 'red'.</P>
+<P>To illustrate, the following command will produce an html 
+file <EM>somefile.pl.html</EM> with ``aqua'' keywords:</P>
+<PRE>
+        perltidy -html -hck=00ffff somefile.pl</PRE>
+<P>and this should be equivalent for most browsers:</P>
+<PRE>
+        perltidy -html -hck=aqua somefile.pl</PRE>
+<P>Perltidy merely writes any non-hex names that it sees in the html file.
+The following 16 color names are defined in the HTML 3.2 standard:</P>
+<PRE>
+        black   =&gt; 000000,
+        silver  =&gt; c0c0c0,
+        gray    =&gt; 808080,
+        white   =&gt; ffffff,
+        maroon  =&gt; 800000,
+        red     =&gt; ff0000,
+        purple  =&gt; 800080,
+        fuchsia =&gt; ff00ff,
+        green   =&gt; 008000,
+        lime    =&gt; 00ff00,
+        olive   =&gt; 808000,
+        yellow  =&gt; ffff00
+        navy    =&gt; 000080,
+        blue    =&gt; 0000ff,
+        teal    =&gt; 008080,
+        aqua    =&gt; 00ffff,</PRE>
+<P>Many more names are supported in specific browsers, but it is safest
+to use the hex codes for other colors.  Helpful color tables can be
+located with an internet search for ``HTML color tables''.</P>
+<P>Besides color, two other character attributes may be set: bold, and italics.
+To set a token type to use bold, use the flag
+<STRONG>-html-bold-xxxxxx</STRONG> or <STRONG>-hbx</STRONG>, where <STRONG>xxxxxx</STRONG> or <STRONG>x</STRONG> are the long
+or short names from the above table.  Conversely, to set a token type to 
+NOT use bold, use <STRONG>-nohtml-bold-xxxxxx</STRONG> or <STRONG>-nhbx</STRONG>.</P>
+<P>Likewise, to set a token type to use an italic font, use the flag
+<STRONG>-html-italic-xxxxxx</STRONG> or <STRONG>-hix</STRONG>, where again <STRONG>xxxxxx</STRONG> or <STRONG>x</STRONG> are the
+long or short names from the above table.  And to set a token type to
+NOT use italics, use <STRONG>-nohtml-italic-xxxxxx</STRONG> or <STRONG>-nhix</STRONG>.</P>
+<P>For example, to use bold braces and lime color, non-bold, italics keywords the
+following command would be used:</P>
+<PRE>
+        perltidy -html -hbs -hck=00FF00 -nhbk -hik somefile.pl</PRE>
+<P>The background color can be specified with <STRONG>-html-color-background=n</STRONG>,
+or <STRONG>-hcbg=n</STRONG> for short, where n is a 6 character hex RGB value.  The
+default color of text is the value given to <STRONG>punctuation</STRONG>, which is
+black as a default.</P>
+<P>Here are some notes and hints:</P>
+<P>1. If you find a preferred set of these parameters, you may want
+to create a <EM>.perltidyrc</EM> file containing them.  See the perltidy man
+page for an explanation.</P>
+<P>2. Rather than specifying values for these parameters, it may be easier
+to accept the defaults and then edit a style sheet.  The style sheet
+contains helpful comments which should make this easy.</P>
+<P>3. The syntax-colored html files can be very large, so it may be best to
+split large files into smaller pieces to improve download times.</P>
+<P>4. The list of token types is expected to evolve over time as further
+tokenizer improvements allow a refinement in the available token types,
+so you should occasionally check for updates to this program if you use
+it frequently.</P>
 <P></P></DL>
 <P>
 <HR>
@@ -1375,9 +1584,9 @@ page, perl2web(1).</P>
 'n' to produce the negated form:</P>
 <PRE>
     D anl asc aws bbb bbc bbs bli baa syn ce csc dac dbc dcsc dnl
-    dws dp dsm dsc ddf dln dop dsn dtt dwls dwrs f fll
-    hsc html ibc icb icp lp log lal x lsl bl sbl okw ola oll pvl
-    q opt sbc sfs ssc sts se st sob t tac tbc tp tsc tqw w</PRE>
+    dws dp dpro dsm dsc ddf dln dop dsn dtt dwls dwrs f fll
+    hsc html ibc icb icp lp log lal x lsl bl sbl okw ola oll
+    pvl q opt sbc sfs ssc sts se st sob t tac tbc tp tsc tqw w</PRE>
 <P>Equivalently, the prefix 'no' on the corresponding long names may be
 used.</P>
 <P>
@@ -1414,34 +1623,42 @@ in any way.  And, of course, it does not modify pod documents.
 When standard input is used, the log file, if saved, is <EM>perltidy.LOG</EM>,
 and any errors are written to <EM>perltidy.ERR</EM> unless the <STRONG>-se</STRONG> flag is
 set.  These are saved in the current working directory.  If syntax
-checking is used, a temporary copy of the input file will be created in
-the current working directory called <EM>perltidy.TMPI</EM>, but it will be
-removed when perltidy finishes.
+checking is used, a temporary copy of the input file will be created,
+but it will be removed when perltidy finishes.
 <P>When standard output and syntax checking are used, a temporary copy of the
-output file will be created in the current working directory called
-<EM>perltidy.TMPO</EM>.  It will be removed when perltidy finishes.</P>
+output file will be created.  It will be removed when perltidy finishes.</P>
 <P></P>
 <DT><STRONG><A NAME="item_Files_overwritten">Files overwritten</A></STRONG><BR>
 <DD>
 The following file extensions are used by perltidy, and files with these
-extensions may be overwritten or deleted: <EM>.tdy</EM>, <EM>.ERR</EM>, <EM>.LOG</EM>, <EM>.TEE</EM>,
-<EM>.TMPI</EM>, <EM>.TMPO</EM>.
+extensions may be overwritten or deleted: <EM>.tdy</EM>, <EM>.ERR</EM>, <EM>.LOG</EM>, <EM>.TEE</EM>.
 <P></P>
 <DT><STRONG><A NAME="item_Files_extensions_limitations">Files extensions limitations</A></STRONG><BR>
 <DD>
 Perltidy does not operate on files for which the run could produce a file with
 a duplicated file extension.  These extensions are <EM>.tdy</EM>, <EM>.LOG</EM>, <EM>.ERR</EM>,
-<EM>.TEE</EM>, <EM>.TMPI</EM>, <EM>.TMPO</EM>.  The purpose of this rule is to prevent generating
+<EM>.TEE</EM>.  The purpose of this rule is to prevent generating
 confusing filenames such as <EM>somefile.tdy.tdy.tdy</EM>.
 <P></P></DL>
 <P>
 <HR>
 <H1><A NAME="see also">SEE ALSO</A></H1>
-<P>perl2web(1), <CODE>perlstyle(1)</CODE></P>
+<P>perlstyle(1), Perl::Tidy(3)</P>
 <P>
 <HR>
 <H1><A NAME="version">VERSION</A></H1>
-<P>This man page documents perltidy version 20011231.</P>
+<P>This man page documents perltidy version 20020225.</P>
+<P>
+<HR>
+<H1><A NAME="credits">CREDITS</A></H1>
+<P>Michael Cartmell supplied code for adaptation to VMS and helped with
+v-strings.</P>
+<P>Yves Orton supplied code for adaptation to the various versions
+of Windows.</P>
+<P>Axel Rose supplied a patch for MacPerl.</P>
+<P>Hugh S. Myers designed and implemented the initial Perl::Tidy module interface.</P>
+<P>Many others have supplied key ideas, suggestions, and bug reports;
+see the CHANGES file.</P>
 <P>
 <HR>
 <H1><A NAME="author">AUTHOR</A></H1>
@@ -1452,7 +1669,7 @@ confusing filenames such as <EM>somefile.tdy.tdy.tdy</EM>.
 <P>
 <HR>
 <H1><A NAME="copyright">COPYRIGHT</A></H1>
-<P>Copyright (c) 2000, 2001 by Steven L. Hancock</P>
+<P>Copyright (c) 2000-2002 by Steven L. Hancock</P>
 <P>
 <HR>
 <H1><A NAME="license">LICENSE</A></H1>

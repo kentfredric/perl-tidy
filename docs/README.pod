@@ -5,11 +5,6 @@ Perltidy is a tool to indent and reformat perl scripts.
 Perltidy is free software released under the GNU General Public
 License -- please see the included file "COPYING" for details.
 
-There are two source distribution files, a F<.tar.gz> "tarball" and a
-zip file, F<.zip>.  The only difference is that the line endings have
-been changed from Unix-style <lf> in the F<.tar.gz> to Windows-style
-<cr><lf> in the F<.zip> version.
-
 =head1 PREREQUISITES
 
 Perltidy should work under a standard distribution of Perl version 5.004
@@ -29,6 +24,44 @@ module:
 The total disk space needed after removing the installation directory
 will about 1 Mb.  (If neccessary, this could be reduced to about 320k
 by using perltidy to squeeze itself down using B<-dac --mangle> .)
+
+=head1 DOWNLOAD
+
+There are two source distribution files:
+
+=over 4
+
+=item *
+
+A F<.tgz> "tarball", with Unix-style <lf> line endings, and 
+
+=item *
+
+A zip file, F<.zip>, with Windows-style <cr><lf> line endings.
+
+=back
+
+
+Here are some things to watch out for:
+
+=over 4
+
+=item *
+
+Be sure to get the file with appropriate line endings.  For example,
+under Unix the pod utilities will not work correctly with Windows line
+endings.
+
+=item *
+
+Some browsers do unwanted transformations to files and filenames during
+download.  You can usually fix things after you figure out what
+happened.  For example, some browsers will decompress the F<.tgz> file
+without changing the file extension.  So if it does not decompress, see
+if it may already be a F<.tar> file.  Under Unix systems, the B<file>
+command can tell the format.
+
+=back
 
 =head1 INSTALLATION
 

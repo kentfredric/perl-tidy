@@ -4,10 +4,6 @@ Welcome to Perltidy!
     Perltidy is free software released under the GNU General Public License
     -- please see the included file "COPYING" for details.
 
-    There are two source distribution files, a .tgz "tarball" for unix
-    systems and a zip file, .zip for Windows. The only differences is that
-    the line endings have been changed to <cr><lf> for the Windows version.
-
 PREREQUISITES
     Perltidy should work under a standard distribution of Perl version 5.004
     or later. (You can find your version with "perl -v"). It may use these
@@ -23,6 +19,29 @@ PREREQUISITES
       IO::Scalar
       IO::ScalarArray
 
+    The total disk space needed after removing the installation directory
+    will about 1 Mb. (If neccessary, this could be reduced to about 320k by
+    using perltidy to squeeze itself down using -dac --mangle .)
+
+DOWNLOAD
+    There are two source distribution files:
+
+    *   A .tgz "tarball", with Unix-style <lf> line endings, and
+
+    *   A zip file, .zip, with Windows-style <cr><lf> line endings.
+
+    Here are some things to watch out for:
+
+    *   Be sure to get the file with appropriate line endings. For example,
+        under Unix the pod utilities will not work correctly with Windows
+        line endings.
+
+    *   Some browsers do unwanted transformations to files and filenames
+        during download. You can usually fix things after you figure out
+        what happened. For example, some browsers will decompress the .tgz
+        file without changing the file extension. So if it does not
+        decompress, see if it may already be a .tar file. Under Unix
+        systems, the file command can tell the format.
 
 INSTALLATION
     Please see the file INSTALL for installation information.

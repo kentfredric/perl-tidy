@@ -14,7 +14,7 @@
 	<LI><A HREF="#perltidy change log">Perltidy Change Log</A></LI>
 	<UL>
 
-		<LI><A HREF="#2002 02 14">2002 02 14</A></LI>
+		<LI><A HREF="#2002 02 25">2002 02 25</A></LI>
 		<LI><A HREF="#2001 12 31">2001 12 31</A></LI>
 		<LI><A HREF="#2001 11 28">2001 11 28</A></LI>
 		<LI><A HREF="#2001 10 20">2001 10 20</A></LI>
@@ -40,23 +40,31 @@
 <P>
 <H1><A NAME="perltidy change log">Perltidy Change Log</A></H1>
 <PRE>
- You can help Perltidy evolve into a better program.  If you 
- have hit a bug, unusual behavior, annoyance, or have a suggested
- improvement, please send a note to perltidy at users.sourceforge.net.</PRE>
+ You can help Perltidy evolve into a better program.  If you
+ have hit a bug, unusual behavior, annoyance, or have a
+ suggested improvement, please send a note to perltidy at
+ users.sourceforge.net.</PRE>
+<PRE>
+ -The abbreviation feature, which was broken in the previous version,
+  is now fixed.  Thanks to Michael Cartmell for noting this.</PRE>
+<PRE>
+ -Vertical alignment is now done for '||='  .. somehow this was 
+  missing.</PRE>
 <P>
-<H2><A NAME="2002 02 14">2002 02 14</A></H2>
+<H2><A NAME="2002 02 25">2002 02 25</A></H2>
 <PRE>
  -This version uses modules for the first time, and a standard perl
   Makefile.PL has been supplied.  However, perltidy may still be
-  installed as a single script, without modules.  Please see INSTALL for
+  installed as a single script, without modules.  See INSTALL for
   details.</PRE>
-<PRE>
- -Added patch from Axel Rose for MacPerl.  The patch prompts the user
-  for command line arguments before calling the module Perl::Tidy::perltidy.</PRE>
 <PRE>
  -The man page 'perl2web' has been merged back into the main 'perltidy'
   man page to simplify installation.  So you may remove that man page
   if you have an older installation.</PRE>
+<PRE>
+ -Added patch from Axel Rose for MacPerl.  The patch prompts the user
+  for command line arguments before calling the module 
+  Perl::Tidy::perltidy.</PRE>
 <PRE>
  -Corrected bug with '-bar' which was introduced in the previous
   version.  A closing block brace was being indented.  Thanks to
@@ -75,10 +83,15 @@
   files to be placed in directory s.  See updated man page.  Thanks for
   Mark Olesen for suggesting this.</PRE>
 <PRE>
- -New parameter --dump-profile (or -dpro) will dump to standard output
-  information about the search for a configuration file, the name of
-  whatever configuration file is selected, and its contents.  This should
-  help debugging config files, especially on different Windows systems.</PRE>
+ -New parameter --dump-profile (or -dpro) will dump to
+  standard output information about the search for a
+  configuration file, the name of whatever configuration file
+  is selected, and its contents.  This should help debugging
+  config files, especially on different Windows systems.</PRE>
+<PRE>
+ -The -w parameter now notes possible errors of the form:</PRE>
+<PRE>
+        $comment = s/^\s*(\S+)\..*/$1/;   # trim whitespace</PRE>
 <PRE>
  -Corrections added for a leading ':' and for leaving a leading 'tcsh'
   line untouched.  Mark Olesen reported that lines of this form were
@@ -88,9 +101,10 @@
         eval 'exec perl -wS $0 &quot;$@&quot;'  # shell should exec 'perl'
         unless 1;                     # but Perl should skip this one</PRE>
 <PRE>
-  Perl will silently swallow a leading colon on line 1 of a script, and now
-  perltidy will do likewise.  For example, this is a valid script, provided
-  that it is the first line, but not otherwise:</PRE>
+  Perl will silently swallow a leading colon on line 1 of a
+  script, and now perltidy will do likewise.  For example,
+  this is a valid script, provided that it is the first line,
+  but not otherwise:</PRE>
 <PRE>
         : print &quot;Hello World\n&quot;;
 </PRE>
@@ -99,10 +113,10 @@
   Also, perltidy will now mark a first line with leading ':' followed by
   '#' as type SYSTEM (just as a #!  line), not to be formatted.</PRE>
 <PRE>
- -List formatting improved for certain lists with special initial terms, such
-  as occur with 'printf', 'sprintf', 'push', 'pack', 'join', 'chmod'.  The 
-  special initial term is now placed on a line by itself.  For example,
-  perltidy -gnu</PRE>
+ -List formatting improved for certain lists with special
+  initial terms, such as occur with 'printf', 'sprintf',
+  'push', 'pack', 'join', 'chmod'.  The special initial term is
+  now placed on a line by itself.  For example, perltidy -gnu</PRE>
 <PRE>
      OLD:
         $Addr = pack(
@@ -134,8 +148,8 @@
                   '92', '94', '96', '98', '100', '102', '104'
                   );</PRE>
 <PRE>
- -Lists of complex items, such as matricies, are now detected and displayed
-  with just one item per row:</PRE>
+ -Lists of complex items, such as matricies, are now detected
+  and displayed with just one item per row:</PRE>
 <PRE>
     OLD:
     $this-&gt;{'CURRENT'}{'gfx'}{'MatrixSkew'} = Text::PDF::API::Matrix-&gt;new(
@@ -150,19 +164,20 @@
         [ 0,                  0,                  1 ]
     );</PRE>
 <PRE>
- -The perl syntax check will now be turned off when input is from
+ -The perl syntax check will be turned off for now when input is from
   standard input or standard output.  The reason is that this requires
   temporary files, which has produced far too many problems during
   Windows testing.  For example, the POSIX module under Windows XP/2000
   creates temporary names in the root directory, to which only the
   administrator should have permission to write.</PRE>
 <PRE>
- -Merged patch sent by Yves Orton to handle appropriate configuration file
-  locations for different Windows varieties (2000, NT, XP, 95, 98).</PRE>
+ -Merged patch sent by Yves Orton to handle appropriate
+  configuration file locations for different Windows varieties
+  (2000, NT, XP, 95, 98).</PRE>
 <PRE>
- -Added patch to properly handle a for/foreach loop without parens
-  around a list represented as a qw.  I didn't know this was possible
-  until Wolfgang Weisselberg pointed it out:</PRE>
+ -Added patch to properly handle a for/foreach loop without
+  parens around a list represented as a qw.  I didn't know this
+  was possible until Wolfgang Weisselberg pointed it out:</PRE>
 <PRE>
         foreach my $key qw\Uno Due Tres Quadro\ {
             print &quot;Set $key\n&quot;;
@@ -201,8 +216,9 @@
          $status == 0 and $key eq $origkey ;
          $status = $db-&gt;seq($key, $value, R_NEXT()))</PRE>
 <PRE>
- -For the -lp option, a single long term within parens (without commas) now 
-  has better alignment.  For example, perltidy -gnu</PRE>
+ -For the -lp option, a single long term within parens
+  (without commas) now has better alignment.  For example,
+  perltidy -gnu</PRE>
 <PRE>
             OLD:
             $self-&gt;throw(&quot;Must specify a known host, not $location,&quot;
@@ -216,15 +232,18 @@
 <P>
 <H2><A NAME="2001 12 31">2001 12 31</A></H2>
 <PRE>
- -This version is about 20 percent faster than the previous version as a result
- of optimization work.  The largest gain came from switching to a dispatch hash
- table in the tokenizer.</PRE>
+ -This version is about 20 percent faster than the previous
+  version as a result of optimization work.  The largest gain
+  came from switching to a dispatch hash table in the
+  tokenizer.</PRE>
 <PRE>
- -perltidy -html will check to see if HTML::Entities is installed, and if so,
- it will use it to encode unsafe characters.</PRE>
+ -perltidy -html will check to see if HTML::Entities is
+  installed, and if so, it will use it to encode unsafe
+  characters.</PRE>
 <PRE>
- -Added flag -oext=ext to change the output file extension to be different
- from the default ('tdy' or 'html').  For example:</PRE>
+ -Added flag -oext=ext to change the output file extension to
+  be different from the default ('tdy' or 'html').  For
+  example:</PRE>
 <PRE>
     perltidy -html -oext=htm filename</PRE>
 <PRE>
@@ -252,11 +271,12 @@
  significant syntax errors that it finds, such as unbalanced braces,
  unless the -q (quiet) flag is set.</PRE>
 <PRE>
- -Merged modifications created by Hugh Myers into perltidy.  These include a
- 'streamhandle' routine which allows perltidy as a module to operate on input
- and output arrays and strings in addition to files.  Documentation and new
- packaging as a module should be ready early next year; This is an elegant,
- powerful update; many thanks to Hugh for contributing it.</PRE>
+ -Merged modifications created by Hugh Myers into perltidy.
+  These include a 'streamhandle' routine which allows perltidy
+  as a module to operate on input and output arrays and strings
+  in addition to files.  Documentation and new packaging as a
+  module should be ready early next year; This is an elegant,
+  powerful update; many thanks to Hugh for contributing it.</PRE>
 <P>
 <H2><A NAME="2001 11 28">2001 11 28</A></H2>
 <PRE>
