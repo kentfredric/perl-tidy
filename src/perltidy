@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.6 2001/06/17 05:46:57 perltidy Exp $
+    $Id: perltidy,v 1.7 2001/06/17 22:45:20 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -685,12 +685,12 @@ sub process_command_line {
 
         # This is an undocumented placeholder for a possible style which
         # tries to follow the GNU Coding Standards (which do not really
-        # apply to perl but which are followed by many perl
+        # apply to perl but which are followed by some perl
         # programmers).  This will change; I haven't used -bli yet
         # because it doesn't seem to be used as often as simply -bl; 
         'gnu-style' => [
             qw(
-            lp bl
+            lp bl noll pt=2 bt=2 sbt=2
             )
         ],
 
@@ -3971,6 +3971,14 @@ sub set_white_space_flag {
             # TESTING: after promoting function call parens to structural,
             # this is needed to avoid no space in '){'
             if ( $last_token eq ')' && $token eq '{' ) { $ws = WS_YES }
+
+            # TESTING: after making hash key and array brackets structural
+            # when they contain hash lists, this became necessary to
+            # avoid any space before the brace or bracket in something like
+            #  @opts{'a','b',...}
+            if ( $last_type eq 'i' && $last_token =~ /^[\@]/ ) {
+                $ws = WS_NO;
+            }
         }
 
         # always preserver whatever space was used after a possible
@@ -6054,13 +6062,17 @@ sub scan_list {
 
                   # but not a )
                   if ( ( $type ne ')' )
+                  # if ( ( $token ne ')' )
 
                   # unless preceded by a ','
                   || ( $last_nonblank_type eq ',' )
 
                   # or followed by a ';' and there are some breaks
                   # FIXME need option here: - Part 2: at any ')->' 
-                  || ( ( $next_nonblank_token =~ /^(\;|\-\>)/ )
+                  #|| ( ( $next_nonblank_token =~ /^(\;|\-\>)/ )
+                  # FIXME: may want option to not break before simple );
+                  # BUT be careful because this can spoil vertical alignment
+                  || ( ( $next_nonblank_token =~ /^(;|->)/ )
                   && ( $breakpoint_stack[$current_depth] !=
                   $forced_breakpoint_count ) ) );
 
@@ -7504,8 +7516,6 @@ The log file warns the user if there are any such tabs.
             if ( $extra_indent_ok && ref($indentation) ) {
                 my $extra_indentation_spaces_wanted =
                   get_RECOVERABLE_SPACES($indentation);
-                #if ( $extra_indentation_spaces_wanted > 0 ) {
-                # EXPERIMENTAL
                 if ( $extra_indentation_spaces_wanted ) {
                     my $avail =
                       $rOpts->{'maximum-line-length'} -
@@ -8130,6 +8140,7 @@ This old coding is no longer necessary:
             my $extra_indentation_spaces_wanted =
               get_RECOVERABLE_SPACES($object);
 
+            # all indentation objects must be the same
             for my $i ( 1 .. $maximum_line_index ) {
                 if ( $indentation[$i] != $object ) {
                     $extra_indentation_spaces_wanted = 0;
@@ -10319,14 +10330,11 @@ EOM
                     $type = '{';
                 }
 
-                # ---------------------------------------------------------
-                # TESTING: update to make most lists structural, including
+                # make most lists structural, including
                 # sub call parameter lists
                 elsif ( $last_nonblank_type =~ /^[wiZ]$/ ) {
                     $type = '{';
                 }
-
-                # ---------------------------------------------------------
 
                 if ( $last_nonblank_type =~ /^(\))$/ ) {
                     warning(
@@ -11362,6 +11370,12 @@ sub is_non_structural_brace {
 
     # Decide if a brace or bracket is structural or non-structural
     # by looking at the previous token and type
+
+    # EXPERIMENTAL: Mark slices as structural
+    # This works, but is rarely needed.  
+    if ($last_nonblank_type eq 'i' && $last_nonblank_token =~ /^@/) {
+      return 0;
+    }
 
     # it is non-structural if it is decorated by type information
     # For example, the '{' here is non-structural:   ${xxx}
