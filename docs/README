@@ -108,6 +108,29 @@ Welcome to Perltidy!
     The documentation that comes with your perl distribution discusses other
     installation options.
 
+  Windows 95/98 problem with syntax check
+
+    There is a minor problem that you should be aware of if you are running
+    perltidy (and perl) under Windows 95/98. The problem is that command.com
+    always sends the standard error output to the screen. This makes it
+    impossible for Perltidy to capture the message 'syntax OK' when it runs
+    'perl -c' with the following code:
+
+            my $perl_output = <<`END`;
+                    perl -c $filename 2>&1
+            END
+
+    It also creates an empty file named &1. This means that you will have to
+    check for syntax errors yourself. If you do not want to create the empty
+    file &1, you can turn off syntax checking with the flag -nsyn. You can
+    then check the syntax of a file manually by issuing the command
+
+     perl -c filename
+
+    There does not seem to be a good way around this problem.
+
+    Windows 2000 does not have this problem.
+
   VMS Notes
 
     Perltidy runs under VMS, thanks to Michael Cartmell. You will probably

@@ -1177,7 +1177,7 @@ perl2web(1), perlstyle(1)
 
 =head1 VERSION
 
-This man page documents perltidy version 20011016.
+This man page documents perltidy version 20011020.
 
 =head1 AUTHOR
 

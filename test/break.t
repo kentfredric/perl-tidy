@@ -1,3 +1,25 @@
+    {
+
+    # This is difficult because the map statement
+    # We want to break at the ',' before 'join' and 'map' to display
+    # the call parameters
+    $fh->printf(
+            "\n\t%s table, %s, %s, subFeatureFlags = %08x # %s (%s)\n",
+            subtable_type_($type), $_->{'direction'}, $_->{'orientation'},
+            $subFeatureFlags,
+            "Default "
+              . ( ( ( $subFeatureFlags & $defaultFlags ) != 0 ) 
+              ? "On"
+              : "Off" ), join (
+                ", ", map {
+                    join ( ": ",
+                        $feat->settingName( $_->{'type'}, $_->{'setting'} ) );
+                  } grep { ( $_->{'enable'} & $subFeatureFlags ) != 0 }
+                  @$featureEntries
+              )
+        );
+    }
+
     # '||' alignment:
     $to = $me->get('Reply-To')
        || $me->get('From')
@@ -39,3 +61,12 @@ my $ado_info = [ qw{
           0;
       },
       @curr_sec_id );
+
+    {
+        return $pdl->slice(join ',',(map {
+                        $_ eq "X" ? ":" :
+                        ref $_ eq "ARRAY" ? join ':',@$_ :
+                        !ref $_ ? $_ :
+                        die "INVALID SLICE DEF $_"
+                } @_));
+    }

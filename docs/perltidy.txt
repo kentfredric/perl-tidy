@@ -149,16 +149,14 @@ OPTIONS
         prepared to use your "undo" key).
 
     -syn, --check-syntax
-        This causes perltidy to run "perl -c" to check syntax of input and
-        output. The results are written to the .LOG file, which will be
+        This causes perltidy to run "perl -T -c" to check syntax of input
+        and output. The results are written to the .LOG file, which will be
         saved if an error is detected in the output script. The output
         script is not checked if the input script has a syntax error. To
         skip syntax checking, use -nsyn or --nocheck-syntax. Syntax checking
         is also deactivated by the --quiet flag, discussed above.
 
-        The default value is system dependent. On Unix systems, the default
-        is to do a syntax check; on Windows systems, the default is not to
-        do the check.
+        The default is to do a syntax check.
 
     -log, --logfile
         Save the .LOG file, which has many useful diagnostics. Perltidy
@@ -785,6 +783,11 @@ OPTIONS
         The parameters in the .perltidyrc file are installed first, so any
         parameters given on the command line will have priority over them.
 
+        To avoid confusion, perltidy ignores any command in the .perltidyrc
+        file which would cause some kind of dump and an exit. These are:
+
+         -h -v -ddf -dln -dop -dsn -dtt -dwls -dwrs -ss
+
         There are several options may be helpful in debugging a .perltidyrc
         file. First, -log will force a .LOG file to be written, which
         contains the path to the .perltidyrc file, if any, and a listing of
@@ -1071,7 +1074,7 @@ SEE ALSO
     perl2web(1), perlstyle(1)
 
 VERSION
-    This man page documents perltidy version 20011016.
+    This man page documents perltidy version 20011020.
 
 AUTHOR
       Steven L. Hancock

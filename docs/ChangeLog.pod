@@ -3,8 +3,69 @@
  You can help Perltidy evolve into a better program.  If you 
  have hit a bug, unusual behavior, annoyance, or have a suggested
  improvement, please send a note to perltidy at users.sourceforge.net.  
-
 =head2 2001 xx xx
+ 
+ -Added check for multiple definitions of same subroutine.  It is easy
+ to introduce this problem when cutting and pasting, and perl does not
+ complain about it.  
+
+ -Two changes were made to help show structure of complex lists:
+  (1) breakpoints are forced after every ',' in a list where any of
+  the list items spans multiple lines, and
+  (2) List items which span multiple lines now get continuation indentation.
+
+  The following example illustrates both of these points. Thanks to
+  Wolfgang Weisselberg for this snippet and a discussion of it.  Note
+  how it is difficult to see the call parameters in the OLD version, but
+  not in the NEW version:
+
+    OLD using default parameters:
+    assert( __LINE__, ( not defined $check )
+        or ref $check
+        or $check eq "new"
+        or $check eq "old", "Error in parameters",
+        defined $old_new ? ( ref $old_new ? ref $old_new : $old_new ) : "undef",
+        defined $db_new  ? ( ref $db_new  ? ref $db_new  : $db_new )  : "undef",
+        defined $old_db ? ( ref $old_db ? ref $old_db : $old_db ) : "undef" );
+
+    NEW using default parameters:
+    assert(
+        __LINE__,
+        ( not defined $check )
+          or ref $check
+          or $check eq "new"
+          or $check eq "old",
+        "Error in parameters",
+        defined $old_new ? ( ref $old_new ? ref $old_new : $old_new ) : "undef",
+        defined $db_new  ? ( ref $db_new  ? ref $db_new  : $db_new )  : "undef",
+        defined $old_db  ? ( ref $old_db  ? ref $old_db  : $old_db )  : "undef"
+    );
+
+    NEW, using perltidy -l=60 to force more breaks:
+
+    assert(
+        __LINE__,
+        ( not defined $check )
+          or ref $check
+          or $check eq "new"
+          or $check eq "old",
+        "Error in parameters",
+        defined $old_new
+          ? ( ref $old_new ? ref $old_new : $old_new )
+          : "undef",
+        defined $db_new
+          ? ( ref $db_new ? ref $db_new : $db_new )
+          : "undef",
+        defined $old_db
+          ? ( ref $old_db ? ref $old_db : $old_db )
+          : "undef"
+    );
+
+  -Resolved cause of a difference between perltidy under perl v5.6.1 and
+  5.005_03; the problem was different behavior of \G regex position
+  marker.
+
+=head2 2001 10 20
  
  -Corrected a bug in which a break was not being made after a full-line
  comment within a short eval/sort/map/grep block.  A flag was not being
@@ -24,20 +85,23 @@
  The patch fixes this. Many thanks to Henry Story for reporting this bug.
 
  -Changes were made to help diagnose and resolve problems in a
- .perltidyrc file. (1) processing of command parameters has been into
- two separate batches so that any errors in a .perltidyrc file can be
- localized.  (2) commands --help, --version, and as many of the
- --dump-xxx commands are handled immediately, without any command line
- processing at all.  (3) Perltidy will ignore any commands in the
- .perltidyrc file which cause immediate exit.  These are:  
-   -h -v -ddf -dln -dop -dsn -dtt -dwls -dwrs -ss.  Thanks to Wolfgang
- Weisselberg for helpful suggestions regarding these updates.
+ .perltidyrc file: 
+   (1) processing of command parameters has been into two separate
+   batches so that any errors in a .perltidyrc file can be localized.  
+   (2) commands --help, --version, and as many of the --dump-xxx
+   commands are handled immediately, without any command line processing
+   at all.  
+   (3) Perltidy will ignore any commands in the .perltidyrc file which
+   cause immediate exit.  These are:  -h -v -ddf -dln -dop -dsn -dtt
+   -dwls -dwrs -ss.  Thanks to Wolfgang Weisselberg for helpful
+   suggestions regarding these updates.
 
- -Syntax check reinstated as default for all systems and documentation
- revised to warn Windows 95/98 users about the problem.  This way
- Windows 2000 users will get syntax check by default, which seems like a
- better idea.  Unfortunately $O seems to be MSWin32 for each of these
- Windows variations.
+ -Syntax check has been reinstated as default for MSWin32 systems.  This
+ way Windows 2000 users will get syntax check by default, which seems
+ like a better idea, since the number of Win 95/98 systems will be
+ decreasing over time.  Documentation revised to warn Windows 95/98
+ users about the problem with empty '&1'.  Too bad these systems
+ all report themselves as MSWin32.
 
 =head2 2001 10 16
 

@@ -1,3 +1,17 @@
+{
+    my ( %data, @row, $line, $obj, %new, $first, $last, $daily, $row, $month );
+
+    # could use odd number of fields here
+    my @alphabet = (
+        'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
+        'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
+    );
+
+    # a borderline case for list formatting:
+    return
+      join ( '!', $dircache, $itemcache, $recurse, @$podpath, $podroot,
+        stat($dircache), stat($itemcache) );
+}
 # A list with some math operations 
 %unitscale=("in",72,"pt",72.27/72,"pc",12,"mm",72/25.4,"cm",72/2.54,
 "\\hsize",100,"\\vsize",100,"\\textwidth",100,"\\textheight",100,

@@ -25,6 +25,19 @@ my @Option_spec = (
     'version'		=> sub { print "$Me version $VERSION\n"; exit },
 );
 
+{{{
+            # problem with mixed comma types : should break before '-outline':
+            $c->create(
+                'rectangle',
+                sprintf( "%dc", $x ),
+                sprintf( "%dc", $y ),
+                sprintf( "%dc", $x + 2 ),
+                sprintf( "%dc", $y + 2 ), -outline => 'black',
+                -fill => $bg,
+                -tags => 'rect'
+            );
+}}}
+
 
 # Mixing commas and comma arrows in a list below the threshold for
 # formatting does not work well

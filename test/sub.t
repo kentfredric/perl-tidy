@@ -60,3 +60,24 @@ $SIG{__DIE__} = sub {
 
 # had unwanted break at one time
 $a = [ [CopyName], [], sub { "__copy" }, [] ];
+
+# unusual sub names
+::s();
+	&s;
+::tr();
+	&m;
+&m::y();
+# this is illlegal:  s();
+sub s{
+	print "Hello s!\n";
+}
+sub tr{
+	print "Hello tr!\n";
+}
+sub ::m{
+	print "Hello m!\n";
+}
+package m;
+sub y{
+	print "Hello package m!\n";
+}

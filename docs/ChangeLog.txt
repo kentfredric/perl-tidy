@@ -3,6 +3,44 @@ Perltidy Change Log
      have hit a bug, unusual behavior, annoyance, or have a suggested
      improvement, please send a note to perltidy at users.sourceforge.net.  
 
+  2001 10 20
+
+     -Corrected a bug in which a break was not being made after a full-line
+     comment within a short eval/sort/map/grep block.  A flag was not being
+     zeroed.  The syntax error check catches this.  Here is a snippet which
+     illustrates the bug:
+
+            eval {
+                #open Socket to Dispatcher
+                $sock = &OpenSocket;
+            };
+
+     The formatter mistakenly thought that it had found the following 
+     one-line block:
+ 
+            eval {#open Socket to Dispatcher$sock = &OpenSocket; };
+
+     The patch fixes this. Many thanks to Henry Story for reporting this bug.
+
+     -Changes were made to help diagnose and resolve problems in a
+     .perltidyrc file: 
+       (1) processing of command parameters has been into two separate
+       batches so that any errors in a .perltidyrc file can be localized.  
+       (2) commands --help, --version, and as many of the --dump-xxx
+       commands are handled immediately, without any command line processing
+       at all.  
+       (3) Perltidy will ignore any commands in the .perltidyrc file which
+       cause immediate exit.  These are:  -h -v -ddf -dln -dop -dsn -dtt
+       -dwls -dwrs -ss.  Thanks to Wolfgang Weisselberg for helpful
+       suggestions regarding these updates.
+
+     -Syntax check has been reinstated as default for MSWin32 systems.  This
+     way Windows 2000 users will get syntax check by default, which seems
+     like a better idea, since the number of Win 95/98 systems will be
+     decreasing over time.  Documentation revised to warn Windows 95/98
+     users about the problem with empty '&1'.  Too bad these systems
+     all report themselves as MSWin32.
+
   2001 10 16
 
      -Fixed tokenization error in which a method call of the form
