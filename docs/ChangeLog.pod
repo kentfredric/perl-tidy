@@ -42,17 +42,19 @@
   I spent a few more minutes adding a check for this in perltidy.  
 
  -The behavior of --break-before-subs (-bbs) and --break-before-blocks
- (-bbb) has been modified slightly, hopefully for the better.  Also, a
- new control parameter, --long-block-line-count=n (-lbl=n) has been
- introduced to give more control on -bbb.  This was previously a
- hardwired value.  These are documented in the man page.  The reason for
- the change is to reduce the number of blank lines that perltidy
- introduces, and make it less erratic.  I did a lot of experimenting
- with different schemes for introducing blank lines before code blocks,
- and decided that there is no really sane way to do it.  I think the new
- scheme is an improvement, though.  The idea is to avoid long sections
- without any breaks at all in that code you inherited from Bubba.
- Thanks to Erik Thaysen for bringing this to my attention.
+ (-bbb) has been modified.  Also, a new control parameter,
+ --long-block-line-count=n (-lbl=n) has been introduced to give more
+ control on -bbb.  This was previously a hardwired value.  The reason
+ for the change is to reduce the number of unwanted blank lines that
+ perltidy introduces, and make it less erratic.  It's annoying to remove
+ an unwanted blank line and have perltidy put it back.  The goal is to
+ be able to sprinkle a few blank lines in that dense script you
+ inherited from Bubba.  I did a lot of experimenting with different
+ schemes for introducing blank lines before and after code blocks, and
+ decided that there is no really good way to do it.  But I think the new
+ scheme is an improvement.  You can always deactive this with -nbbb.
+ I've been meaning to work on this; thanks to Erik Thaysen for bringing
+ it to my attention.
 
  -The .LOG file is seldom needed, and I get tired of deleting them, so
   they will now only be automatically saved if perltidy thinks that it
@@ -115,8 +117,8 @@
  indicated that it allows just these non-alphanumeric '$#' array maximum
  index varaibles: $#: $#- $#+ so I updated the parser accordingly.  (You
  can use the @; array, for example, but you cannot get at its maximum
- index with $#;  ).  Now perltidy can parse something like this correctly:
-           $#=+$#:+ +$#-+$#++$#;#$#:)
+ index with $#;  ).  Now perltidy can parse this correctly:
+ $#:+=+$#,$#=+$#-+$#++$#;#$;)
 
  -Fixed a rare formatting problem with -lp (and -gnu) which caused
  excessive indentation.

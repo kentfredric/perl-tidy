@@ -608,7 +608,7 @@ This is negated with B<-nbbb> or  B<--noblanks-before-blocks>.
 =item B<-lbl=n> B<--long-block-line-count=n>
 
 This controls how often perltidy is allowed to add blank lines before 
-certain block types (see previous section).  The default is 12.  Entering
+certain block types (see previous section).  The default is 8.  Entering
 a value of B<0> is equivalent to entering a very large number.
 
 =item B<-mbl=n> B<--maximum-consecutive-blank-lines=n>   
