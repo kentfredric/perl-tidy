@@ -44,6 +44,59 @@
 <P>
 <H2><A NAME="2001 xx xx">2001 xx xx</A></H2>
 <PRE>
+ -added a tentative patch which tries to keep any existing breakpoints
+ at lines with leading keywords map,sort,eval,grep. The idea is to
+ improve formatting of sequences of list operations, as in a schwartzian
+ transform.  Example:</PRE>
+<PRE>
+    INPUT:
+    my @sorted = map { $_-&gt;[0] }
+                 sort { $a-&gt;[1] &lt;=&gt; $b-&gt;[1] }
+                 map { [ $_, rand ] } @list;</PRE>
+<PRE>
+    OLD:
+    my @sorted =
+      map { $_-&gt;[0] } sort { $a-&gt;[1] &lt;=&gt; $b-&gt;[1] } map { [ $_, rand ] } @list;</PRE>
+<PRE>
+    NEW:
+    my @sorted = map { $_-&gt;[0] }
+      sort { $a-&gt;[1] &lt;=&gt; $b-&gt;[1] }
+      map { [ $_, rand ] } @list;</PRE>
+<PRE>
+  The new alignment is not as nice as the input, but this is an improvement.
+  Thanks to Yves Orton for this suggestion.</PRE>
+<PRE>
+ -modified indentation logic so that a line with leading opening paren,
+ brace, or square bracket will never have less indentation than the
+ line with the corresponding opening token.  Here's a simple example:</PRE>
+<PRE>
+    OLD:
+        $mw-&gt;Button(
+            -text    =&gt; &quot;New Document&quot;,
+            -command =&gt; \&amp;new_document
+          )-&gt;pack(
+            -side   =&gt; 'bottom',
+            -anchor =&gt; 'e'
+        );</PRE>
+<PRE>
+    Note how the closing ');' is lined up with the first line, even
+    though it closes a paren in the 'pack' line.  That seems wrong.
+</PRE>
+<PRE>
+
+    NEW:
+        $mw-&gt;Button(
+            -text    =&gt; &quot;New Document&quot;,
+            -command =&gt; \&amp;new_document
+          )-&gt;pack(
+            -side   =&gt; 'bottom',
+            -anchor =&gt; 'e'
+          );</PRE>
+<PRE>
+   This seems nicer: you can up-arrow with an editor and arrive at the
+   opening 'pack' line.
+</PRE>
+<PRE>
 
  -corrected minor glitch in which cuddled else (-ce) did not get applied
  to an 'unless' block, which should look like this:</PRE>
@@ -56,6 +109,10 @@
 <PRE>
   Thanks to Jeremy Mates for reporting this.</PRE>
 <PRE>
+ -The man page has been reorganized to parameters easier to find.
+</PRE>
+<PRE>
+
  -Added check for multiple definitions of same subroutine.  It is easy
   to introduce this problem when cutting and pasting. Perl does not
   complain about it, but it can lead to disaster.</PRE>
@@ -244,6 +301,12 @@
   to a '.TEE' file.  Complete control over the treatment of pod and
   comments is still possible, as described in the updated help message 
   and man page.</PRE>
+<PRE>
+  -The logic which breaks open 'containers' has been rewritten to be completely
+  symmetric in the following sense: if a line break is placed after an opening
+  {, [, or (, then a break will be placed before the corresponding closing
+  token.  Thus, a container either remains closed or is completely cracked
+  open.</PRE>
 <PRE>
   -Correspondence between Input and Output line numbers reported in a 
    .LOG file should now be exact.  They were sometimes off due to the size

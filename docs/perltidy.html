@@ -125,6 +125,7 @@ For example, instead of <STRONG>-dump-token-types</STRONG>, it would be sufficie
 <STRONG>-dump-tok</STRONG>, or even <STRONG>-dump-t</STRONG>, to uniquely identify this command.</P>
 <P>
 <H2><A NAME="i/o control">I/O control</A></H2>
+<P>The following parameters concern the files which are read and written.</P>
 <DL>
 <DT><STRONG><A NAME="item_%2Dh%2C_%2D%2Dhelp"><STRONG>-h</STRONG>,    <STRONG>--help</STRONG></A></STRONG><BR>
 <DD>
@@ -314,8 +315,11 @@ a long line is broken.  The default is n=2, illustrated here:
  my $level =   # -ci=0    
  ( $max_index_to_go &gt;= 0 ) ? $levels_to_go[0] : $last_output_level;</PRE>
 <P>The value given to <STRONG>-ci</STRONG> is also used by some commands when a small
-space is required.  Examples are commands for outdenting labels, <STRONG>-ola</STRONG>,
-and control keywords, <STRONG>-ock</STRONG>.</P>
+space is required.  Examples are commands for outdenting labels,
+<STRONG>-ola</STRONG>, and control keywords, <STRONG>-ock</STRONG>.</P>
+<P>When default values are not used, it is suggested that the value <STRONG>n</STRONG>
+given with <STRONG>-ci=n</STRONG> be no more than about one-half of the number of
+spaces assigned to a full indentation level on the <STRONG>-i=n</STRONG> command.</P>
 <P></P>
 <DT><STRONG><A NAME="item_%2Dsil%3Dn_%2D%2Dstarting%2Dindentation%2Dlevel%3D"><STRONG>-sil=n</STRONG> <STRONG>--starting-indentation-level=n</STRONG></A></STRONG><BR>
 <DD>
@@ -331,8 +335,8 @@ By default, perltidy indents lists with 4 spaces, or whatever value
 is specified with <STRONG>-i=n</STRONG>.  Here is a small list formatted in this way:
 <PRE>
     @month_of_year = (
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct',
-        'Nov', 'Dec'
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
     );</PRE>
 <P>Use the <STRONG>-lp</STRONG> flag to add extra indentation to cause the data to begin
 past the opening parentheses of a sub call or list, or opening square
@@ -340,8 +344,8 @@ bracket of an anonymous array, or opening curly brace of an anonymous
 hash.  With this option set, the above list would become:</P>
 <PRE>
     @month_of_year = (
-                       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug',
-                       'Sep', 'Oct', 'Nov', 'Dec'
+                       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
     );</PRE>
 <P>If the available line length (see <STRONG>-l=n</STRONG> ) does not permit this much 
 space, perltidy will use less.</P>
@@ -363,9 +367,10 @@ The <STRONG>-icp</STRONG> option leaves a list-termination line of the form <COD
 or <CODE>];</CODE> indented with the same indentation as the previous line.  The
 previous example with <STRONG>-icp</STRONG> would give,
 <PRE>
-    @month_of_year = (          # -icp
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct',
-        'Nov', 'Dec'
+    # perltidy -icp:
+    @month_of_year = (
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
         );</PRE>
 <P></P>
 <DT><STRONG><A NAME="item_%2Dicb%2C_%2D%2Dindent%2Dclosing%2Dbrace"><STRONG>-icb</STRONG>, <STRONG>--indent-closing-brace</STRONG></A></STRONG><BR>
@@ -460,7 +465,9 @@ the Comment Control section to be ignored.
 Here the term ``tightness'' will mean the closeness with which
 pairs of enclosing tokens, such as parentheses, contain the quantities
 within.  A numerical value of 0, 1, or 2 defines the tightness, with
-0 being least tight and 2 being most tight.
+0 being least tight and 2 being most tight.  Spaces within containers
+are always symmetric, so if there is a space after a <CODE>(</CODE> then there
+will be a space before the corresponding <CODE>)</CODE>.
 <P>The <STRONG>-pt=n</STRONG> or <STRONG>--paren-tightness</STRONG> parameter controls the space within
 parens.  The example below shows the effect of the three possible
 values, 0, 1, and 2:</P>
@@ -638,9 +645,8 @@ whitespace, they will not be mistaken as hanging side comments.</P>
 A closing side comment is a special comment which perltidy can
 automatically create and place after the closing brace of a code block.
 They can be useful for code maintenance and debugging.  The command
-<STRONG>-csc</STRONG> (or <STRONG>-closing-side-comments</STRONG>) adds or refreshes closing side
-comments (but not if a different type of side comment exists).  For
-example, here is a small code snippet
+<STRONG>-csc</STRONG> (or <STRONG>-closing-side-comments</STRONG>) adds or updates closing side
+comments.  For example, here is a small code snippet
 <PRE>
         sub foo {
             if ( !defined( $_[0] ) ) {
@@ -666,12 +672,25 @@ cutoff limit for adding closing side comments.  This limit may be
 changed with the <STRONG>-csci</STRONG> command, described below.</P>
 <P>The command <STRONG>-dcsc</STRONG> (or <STRONG>--delete-closing-side-comments</STRONG>) reverses this 
 process and removes these comments.</P>
-<P>Three commands modify the behavior of <STRONG>-csc</STRONG> and <STRONG>-dcsc</STRONG>:</P>
-<P><STRONG>NOTE:</STRONG> If you edit the closing side comments generated by perltidy,
+<P><STRONG>NOTES:</STRONG></P>
+<UL>
+<LI>
+If a closing block contains an existing side comment, then no closing
+side comment will be created.
+<P></P>
+<LI>
+Once you use <STRONG>-csc</STRONG>, you should continue to use it so that any
+closing side comments remain correct as code changes.
+<P></P>
+<LI>
+If you edit the closing side comments generated by perltidy,
 your edits will probably be lost when you rerun perltidy with <STRONG>-csc</STRONG>.
 You could, however, change the leading pattern (say, to a single '#'
-instead of '##') to prevent perltidy from recognizing and changing the
-side comment.</P>
+instead of '##' -- see below) to prevent perltidy from recognizing and 
+changing the side comment.
+<P></P></UL>
+<P>Several commands are available to modify the behavior of these two basic
+commands, <STRONG>-csc</STRONG> and <STRONG>-dcsc</STRONG>:</P>
 <DL>
 <DT><STRONG><A NAME="item_%2Dcsci%3Dn%2C_or_%2Dclosing%2Dside%2Dcomment%2Din"><STRONG>-csci=n</STRONG>, or <STRONG>-closing-side-comment-interval=n</STRONG></A></STRONG><BR>
 <DD>
@@ -694,39 +713,51 @@ become very cluttered.</P>
 <DT><STRONG><A NAME="item_%2Dcscp%3Dstring%2C_or_%2Dclosing%2Dside%2Dcomment"><STRONG>-cscp=string</STRONG>, or <STRONG>-closing-side-comment-prefix=string</STRONG></A></STRONG><BR>
 <DD>
 where string is the prefix used before the name of the block type.  The
-default prefix, shown above, is <CODE>## end</CODE>.  This string will be added
-to closing side comments, and it will also be used to recognize them
-in order to update, delete, and format them.  Any comment
-identified as a closing side comment will be placed just a single
-space to the right of its closing brace.
+default prefix, shown above, is <CODE>## end</CODE>.  This string will be added to
+closing side comments, and it will also be used to recognize them in
+order to update, delete, and format them.  Any comment identified as a
+closing side comment will be placed just a single space to the right of
+its closing brace.
 <P></P>
 <DT><STRONG><A NAME="item_%2Dcscl%3Dstring%2C_or_%2Dclosing%2Dside%2Dcomment"><STRONG>-cscl=string</STRONG>, or <STRONG>-closing-side-comment-list-string</STRONG></A></STRONG><BR>
 <DD>
 where <CODE>string</CODE> is a list of block types to be tagged with closing side
-comments.  By default, all block types preceded by a keyword or label
-(such as <CODE>if</CODE>, <CODE>sub</CODE>, and so on) will be tagged.  The <STRONG>-cscl</STRONG> command
-changes the default list to be any selected block types.  To request
-that a block with a label be included, include a bare colon, <CODE>:</CODE>, in
-the list of block types.  For example, the following command requests
-that only <CODE>sub</CODE>'s, labels, <CODE>BEGIN</CODE>, and <CODE>END</CODE> blocks be affected by
-any <STRONG>-csc</STRONG> or <STRONG>-dcsc</STRONG> operation:
+comments.  By default, all code block types preceded by a keyword or
+label (such as <CODE>if</CODE>, <CODE>sub</CODE>, and so on) will be tagged.  The <STRONG>-cscl</STRONG>
+command changes the default list to be any selected block types.  To
+request that a block with a label be included, include a bare colon,
+<CODE>:</CODE>, in the list of block types.  For example, the following command
+requests that only <CODE>sub</CODE>'s, labels, <CODE>BEGIN</CODE>, and <CODE>END</CODE> blocks be
+affected by any <STRONG>-csc</STRONG> or <STRONG>-dcsc</STRONG> operation:
 <PRE>
    -cscl=&quot;sub : BEGIN END&quot;</PRE>
+<P></P>
+<DT><STRONG><A NAME="item_%2Dcsct%3Dn%2C_or_%2Dclosing%2Dside%2Dcomment%2Dma"><STRONG>-csct=n</STRONG>, or <STRONG>-closing-side-comment-maximum-text=n</STRONG></A></STRONG><BR>
+<DD>
+where <CODE>n</CODE> is the maximum number of columns of appended text (excluding
+the name of the block).  Omitted text is indicated with <CODE>...</CODE>.  The
+default value is <CODE>n=20</CODE>.  Tokens are never truncated, however, so
+actual lengths may exceed this.  To illustrate, in the above example,
+the appended text of the first block is <CODE> ( !defined( $_[0] )...</CODE>.  The
+existing limit of <CODE>n=20</CODE> caused this text to be truncated, as indicated
+by the <CODE>...</CODE>.
 <P></P></DL>
-<P>Please note that the adding or deleting of closing side comments take
+<P>Please note that adding or deleting of closing side comments takes
 place only through the commands <CODE>-csc</CODE> or <CODE>-dcsc</CODE>.  The other commands,
 if used, merely modify the behavior of these two commands.</P>
-<P>Also, note that if <STRONG>-csc</STRONG> is used, it should continue to be used so that
-the closing side comments are kept up to date as code changes.</P>
 <DT><STRONG><A NAME="item_Static_Block_Comments">Static Block Comments</A></STRONG><BR>
 <DD>
+Static block comments are block comments with a special leading pattern,
+<CODE>##</CODE> by default, which will be treated slightly differently from other
+block comments.  They effectively behave as if they had glue along their
+left and top edges, because they stick to the left edge and previous line
+when there is no blank spaces in those places.  This option is
+particularly useful for controlling how commented code is displayed.
 <DL>
 <DT><STRONG><A NAME="item_%2Dsbc%2C_%2D%2Dstatic%2Dblock%2Dcomments"><STRONG>-sbc</STRONG>, <STRONG>--static-block-comments</STRONG></A></STRONG><BR>
 <DD>
 When <STRONG>-sbc</STRONG> is used, a block comment with a special leading pattern, <CODE>##</CODE> by
-default, will be treated specially, and will effectively behave as if it had
-glue along its left and top edges.  This option is useful for controlling how
-commented code is displayed.
+default, will be treated specially.
 <P>Comments so identified  are treated as follows:</P>
 <UL>
 <LI>
@@ -775,14 +806,15 @@ formed.</P>
 <P></P></DL>
 <DT><STRONG><A NAME="item_Static_Side_Comments">Static Side Comments</A></STRONG><BR>
 <DD>
+Static side comments are side comments with a special leading pattern.
+This option can be useful for controlling how commented code is displayed
+when it is a side comment.
 <DL>
 <DT><STRONG><A NAME="item_%2Dssc%2C_%2D%2Dstatic%2Dside%2Dcomments"><STRONG>-ssc</STRONG>, <STRONG>--static-side-comments</STRONG></A></STRONG><BR>
 <DD>
 When <STRONG>-ssc</STRONG> is used, a side comment with a static leading pattern, which is
 <CODE>##</CODE> by default, will be be spaced only a single space from previous
 character, and it will not be vertically aligned with other side comments.
-This option can be useful for controlling how commented code is displayed
-when it is a side comment.
 <P>The default is <STRONG>-nssc</STRONG>.</P>
 <P></P>
 <DT><STRONG><A NAME="item_%2Dsscp%3Dstring%2C_%2D%2Dstatic%2Dside%2Dcomment%"><STRONG>-sscp=string</STRONG>, <STRONG>--static-side-comment-prefix=string</STRONG></A></STRONG><BR>
@@ -1013,6 +1045,7 @@ blanks retained is subject to the limit imposed by
 <P></P></DL>
 <P>
 <H2><A NAME="styles">Styles</A></H2>
+<P>A style refers to a convenient collection of existing parameters.</P>
 <DL>
 <DT><STRONG><A NAME="item_%2Dgnu%2C_%2D%2Dgnu%2Dstyle"><STRONG>-gnu</STRONG>, <STRONG>--gnu-style</STRONG></A></STRONG><BR>
 <DD>
@@ -1087,20 +1120,35 @@ file which would cause some kind of dump and an exit.  These are:</P>
 <PRE>
  -h -v -ddf -dln -dop -dsn -dtt -dwls -dwrs -ss</PRE>
 <P>There are several options may be helpful in debugging a <EM>.perltidyrc</EM>
-file:  (1) <STRONG>-log</STRONG> will force a <EM>.LOG</EM> file to be written, which
-contains the path to the <EM>.perltidyrc</EM> file, if any, and a listing of
-its parameter settings.  (2) <STRONG>-opt</STRONG> will force a <EM>.LOG</EM> file to be
-written with a complete listing of all option flags in use for a run,
-taking into account the default settings, the <EM>.perltidyrc</EM> file, plus
-any command line options.  (3) the parameters in the <EM>.perltidyrc</EM>
-file can be ignored with the <STRONG>-npro</STRONG> option.  (4) the
-commands <STRONG>-dump-options</STRONG>, <STRONG>-dump-defaults</STRONG>, <STRONG>-dump-long-names</STRONG>,
-and <STRONG>-dump-short-names</STRONG>, all described below, may all be helpful.
-(5) It may be simplest to develop and test configuration files
+file:</P>
+<UL>
+<LI>
+It may be simplest to develop and test configuration files
 with alternative names, and invoke them with <STRONG>-pro=filename</STRONG> on
 the command line.  Then rename the desired file to <EM>.perltidyrc</EM> 
-when finished.</P>
+when finished.
 <P></P>
+<LI>
+The parameters in the <EM>.perltidyrc</EM>
+file can be switched off with the <STRONG>-npro</STRONG> option.
+<P></P>
+<LI>
+The parameter <STRONG>-log</STRONG> will force a <EM>.LOG</EM> file to be written, which
+contains the path to the <EM>.perltidyrc</EM> file, if any, and a listing of
+its parameter settings.
+<P></P>
+<LI>
+The parameter <STRONG>-opt</STRONG> will force a <EM>.LOG</EM> file to be
+written with a complete listing of all option flags in use for a run,
+taking into account the default settings, the <EM>.perltidyrc</EM> file, plus
+any command line options.
+<P></P>
+<LI>
+The
+commands <STRONG>-dump-options</STRONG>, <STRONG>-dump-defaults</STRONG>, <STRONG>-dump-long-names</STRONG>,
+and <STRONG>-dump-short-names</STRONG>, all described below, may all be helpful
+in certain instances.
+<P></P></UL>
 <DT><STRONG><A NAME="item_Creating_a_new_abbreviation">Creating a new abbreviation</A></STRONG><BR>
 <DD>
 A special notation is available for use in a <EM>.perltidyrc</EM> file
@@ -1159,7 +1207,8 @@ of code to force a list to have a particular number of fields per line,
 and then a single comment could be introduced somewhere to freeze the
 formatting in future applications of perltidy, like this:</P>
 <PRE>
-    @month_of_year = (    # -mft=2
+    # perltidy -mft=2
+    @month_of_year = (    
         'Jan', 'Feb',
         'Mar', 'Apr',
         'May', 'Jun',

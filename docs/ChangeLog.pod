@@ -66,6 +66,8 @@
         }
 
   Thanks to Jeremy Mates for reporting this.
+
+ -The man page has been reorganized to parameters easier to find.
  
  -Added check for multiple definitions of same subroutine.  It is easy
   to introduce this problem when cutting and pasting. Perl does not
@@ -261,6 +263,24 @@
   -Correspondence between Input and Output line numbers reported in a 
    .LOG file should now be exact.  They were sometimes off due to the size
    of intermediate buffers.
+
+  -Corrected minor tokenization error in which a ';' in a foreach loop
+   control was tokenized as a statement termination, which forced a 
+   line break:
+
+        OLD:
+        foreach ( $i = 0;
+            $i <= 10;
+            $i += 2
+          )
+        {
+            print "$i ";
+        }
+
+        NEW:
+        foreach ( $i = 0 ; $i <= 10 ; $i += 2 ) {
+            print "$i ";
+        }
 
   -Corrected a problem with reading config files, in which quote marks were not
    stripped.  As a result, something like -wba="&& . || " would have the leading

@@ -5,6 +5,56 @@ Perltidy Change Log
 
   2001 xx xx
 
+     -added a tentative patch which tries to keep any existing breakpoints
+     at lines with leading keywords map,sort,eval,grep. The idea is to
+     improve formatting of sequences of list operations, as in a schwartzian
+     transform.  Example:
+
+        INPUT:
+        my @sorted = map { $_->[0] }
+                     sort { $a->[1] <=> $b->[1] }
+                     map { [ $_, rand ] } @list;
+
+        OLD:
+        my @sorted =
+          map { $_->[0] } sort { $a->[1] <=> $b->[1] } map { [ $_, rand ] } @list;
+
+        NEW:
+        my @sorted = map { $_->[0] }
+          sort { $a->[1] <=> $b->[1] }
+          map { [ $_, rand ] } @list;
+
+      The new alignment is not as nice as the input, but this is an improvement.
+      Thanks to Yves Orton for this suggestion.
+
+     -modified indentation logic so that a line with leading opening paren,
+     brace, or square bracket will never have less indentation than the
+     line with the corresponding opening token.  Here's a simple example:
+
+        OLD:
+            $mw->Button(
+                -text    => "New Document",
+                -command => \&new_document
+              )->pack(
+                -side   => 'bottom',
+                -anchor => 'e'
+            );
+
+        Note how the closing ');' is lined up with the first line, even
+        though it closes a paren in the 'pack' line.  That seems wrong.
+ 
+        NEW:
+            $mw->Button(
+                -text    => "New Document",
+                -command => \&new_document
+              )->pack(
+                -side   => 'bottom',
+                -anchor => 'e'
+              );
+
+       This seems nicer: you can up-arrow with an editor and arrive at the
+       opening 'pack' line.
+ 
      -corrected minor glitch in which cuddled else (-ce) did not get applied
      to an 'unless' block, which should look like this:
 
@@ -16,6 +66,8 @@ Perltidy Change Log
 
       Thanks to Jeremy Mates for reporting this.
 
+     -The man page has been reorganized to parameters easier to find.
+ 
      -Added check for multiple definitions of same subroutine.  It is easy
       to introduce this problem when cutting and pasting. Perl does not
       complain about it, but it can lead to disaster.
@@ -200,6 +252,12 @@ Perltidy Change Log
       to a '.TEE' file.  Complete control over the treatment of pod and
       comments is still possible, as described in the updated help message 
       and man page.
+
+      -The logic which breaks open 'containers' has been rewritten to be completely
+      symmetric in the following sense: if a line break is placed after an opening
+      {, [, or (, then a break will be placed before the corresponding closing
+      token.  Thus, a container either remains closed or is completely cracked
+      open.
 
       -Correspondence between Input and Output line numbers reported in a 
        .LOG file should now be exact.  They were sometimes off due to the size

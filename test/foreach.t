@@ -1,3 +1,12 @@
+# These are the same:
+for ( $i = 0 ; $i <= 10 ; $i += 2 ) {
+    print "$i ";
+}
+foreach ( $i = 0 ; $i <= 10 ; $i += 2 ) {
+    print "$i ";
+}
+
+{{
 	# a foreach loop with large list, from dh_debstd
 	# We'd like the opening '{' to be outdented inline with 'foreach':
 	# and it would look best to leave the closing ')' at the end of
@@ -29,3 +38,4 @@
           && length(%unicode_table) > 2 ) ) {
             &convert_to_unicode($_);
         }
+}}
