@@ -61,7 +61,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.22 2002/08/24 18:43:12 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.23 2002/08/25 23:34:16 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 # Preloaded methods go here.
@@ -6092,6 +6092,13 @@ sub set_white_space_flag {
                 "WS flag is undefined for tokens $last_token $token\n");
         }
 
+        # Treat newline as a whitespace. Otherwise, we might combine
+        # 'Send' and '-recipients' here according to the above rules:
+        #    my $msg = new Fax::Send
+        #      -recipients => $to,
+        #      -data => $data;
+        if ( $ws == 0  && $j==0 ) { $ws=1 }
+
         if ( ( $ws == 0 )
             && $j > 0
             && $j < $jmax
@@ -6489,7 +6496,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.22 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.23 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
