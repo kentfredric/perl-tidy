@@ -321,10 +321,19 @@ option set, the above list would become:
 If the available line length of 80 columns ( or whatever is specified with
 B<-l=n> ) does not permit this much space, perltidy will use less.
 
-This option has no effect on code BLOCKS, which always use whatever is
-specified with B<-i=n>.  Also, the existance of line breaks and/or
-comments between the opening and closing parens may cause perltidy to
-revert to its default method.
+This option has no effect on code BLOCKS, such as if/then/else blocks,
+which always use whatever is specified with B<-i=n>.  Also, the
+existance of line breaks and/or block comments between the opening and
+closing parens may cause perltidy to temporarily revert to its default
+method.
+
+Note: The B<-gnu> option may not be used together with the B<-t> tabs option.
+If B<-t> is specified, it will be ignored.
+
+In addition, any parameter which restricts the ability of perltidy to
+choose newlines will all conflict with B<-gnu> and will cause B<-gnu> to
+be deactivated.  These include 
+B<-io>, B<-fnl>, B<-nanl>, and B<-ndnl>.
 
 =item B<-mci=n>, B<--maximum-continuation-indentation=n>
 

@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.3 2001/06/13 04:40:20 perltidy Exp $
+    $Id: perltidy,v 1.4 2001/06/15 01:16:40 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -2507,6 +2507,7 @@ use vars qw{
   $formatter_self
   @ci_stack
   $last_line_had_side_comment
+  $want_break_before_comma
 
   %FORMATTER_DEBUG_FLAG
   %tightness
@@ -2762,34 +2763,31 @@ sub destroy_one_line_block {
 }
 
 sub leading_spaces_to_go {
-    my ($i) = @_;
 
     # return the number of indentation spaces for a token in the output stream;
     # these were previously stored by 'set_leading_whitespace'.
 
-    # non-gnu style stores leading spaces directly
-    unless ( $rOpts->{'gnu-indentation'} ) {
-        return $leading_spaces_to_go[$i];
-    }
+    return get_SPACES( $leading_spaces_to_go[ $_[0] ] );
 
-    # gnu style stores a reference to the spaces
-    return $leading_spaces_to_go[$i]->get_SPACES();
 }
 
-sub reduced_leading_spaces_to_go {
-    my ($i) = @_;
+sub get_SPACES {
 
-    # return the number of indentation spaces for a token for the case
-    # that we want to outdent one level;
-    # these were previously stored by 'set_leading_whitespace'.
+    # return the number of leading spaces associated with an indentation
+    # variable $indentation is either a constant number of spaces or an object
+    # with a get_SPACES method.
+    my ($indentation) = @_;
+    return ref($indentation) ? $indentation->get_SPACES() : $indentation;
+}
 
-    # non-gnu style stores leading spaces directly
-    unless ( $rOpts->{'gnu-indentation'} ) {
-        return $reduced_spaces_to_go[$i];
-    }
+sub get_AVAILABLE_SPACES_to_go {
 
-    # gnu style stores a reference to the spaces
-    return $reduced_spaces_to_go[$i]->get_SPACES();
+    my $item = $leading_spaces_to_go[ $_[0] ];
+
+    # return the number of available leading spaces associated with an
+    # indentation variable $indentation is either a constant number of
+    # spaces or an object with a get_AVAILABLE_SPACES method.
+    return ref($item) ? $item->get_AVAILABLE_SPACES() : 0;
 }
 
 sub new_gnu_indentation_item {
@@ -2872,6 +2870,7 @@ sub set_leading_whitespace {
     # Count commas and look for non-list characters.  Once we see a
     # non-list character, we give up and don't look for any more commas.
     my $type = $types_to_go[$max_index_to_go];
+
     if ( $type eq ',' ) {
 
         my $comma_count = $gnu_stack[$max_gnu_stack_index]->get_COMMA_COUNT();
@@ -3029,16 +3028,6 @@ sub set_leading_whitespace {
         }
     }
 
-    # remember the position of this token on the hypothetical line
-    if ( $max_index_to_go > 0 ) {
-        $gnu_maximum_position =
-          total_line_length( $line_start_index_to_go, $max_index_to_go );
-    }
-    else {
-        $gnu_maximum_position = $space_count +
-          token_sequence_length( $max_index_to_go, $max_index_to_go );
-    }
-
     # this token might start a new line
     # if this is a non-blank..
     if ( $type ne 'b' ) {
@@ -3047,17 +3036,26 @@ sub set_leading_whitespace {
         if ( $last_nonblank_type =~ /^[\,\{]$/
 
           # or this is a closing structure
-          || $type =~ /^[\}]$/ )
+          || $type =~ /^[\}]$/
 
-          #if ( $last_nonblank_type =~ /^[\{]$/ )
+          # or this is after an equality after a closing structure
+          || ( $last_nonblank_type =~ /^[=]/ && $last_nonblank_type ne '=>'
+          && ( $last_last_nonblank_type =~ /^[\}\)\]]$/ ) ) )
 
-          # or function call.. (PROMOTED IN TOKENIZER)
-          # || ( $last_nonblank_type =~ /^[\(]$/
-          # && $last_last_nonblank_type =~ /^[w]$/ ) )
         {
             check_for_long_gnu_style_lines();
             $line_start_index_to_go = $max_index_to_go;
         }
+    }
+
+    # remember the position of this token on the hypothetical line
+    if ( $max_index_to_go > $line_start_index_to_go ) {
+        $gnu_maximum_position =
+          total_line_length( $line_start_index_to_go, $max_index_to_go );
+    }
+    else {
+        $gnu_maximum_position = $space_count +
+          token_sequence_length( $max_index_to_go, $max_index_to_go );
     }
 
     # store a reference to the whitespace item for this token
@@ -3125,9 +3123,10 @@ sub check_for_long_gnu_style_lines {
     return if ( $max_gnu_item_index == UNDEFINED_INDEX );
 
     # see if we have exceeded the maximum desired line length
-    # (try to keep 1 free space at the end)
+    # keep 2 extra free because they are needed in some cases
+    # (result of trial-and-error testing)
     my $spaces_needed =
-      $gnu_maximum_position - $rOpts->{'maximum-line-length'} + 1;
+      $gnu_maximum_position - $rOpts->{'maximum-line-length'} + 2;
 
     return if ( $spaces_needed < 0 );
 
@@ -3236,6 +3235,10 @@ sub finish_gnu_batch {
             # remove the available space from this item
             $gnu_item_list[$i]->decrease_AVAILABLE_SPACES($deleted_spaces);
 
+            # but remember how many, because we might be able to recover
+            # them later
+            $gnu_item_list[$i]->increase_RECOVERABLE_SPACES($deleted_spaces);
+
             # now remove total space from this and any that follow
             my $j;
             for ( $j = $i ; $j <= $max_gnu_item_index ; $j++ ) {
@@ -3253,7 +3256,7 @@ sub undo_gnu_indentation {
     # NOTE: to be called from scan_list only for a sequence of tokens
     # contained between opening and closing parens/braces/brackets
 
-    my ( $ibeg, $iend, $spaces_needed ) = @_;
+    my ( $i, $spaces_needed ) = @_;
 
     my $deleted_spaces = 0;
 
@@ -3261,8 +3264,6 @@ sub undo_gnu_indentation {
 
     # this is only for the 'gnu' style
     return $deleted_spaces unless ( $rOpts->{'gnu-indentation'} );
-
-    my $i = $ibeg;
 
     # it is only safe to undo indentation if there are no children.  
     my $item = $leading_spaces_to_go[$i];
@@ -3275,42 +3276,11 @@ sub undo_gnu_indentation {
       ( $available_spaces > $spaces_needed ) ? $spaces_needed :
       $available_spaces;
 
+    # we'll remove these spaces, but mark them as recoverable
     $item->decrease_AVAILABLE_SPACES($deleted_spaces);
     $item->decrease_SPACES($deleted_spaces);
+    $item->increase_RECOVERABLE_SPACES($deleted_spaces);
     return $deleted_spaces;
-}
-
-sub append_line {
-
-    # ship a line off to vertical aligner
-    my ( $level, $leading_whitespace_count, $rfields, $rtokens, $rpatterns,
-      $flag, $outdent_long_lines ) = @_;
-
-    my $leading_string;
-
-    if ( !$rOpts->{'tabs'} ) {
-        $leading_string = ( ' ' x $leading_whitespace_count );
-    }
-
-    else {
-        $leading_string = ( $tabstr x $level );
-        my $space_count =
-          $leading_whitespace_count - $level * $rOpts->{'indent-columns'};
-
-        # just checking..shouldn't happen:
-        if ( $space_count < 0 ) {
-            warning(
-"Error in append_line: for level=$level count=$leading_whitespace_count\n"
-            );
-        }
-        else {
-            $leading_string .= ( ' ' x $space_count );
-        }
-    }
-
-    Perltidy::VerticalAligner::append_line( $level, $leading_whitespace_count,
-        $leading_string, $rfields, $rtokens, $rpatterns, $flag,
-        $outdent_long_lines );
 }
 
 sub token_sequence_length {
@@ -3429,13 +3399,30 @@ sub check_options {
     ($rOpts) = @_;
     my ( $tabbing_string, $tab_msg );
 
+    # The gnu indentation logic requires that perltidy examine large
+    # blocks of code between flushing.  When the user takes control
+    # of line breaks, perltidy never sees large enough buffers to
+    # use the -gnu style.  There's no way around this.  "It's my way
+    # or the highway".
+    if ( $rOpts->{'gnu-indentation'} ) {
+
+        if ( $rOpts->{'indent-only'} || !$rOpts->{'add-newlines'}
+          || !$rOpts->{'delete-old-newlines'} )
+        {
+            print STDERR <<EOM;
+Conflict: -gnu  conflicts with -io, -fnl, -nanl, or -ndnl; ignoring -gnu
+EOM
+            $rOpts->{'gnu-indentation'} = 0;
+        }
+    }
+
     # At present, tabs are not compatable with the gnu-indentation style
     # (it would be possible to entab the total leading whitespace
     # just prior to writing the line, if desired).
     if ( $rOpts->{'gnu-indentation'} && $rOpts->{'tabs'} ) {
-        warning(
-"'tabs' cannot be used with the 'gnu-indentation' option; spaces will be used.\n"
-        );
+        print STDERR <<EOM;
+Conflict: -t (tabs) cannot be used with the -gnu  option; ignoring -t.
+EOM
         $rOpts->{'tabs'} = 0;
     }
 
@@ -3497,11 +3484,14 @@ sub check_options {
         }
     }
 
+    $want_break_before_comma = 0;
     if ( $rOpts->{'want-break-before'} ) {
         @list = split /\s/, $rOpts->{'want-break-before'};
         foreach my $tok (@list) {
+            if ( $tok eq ',' ) { $want_break_before_comma = 1; }
             my $lbs = $left_bond_strength{$tok};
             my $rbs = $right_bond_strength{$tok};
+
             if ( defined($lbs) && defined($rbs) && $rbs < $lbs ) {
                 ( $right_bond_strength{$tok}, $left_bond_strength{$tok} ) =
                   ( $lbs, $rbs );
@@ -4750,7 +4740,6 @@ sub starting_one_line_block {
     #  1=distance from start of block to opening brace exceeds line length
     #  0=otherwise
 
-    #my $i_start = UNDEFINED_INDEX;
     my $i_start = 0;
 
     # shouldn't happen: there must have been a prior call to 
@@ -5166,13 +5155,15 @@ sub output_line_to_go {
             my ( $terminal_type, $i_terminal ) =
               terminal_type( \@types_to_go, \@block_type_to_go, $ibeg, $iend );
 
-            # modify the basic continuation indentation, if requested,
-            # according to common usage.  
-            my $undo_ci = 0;
+            # Most lines are indented according to the initial token.
+            # But it is common to outdent to the level just after the
+            # terminal token in certain cases...
+            my $use_terminal_indentation = 0;
             if ( !$rOpts->{'indent-closing-brace'}
               && $ci_levels_to_go[$ibeg] > 0 )
             {
 
+                # if we are at a closing structural token..
                 if ( $tokens_to_go[$ibeg] =~ /^[\)\}\]]$/
 
                   # outdent closing lines of the form:   ");  };  ];  )->xxx;" 
@@ -5185,31 +5176,33 @@ sub output_line_to_go {
                   && ( $nesting_depth_to_go[$iend] + 1 ==
                   $nesting_depth_to_go[$ibeg] ) ) )
                 {
-                    $undo_ci = 1;
+                    $use_terminal_indentation = 1;
 
-#print "CI: ci_depth=$ci_levels_to_go[$ibeg] end_tok=$tokens_to_go[$iend]  depth_b=$nesting_depth_to_go[$iend] depth_e=$nesting_depth_to_go[$ibeg]) \n"; 
                 }
 
                 # and at ');', '};', '>;', and '];' of a terminal qw quote
                 elsif ( $patterns[0] =~ /^qb*;$/
                   && $fields[0] =~ /^[\)\}\]\>];$/ )
                 {
-                    $undo_ci = 1;
+                    $use_terminal_indentation = 1;
                 }
             }
 
-            my $leading_whitespace_count;
+            # Select the indentation object to define leading
+            # whitespace.  If we are outdenting something like '} } );'
+            # then we want to use one level below the last token
+            # ($i_terminal) in order to get it to fully outdent through
+            # all levels.
+            my $indentation;
+            my $lev;
 
-            if ($undo_ci) {
-
-                # note that if we are outdenting something like '} } );'
-                # then we want to use the level below the last token ($iend)
-                # in order to get it to fully outdent through all levels.
-                $leading_whitespace_count =
-                  reduced_leading_spaces_to_go($i_terminal);
+            if ($use_terminal_indentation) {
+                $indentation = $reduced_spaces_to_go[$i_terminal];
+                $lev         = $levels_to_go[$i_terminal];
             }
             else {
-                $leading_whitespace_count = leading_spaces_to_go($ibeg);
+                $indentation = $leading_spaces_to_go[$ibeg];
+                $lev         = $levels_to_go[$ibeg];
             }
 
             # we will allow outdenting of long lines..
@@ -5221,12 +5214,10 @@ sub output_line_to_go {
               # and if it is a long quote or comment
               && $types_to_go[$ibeg] =~ /^[Q#]$/ );
 
-            append_line(
-              $levels_to_go[$ibeg], $leading_whitespace_count,
-              \@fields,             \@tokens,
-              \@patterns,           $forced_breakpoint_to_go[$iend],
-              $outdent_long_lines
-            );
+            # send this new line down the pipe
+            Perltidy::VerticalAligner::append_line( $lev, $indentation,
+                \@fields, \@tokens, \@patterns, $forced_breakpoint_to_go[$iend],
+                $outdent_long_lines );
         }
     }
     prepare_for_a_new_line();
@@ -5586,7 +5577,8 @@ sub set_bond_strengths {
             }
 
             # Don't break after keyword my.  This is a quick fix for a
-            # rare problem. An example is this line from file Container.pm:
+            # rare problem with perl. An example is this line from file 
+            # Container.pm:
 # foreach my $question( Debian::DebConf::ConfigDb::gettree( $this->{'question'} ) )
 
             if ( $token eq 'my' ) {
@@ -5668,8 +5660,6 @@ sub set_bond_strengths {
         }
 
         # never break between sub name and opening paren
-        # TESTING for gnu-style update
-        # if ( ( $type eq 'w' ) && ( $next_nonblank_type eq '(' ) ) {
         if ( ( $type eq 'w' ) && ( $next_nonblank_token eq '(' ) ) {
             $bond_str = NO_BREAK;
         }
@@ -5765,6 +5755,7 @@ sub scan_list {
     my @old_breakpoint_count_stack = ();
     my @breakpoint_undo_stack      = ();
     my @container_type             = ();
+    my @last_comma_index           = ();
     my $old_breakpoint_count       = 0;
     my $saw_comma                  = 0;
     $item_count_stack[$current_depth]       = 0;
@@ -5860,9 +5851,11 @@ sub scan_list {
             # if we mis-identify a block, it will be wrapped and therefore
             # fixed the next time it is formatted.
             my $i_opening_minus = $i_opening;
+
             if ( $saw_opening_structure && $i_opening > 0 ) {
                 my $im1    = $i_opening - 1;
                 my $im2    = $i_opening - 2;
+                my $im3    = $i_opening - 3;
                 my $typem1 = $types_to_go[$im1];
                 if ( $token eq ')' )     { $i_opening_minus = $im1 }
                 elsif ( $typem1 eq 'k' ) { $i_opening_minus = $im1 }
@@ -5871,11 +5864,8 @@ sub scan_list {
                 {
                     $i_opening_minus = $im2;
                 }
+
             }
-              
-            #my $i_opening_minus =
-            #  ( defined($i_opening) && $i_opening > 0 && $token eq ')' ) ?
-            #  $i_opening - 1 : $i_opening;
 
             # We've set breaks after all comma-arrows.  Now we have to
             # undo them if this can be a one-line block
@@ -5985,6 +5975,21 @@ sub scan_list {
                 {
                     set_forced_breakpoint($i);
                 }
+
+                # break at any comma before the opening structure Added
+                # for -gnu, but seems to be good in general.  It isn't
+                # obvious how far back to look; the '5' below seems to
+                # work well and will catch the comma in something like
+                #  push @list, myfunc( $param, $param, ..
+
+                if ( defined($i_opening) ) {
+                    my $icomma = $last_comma_index[$depth];
+                    if ( defined($icomma) && ( $i_opening - $icomma ) < 5 ) {
+                        unless ( $forced_breakpoint_to_go[$icomma] ) {
+                            set_forced_breakpoint($icomma);
+                        }
+                    }
+                }
             }
 
             if ( $depth < $starting_depth ) {
@@ -6014,7 +6019,7 @@ sub scan_list {
 
             # EXPERIMENTAL .. revert to standard indentation if we are not
             # going to format this list.  This is no longer needed.
-            # my $deleted = undo_gnu_indentation($i, $i, 100000);
+            # my $deleted = undo_gnu_indentation($i, 100000);
         }
 
         # any side comment in a list forces use of old breakpoints
@@ -6025,6 +6030,7 @@ sub scan_list {
         # now just handle any commas
         next unless ( $type eq ',' );
         $saw_comma = 1;
+        $last_comma_index[$depth] = $i;
 
         # break here if this comma follows a '=>'
         # but not if there is a side comment after the comma
@@ -6150,12 +6156,11 @@ sub set_list_breakpoints {
       $rcomma_index, $interrupted, $rmax_length, $next_nonblank_type,
       $is_multiline ) = @_;
 
-
     # nothing to do if no commas seen
     return if ( $item_count < 1 );
 
     # are we an item contained in an outer list?
-    my $in_hierarchical_list =  $next_nonblank_type =~ /^[\}\,]$/;
+    my $in_hierarchical_list = $next_nonblank_type =~ /^[\}\,]$/;
 
     my $i_first_comma = $$rcomma_index[0];
     my $i_last_comma  = $$rcomma_index[ $item_count - 1 ];
@@ -6244,11 +6249,43 @@ sub set_list_breakpoints {
     my $pair_width       = ( $$rmax_length[0] + $$rmax_length[1] );
     my $max_pairs        = int( $columns / $pair_width );
     my $number_of_fields = $max_pairs * 2;
-
-    # try for one column if two won't work
-    my $max_width =
+    my $max_width        =
       ( $$rmax_length[0] > $$rmax_length[1] ) ? $$rmax_length[0] :
       $$rmax_length[1];
+
+    # ----------------------------------------------------------------------
+    # If we are crowded and the -gnu option is being used, try to
+    # undo some indentation 
+    # ----------------------------------------------------------------------
+
+    if ( $number_of_fields < 2 ) {
+        my $available_spaces = get_AVAILABLE_SPACES_to_go($i_first_comma);
+        if ( $available_spaces > 0 ) {
+
+            # asking for an extra space for safety
+            my $spaces_wanted = 1 + $pair_width - $columns;    # for 2 fields
+            if ( $spaces_wanted > $available_spaces
+              || $rOpts->{'maximum-fields-per-table'} == 1 )
+            {
+                $spaces_wanted = 1 + $max_width - $columns;    # for 1 field
+            }
+
+            # ask for space if needed
+            if ( $spaces_wanted > 0 ) {
+                undo_gnu_indentation( $i_first_comma, $spaces_wanted );
+
+                # redo the math
+                my $columns =
+                  $rOpts->{'maximum-line-length'} -
+                  leading_spaces_to_go($i_first_comma);
+                $columns -= 1;
+                $max_pairs        = int( $columns / $pair_width );
+                $number_of_fields = $max_pairs * 2;
+            }
+        }
+    }
+
+    # try for one column if two won't work
     if ( $number_of_fields <= 0 ) {
         $number_of_fields = int( $columns / $max_width );
     }
@@ -6261,7 +6298,7 @@ sub set_list_breakpoints {
         $number_of_fields = int $rOpts->{'maximum-fields-per-table'};
     }
 
-    if ( $number_of_fields <= 0 ) { 
+    if ( $number_of_fields <= 0 ) {
 
         #---------------------------------------------------------------
         # We're in trouble.  There is no simple answer here; we may
@@ -6274,8 +6311,10 @@ sub set_list_breakpoints {
 
         # break at every comma if user asked for 1 field per table or if
         # we are an item in a larger list
-        if ($rOpts->{'maximum-fields-per-table'} == 1 || $in_hierarchical_list )
+        if ( $rOpts->{'maximum-fields-per-table'} == 1
+          || $in_hierarchical_list )
         {
+
             for ( my $j = 0 ; $j < $comma_count ; $j++ ) {
                 my $i = $$rcomma_index[$j];
                 set_forced_breakpoint($i);
@@ -6283,7 +6322,7 @@ sub set_list_breakpoints {
         }
 
         # for all others cases, just return and let the continuation line logic
-        # try to figure it out.
+        # chew on it
         return;
     }
 
@@ -6345,6 +6384,7 @@ sub set_list_breakpoints {
     # on the same line as the list.  This is still imprecise, but not
     # too bad.  (steve.t1)
     my $too_long = $packed_columns > $columns;
+
     if ( defined($i_opening_paren) && $i_opening_paren > 0 ) {
         if ( $tokens_to_go[$i_opening_paren] eq '(' ) {
             my $i_opening_minus = $i_opening_paren - 1;
@@ -6354,8 +6394,8 @@ sub set_list_breakpoints {
         }
     }
 
-
     my $must_format = $too_long && $in_hierarchical_list;
+
 #print "LISTX: next=$next_nonblank_type  avail cols=$columns packed=$packed_columns must format = $must_format\n";
 
     #---------------------------------------------------------------
@@ -6365,17 +6405,16 @@ sub set_list_breakpoints {
     # too spaced.  It seems that the more packed lines we have, the
     # sparser the list that can be allowed and still look ok.
     #---------------------------------------------------------------
-    
+
     if ( !$must_format
       && ( ( $formatted_lines < 3 && $packed_lines < $formatted_lines )
       || ( $formatted_lines < 2 )
       || ( $unused_columns > $max_allowed_sparsity * $formatted_columns ) ) )
     {
 
-        # EXPERIMENTAL .. revert to standard indentation if we are not
-        # going to format this list
-        my $deleted =
-          undo_gnu_indentation( $i_first_comma, $i_last_comma, 100000 );
+        # revert to standard indentation if we are not
+        # going to format this list..EXPERIMENTAL..deactivated
+        #my $deleted = undo_gnu_indentation( $i_first_comma, 100000 );
 
         # use old breakpoints if this is more than 2 lines
         # (otherwise, the list breakup will be at the mercy of the
@@ -6453,6 +6492,10 @@ sub set_nobreaks {
 
 sub set_forced_breakpoint {
     my ($i) = @_;
+    if ( $want_break_before_comma && $i >= 0 && $types_to_go[$i] eq ',' ) {
+        $i--;
+    }
+
     if ( $i >= 0 && $i <= $max_index_to_go ) {
         my $i_nonblank = ( $types_to_go[$i] ne 'b' ) ? $i : $i - 1;
 
@@ -6790,10 +6833,12 @@ sub set_continuation_breaks {
 
             if ( $FORMATTER_DEBUG_FLAG{BREAK} ) {
                 print
+
 #"BREAK: testing i = $i_test imax=$imax $types_to_go[$i_test] $next_nonblank_type leading sp=($leading_spaces) \n";
 
 # next length = $lengths_to_go[$i_test+2] too_long=$too_long str=$strength\n"; 
-print "BREAK: testing i = $i_test imax=$imax $types_to_go[$i_test] $next_nonblank_type leading sp=($leading_spaces) next length = $lengths_to_go[$i_test+2] too_long=$too_long str=$strength\n";
+                  print
+"BREAK: testing i = $i_test imax=$imax $types_to_go[$i_test] $next_nonblank_type leading sp=($leading_spaces) next length = $lengths_to_go[$i_test+2] too_long=$too_long str=$strength\n";
             }
 
             # allow one extra terminal token after exceeding line length
@@ -6896,15 +6941,16 @@ sub compare_indentation_levels {
 package Perltidy::IndentationItem;
 
 # Indexes for indentation items
-use constant GNU_ITEM_SPACES           => 0;    # total leading white spaces
-use constant GNU_ITEM_LEVEL            => 1;    # the indentation 'level'
-use constant GNU_ITEM_CI_LEVEL         => 2;    # the 'continuation level'
-use constant GNU_ITEM_AVAILABLE_SPACES => 3;    # how many spaces we could free
-use constant GNU_ITEM_CLOSED           => 4;    # tells if we saw a closing '}'
-use constant GNU_ITEM_COMMA_COUNT      => 5;    # how many commas at this level?
-use constant GNU_ITEM_SEQUENCE_NUMBER  => 6;    # output batch number
-use constant GNU_ITEM_INDEX            => 7;    # index in output batch list
-use constant GNU_ITEM_HAVE_CHILD       => 8;    # any dependents?
+use constant GNU_ITEM_SPACES             => 0;  # total leading white spaces
+use constant GNU_ITEM_LEVEL              => 1;  # the indentation 'level'
+use constant GNU_ITEM_CI_LEVEL           => 2;  # the 'continuation level'
+use constant GNU_ITEM_AVAILABLE_SPACES   => 3;  # how many spaces we could free
+use constant GNU_ITEM_CLOSED             => 4;  # tells if we saw a closing '}'
+use constant GNU_ITEM_COMMA_COUNT        => 5;  # how many commas at this level?
+use constant GNU_ITEM_SEQUENCE_NUMBER    => 6;  # output batch number
+use constant GNU_ITEM_INDEX              => 7;  # index in output batch list
+use constant GNU_ITEM_HAVE_CHILD         => 8;  # any dependents?
+use constant GNU_ITEM_RECOVERABLE_SPACES => 9;  # desired extra rhs indentation
 
 sub new {
 
@@ -6914,25 +6960,26 @@ sub new {
     # See constants GNU_ITEM_xxx for storage scheme.
     my ( $class, $spaces, $level, $ci_level, $available_spaces, $index,
       $gnu_sequence_number ) = @_;
-    my $closed      = 0;
-    my $comma_count = 0;
-    my $have_child  = -1;
+    my $closed            = 0;
+    my $comma_count       = 0;
+    my $have_child        = -1;
+    my $want_right_spaces = 0;
     bless [
         $spaces,              $level,
         $ci_level,            $available_spaces,
         $closed,              $comma_count,
         $gnu_sequence_number, $index,
-        $have_child
+        $have_child,          $want_right_spaces
     ], $class;
 }
 
 sub get_SPACES {
-    my ( $self ) = @_;
+    my ($self) = @_;
     return $self->[GNU_ITEM_SPACES];
 }
 
 sub get_AVAILABLE_SPACES {
-    my ( $self ) = @_;
+    my ($self) = @_;
     return $self->[GNU_ITEM_AVAILABLE_SPACES];
 }
 
@@ -6952,23 +6999,36 @@ sub decrease_AVAILABLE_SPACES {
     return $self->[GNU_ITEM_AVAILABLE_SPACES];
 }
 
+sub get_RECOVERABLE_SPACES {
+    my ($self) = @_;
+    return $self->[GNU_ITEM_RECOVERABLE_SPACES];
+}
+
+sub increase_RECOVERABLE_SPACES {
+    my ( $self, $value ) = @_;
+    if ( defined($value) ) {
+        $self->[GNU_ITEM_RECOVERABLE_SPACES] += $value;
+    }
+    return $self->[GNU_ITEM_RECOVERABLE_SPACES];
+}
+
 sub get_CI_LEVEL {
-    my ( $self ) = @_;
+    my ($self) = @_;
     return $self->[GNU_ITEM_CI_LEVEL];
 }
 
 sub get_LEVEL {
-    my ( $self ) = @_;
+    my ($self) = @_;
     return $self->[GNU_ITEM_LEVEL];
 }
 
 sub get_SEQUENCE_NUMBER {
-    my ( $self ) = @_;
+    my ($self) = @_;
     return $self->[GNU_ITEM_SEQUENCE_NUMBER];
 }
 
 sub get_INDEX {
-    my ( $self ) = @_;
+    my ($self) = @_;
     return $self->[GNU_ITEM_INDEX];
 }
 
@@ -6981,7 +7041,7 @@ sub set_HAVE_CHILD {
 }
 
 sub get_HAVE_CHILD {
-    my ( $self ) = @_;
+    my ($self) = @_;
     return $self->[GNU_ITEM_HAVE_CHILD];
 }
 
@@ -6994,7 +7054,7 @@ sub set_COMMA_COUNT {
 }
 
 sub get_COMMA_COUNT {
-    my ( $self ) = @_;
+    my ($self) = @_;
     return $self->[GNU_ITEM_COMMA_COUNT];
 }
 
@@ -7007,7 +7067,7 @@ sub set_CLOSED {
 }
 
 sub get_CLOSED {
-    my ( $self ) = @_;
+    my ($self) = @_;
     return $self->[GNU_ITEM_CLOSED];
 }
 
@@ -7047,9 +7107,9 @@ use vars qw(
   @matching_patterns
   @ci
   @fields
-  @leading_string
   @leading_space_count
   @outdent_long_lines
+  @indentation
   $last_comment_column
   $lines_since_last_side_comment
   $last_lines_since_last_side_comment
@@ -7089,10 +7149,10 @@ sub initialize {
 
     # variables describing each line of the group
     @ci = ();                     # continuation indentation
-    @leading_string      = ();    # indentation string
     @leading_space_count = ();    # number of leading spaces
-    @fields              = ();    # reference to list of columns
-    @outdent_long_lines  = ();    # flag indicating if ok to outdent long lines
+    @fields = ();                 # reference to list of columns
+    @outdent_long_lines = ();     # flag indicating if ok to outdent long lines
+    @indentation        = ();     # indentation object
 
     $outdented_line_count    = 0;
     $first_outdented_line_at = 0;
@@ -7123,6 +7183,23 @@ sub report_definite_bug {
     if ($logger_object) {
         $logger_object->report_definite_bug();
     }
+}
+
+sub get_SPACES {
+
+    # return the number of leading spaces associated with an indentation
+    # variable $indentation is either a constant number of spaces or an
+    # object with a get_SPACES method.
+    my ($indentation) = @_;
+    return ref($indentation) ? $indentation->get_SPACES() : $indentation;
+}
+
+sub get_RECOVERABLE_SPACES {
+
+    # return the number of spaces to the right that we might be able
+    # shift a group of lines with the same indentation
+    my ($indentation) = @_;
+    return ref($indentation) ? $indentation->get_RECOVERABLE_SPACES() : 0;
 }
 
 sub append_line {
@@ -7182,8 +7259,10 @@ side comments.  Tabs in these fields can mess up the column counting.
 The log file warns the user if there are any such tabs.
 
 =cut
-    my ( $level, $leading_space_count, $leading_string, $rfields, $rtokens,
-      $rpatterns, $is_forced_break, $outdent_long_lines ) = @_;
+    my ( $level, $indentation, $rfields, $rtokens, $rpatterns, $is_forced_break,
+      $outdent_long_lines ) = @_;
+
+    my $leading_space_count = get_SPACES($indentation);
 
     # number of fields is $jmax
     # number of tokens between fields is $jmax-1
@@ -7206,8 +7285,12 @@ The log file warns the user if there are any such tabs.
 
     # do not align code across indentation level changes
     if ( $level != $group_level ) {
+
+        # we are allowed to shift a group of lines to the right if its 
+        # level is greater than the previous and next group
         $extra_indent_ok =
           ( $level < $group_level && $last_group_level_written < $group_level );
+
         flush();
         $extra_indent_ok     = 0;
         $last_comment_column = 0;
@@ -7235,8 +7318,8 @@ The log file warns the user if there are any such tabs.
 
         # write directly if no current group and no side comment
         if ( $maximum_line_index < 0 ) {
-            write_leader_and_string( $leading_space_count, $leading_string,
-                $$rfields[0], 0, $outdent_long_lines );
+            write_leader_and_string( $leading_space_count, $$rfields[0], 0,
+                $outdent_long_lines );
             $lines_since_last_side_comment++;
             return;
         }
@@ -7609,7 +7692,7 @@ The log file warns the user if there are any such tabs.
     # --------------------------------------------------------------------
     $maximum_line_index++;
     $leading_space_count[$maximum_line_index] = $leading_space_count;
-    $leading_string[$maximum_line_index]      = $leading_string;
+    $indentation[$maximum_line_index]         = $indentation;
     $outdent_long_lines[$maximum_line_index]  = $outdent_long_lines;
     $fields[$maximum_line_index] = $rfields;
 
@@ -7785,7 +7868,6 @@ use overload '+' => \&plus,
 
         for my $i ( 0 .. $maximum_line_index ) {
             my $leading_space_count = $leading_space_count[$i];
-            my $leading_string      = $leading_string[$i];
             my $gap =
               $columns[1] - $leading_space_count - length( $fields[$i][0] );
 
@@ -7831,16 +7913,50 @@ This old coding is no longer necessary:
     }
 
 =cut
+    #----------------------------------------------------------
+    # Define any extra indentation space (for the -gnu option).  
+    # Here is why:
+    # If a list has side comments, sub scan_list must dump the
+    # list before it sees everything.  When this happens, it sets
+    # the indentation to the standard scheme, but notes how
+    # many spaces it would have liked to use.  We may be able
+    # to recover that space here in the event that that all of the
+    # lines of a list are back together again.
+    #----------------------------------------------------------
+    my $extra_leading_spaces = 0;
+
+    if ($extra_indent_ok) {
+        my $object = $indentation[0];
+        if ( ref($object) ) {
+            my $extra_indentation_spaces_wanted =
+              get_RECOVERABLE_SPACES($object);
+
+            for my $i ( 1 .. $maximum_line_index ) {
+                if ( $indentation[$i] != $object ) {
+                    $extra_indentation_spaces_wanted = 0;
+                    last;
+                }
+            }
+
+            if ($extra_indentation_spaces_wanted) {
+
+                # the maximum space without exceeding the line length:
+                my $avail = $rOpts->{'maximum-line-length'} - $columns[$kmax];
+                $extra_leading_spaces =
+                  ( $avail > $extra_indentation_spaces_wanted ) ?
+                  $extra_indentation_spaces_wanted : $avail;
+            }
+        }
+    }
+
     # loop over all lines
     for my $i ( 0 .. $maximum_line_index ) {
 
         my $leading_space_count = $leading_space_count[$i];
-        my $leading_string      = $leading_string[$i];
         my $outdent_long_lines  = $outdent_long_lines[$i];
 
         # add any extra spaces
         if ( $leading_space_count > $group_leader_length ) {
-            $leading_string .= ' ' x $min_ci_gap;
             $leading_space_count += $min_ci_gap;
         }
 
@@ -7887,8 +8003,8 @@ This old coding is no longer necessary:
           ( length( $fields[$i][$maximum_field_index] ) );
 
         # ship this line off
-        write_leader_and_string( $leading_space_count, $leading_string, $str,
-            $side_comment_length, $outdent_long_lines );
+        write_leader_and_string( $leading_space_count + $extra_leading_spaces,
+            $str, $side_comment_length, $outdent_long_lines );
     }
     $maximum_line_index  = -1;
     $maximum_field_index = -1;
@@ -7930,8 +8046,10 @@ sub combine_fields {
 
 sub write_leader_and_string {
 
-    my ( $leading_space_count, $leading_string, $str, $side_comment_length,
-      $outdent_long_lines ) = @_;
+    my ( $leading_space_count, $str, $side_comment_length, $outdent_long_lines )
+      = @_;
+
+    my $leading_string = get_leading_string($leading_space_count);
 
     # reduce continuation indentation if it will make the line fit
     # in the available page width.  Do not include side comment length
@@ -7970,6 +8088,44 @@ sub write_leader_and_string {
 
     $file_writer_object->write_code_line( $leading_string . $str . "\n" );
     $last_group_level_written = $group_level;
+}
+
+sub get_leading_string {
+
+    # define the leading whitespace string for this line..
+    my ($leading_whitespace_count) = @_;
+
+    my $leading_string;
+
+    # Handle case of zero whitespace, which includes multi-line quotes
+    # (which may have a finite level; this prevents tab problems)
+    if ( $leading_whitespace_count <= 0 ) {
+        $leading_string = "";
+    }
+
+    # Handle simple case of no tabs
+    elsif ( !$rOpts->{'tabs'} || $rOpts->{'indent-columns'} <= 0 ) {
+        $leading_string = ( ' ' x $leading_whitespace_count );
+    }
+
+    # Handle tabs
+    else {
+        $leading_string = ( "\t" x $group_level );
+        my $space_count =
+          $leading_whitespace_count - $group_level * $rOpts->{'indent-columns'};
+
+        # shouldn't happen:
+        if ( $space_count < 0 ) {
+            warning(
+"Error in append_line: for level=$group_level count=$leading_whitespace_count\n"
+            );
+            $leading_string = ( ' ' x $leading_whitespace_count );
+        }
+        else {
+            $leading_string .= ( ' ' x $space_count );
+        }
+    }
+    return $leading_string;
 }
 
 sub report_anything_unusual {
