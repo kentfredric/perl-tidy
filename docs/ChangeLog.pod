@@ -4,6 +4,17 @@
  have hit a bug, unusual behavior, annoyance, or have a suggested
  improvement, please send a note to perltidy at users.sourceforge.net.  
 
+ -Modifications made to display tables more compactly when possible,
+  without adding lines. For example,
+  old:
+                '1', "I", '2', "II", '3', "III", '4', "IV",
+                '5', "V", '6', "VI", '7', "VII", '8', "VIII",
+                '9', "IX"
+  new:
+                '1', "I",   '2', "II",   '3', "III",
+                '4', "IV",  '5', "V",    '6', "VI",
+                '7', "VII", '8', "VIII", '9', "IX"
+
  -Corrected minor bug in which -pt=2 did not keep the right paren tight
  around a '++' or '--' token, like this:
 

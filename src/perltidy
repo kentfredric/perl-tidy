@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.30 2001/08/19 00:16:03 perltidy Exp $
+    $Id: perltidy,v 1.31 2001/08/19 15:42:11 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -4339,7 +4339,7 @@ sub print_line_of_tokens {
     #     /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
     # Examples:
     #   *VERSION = \'1.01';
-    #   ( $VERSION ) = '$Revision: 1.30 $ ' =~ /\$Revision:\s+([^\s]+)/;
+    #   ( $VERSION ) = '$Revision: 1.31 $ ' =~ /\$Revision:\s+([^\s]+)/;
     # We will pass such a line straight through unless -npvl is used
     my $is_VERSION_statement = 0;
 
@@ -6951,7 +6951,7 @@ sub set_list_breakpoints {
         # out of this.  But it is important to set breakpoints if we are
         # contained in an outer list, to alert them to break apart.  We 
         # could look for sublists to format nicely, but that's a lot of 
-        # work.  For now, we will do something simple.
+        # work.  For now, we will just bail out as fast as possible.
         #---------------------------------------------------------------
 
         # break at every comma if user asked for 1 field per table or if
@@ -6971,10 +6971,25 @@ sub set_list_breakpoints {
         return;
     }
 
+    # How many lines will this require?
     my $formatted_lines = $item_count / ($number_of_fields);
     if ( $formatted_lines != int $formatted_lines ) {
         $formatted_lines = 1 + int $formatted_lines;
     }
+
+    # Compact tables are easier to read, so let's see if we can use fewer 
+    # fields without increasing the number of lines.
+    if ( $number_of_fields >= 4 && $formatted_lines > 0 ) {
+        my $min_fields;
+        for ( $min_fields = $number_of_fields ;
+            $min_fields >= 2 && $min_fields * $formatted_lines >= $item_count ;
+            $min_fields -= 2 )
+        {
+            $number_of_fields = $min_fields;
+        }
+    }
+
+    # How many spaces across the page will we fill?
     my $columns_per_line =
       ( int $number_of_fields / 2 ) * $pair_width + ( $number_of_fields % 2 ) *
       $$rmax_length[1];
@@ -8022,24 +8037,6 @@ package Perltidy::VerticalAligner::Line;
         return $self->[MAXIMUM_LINE_LENGTH]-$self->get_column($jmax);
     }
 
-    sub save_columns {
-
-        my $self=shift;
-        my $jmax = $self->get_jmax();
-        for my $j ( 0 .. $jmax ) {
-            $self->[RALIGNMENTS]->[$j]->save_column();
-        }
-    }
-
-    sub restore_columns {
-
-        my $self=shift;
-        my $jmax = $self->get_jmax();
-        for my $j ( 0 .. $jmax ) {
-            $self->[RALIGNMENTS]->[$j]->restore_column();
-        }
-    }
-
     sub set_jmax                { $_[0]->[JMAX]                = $_[1] }
     sub set_jmax_original_line  { $_[0]->[JMAX_ORIGINAL_LINE]  = $_[1] }
     sub set_rtokens             { $_[0]->[RTOKENS]             = $_[1] }
@@ -8074,6 +8071,8 @@ package Perltidy::VerticalAligner::Alignment;
     use constant STARTING_LINE   => 3;    # the line index of creation
     use constant ENDING_LINE     => 4;    # the most recent line to use it
     use constant SAVED_COLUMN    => 5;    # the most recent line to use it
+    use constant SERIAL_NUMBER   => 6;    # unique number for this alignment
+                                          # (just its index in an array)
 
     # Correspondence between variables and array indexes
     my %_index_map;
@@ -8083,6 +8082,7 @@ package Perltidy::VerticalAligner::Alignment;
     $_index_map{starting_line}   = STARTING_LINE;
     $_index_map{ending_line}     = ENDING_LINE;
     $_index_map{saved_column}    = SAVED_COLUMN;
+    $_index_map{serial_number}   = SERIAL_NUMBER;
 
     my @_default_data = ();
     $_default_data[COLUMN]          = undef;
@@ -8091,6 +8091,7 @@ package Perltidy::VerticalAligner::Alignment;
     $_default_data[STARTING_LINE]   = undef;
     $_default_data[ENDING_LINE]     = undef;
     $_default_data[SAVED_COLUMN]    = undef;
+    $_default_data[SERIAL_NUMBER]   = undef;
 
     # class population count
     {
@@ -8127,6 +8128,7 @@ package Perltidy::VerticalAligner::Alignment;
     sub get_matching_token  { return $_[0]->[MATCHING_TOKEN] }
     sub get_starting_line   { return $_[0]->[STARTING_LINE] }
     sub get_ending_line     { return $_[0]->[ENDING_LINE] }
+    sub get_serial_number   { return $_[0]->[SERIAL_NUMBER] }
 
     sub set_column          { $_[0]->[COLUMN]          = $_[1] }
     sub set_starting_column { $_[0]->[STARTING_COLUMN] = $_[1] }
@@ -8163,6 +8165,8 @@ to flush.
 
 use vars qw(
   $current_line
+  $maximum_alignment_index
+  $ralignment_list
   $maximum_jmax_seen
   $minimum_jmax_seen
   $previous_minimum_jmax_seen
@@ -8192,13 +8196,11 @@ sub initialize {
     ( $rOpts, $file_writer_object, $logger_object, $diagnostics_object ) = @_;
 
     # variables describing the entire space group:
-    $maximum_line_index = -1;    # lines in the current group
 
-    $current_line             = undef;
+    $ralignment_list          = [];
     $group_level              = 0;
     $last_group_level_written = -1;
     $extra_indent_ok          = 0;    # can we move all lines to the right?
-    $zero_count               = 0;    # count consecutive lines without tokens
     $last_comment_column      = 0;
     $lines_since_last_side_comment      = 100;
     $last_lines_since_last_side_comment = 100;
@@ -8214,6 +8216,15 @@ sub initialize {
     $outdented_line_count    = 0;
     $first_outdented_line_at = 0;
     $last_outdented_line_at  = 0;
+
+    initialize_for_new_group();
+}
+
+sub initialize_for_new_group {
+    $maximum_line_index      = -1;      # lines in the current group
+    $maximum_alignment_index = -1;      # alignments in current group
+    $zero_count              = 0;       # count consecutive lines without tokens
+    $current_line            = undef;   # line being matched for alignment
 }
 
 # interface to Perltidy::Diagnostics routines
@@ -8264,6 +8275,48 @@ sub get_STACK_DEPTH {
 
     my ($indentation) = @_;
     return ref($indentation) ? $indentation->get_STACK_DEPTH() : 0;
+}
+
+sub make_alignment {
+    my ($col, $token) = @_;
+
+    # make one new alignment at column $col which aligns token $token
+    ++$maximum_alignment_index;
+    my $alignment =
+      new Perltidy::VerticalAligner::Alignment( 
+                column          => $col,
+                starting_column => $col,
+                matching_token  => $token,
+                starting_line   => $maximum_line_index,
+                ending_line     => $maximum_line_index,
+                serial_number   => $maximum_alignment_index,
+            );
+    $ralignment_list->[$maximum_alignment_index] = $alignment;
+    return $alignment;
+}
+
+sub dump_alignments {
+   print "Current Alignments:\ni\ttoken\tstarting_column\tcolumn\tstarting_line\tending_line\n";
+   for my $i(0..$maximum_alignment_index) {
+      my $column = $ralignment_list->[$i]->get_column();
+      my $starting_column = $ralignment_list->[$i]->get_starting_column();
+      my $matching_token = $ralignment_list->[$i]->get_matching_token();
+      my $starting_line = $ralignment_list->[$i]->get_starting_line();
+      my $ending_line = $ralignment_list->[$i]->get_ending_line();
+      print "$i\t$matching_token\t$starting_column\t$column\t$starting_line\t$ending_line\n";
+   }
+}
+
+sub save_alignment_columns {
+   for my $i(0..$maximum_alignment_index) {
+      $ralignment_list->[$i]->save_column();
+   }
+}
+
+sub restore_alignment_columns {
+   for my $i(0..$maximum_alignment_index) {
+      $ralignment_list->[$i]->restore_column();
+   }
 }
 
 sub append_line {
@@ -8457,10 +8510,7 @@ The log file warns the user if there are any such tabs.
         decide_if_list($new_line);
     }
 
-    if ( $maximum_line_index >= 0 ) {
-
-        #my $old_line = $group_lines[0];
-        #$current_line = $group_lines[0];
+    if ( $current_line ) {
 
         # --------------------------------------------------------------------
         # Allow hanging side comment to join current group, if any
@@ -8501,7 +8551,7 @@ The log file warns the user if there are any such tabs.
         # --------------------------------------------------------------------
         # See if there is space for this line in the current group (if any)
         # --------------------------------------------------------------------
-        if ( $maximum_line_index >= 0 ) {
+        if ( $current_line ) {
             check_fit( $new_line, $current_line );
         }
     }
@@ -8525,6 +8575,7 @@ The log file warns the user if there are any such tabs.
         dump_array(@$rtokens);
         print "APPEND patterns:";
         dump_array(@$rpatterns);
+        dump_alignments(); 
     }
 }
 
@@ -8866,7 +8917,8 @@ sub check_fit {
         my $padding_available = $old_line->get_available_space_on_right();
 
         # save current columns in case this doesn't work
-        $old_line->save_columns();
+        #$old_line->save_columns();
+        save_alignment_columns();
 
         for my $j ( 0 .. $jmax ) {
 
@@ -8929,7 +8981,8 @@ sub check_fit {
             {
 
                 # revert to starting state then flush; things didn't work out
-                $old_line->restore_columns();
+                #$old_line->restore_columns();
+                restore_alignment_columns();
                 flush();
                 last;
             }
@@ -8959,13 +9012,9 @@ sub accept_line {
             $col += length( $$rfields[$j] );
 
             # create initial alignments for the new group
-            my $alignment = new Perltidy::VerticalAligner::Alignment(
-                column          => $col,
-                starting_column => $col,
-                matching_token  => $$rtokens[$j],
-                starting_line   => $maximum_line_index,
-                ending_line     => $maximum_line_index,
-            );
+            my $token = "";
+            if ($j < $jmax) {$token=$$rtokens[$j]}
+            my $alignment = make_alignment($col,$token);
             $new_line->set_alignment($j,$alignment);
         }
 
@@ -9029,11 +9078,9 @@ sub flush {
             $group_leader_length, $extra_leading_spaces );
     }
 
-    # initialize for new group
-    $maximum_line_index = -1;
-    $zero_count         = 0;
-    $current_line       = undef;
+    initialize_for_new_group(); 
 }
+
 
 sub decide_if_aligned {
 
