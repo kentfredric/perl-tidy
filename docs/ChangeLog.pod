@@ -6,6 +6,19 @@
 
 =head2 2001 xx xx
 
+ -I experimented with different ways of reporting syntax errors found
+ when perl -c is run on the INPUT file.  I decided that the best thing
+ to do for now is to output 'perl -c' error messages only if perltidy is
+ invoked with -w.  The reason is that perl will report lots of problems
+ and syntax errors which are not of interest when only a small snippet
+ is being formatted (such as missing modules, unknown bare words).  It
+ would be nice if there were a simple way to extract the really
+ low-level syntax errors, but I don't see one yet.  So, use -w to see
+ all possible error messages.  Perltidy will continue to report what
+ appear to be significant syntax errors that it finds.
+
+=head2 2001 11 28
+
  -added a tentative patch which tries to keep any existing breakpoints
  at lines with leading keywords map,sort,eval,grep. The idea is to
  improve formatting of sequences of list operations, as in a schwartzian
@@ -152,9 +165,10 @@
   the list items spans multiple lines, and
   (2) List items which span multiple lines now get continuation indentation.
 
-  The following example illustrates both of these points. Thanks to
-  Wolfgang Weisselberg for this snippet and a discussion of it.  Note
-  how it is easier to see the call parameters in the NEW version:
+  The following example illustrates both of these points.  Many thanks to
+  Wolfgang Weisselberg for this snippet and a discussion of it; this is a
+  significant formatting improvement. Note how it is easier to see the call
+  parameters in the NEW version:
 
     OLD:
     assert( __LINE__, ( not defined $check )
@@ -260,6 +274,26 @@
   token.  Thus, a container either remains closed or is completely cracked
   open.
 
+  -Improved indentation of parenthesized lists.  For example, 
+
+            OLD:
+            $GPSCompCourse =
+              int(
+              atan2( $GPSTempCompLong - $GPSLongitude,
+              $GPSLatitude - $GPSTempCompLat ) * 180 / 3.14159265 );
+
+            NEW:
+            $GPSCompCourse = int(
+                atan2(
+                    $GPSTempCompLong - $GPSLongitude,
+                    $GPSLatitude - $GPSTempCompLat
+                  ) * 180 / 3.14159265
+            );
+
+   Further improvements will be made in future releases.
+
+  -Some improvements were made in formatting small lists.
+
   -Correspondence between Input and Output line numbers reported in a 
    .LOG file should now be exact.  They were sometimes off due to the size
    of intermediate buffers.
@@ -288,7 +322,13 @@
    versions is to place a space around all tokens within the quotes, like this:
    -wba=" && . || "
 
-  -Corrected tokenization error for the following (non-recommended) construct:
+  -Removed any existing space between a label and its ':'
+    OLD    : { }
+    NEW: { }
+   This was necessary because the label and its colon are a single token.
+
+  -Corrected tokenization error for the following (highly non-recommended) 
+   construct:
     $user = @vars[1] / 100;
  
   -Resolved cause of a difference between perltidy under perl v5.6.1 and

@@ -98,10 +98,13 @@ all applications before the first test to avoid loss of data in case the
 system freezes.  If the first test works, it should be fine.</P>
 <P>
 <H2><A NAME="installation  windows">Installation - Windows</A></H2>
-<P>Here is how to install Perltidy under Windows.
-After unpacking the zip file, test the script:</P>
+<P>Here is how to install Perltidy under Windows.  On a Windows 9x system
+it is a good idea to close any existing applications to avoid losing
+unsaved data in case of trouble.</P>
+<P>If perl is in your path, you can test the script after unpacking the
+zip file with the command:</P>
 <PRE>
- perl perltidy lextest.pl</PRE>
+ perltidy lextest.pl</PRE>
 <P>This will produce an output file lextest.pl.tdy which can be
 compared to the input file.</P>
 <P>Placing <EM>perltidy</EM> and <EM>perltidy.bat</EM> in your path should work.  (You can
@@ -124,15 +127,16 @@ when it runs 'perl -c' with the following code:</P>
         my $perl_output = &lt;&lt;`END`;
                 perl -c $filename 2&gt;&amp;1
         END</PRE>
-<P>It also creates an empty file named <EM>&amp;1</EM>.  This means that you will
-have to check for syntax errors yourself.   If you do not want to create
-the empty file <EM>&amp;1</EM>, you can turn off syntax checking with the flag
-<STRONG>-nsyn</STRONG>.  You can then check the syntax of a file manually by issuing the
-command</P>
+<P>Under Windows 95 it also creates an empty file named <EM>&amp;1</EM>, and under
+Windows 98 it seems to cause a message 'bad command or filename'.  To
+avoid this, the batch file perltidy.bat has the -nsyn switch set.  
+This means that you will have to check for syntax errors yourself.   You
+can then check the syntax of a file manually by issuing the command</P>
 <PRE>
  perl -c filename</PRE>
 <P>There does not seem to be a good way around this problem.</P>
-<P>Windows 2000 does not have this problem.</P>
+<P>Windows 2000 (and presumably XP) does not have this problem.  These
+versions of Windows do not require the -nsyn switch.</P>
 <P>
 <H2><A NAME="vms notes">VMS Notes</A></H2>
 <P>Perltidy runs under VMS, thanks to Michael Cartmell.  You will

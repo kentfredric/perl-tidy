@@ -734,13 +734,17 @@ affected by any <STRONG>-csc</STRONG> or <STRONG>-dcsc</STRONG> operation:
 <P></P>
 <DT><STRONG><A NAME="item_%2Dcsct%3Dn%2C_or_%2Dclosing%2Dside%2Dcomment%2Dma"><STRONG>-csct=n</STRONG>, or <STRONG>-closing-side-comment-maximum-text=n</STRONG></A></STRONG><BR>
 <DD>
-where <CODE>n</CODE> is the maximum number of columns of appended text (excluding
-the name of the block).  Omitted text is indicated with <CODE>...</CODE>.  The
-default value is <CODE>n=20</CODE>.  Tokens are never truncated, however, so
-actual lengths may exceed this.  To illustrate, in the above example,
-the appended text of the first block is <CODE> ( !defined( $_[0] )...</CODE>.  The
-existing limit of <CODE>n=20</CODE> caused this text to be truncated, as indicated
-by the <CODE>...</CODE>.
+The text appended to certain block types, such as an <CODE>if</CODE> block, is
+whatever lies between the keyword introducing the block, such as <CODE>if</CODE>,
+and the opening brace.  Since this might be too much text for a side
+comment, there needs to be a limit, and that is the purpose of this
+parameter.  The default value is <CODE>n=20</CODE>, meaning that no additional
+tokens will be appended to this text after its length reaches 20
+characters.  Omitted text is indicated with <CODE>...</CODE>.  (Tokens, including
+sub names, are never truncated, however, so actual lengths may exceed
+this).  To illustrate, in the above example, the appended text of the
+first block is <CODE> ( !defined( $_[0] )...</CODE>.  The existing limit of
+<CODE>n=20</CODE> caused this text to be truncated, as indicated by the <CODE>...</CODE>.
 <P></P></DL>
 <P>Please note that adding or deleting of closing side comments takes
 place only through the commands <CODE>-csc</CODE> or <CODE>-dcsc</CODE>.  The other commands,
@@ -1406,7 +1410,7 @@ confusing filenames such as <EM>somefile.tdy.tdy.tdy</EM>.
 <P>
 <HR>
 <H1><A NAME="version">VERSION</A></H1>
-<P>This man page documents perltidy version 20011119.</P>
+<P>This man page documents perltidy version 20011128.</P>
 <P>
 <HR>
 <H1><A NAME="author">AUTHOR</A></H1>

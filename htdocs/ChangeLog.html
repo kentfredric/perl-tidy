@@ -14,6 +14,7 @@
 	<LI><A HREF="#perltidy change log">Perltidy Change Log</A></LI>
 	<UL>
 
+		<LI><A HREF="#2001 11 28">2001 11 28</A></LI>
 		<LI><A HREF="#2001 10 20">2001 10 20</A></LI>
 		<LI><A HREF="#2001 10 16">2001 10 16</A></LI>
 		<LI><A HREF="#2001 09 03">2001 09 03</A></LI>
@@ -40,6 +41,336 @@
  You can help Perltidy evolve into a better program.  If you 
  have hit a bug, unusual behavior, annoyance, or have a suggested
  improvement, please send a note to perltidy at users.sourceforge.net.</PRE>
+<P>
+<H2><A NAME="2001 11 28">2001 11 28</A></H2>
+<PRE>
+ -added a tentative patch which tries to keep any existing breakpoints
+ at lines with leading keywords map,sort,eval,grep. The idea is to
+ improve formatting of sequences of list operations, as in a schwartzian
+ transform.  Example:</PRE>
+<PRE>
+    INPUT:
+    my @sorted = map { $_-&gt;[0] }
+                 sort { $a-&gt;[1] &lt;=&gt; $b-&gt;[1] }
+                 map { [ $_, rand ] } @list;</PRE>
+<PRE>
+    OLD:
+    my @sorted =
+      map { $_-&gt;[0] } sort { $a-&gt;[1] &lt;=&gt; $b-&gt;[1] } map { [ $_, rand ] } @list;</PRE>
+<PRE>
+    NEW:
+    my @sorted = map { $_-&gt;[0] }
+      sort { $a-&gt;[1] &lt;=&gt; $b-&gt;[1] }
+      map { [ $_, rand ] } @list;</PRE>
+<PRE>
+  The new alignment is not as nice as the input, but this is an improvement.
+  Thanks to Yves Orton for this suggestion.</PRE>
+<PRE>
+ -modified indentation logic so that a line with leading opening paren,
+ brace, or square bracket will never have less indentation than the
+ line with the corresponding opening token.  Here's a simple example:</PRE>
+<PRE>
+    OLD:
+        $mw-&gt;Button(
+            -text    =&gt; &quot;New Document&quot;,
+            -command =&gt; \&amp;new_document
+          )-&gt;pack(
+            -side   =&gt; 'bottom',
+            -anchor =&gt; 'e'
+        );</PRE>
+<PRE>
+    Note how the closing ');' is lined up with the first line, even
+    though it closes a paren in the 'pack' line.  That seems wrong.
+</PRE>
+<PRE>
+
+    NEW:
+        $mw-&gt;Button(
+            -text    =&gt; &quot;New Document&quot;,
+            -command =&gt; \&amp;new_document
+          )-&gt;pack(
+            -side   =&gt; 'bottom',
+            -anchor =&gt; 'e'
+          );</PRE>
+<PRE>
+   This seems nicer: you can up-arrow with an editor and arrive at the
+   opening 'pack' line.
+</PRE>
+<PRE>
+
+ -corrected minor glitch in which cuddled else (-ce) did not get applied
+ to an 'unless' block, which should look like this:</PRE>
+<PRE>
+        unless ($test) {</PRE>
+<PRE>
+        } else {</PRE>
+<PRE>
+        }</PRE>
+<PRE>
+  Thanks to Jeremy Mates for reporting this.</PRE>
+<PRE>
+ -The man page has been reorganized to parameters easier to find.
+</PRE>
+<PRE>
+
+ -Added check for multiple definitions of same subroutine.  It is easy
+  to introduce this problem when cutting and pasting. Perl does not
+  complain about it, but it can lead to disaster.</PRE>
+<PRE>
+ -The command -pro=filename  or -profile=filename may be used to specify a
+  configuration file which will override the default name of .perltidyrc.
+  There must not be a space on either side of the '=' sign.  I needed
+  this to be able to easily test perltidy with a variety of different
+  configuration files.</PRE>
+<PRE>
+ -Side comment alignment has been improved somewhat across frequent level
+  changes, as in short if/else blocks.  Thanks to Wolfgang Weisselberg 
+  for pointing out this problem.  For example:
+</PRE>
+<PRE>
+
+    OLD:
+    if ( ref $self ) {    # Called as a method
+        $format = shift;
+    }
+    else {    # Regular procedure call
+        $format = $self;
+        undef $self;
+    }</PRE>
+<PRE>
+    NEW:
+    if ( ref $self ) {    # Called as a method
+        $format = shift;
+    }
+    else {                # Regular procedure call
+        $format = $self;
+        undef $self;
+    }</PRE>
+<PRE>
+ -New command -ssc (--static-side-comment) and related command allows
+  side comments to be spaced close to preceding character.  This is
+  useful for displaying commented code as side comments.</PRE>
+<PRE>
+ -New command -csc (--closing-side-comment) and several related
+  commands allow comments to be added to (and deleted from) any or all
+  closing block braces.  This can be useful if you have to maintain large
+  programs, especially those that you didn't write.  See updated man page.
+  Thanks to Peter Masiar for this suggestion.  For a simple example:</PRE>
+<PRE>
+        perltidy -csc</PRE>
+<PRE>
+        sub foo {
+            if ( !defined( $_[0] ) ) {
+                print(&quot;Hello, World\n&quot;);
+            }
+            else {
+                print( $_[0], &quot;\n&quot; );
+            }
+        } ## end sub foo</PRE>
+<PRE>
+  This added '## end sub foo' to the closing brace.  
+  To remove it, perltidy -ncsc.</PRE>
+<PRE>
+ -New commands -ola, for outdenting labels, and -okw, for outdenting
+  selected control keywords, were implemented.  See the perltidy man
+  page for details.  Thanks to Peter Masiar for this suggestion.</PRE>
+<PRE>
+ -Hanging side comment change: a comment will not be considered to be a
+  hanging side comment if there is no leading whitespace on the line.
+  This should improve the reliability of identifying hanging side comments.
+  Thanks to Peter Masiar for this suggestion.</PRE>
+<PRE>
+ -Two new commands for outdenting, -olq (outdent-long-quotes) and -olc
+  (outdent-long-comments), have been added.  The original -oll
+  (outdent-long-lines) remains, and now is an abbreviation for -olq and -olc.
+  The new default is just -olq.  This was necessary to avoid inconsistency with
+  the new static block comment option.</PRE>
+<PRE>
+ -Static block comments:  to provide a way to display commented code
+  better, the convention is used that comments with a leading '##' should
+  not be formatted as usual.  Please see '-sbc' (or '--static-block-comment')
+  for documentation.  It can be deactivated with with -nsbc, but
+  should not normally be necessary. Thanks to Peter Masiar for this 
+  suggestion.</PRE>
+<PRE>
+ -Two changes were made to help show structure of complex lists:
+  (1) breakpoints are forced after every ',' in a list where any of
+  the list items spans multiple lines, and
+  (2) List items which span multiple lines now get continuation indentation.</PRE>
+<PRE>
+  The following example illustrates both of these points.  Many thanks to
+  Wolfgang Weisselberg for this snippet and a discussion of it; this is a
+  significant formatting improvement. Note how it is easier to see the call
+  parameters in the NEW version:</PRE>
+<PRE>
+    OLD:
+    assert( __LINE__, ( not defined $check )
+        or ref $check
+        or $check eq &quot;new&quot;
+        or $check eq &quot;old&quot;, &quot;Error in parameters&quot;,
+        defined $old_new ? ( ref $old_new ? ref $old_new : $old_new ) : &quot;undef&quot;,
+        defined $db_new  ? ( ref $db_new  ? ref $db_new  : $db_new )  : &quot;undef&quot;,
+        defined $old_db ? ( ref $old_db ? ref $old_db : $old_db ) : &quot;undef&quot; );</PRE>
+<PRE>
+    NEW: 
+    assert(
+        __LINE__,
+        ( not defined $check )
+          or ref $check
+          or $check eq &quot;new&quot;
+          or $check eq &quot;old&quot;,
+        &quot;Error in parameters&quot;,
+        defined $old_new ? ( ref $old_new ? ref $old_new : $old_new ) : &quot;undef&quot;,
+        defined $db_new  ? ( ref $db_new  ? ref $db_new  : $db_new )  : &quot;undef&quot;,
+        defined $old_db  ? ( ref $old_db  ? ref $old_db  : $old_db )  : &quot;undef&quot;
+    );</PRE>
+<PRE>
+    Another example shows how this helps displaying lists:</PRE>
+<PRE>
+    OLD:
+    %{ $self-&gt;{COMPONENTS} } = (
+        fname =&gt;
+        { type =&gt; 'name', adj =&gt; 'yes', font =&gt; 'Helvetica', 'index' =&gt; 0 },
+        street =&gt;
+        { type =&gt; 'road', adj =&gt; 'yes', font =&gt; 'Helvetica', 'index' =&gt; 2 },
+    );</PRE>
+<PRE>
+    The structure is clearer with the added indentation:
+</PRE>
+<PRE>
+
+    NEW:
+    %{ $self-&gt;{COMPONENTS} } = (
+        fname =&gt;
+          { type =&gt; 'name', adj =&gt; 'yes', font =&gt; 'Helvetica', 'index' =&gt; 0 },
+        street =&gt;
+          { type =&gt; 'road', adj =&gt; 'yes', font =&gt; 'Helvetica', 'index' =&gt; 2 },
+    );</PRE>
+<PRE>
+    -The structure of nested logical expressions is now displayed better.
+    Thanks to Wolfgang Weisselberg for helpful discussions.  For example,
+    note how the status of the final 'or' is displayed in the following:</PRE>
+<PRE>
+    OLD:
+    return ( !null($op)
+          and null( $op-&gt;sibling )
+          and $op-&gt;ppaddr eq &quot;pp_null&quot;
+          and class($op) eq &quot;UNOP&quot;
+          and ( ( $op-&gt;first-&gt;ppaddr =~ /^pp_(and|or)$/
+            and $op-&gt;first-&gt;first-&gt;sibling-&gt;ppaddr eq &quot;pp_lineseq&quot; )
+            or ( $op-&gt;first-&gt;ppaddr eq &quot;pp_lineseq&quot;
+                and not null $op-&gt;first-&gt;first-&gt;sibling
+                and $op-&gt;first-&gt;first-&gt;sibling-&gt;ppaddr eq &quot;pp_unstack&quot; ) ) );</PRE>
+<PRE>
+    NEW:
+    return (
+        !null($op)
+          and null( $op-&gt;sibling )
+          and $op-&gt;ppaddr eq &quot;pp_null&quot;
+          and class($op) eq &quot;UNOP&quot;
+          and (
+            (
+                $op-&gt;first-&gt;ppaddr =~ /^pp_(and|or)$/
+                and $op-&gt;first-&gt;first-&gt;sibling-&gt;ppaddr eq &quot;pp_lineseq&quot;
+            )
+            or ( $op-&gt;first-&gt;ppaddr eq &quot;pp_lineseq&quot;
+                and not null $op-&gt;first-&gt;first-&gt;sibling
+                and $op-&gt;first-&gt;first-&gt;sibling-&gt;ppaddr eq &quot;pp_unstack&quot; )
+          )
+    );</PRE>
+<PRE>
+   -A break will always be put before a list item containing a comma-arrow.
+   This will improve formatting of mixed lists of this form:</PRE>
+<PRE>
+        OLD:
+        $c-&gt;create(
+            'text', 225, 20, -text =&gt; 'A Simple Plot',
+            -font =&gt; $font,
+            -fill =&gt; 'brown'
+        );</PRE>
+<PRE>
+        NEW:
+        $c-&gt;create(
+            'text', 225, 20,
+            -text =&gt; 'A Simple Plot',
+            -font =&gt; $font,
+            -fill =&gt; 'brown'
+        );</PRE>
+<PRE>
+  -For convenience, the command -dac (--delete-all-comments) now also
+  deletes pod.  Likewise, -tac (--tee-all-comments) now also sends pod
+  to a '.TEE' file.  Complete control over the treatment of pod and
+  comments is still possible, as described in the updated help message 
+  and man page.</PRE>
+<PRE>
+  -The logic which breaks open 'containers' has been rewritten to be completely
+  symmetric in the following sense: if a line break is placed after an opening
+  {, [, or (, then a break will be placed before the corresponding closing
+  token.  Thus, a container either remains closed or is completely cracked
+  open.</PRE>
+<PRE>
+  -Improved indentation of parenthesized lists.  For example,</PRE>
+<PRE>
+            OLD:
+            $GPSCompCourse =
+              int(
+              atan2( $GPSTempCompLong - $GPSLongitude,
+              $GPSLatitude - $GPSTempCompLat ) * 180 / 3.14159265 );</PRE>
+<PRE>
+            NEW:
+            $GPSCompCourse = int(
+                atan2(
+                    $GPSTempCompLong - $GPSLongitude,
+                    $GPSLatitude - $GPSTempCompLat
+                  ) * 180 / 3.14159265
+            );</PRE>
+<PRE>
+   Further improvements will be made in future releases.</PRE>
+<PRE>
+  -Some improvements were made in formatting small lists.</PRE>
+<PRE>
+  -Correspondence between Input and Output line numbers reported in a 
+   .LOG file should now be exact.  They were sometimes off due to the size
+   of intermediate buffers.</PRE>
+<PRE>
+  -Corrected minor tokenization error in which a ';' in a foreach loop
+   control was tokenized as a statement termination, which forced a 
+   line break:</PRE>
+<PRE>
+        OLD:
+        foreach ( $i = 0;
+            $i &lt;= 10;
+            $i += 2
+          )
+        {
+            print &quot;$i &quot;;
+        }</PRE>
+<PRE>
+        NEW:
+        foreach ( $i = 0 ; $i &lt;= 10 ; $i += 2 ) {
+            print &quot;$i &quot;;
+        }</PRE>
+<PRE>
+  -Corrected a problem with reading config files, in which quote marks were not
+   stripped.  As a result, something like -wba=&quot;&amp;&amp; . || &quot; would have the leading
+   quote attached to the &amp;&amp; and not work correctly.  A workaround for older
+   versions is to place a space around all tokens within the quotes, like this:
+   -wba=&quot; &amp;&amp; . || &quot;</PRE>
+<PRE>
+  -Removed any existing space between a label and its ':'
+    OLD    : { }
+    NEW: { }
+   This was necessary because the label and its colon are a single token.</PRE>
+<PRE>
+  -Corrected tokenization error for the following (highly non-recommended) 
+   construct:
+    $user = @vars[1] / 100;
+</PRE>
+<PRE>
+
+  -Resolved cause of a difference between perltidy under perl v5.6.1 and
+  5.005_03; the problem was different behavior of \G regex position
+  marker(!)</PRE>
 <P>
 <H2><A NAME="2001 10 20">2001 10 20</A></H2>
 <PRE>

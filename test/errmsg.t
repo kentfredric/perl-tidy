@@ -11,6 +11,7 @@
 sub a{ print "hi"}
 sub a{ print "hi"}
 
+
 # complain of multiple commas (require -w)
 register_language(
     'name'        => => 'objc',
@@ -85,6 +86,9 @@ sub pqr {
 # this creates the message "Scalar found where operator expected"
 # since the @( is a punctuation variable.
 ($day, $stock) = @($row);
+
+# missing brace
+sub mv @ARGV = @_;ExtUtils::Command::mv();}
 
 # This will generate a message about an invalid character
 # Make this the last test of this file because perltidy will give up here:

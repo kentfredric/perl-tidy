@@ -782,13 +782,17 @@ affected by any B<-csc> or B<-dcsc> operation:
 
 =item B<-csct=n>, or B<-closing-side-comment-maximum-text=n> 
 
-where C<n> is the maximum number of columns of appended text (excluding
-the name of the block).  Omitted text is indicated with C<...>.  The
-default value is C<n=20>.  Tokens are never truncated, however, so
-actual lengths may exceed this.  To illustrate, in the above example,
-the appended text of the first block is C< ( !defined( $_[0] )...>.  The
-existing limit of C<n=20> caused this text to be truncated, as indicated
-by the C<...>.
+The text appended to certain block types, such as an C<if> block, is
+whatever lies between the keyword introducing the block, such as C<if>,
+and the opening brace.  Since this might be too much text for a side
+comment, there needs to be a limit, and that is the purpose of this
+parameter.  The default value is C<n=20>, meaning that no additional
+tokens will be appended to this text after its length reaches 20
+characters.  Omitted text is indicated with C<...>.  (Tokens, including
+sub names, are never truncated, however, so actual lengths may exceed
+this).  To illustrate, in the above example, the appended text of the
+first block is C< ( !defined( $_[0] )...>.  The existing limit of
+C<n=20> caused this text to be truncated, as indicated by the C<...>.
 
 =back
 
@@ -1573,7 +1577,7 @@ perl2web(1), perlstyle(1)
 
 =head1 VERSION
 
-This man page documents perltidy version 20011119.
+This man page documents perltidy version 20011128.
 
 =head1 AUTHOR
 

@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.65 2001/11/28 00:20:46 perltidy Exp $
+    $Id: perltidy,v 1.66 2001/11/29 20:14:58 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -433,105 +433,105 @@ sub process_command_line {
     # These are long option names with a simple abbreviation.  Options with
     # code '!' get standard negation ('no' for long names, 'n' for
     # abbreviations)
-    add_option( 'DEBUG',                            'D',    '!',  $rop, $rex );
-    add_option( 'DIAGNOSTICS',                      'I',    '!',  $rop, $rex );
-    add_option( 'add-newlines',                     'anl',  '!',  $rop, $rex );
-    add_option( 'add-semicolons',                   'asc',  '!',  $rop, $rex );
-    add_option( 'add-whitespace',                   'aws',  '!',  $rop, $rex );
-    add_option( 'big-space-jump',                   'bsj',  '=i', $rop, $rex );
-    add_option( 'blanks-before-blocks',             'bbb',  '!',  $rop, $rex );
-    add_option( 'blanks-before-comments',           'bbc',  '!',  $rop, $rex );
-    add_option( 'blanks-before-subs',               'bbs',  '!',  $rop, $rex );
-    add_option( 'block-brace-tightness',            'bbt',  '=i', $rop, $rex );
-    add_option( 'brace-left-and-indent',            'bli',  '!',  $rop, $rex );
-    add_option( 'brace-tightness',                  'bt',   '=i', $rop, $rex );
-    add_option( 'break-after-comma-arrows',         'baa',  '!',  $rop, $rex );
-    add_option( 'break-after-opening-brace',        'bob',  '!',  $rop, $rex );
-    add_option( 'check-multiline-quotes',           'chk',  '!',  $rop, $rex );
-    add_option( 'check-syntax',                     'syn',  '!',  $rop, $rex );
-    add_option( 'continuation-indentation',         'ci',   '=i', $rop, $rex );
-    add_option( 'closing-side-comments',            'csc',  '!',  $rop, $rex );
-    add_option( 'closing-side-comment-prefix',      'cscp', '=s', $rop, $rex );
-    add_option( 'closing-side-comment-list',        'cscl', '=s', $rop, $rex );
-    add_option( 'closing-side-comment-interval',    'csci', '=i', $rop, $rex );
-    add_option( 'closing-side-comment-maximum-text','csct', '=i', $rop, $rex );
-    add_option( 'cuddled-else',                     'ce',   '!',  $rop, $rex );
-    add_option( 'delete-block-comments',            'dbc',  '!',  $rop, $rex );
-    add_option( 'delete-closing-side-comments',     'dcsc', '!',  $rop, $rex );
-    add_option( 'delete-old-newlines',              'dnl',  '!',  $rop, $rex );
-    add_option( 'delete-old-whitespace',            'dws',  '!',  $rop, $rex );
-    add_option( 'delete-pod',                       'dp',   '!',  $rop, $rex );
-    add_option( 'delete-semicolons',                'dsm',  '!',  $rop, $rex );
-    add_option( 'delete-side-comments',             'dsc',  '!',  $rop, $rex );
-    add_option( 'dump-defaults',                    'ddf',  '!',  $rop, $rex );
-    add_option( 'dump-long-names',                  'dln',  '!',  $rop, $rex );
-    add_option( 'dump-options',                     'dop',  '!',  $rop, $rex );
-    add_option( 'dump-short-names',                 'dsn',  '!',  $rop, $rex );
-    add_option( 'dump-token-types',                 'dtt',  '!',  $rop, $rex );
-    add_option( 'dump-want-left-space',             'dwls', '!',  $rop, $rex );
-    add_option( 'dump-want-right-space',            'dwrs', '!',  $rop, $rex );
-    add_option( 'force-read-binary',                'f',    '!',  $rop, $rex );
-    add_option( 'fuzzy-line-length',                'fll',  '!',  $rop, $rex );
-    add_option( 'hanging-side-comments',            'hsc',  '!',  $rop, $rex );
-    add_option( 'help',                             'h',    '',   $rop, $rex );
-    add_option( 'ignore-old-line-breaks',           'iob',  '!',  $rop, $rex );
-    add_option( 'indent-block-comments',            'ibc',  '!',  $rop, $rex );
-    add_option( 'indent-closing-brace',             'icb',  '!',  $rop, $rex );
-    add_option( 'indent-closing-paren',             'icp',  '!',  $rop, $rex );
-    add_option( 'indent-columns',                   'i',    '=i', $rop, $rex );
-    add_option( 'line-up-parentheses',              'lp',   '!',  $rop, $rex );
-    add_option( 'logfile',                          'log',  '!',  $rop, $rex );
-    add_option( 'logfile-gap',                      'g',    ':i', $rop, $rex );
-    add_option( 'long-block-line-count',            'lbl',  '=i', $rop, $rex );
-    add_option( 'look-for-autoloader',              'lal',  '!',  $rop, $rex );
-    add_option( 'look-for-hash-bang',               'x',    '!',  $rop, $rex );
-    add_option( 'look-for-selfloader',              'lsl',  '!',  $rop, $rex );
-    add_option( 'maximum-consecutive-blank-lines',  'mbl',  '=i', $rop, $rex );
-    add_option( 'maximum-continuation-indentation', 'mci',  '=i', $rop, $rex );
-    add_option( 'maximum-fields-per-table',         'mft',  '=i', $rop, $rex );
-    add_option( 'maximum-line-length',              'l',    '=i', $rop, $rex );
-    add_option( 'maximum-space-to-comment',         'xsc',  '=i', $rop, $rex );
-    add_option( 'minimum-space-to-comment',         'msc',  '=i', $rop, $rex );
-    add_option( 'nowant-left-space',                'nwls', '=s', $rop, $rex );
-    add_option( 'nowant-right-space',               'nwrs', '=s', $rop, $rex );
-    add_option( 'opening-brace-always-on-right',    'bar',  '',   $rop, $rex );
-    add_option( 'opening-brace-on-new-line',        'bl',   '!',  $rop, $rex );
-    add_option( 'opening-sub-brace-on-new-line',    'sbl',  '!',  $rop, $rex );
-    add_option( 'outdent-labels',                   'ola',  '!',  $rop, $rex );
-    add_option( 'outdent-keywords',                 'okw',  '!',  $rop, $rex );
-    add_option( 'outdent-keyword-list',             'okwl', '=s', $rop, $rex );
-    add_option( 'outdent-long-quotes',              'olq',  '!',  $rop, $rex );
-    add_option( 'outdent-long-comments',            'olc',  '!',  $rop, $rex );
-    add_option( 'outfile',                          'o',    '=s', $rop, $rex );
-    add_option( 'paren-tightness',                  'pt',   '=i', $rop, $rex );
-    add_option( 'pass-version-line',                'pvl',  '!',  $rop, $rex );
-    add_option( 'profile',                          'pro',  '=s', $rop, $rex );
-    add_option( 'quiet',                            'q',    '!',  $rop, $rex );
-    add_option( 'short-concatenation-item-length',  'scl',  '=i', $rop, $rex );
-    add_option( 'show-options',                     'opt',  '!',  $rop, $rex );
-    add_option( 'space-for-semicolon',              'sfs',  '!',  $rop, $rex );
-    add_option( 'space-terminal-semicolon',         'sts',  '!',  $rop, $rex );
-    add_option( 'static-side-comments',             'ssc',  '!',  $rop, $rex );
-    add_option( 'static-side-comment-prefix',       'sscp', '=s', $rop, $rex );
-    add_option( 'square-bracket-tightness',         'sbt',  '=i', $rop, $rex );
-    add_option( 'standard-error-output',            'se',   '!',  $rop, $rex );
-    add_option( 'standard-output',                  'st',   '!',  $rop, $rex );
-    add_option( 'starting-indentation-level',       'sil',  '=i', $rop, $rex );
-    add_option( 'static-block-comments',            'sbc',  '!',  $rop, $rex );
-    add_option( 'static-block-comment-prefix',      'sbcp', '=s', $rop, $rex );
-    add_option( 'swallow-optional-blank-lines',     'sob',  '!',  $rop, $rex );
-    add_option( 'tabs',                             't',    '!',  $rop, $rex );
-    add_option( 'tee-block-comments',               'tbc',  '!',  $rop, $rex );
-    add_option( 'tee-pod',                          'tp',   '!',  $rop, $rex );
-    add_option( 'tee-side-comments',                'tsc',  '!',  $rop, $rex );
-    add_option( 'tidy-output',                      'tdy',  '!',  $rop, $rex );
-    add_option( 'trim-qw',                          'tqw',  '!',  $rop, $rex );
-    add_option( 'version',                          'v',    '',   $rop, $rex );
-    add_option( 'want-break-after',                 'wba',  '=s', $rop, $rex );
-    add_option( 'want-break-before',                'wbb',  '=s', $rop, $rex );
-    add_option( 'want-left-space',                  'wls',  '=s', $rop, $rex );
-    add_option( 'want-right-space',                 'wrs',  '=s', $rop, $rex );
-    add_option( 'warning-output',                   'w',    '!',  $rop, $rex );
+    add_option( 'DEBUG',                             'D',    '!',  $rop, $rex );
+    add_option( 'DIAGNOSTICS',                       'I',    '!',  $rop, $rex );
+    add_option( 'add-newlines',                      'anl',  '!',  $rop, $rex );
+    add_option( 'add-semicolons',                    'asc',  '!',  $rop, $rex );
+    add_option( 'add-whitespace',                    'aws',  '!',  $rop, $rex );
+    add_option( 'big-space-jump',                    'bsj',  '=i', $rop, $rex );
+    add_option( 'blanks-before-blocks',              'bbb',  '!',  $rop, $rex );
+    add_option( 'blanks-before-comments',            'bbc',  '!',  $rop, $rex );
+    add_option( 'blanks-before-subs',                'bbs',  '!',  $rop, $rex );
+    add_option( 'block-brace-tightness',             'bbt',  '=i', $rop, $rex );
+    add_option( 'brace-left-and-indent',             'bli',  '!',  $rop, $rex );
+    add_option( 'brace-tightness',                   'bt',   '=i', $rop, $rex );
+    add_option( 'break-after-comma-arrows',          'baa',  '!',  $rop, $rex );
+    add_option( 'break-after-opening-brace',         'bob',  '!',  $rop, $rex );
+    add_option( 'check-multiline-quotes',            'chk',  '!',  $rop, $rex );
+    add_option( 'check-syntax',                      'syn',  '!',  $rop, $rex );
+    add_option( 'continuation-indentation',          'ci',   '=i', $rop, $rex );
+    add_option( 'closing-side-comments',             'csc',  '!',  $rop, $rex );
+    add_option( 'closing-side-comment-prefix',       'cscp', '=s', $rop, $rex );
+    add_option( 'closing-side-comment-list',         'cscl', '=s', $rop, $rex );
+    add_option( 'closing-side-comment-interval',     'csci', '=i', $rop, $rex );
+    add_option( 'closing-side-comment-maximum-text', 'csct', '=i', $rop, $rex );
+    add_option( 'cuddled-else',                      'ce',   '!',  $rop, $rex );
+    add_option( 'delete-block-comments',             'dbc',  '!',  $rop, $rex );
+    add_option( 'delete-closing-side-comments',      'dcsc', '!',  $rop, $rex );
+    add_option( 'delete-old-newlines',               'dnl',  '!',  $rop, $rex );
+    add_option( 'delete-old-whitespace',             'dws',  '!',  $rop, $rex );
+    add_option( 'delete-pod',                        'dp',   '!',  $rop, $rex );
+    add_option( 'delete-semicolons',                 'dsm',  '!',  $rop, $rex );
+    add_option( 'delete-side-comments',              'dsc',  '!',  $rop, $rex );
+    add_option( 'dump-defaults',                     'ddf',  '!',  $rop, $rex );
+    add_option( 'dump-long-names',                   'dln',  '!',  $rop, $rex );
+    add_option( 'dump-options',                      'dop',  '!',  $rop, $rex );
+    add_option( 'dump-short-names',                  'dsn',  '!',  $rop, $rex );
+    add_option( 'dump-token-types',                  'dtt',  '!',  $rop, $rex );
+    add_option( 'dump-want-left-space',              'dwls', '!',  $rop, $rex );
+    add_option( 'dump-want-right-space',             'dwrs', '!',  $rop, $rex );
+    add_option( 'force-read-binary',                 'f',    '!',  $rop, $rex );
+    add_option( 'fuzzy-line-length',                 'fll',  '!',  $rop, $rex );
+    add_option( 'hanging-side-comments',             'hsc',  '!',  $rop, $rex );
+    add_option( 'help',                              'h',    '',   $rop, $rex );
+    add_option( 'ignore-old-line-breaks',            'iob',  '!',  $rop, $rex );
+    add_option( 'indent-block-comments',             'ibc',  '!',  $rop, $rex );
+    add_option( 'indent-closing-brace',              'icb',  '!',  $rop, $rex );
+    add_option( 'indent-closing-paren',              'icp',  '!',  $rop, $rex );
+    add_option( 'indent-columns',                    'i',    '=i', $rop, $rex );
+    add_option( 'line-up-parentheses',               'lp',   '!',  $rop, $rex );
+    add_option( 'logfile',                           'log',  '!',  $rop, $rex );
+    add_option( 'logfile-gap',                       'g',    ':i', $rop, $rex );
+    add_option( 'long-block-line-count',             'lbl',  '=i', $rop, $rex );
+    add_option( 'look-for-autoloader',               'lal',  '!',  $rop, $rex );
+    add_option( 'look-for-hash-bang',                'x',    '!',  $rop, $rex );
+    add_option( 'look-for-selfloader',               'lsl',  '!',  $rop, $rex );
+    add_option( 'maximum-consecutive-blank-lines',   'mbl',  '=i', $rop, $rex );
+    add_option( 'maximum-continuation-indentation',  'mci',  '=i', $rop, $rex );
+    add_option( 'maximum-fields-per-table',          'mft',  '=i', $rop, $rex );
+    add_option( 'maximum-line-length',               'l',    '=i', $rop, $rex );
+    add_option( 'maximum-space-to-comment',          'xsc',  '=i', $rop, $rex );
+    add_option( 'minimum-space-to-comment',          'msc',  '=i', $rop, $rex );
+    add_option( 'nowant-left-space',                 'nwls', '=s', $rop, $rex );
+    add_option( 'nowant-right-space',                'nwrs', '=s', $rop, $rex );
+    add_option( 'opening-brace-always-on-right',     'bar',  '',   $rop, $rex );
+    add_option( 'opening-brace-on-new-line',         'bl',   '!',  $rop, $rex );
+    add_option( 'opening-sub-brace-on-new-line',     'sbl',  '!',  $rop, $rex );
+    add_option( 'outdent-labels',                    'ola',  '!',  $rop, $rex );
+    add_option( 'outdent-keywords',                  'okw',  '!',  $rop, $rex );
+    add_option( 'outdent-keyword-list',              'okwl', '=s', $rop, $rex );
+    add_option( 'outdent-long-quotes',               'olq',  '!',  $rop, $rex );
+    add_option( 'outdent-long-comments',             'olc',  '!',  $rop, $rex );
+    add_option( 'outfile',                           'o',    '=s', $rop, $rex );
+    add_option( 'paren-tightness',                   'pt',   '=i', $rop, $rex );
+    add_option( 'pass-version-line',                 'pvl',  '!',  $rop, $rex );
+    add_option( 'profile',                           'pro',  '=s', $rop, $rex );
+    add_option( 'quiet',                             'q',    '!',  $rop, $rex );
+    add_option( 'short-concatenation-item-length',   'scl',  '=i', $rop, $rex );
+    add_option( 'show-options',                      'opt',  '!',  $rop, $rex );
+    add_option( 'space-for-semicolon',               'sfs',  '!',  $rop, $rex );
+    add_option( 'space-terminal-semicolon',          'sts',  '!',  $rop, $rex );
+    add_option( 'static-side-comments',              'ssc',  '!',  $rop, $rex );
+    add_option( 'static-side-comment-prefix',        'sscp', '=s', $rop, $rex );
+    add_option( 'square-bracket-tightness',          'sbt',  '=i', $rop, $rex );
+    add_option( 'standard-error-output',             'se',   '!',  $rop, $rex );
+    add_option( 'standard-output',                   'st',   '!',  $rop, $rex );
+    add_option( 'starting-indentation-level',        'sil',  '=i', $rop, $rex );
+    add_option( 'static-block-comments',             'sbc',  '!',  $rop, $rex );
+    add_option( 'static-block-comment-prefix',       'sbcp', '=s', $rop, $rex );
+    add_option( 'swallow-optional-blank-lines',      'sob',  '!',  $rop, $rex );
+    add_option( 'tabs',                              't',    '!',  $rop, $rex );
+    add_option( 'tee-block-comments',                'tbc',  '!',  $rop, $rex );
+    add_option( 'tee-pod',                           'tp',   '!',  $rop, $rex );
+    add_option( 'tee-side-comments',                 'tsc',  '!',  $rop, $rex );
+    add_option( 'tidy-output',                       'tdy',  '!',  $rop, $rex );
+    add_option( 'trim-qw',                           'tqw',  '!',  $rop, $rex );
+    add_option( 'version',                           'v',    '',   $rop, $rex );
+    add_option( 'want-break-after',                  'wba',  '=s', $rop, $rex );
+    add_option( 'want-break-before',                 'wbb',  '=s', $rop, $rex );
+    add_option( 'want-left-space',                   'wls',  '=s', $rop, $rex );
+    add_option( 'want-right-space',                  'wrs',  '=s', $rop, $rex );
+    add_option( 'warning-output',                    'w',    '!',  $rop, $rex );
 
     # The Perltidy::HtmlWriter will add its own options to the string
     Perltidy::HtmlWriter->make_getopt_long_names( \@option_string );
@@ -1527,6 +1527,7 @@ sub check_syntax {
 
     my ( $ifname, $ofname, $logger_object, $rOpts ) = @_;
     my $infile_syntax_ok = 0;
+    my $line_of_dashes = '-' x 42 . "\n";
 
     # invoke perl with -x if requested
     my $dash_x = $rOpts->{'look-for-hash-bang'} ? "-x" : "";
@@ -1540,8 +1541,7 @@ sub check_syntax {
 
     $logger_object->write_logfile_entry(
         "checking input file syntax with perl -c...\n");
-    $logger_object->write_logfile_entry(
-        "------------------------------------------\n");
+    $logger_object->write_logfile_entry($line_of_dashes);
 
     # Not all operating systems/shells support redirection of the standard
     # error output.
@@ -1553,20 +1553,17 @@ sub check_syntax {
 
     if ( $perl_output =~ /syntax\s*OK/ ) {
         $infile_syntax_ok = 1;
-        $logger_object->write_logfile_entry(
-            "------------------------------------------\n");
+        $logger_object->write_logfile_entry($line_of_dashes);
         $logger_object->write_logfile_entry(
             "checking output file syntax with perl -c...\n");
-        $logger_object->write_logfile_entry(
-            "------------------------------------------\n");
+        $logger_object->write_logfile_entry($line_of_dashes);
 
         my $perl_output =
           do_syntax_check( $ofname, $flags, $error_redirection );
         $logger_object->write_logfile_entry("$perl_output\n");
 
         unless ( $perl_output =~ /syntax\s*OK/ ) {
-            $logger_object->write_logfile_entry(
-                "------------------------------------------\n");
+            $logger_object->write_logfile_entry($line_of_dashes);
             $logger_object->warning(
 "The output file has a syntax error when tested with perl -c $dash_x $ofname !\n"
             );
@@ -1580,9 +1577,24 @@ sub check_syntax {
         }
     }
     else {
+
+        # Only warn of perl -c syntax errors.  Other messages,
+        # such as missing modules, are too common.  They can be
+        # seen by running with perltidy -w
+##      if ( $perl_output =~ /syntax error/) {
+##          $logger_object->warning( "A syntax check using perl -c gives: \n");
+##          $logger_object->warning($line_of_dashes);
+##          $logger_object->warning("$perl_output\n");
+##          $logger_object->warning($line_of_dashes);
+##      }
+##      else {
+            $logger_object->complain( "A syntax check using perl -c gives: \n");
+            $logger_object->complain($line_of_dashes);
+            $logger_object->complain("$perl_output\n");
+            $logger_object->complain($line_of_dashes);
+##      }
         $infile_syntax_ok = -1;
-        $logger_object->write_logfile_entry(
-            "------------------------------------------\n");
+        $logger_object->write_logfile_entry($line_of_dashes);
         $logger_object->write_logfile_entry(
 "The output file will not be checked because of input file problems\n"
         );
@@ -1884,6 +1896,11 @@ sub close_log_file {
     my $self = shift;
     close $self->{_fh};
     close $self->{_fh_warnings} if ( $self->{_warning_count} );
+}
+
+sub get_warning_count {
+    my $self = shift;
+    return $self->{_warning_count};
 }
 
 sub get_use_prefix {
@@ -5069,7 +5086,7 @@ sub print_line_of_tokens {
          /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
      Examples:
        *VERSION = \'1.01';
-       ( $VERSION ) = '$Revision: 1.65 $ ' =~ /\$Revision:\s+([^\s]+)/;
+       ( $VERSION ) = '$Revision: 1.66 $ ' =~ /\$Revision:\s+([^\s]+)/;
      We will pass such a line straight through (by changing it
      to a quoted string) unless -npvl is used
     
@@ -5078,7 +5095,7 @@ sub print_line_of_tokens {
      block sequence numbers may see a closing sequence number but not
      the corresponding opening sequence number (sidecmt.t).  Example:
 
-    my $VERSION = do { my @r = (q$Revision: 1.65 $ =~ /\d+/g); sprintf
+    my $VERSION = do { my @r = (q$Revision: 1.66 $ =~ /\d+/g); sprintf
     "%d."."%02d" x $#r, @r }; 
 
     Here, the opening brace of 'do {' will not be seen, while the closing
@@ -6378,7 +6395,7 @@ sub output_line_to_go {
     }
     prepare_for_new_input_lines();
 }
-    
+
 sub reset_block_text_accumulator {
     $accumulating_text_for_block        = "";
     $leading_block_text                 = "";
@@ -6767,6 +6784,7 @@ sub send_lines_to_vertical_aligner {
 }
 
 {
+
     # arrays used by the two routines in this block
     my @unmatched_opening_indexes_in_this_batch;
     my @unmatched_closing_indexes_in_this_batch;
@@ -6843,51 +6861,50 @@ sub send_lines_to_vertical_aligner {
     }
 }
 
-    sub get_opening_indentation {
+sub get_opening_indentation {
 
-        # get the indentation of the line which output the opening token
-        # corresponding to a given closing token in the current output batch.
-        #
-        # given:
-        # $i_closing - index in this line of a closing token ')' '}' or ']'
-        #
-        # $ri_first - reference to list of the first index $i for each output
-        #               line in this batch
-        # $ri_last - reference to list of the last index $i for each output line
-        #              in this batch
-        # $rindentation_list - reference to a list containing the indentation
-        #            used for each line.  
-        #
-        # return:
-        #   -the indentation of the line which contained the opening token 
-        #    which matches the token at index $i_opening
-        #   -and its offset (number of columns) from the start of the line
-        #
-        my ( $i_closing, $ri_first, $ri_last, $rindentation_list ) = @_;
+    # get the indentation of the line which output the opening token
+    # corresponding to a given closing token in the current output batch.
+    #
+    # given:
+    # $i_closing - index in this line of a closing token ')' '}' or ']'
+    #
+    # $ri_first - reference to list of the first index $i for each output
+    #               line in this batch
+    # $ri_last - reference to list of the last index $i for each output line
+    #              in this batch
+    # $rindentation_list - reference to a list containing the indentation
+    #            used for each line.  
+    #
+    # return:
+    #   -the indentation of the line which contained the opening token 
+    #    which matches the token at index $i_opening
+    #   -and its offset (number of columns) from the start of the line
+    #
+    my ( $i_closing, $ri_first, $ri_last, $rindentation_list ) = @_;
 
-        # first, see if the opening token is in the current batch
-        my $i_opening = $mate_index_to_go[$i_closing];
-        my ( $indent, $offset );
-        if ( $i_opening >= 0 ) {
+    # first, see if the opening token is in the current batch
+    my $i_opening = $mate_index_to_go[$i_closing];
+    my ( $indent, $offset );
+    if ( $i_opening >= 0 ) {
 
-            # it is..look up the indentation
-            ( $indent, $offset ) =
-              lookup_opening_indentation( $i_opening, $ri_first, $ri_last,
-                $rindentation_list );
-        }
+        # it is..look up the indentation
+        ( $indent, $offset ) =
+          lookup_opening_indentation( $i_opening, $ri_first, $ri_last,
+            $rindentation_list );
+    }
 
-        # if not, it should have been stored in the hash by a previous batch
-        else {
-            my $seqno = $type_sequence_to_go[$i_closing];
-            if ($seqno) {
-                if ( $saved_opening_indentation{$seqno} ) {
-                    ( $indent, $offset ) =
-                      @{ $saved_opening_indentation{$seqno} };
-                }
+    # if not, it should have been stored in the hash by a previous batch
+    else {
+        my $seqno = $type_sequence_to_go[$i_closing];
+        if ($seqno) {
+            if ( $saved_opening_indentation{$seqno} ) {
+                ( $indent, $offset ) = @{ $saved_opening_indentation{$seqno} };
             }
         }
-        return ( $indent, $offset );
     }
+    return ( $indent, $offset );
+}
 
 sub lookup_opening_indentation {
 
@@ -14894,7 +14911,8 @@ EOM
                 $context        = UNKNOWN_CONTEXT;
                 $statement_type = '';
 
-                if ( $paren_type[$paren_depth] =~ /^(for|foreach)$/ ) { # mark ; in for loop
+                if ( $paren_type[$paren_depth] =~ /^(for|foreach)$/ )
+                {    # mark ; in for loop
 
                     # Be careful: we do not want a semicolon such as the
                     # following to be included: 

@@ -5,8 +5,10 @@ push @allowed, $_
 
 # the terminal '{' will be at character 80:
 {{{
+    if ($a) {
     } elsif (/^FontBBox *(-?[0-9]*)  *(-?[0-9]*)  *(-?[0-9]*)  *(-?[0-9]*)/) {
       @fontBBox=($1,$2,$3,$4); 
+    }
 }}}
 
 # an if block a bit too long for one line

@@ -90,10 +90,15 @@ system freezes.  If the first test works, it should be fine.
 
 =head2 Installation - Windows
 
-Here is how to install Perltidy under Windows.
-After unpacking the zip file, test the script:
+Here is how to install Perltidy under Windows.  On a Windows 9x system
+it is a good idea to close any existing applications to avoid losing
+unsaved data in case of trouble.
 
- perl perltidy lextest.pl
+If perl is in your path, you can test the script after unpacking the
+zip file with the command:
+
+ perltidy lextest.pl
+
 
 This will produce an output file lextest.pl.tdy which can be
 compared to the input file.  
@@ -121,17 +126,18 @@ when it runs 'perl -c' with the following code:
 		perl -c $filename 2>&1
 	END
 
-It also creates an empty file named F<&1>.  This means that you will
-have to check for syntax errors yourself.   If you do not want to create
-the empty file F<&1>, you can turn off syntax checking with the flag
-B<-nsyn>.  You can then check the syntax of a file manually by issuing the
-command
+Under Windows 95 it also creates an empty file named F<&1>, and under
+Windows 98 it seems to cause a message 'bad command or filename'.  To
+avoid this, the batch file perltidy.bat has the -nsyn switch set.  
+This means that you will have to check for syntax errors yourself.   You
+can then check the syntax of a file manually by issuing the command
 
  perl -c filename
 
 There does not seem to be a good way around this problem.
 
-Windows 2000 does not have this problem.
+Windows 2000 (and presumably XP) does not have this problem.  These
+versions of Windows do not require the -nsyn switch.
 
 =head2 VMS Notes
 

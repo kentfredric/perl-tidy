@@ -1,3 +1,11 @@
+<a href="http://www.perl.com/CPAN-local/doc/manual/html/pod/perlstyle.html">
+<li>download <a href="http://prdownloads.sourceforge.net/perltidy/perltidy-20011020-test.tgz">
+test scripts (.tgz)</a>.  These are not required for installation.
+
+<li>download <a href="http://prdownloads.sourceforge.net/perltidy/perltidy-20011020-test.zip">
+test scripts (.zip)</a>.  These are not required for installation.
+
+
 #and for RPM's for RedHat 7 and Mandrake 7 (rpm 4.0), and a .deb file for recent versions of Debian Linux, 
 .h2 About Perltidy
 

@@ -30,8 +30,8 @@ reading them, you will probably find it useful.
 
 The formatting can be controlled with command line parameters.  The default
 parameter settings approximately follow the suggestions in the
-<a href="http://www.perl.com/CPAN-local/doc/manual/html/pod/perlstyle.html">Perl
-Style Guide</a>.
+<a href="http://www.perldoc.com/perl5.6.1/pod/perlstyle.html">
+Perl Style Guide</a>.
 
 Besides reformatting scripts, Perltidy can be a great help in tracking
 down errors with missing or extra braces, parentheses, and square brackets
@@ -75,17 +75,11 @@ tested on several varieties of Unix systems, Windows 95, and VMS.
 
 <li>Please check the <a href="README.html">README Installation Notes</a>
 
-<li>download <a href="http://prdownloads.sourceforge.net/perltidy/perltidy-20011020.tgz">
+<li>download <a href="http://prdownloads.sourceforge.net/perltidy/perltidy-20011128.tgz">
 The latest release for unix (.tgz)</a>
 
-<li>download <a href="http://prdownloads.sourceforge.net/perltidy/perltidy-20011020.zip">
+<li>download <a href="http://prdownloads.sourceforge.net/perltidy/perltidy-20011128.zip">
 The latest release for Windows (.zip)</a>
-
-<li>download <a href="http://prdownloads.sourceforge.net/perltidy/perltidy-20011020-test.tgz">
-test scripts (.tgz)</a>.  These are not required for installation.
-
-<li>download <a href="http://prdownloads.sourceforge.net/perltidy/perltidy-20011020-test.zip">
-test scripts (.zip)</a>.  These are not required for installation.
 
 <li> If these links are broken, 
 go 

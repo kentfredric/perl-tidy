@@ -3,7 +3,7 @@ Perltidy Change Log
      have hit a bug, unusual behavior, annoyance, or have a suggested
      improvement, please send a note to perltidy at users.sourceforge.net.  
 
-  2001 xx xx
+  2001 11 28
 
      -added a tentative patch which tries to keep any existing breakpoints
      at lines with leading keywords map,sort,eval,grep. The idea is to
@@ -151,9 +151,10 @@ Perltidy Change Log
       the list items spans multiple lines, and
       (2) List items which span multiple lines now get continuation indentation.
 
-      The following example illustrates both of these points. Thanks to
-      Wolfgang Weisselberg for this snippet and a discussion of it.  Note
-      how it is easier to see the call parameters in the NEW version:
+      The following example illustrates both of these points.  Many thanks to
+      Wolfgang Weisselberg for this snippet and a discussion of it; this is a
+      significant formatting improvement. Note how it is easier to see the call
+      parameters in the NEW version:
 
         OLD:
         assert( __LINE__, ( not defined $check )
@@ -259,9 +260,47 @@ Perltidy Change Log
       token.  Thus, a container either remains closed or is completely cracked
       open.
 
+      -Improved indentation of parenthesized lists.  For example, 
+
+                OLD:
+                $GPSCompCourse =
+                  int(
+                  atan2( $GPSTempCompLong - $GPSLongitude,
+                  $GPSLatitude - $GPSTempCompLat ) * 180 / 3.14159265 );
+
+                NEW:
+                $GPSCompCourse = int(
+                    atan2(
+                        $GPSTempCompLong - $GPSLongitude,
+                        $GPSLatitude - $GPSTempCompLat
+                      ) * 180 / 3.14159265
+                );
+
+       Further improvements will be made in future releases.
+
+      -Some improvements were made in formatting small lists.
+
       -Correspondence between Input and Output line numbers reported in a 
        .LOG file should now be exact.  They were sometimes off due to the size
        of intermediate buffers.
+
+      -Corrected minor tokenization error in which a ';' in a foreach loop
+       control was tokenized as a statement termination, which forced a 
+       line break:
+
+            OLD:
+            foreach ( $i = 0;
+                $i <= 10;
+                $i += 2
+              )
+            {
+                print "$i ";
+            }
+
+            NEW:
+            foreach ( $i = 0 ; $i <= 10 ; $i += 2 ) {
+                print "$i ";
+            }
 
       -Corrected a problem with reading config files, in which quote marks were not
        stripped.  As a result, something like -wba="&& . || " would have the leading
@@ -269,7 +308,13 @@ Perltidy Change Log
        versions is to place a space around all tokens within the quotes, like this:
        -wba=" && . || "
 
-      -Corrected tokenization error for the following (non-recommended) construct:
+      -Removed any existing space between a label and its ':'
+        OLD    : { }
+        NEW: { }
+       This was necessary because the label and its colon are a single token.
+
+      -Corrected tokenization error for the following (highly non-recommended) 
+       construct:
         $user = @vars[1] / 100;
  
       -Resolved cause of a difference between perltidy under perl v5.6.1 and

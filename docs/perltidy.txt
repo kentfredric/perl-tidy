@@ -717,10 +717,15 @@ OPTIONS
                -cscl="sub : BEGIN END"
 
         -csct=n, or -closing-side-comment-maximum-text=n
-            where "n" is the maximum number of columns of appended text
-            (excluding the name of the block). Omitted text is indicated
-            with "...". The default value is "n=20". Tokens are never
-            truncated, however, so actual lengths may exceed this. To
+            The text appended to certain block types, such as an "if" block,
+            is whatever lies between the keyword introducing the block, such
+            as "if", and the opening brace. Since this might be too much
+            text for a side comment, there needs to be a limit, and that is
+            the purpose of this parameter. The default value is "n=20",
+            meaning that no additional tokens will be appended to this text
+            after its length reaches 20 characters. Omitted text is
+            indicated with "...". (Tokens, including sub names, are never
+            truncated, however, so actual lengths may exceed this). To
             illustrate, in the above example, the appended text of the first
             block is " ( !defined( $_[0] )...". The existing limit of "n=20"
             caused this text to be truncated, as indicated by the "...".
@@ -1399,7 +1404,7 @@ SEE ALSO
     perl2web(1), perlstyle(1)
 
 VERSION
-    This man page documents perltidy version 20011119.
+    This man page documents perltidy version 20011128.
 
 AUTHOR
       Steven L. Hancock
