@@ -17,5 +17,10 @@ foreach $i (0 .. $#: ) {
 }
 
 #sum of punctuation array maximum indexes
-$sum=+$#:+ +$#-+$#++$#;+$#,;
-print "sum is: $sum\n";
+$#=5;
+@: = ("a", "b", "c");
+my $num1=$#:;
+my $num2=$#-;
+my $num3=$#+;
+$sum=+$#:+ +$#-+$#++$#;
+print "num1 = $num1, num2=$num2, num3=$num3, sum is: $sum\n";

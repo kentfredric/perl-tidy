@@ -108,24 +108,33 @@ redirected to the standard output, the output will go to F<filename.tdy>.
 
 =item	B<-st>,    B<--standard-output>
 
-Perltidy must be able to operate on many files in a single run, with
-each output being directed to a different output file.  Obviously this
-is not consistent with outputting to the single standard output device,
-so a special flag, B<-st>, is required to request outputting to the
-standard output.  For example,
+Perltidy must be able to operate on an arbitrarily large number of files
+in a single run, with each output being directed to a different output
+file.  Obviously this would conflict with outputting to the single
+standard output device, so a special flag, B<-st>, is required to
+request outputting to the standard output.  For example,
 
   perltidy somefile.pl -st >somefile.new.pl
 
-This option may only be used if there is a single input file.  When this
-option is used, perltidy will create a temporary copy of the output
-file, perltidy.TMPO, to feed to perl for syntax checking, unless allow
-syntax checking is disabled.  This file will be deleted when the job
-finishes.
+This option may only be used if there is just a single input file.  When
+this option is used, perltidy will have to create a temporary copy of
+the output file, perltidy.TMPO, to feed to perl for syntax checking,
+unless allow syntax checking is disabled.  This file will be deleted
+when the job finishes.  The default is B<-nst> or B<-nostandard-output>.
+
+=item	B<-se>,    B<--standard-error-output>
+
+If perltidy detects an error when processing file F<somefile.pl>, its
+default behavior is to write error messages to file F<somefile.pl.ERR>.
+Use B<-se> to cause all error meassages to be sent to the standard error
+output stream instead.  This directive may be negated with B<-nse>. 
+Thus, you may place B<-se> in a F<.perltidyrc> and override it
+when desired with B<-nse> on the command line.
 
 =item B<-w>,    B<--warning-output>             
 
 Setting B<-w> causes perltidy to include any non-critical warning
-messages to the error summary file, F<.ERR>.  These include messages
+messages be reported as errors.  These include messages
 about possible pod problems, possibly bad starting indentation level,
 and cautions about indirect object usage.  The default, B<-nw> or
 B<--nowarning-output>, is not to include these warnings.
@@ -762,7 +771,8 @@ work, and are the defaults.
 
 =item Using a F<.perltidyrc> command file
 
-An optional command-line file may be used to avoid typing commonly-used
+If you use perltidy frequently, you probably won't be happy until you
+create a F<.perltidyrc> file to avoid typing commonly-used
 parameters.  Perltidy will first look in your current directory for a
 command file named F<.perltidyrc>, and if it does not find one, it will
 look in your home directory.  If it does not find one there, it will
@@ -780,6 +790,8 @@ Here is an example of a F<.perltidyrc> file:
 
   # This is a simple of a .perltidyrc configuration file
   # This implements a highly spaced style
+  -se    # errors to standard error output
+  -w     # show all warnings
   -bl	 # braces on new lines
   -pt=0  # parens not tight at all
   -bt=0  # braces not tight
@@ -1051,11 +1063,12 @@ in any way.  And, of course, it does not modify pod documents.
 
 =item Special files when standard input or standard output are used
 
-When standard input is used, the log file, if saved, is F<perltidy.LOG>, and
-any error file is F<perltidy.ERR>.  These are saved in the current working
-directory.  If syntax checking is used, a temporary copy of the input file will
-be created in the current working directory called F<perltidy.TMPI>, but it
-will be removed when perltidy finishes.
+When standard input is used, the log file, if saved, is F<perltidy.LOG>,
+and any errors are written to F<perltidy.ERR> unless the B<-se> flag is
+set.  These are saved in the current working directory.  If syntax
+checking is used, a temporary copy of the input file will be created in
+the current working directory called F<perltidy.TMPI>, but it will be
+removed when perltidy finishes.
 
 When standard output and syntax checking are used, a temporary copy of the
 output file will be created in the current working directory called

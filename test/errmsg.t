@@ -1,6 +1,11 @@
 
 	#!/usr/bin/perl
-#!/usr/bin/perl
+
+=pod
+
+#!/bin/perl -w
+
+=cut
 
 # Some code to generate various error messages
 # No use strict, no -w
@@ -14,6 +19,16 @@ use CGI qw( :standard );
 	{
 		$string = $self->postmatch;
 	}
+
+# extra ';' in for statement
+for ($i=1; $i<10; $i++;) {
+   print "i now be $i\n";
+}
+
+# only 1 ';' in for statement
+for ($i=1; $i<10, $i++) {
+   print "i now be $i\n";
+}
 
 # extra opening paren
 while ($n++ < 20) { insert($root, int(rand(1000)) }

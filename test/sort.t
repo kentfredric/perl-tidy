@@ -41,3 +41,7 @@ print sort $sortsubref @list;
   foreach $mon (reverse sort numerically (keys(%flippie))) {
 }
 sub numerically {$a <=> $b};
+
+# The semicolon in this stmt was once mis-tokenized as type 'f'
+for (sort {strcoll($a,$b);} keys %investments) {
+}
