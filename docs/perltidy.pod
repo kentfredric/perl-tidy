@@ -1418,8 +1418,10 @@ One use for B<--mangle> is the following:
 This will form the maximum possible number of one-line blocks (see next
 section), and can sometimes help clean up a badly formatted script.
 
-A similar technique can be used with B<--extrude> instead of B<--mangle>
-to make the minimum number of one-line blocks.
+A similar technique can be used with B<--extrude> instead of B<--mangle> to
+make the minimum number of one-line blocks.  However, please be aware that
+files created with B<--extrude> occasionally bring out weaknesses in perl,
+so this option should be used with caution.
 
 Another use for B<--mangle> is to combine it with B<-dac> to reduce
 the file size of a perl script.

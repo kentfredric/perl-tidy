@@ -74,9 +74,18 @@ my %ENTITIES = (
         $time[5] + 1900,     $time[2], $time[1],
         $time[0]
     );
-}
 
-{ { {
+{ 
+        # break open with clutter like this (if contains any sublists)
+        TouchFile( $TempFiles{'numeric'}, $TempFiles{'alpha'},
+            $TempFiles{'blank'} );
+
+        push (
+              @{$form->{income_this_period}},
+              $form->format_amount($myconfig, $form->{I}{$key}{this}, 1)
+              );
+
+{
 
             push (
                 @{ $$self{states} },

@@ -11,10 +11,17 @@
 my @host_seq = $level eq "easy" ?
 	    @reordered : 0..$last;  # reordered has CDROM up front
 
-# here breaking after the '=' creates two additional lines
 {{
-my @host_seq = $level eq "easy" ?
-	    @reordered : 0..$last;  # reordered has CDROM up front
+        # No recombine final . here:
+        push (
+            @{$hash},
+            " " x ( 11 - ( length( $month_name . " " . $year ) ) / 2 )
+              . "$month_name $year" . ' ' x ( ( 29 - length($month_name) ) / 2 )
+        );
+
+        # here breaking after the '=' creates two additional lines
+        my @host_seq = $level eq "easy" ?
+                    @reordered : 0..$last;  # reordered has CDROM up front
 }}   
 
 # sub recombine keeps keywords return, last, next, redo on separate lines
