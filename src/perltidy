@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.22 2001/07/25 16:51:54 perltidy Exp $
+    $Id: perltidy,v 1.23 2001/07/26 02:20:59 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -293,7 +293,7 @@ sub main {
         }
         $source_object->unlink_copy();
         $sink_object->unlink_copy();
-        $logger_object->finish($infile_syntax_ok) if $logger_object;
+        $logger_object->finish($infile_syntax_ok, $formatter) if $logger_object;
 
     }    # end of loop to process all files
 
@@ -1909,7 +1909,7 @@ sub report_definite_bug {
 sub ask_user_for_bug_report {
     my $self = shift;
 
-    my ($infile_syntax_ok) = @_;
+    my ($infile_syntax_ok, $formatter) = @_;
     my $saw_code_bug = $self->{_saw_code_bug};
     if ( ( $saw_code_bug == 0 ) && ( $infile_syntax_ok == 1 ) ) {
         $self->warning(<<EOM);
@@ -1930,12 +1930,22 @@ produces this message, along with the .LOG file if appropriate. See the
 manual pages for contact information.  Your efforts are appreciated.  
 Thank you!
 EOM
+        my $added_semicolon_count=$formatter->get_added_semicolon_count();
+        if ($added_semicolon_count > 0) {
+        $self->warning(<<EOM);
+
+The log file shows that perltidy added $added_semicolon_count semicolons.
+Please rerun with -nasc to see if that is the cause of the syntax error.  Even
+if that is the problem, please report it so that it can be fixed.
+EOM
+        
+        }
     }
 }
 
 sub finish {
     my $self = shift;
-    my ($infile_syntax_ok) = @_;
+    my ($infile_syntax_ok, $formatter) = @_;
 
     my $rOpts         = $self->{_rOpts};
     my $warning_count = $self->{_warning_count};
@@ -1950,7 +1960,7 @@ sub finish {
             $self->warning("Running with -g may help you locate the problem\n");
         }
     }
-    $self->ask_user_for_bug_report($infile_syntax_ok);
+    $self->ask_user_for_bug_report($infile_syntax_ok, $formatter);
     $self->close_log_file();
 
     # delete the log file unless it is needed or wanted
@@ -2646,6 +2656,11 @@ sub write_diagnostics {
     }
 }
 
+sub get_added_semicolon_count {
+    my $self=shift;
+    return $added_semicolon_count;
+}
+
 sub new {
 
     my $class = shift;
@@ -2737,6 +2752,7 @@ sub new {
     }
 
     # This is the start of a formatter referent
+    # One of these days I'll populate it
     $formatter_self = {};
 
     bless $formatter_self, $class;
@@ -4550,7 +4566,6 @@ sub print_line_of_tokens {
                   # because we cannot be sure yet that this
                   # is a block and not an anonomyous hash 
                   # (blktype.t, blktype1.t)
-                  # && ($block_type ne '{')
                   && ( $block_type !~ /^[\{\};]$/ )
 
                   # and we are allowed to do so.
@@ -14617,6 +14632,8 @@ BEGIN {
     # FIXME: this list needs to be filled in to allow lists
     # after certain keywords to be formatted nicely
     my @keyword_taking_list = qw(
+      join
+      pack
       sprintf
     );
     @is_keyword_taking_list{@keyword_taking_list} =
