@@ -31,3 +31,16 @@ $html =~ s@World@"$q".<<'END_SCRIPT'.
 Well Well
 END_SCRIPT
 print "$html\n";
+
+# A substitution within a replacement string
+$text="Hello World";
+$text1="Hello World";
+$text =~ s@Hello@
+$text1=~
+s|Hello|<<'END'|ex
+@ex;
+Goodbye 
+Cruel
+END
+print "$text\n";
+print "$text1\n";

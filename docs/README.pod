@@ -3,7 +3,7 @@
 Perltidy is a tool to indent and reformat perl scripts. 
 
 Perltidy is free software released under the GNU General Public
-License -- please see the included file "LICENSE" for details.
+License -- please see the included file "COPYING" for details.
 
 There are two source distribution files, a F<.tgz> "tarball" for unix
 systems and a zip file, F<.zip> for Windows.  The only differences is
@@ -85,6 +85,7 @@ run perltidy with Active State Perl with Windows ME:
     623             5.6.0         ME      Windows freezes
     628             5.6.1         ME      Windows freezes
     628             5.6.1         95      ok
+    ???             5.6.1         2000    ok
 
 I've only tested one Windows ME system, so this may be specific to that
 machine (a new Dell with no known hardware problems).  The crash was
@@ -95,7 +96,7 @@ any successes or failures (is it just ME?) so that we can ask
 ActiveState to look into it if this is a general problem.
 
 As far as I know, perltidy runs ok under ActiveState Perl and Windows
-95.
+95 and Windows 2000.
 
 =head2 Installation - Windows
 

@@ -15,7 +15,7 @@
 	<UL>
 
 		<LI><A HREF="#a heredoc invoked through an 'e' modifier on the replacement text is not recognized (slh, 20010802)">A here-doc invoked through an 'e' modifier on the replacement text is not recognized (SLH, 2001-08-02)</A></LI>
-		<LI><A HREF="#perl v5.6.0 features not yet parsed correctly (slh, 20010331)">perl v5.6.0 features not yet parsed correctly (SLH, 2001-03-31)</A></LI>
+		<LI><A HREF="#limitation parsing subroutine attributes and prototypes">Limitation parsing subroutine attributes and prototypes</A></LI>
 	</UL>
 
 </UL>
@@ -42,22 +42,18 @@
         END
         print &quot;$text\n&quot;;</PRE>
 <P>
-<H2><A NAME="perl v5.6.0 features not yet parsed correctly (slh, 20010331)">perl v5.6.0 features not yet parsed correctly (SLH, 2001-03-31)</A></H2>
-<P>Subroutine attributes have not been implemented in perltidy yet.  For example:</P>
-<PRE>
-   sub witch : locked {
-     ...        
-   }</PRE>
-<P>Perltidy does not correctly parse prototypes when they are on a separate
-line from the subroutine name.  For example, this would cause an error:</P>
+<H2><A NAME="limitation parsing subroutine attributes and prototypes">Limitation parsing subroutine attributes and prototypes</A></H2>
+<P>Subroutine prototypes and attributes (a perl 5.6 feature) are not
+correctly parsed unless they are on the same line as the subroutine
+name.  For example, this would cause an error:</P>
 <PRE>
    sub pi 
    ()
    {
      4 * atan2(1,1);
    }</PRE>
-<P>For now, the workaround is to place the prototype on the same line as the sub
-name, like this:</P>
+<P>The workaround is to place the prototype and/or attribute on the same
+line as the sub name, like this:</P>
 <PRE>
    sub pi ()
    {

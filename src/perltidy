@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.27 2001/08/08 03:20:01 perltidy Exp $
+    $Id: perltidy,v 1.28 2001/08/18 02:13:24 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -3757,7 +3757,8 @@ sub is_essential_whitespace {
       # be careful with a space around ++ and --, to avoid ambiguity as to
       # which token it applies
       || ( ( $typer =~ /^(pp|mm)$/ )     && ( $tokenl !~ /^[\;\{\(\[]/ ) )
-      || ( ( $typel =~ /^(\+\+|\-\-)$/ ) && ( $tokenr !~ /^[\;\{\(\[]/ ) )
+      #|| ( ( $typel =~ /^(\+\+|\-\-)$/ ) && ( $tokenr !~ /^[\;\{\(\[]/ ) )
+      || ( ( $typel =~ /^(\+\+|\-\-)$/ ) && ( $tokenr !~ /^[\;\}\)\]]/ ) )
 
       # need space after foreach my; for example, this will fail:
       # foreach my$ft(@filetypes)...
@@ -4339,7 +4340,7 @@ sub print_line_of_tokens {
     #     /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
     # Examples:
     #   *VERSION = \'1.01';
-    #   ( $VERSION ) = '$Revision: 1.27 $ ' =~ /\$Revision:\s+([^\s]+)/;
+    #   ( $VERSION ) = '$Revision: 1.28 $ ' =~ /\$Revision:\s+([^\s]+)/;
     # We will pass such a line straight through unless -npvl is used
     my $is_VERSION_statement = 0;
 
@@ -7895,8 +7896,9 @@ use constant IS_FORCED_BREAK         => 7;
 use constant OUTDENT_LONG_LINES      => 8;
 use constant LIST_TYPE               => 9;
 use constant IS_HANGING_SIDE_COMMENT => 10;
-use constant RALIGNMENTS                => 11;
+use constant RALIGNMENTS             => 11;
 use constant RSTARTING_COLUMNS       => 12;
+use constant RCOLUMNS                => 13;
 
 my %_index_map;
 $_index_map{jmax}                    = JMAX;
@@ -7910,8 +7912,9 @@ $_index_map{is_forced_break}         = IS_FORCED_BREAK;
 $_index_map{outdent_long_lines}      = OUTDENT_LONG_LINES;
 $_index_map{list_type}               = LIST_TYPE;
 $_index_map{is_hanging_side_comment} = IS_HANGING_SIDE_COMMENT;
-$_index_map{rcolumns}                = RALIGNMENTS;
+$_index_map{ralignments}             = RALIGNMENTS;
 $_index_map{rstarting_columns}       = RSTARTING_COLUMNS;
+$_index_map{rcolumns}                = RCOLUMNS;
 
 my @_default_data = ();
 $_default_data[JMAX]                    = undef;
@@ -7925,8 +7928,9 @@ $_default_data[IS_FORCED_BREAK]         = undef;
 $_default_data[OUTDENT_LONG_LINES]      = undef;
 $_default_data[LIST_TYPE]               = undef;
 $_default_data[IS_HANGING_SIDE_COMMENT] = undef;
-$_default_data[RALIGNMENTS]                = undef;
+$_default_data[RALIGNMENTS]             = [];
 $_default_data[RSTARTING_COLUMNS]       = undef;
+$_default_data[RCOLUMNS]                = undef;
 
 {
 
@@ -7951,6 +7955,10 @@ sub new {
         elsif ($caller_is_obj) { $self->[$index] = $caller->[$index] }
         else { $self->[$index] = $_default_data[$index] }
     }
+
+    # patch - must be unique ref
+    $self->[RALIGNMENTS] = [];
+    
     $self->_increment_count();
     return $self;
 }
@@ -7972,19 +7980,66 @@ sub get_list_type               {  $_[0]->[LIST_TYPE] }
 sub get_is_hanging_side_comment {  $_[0]->[IS_HANGING_SIDE_COMMENT] }
 
 # ------ unused ---------------------------------------------------------------
-# sub get_rcolumns                {  $_[0]->[RALIGNMENTS] }
+# sub get_rcolumns                {  $_[0]->[RCOLUMNS] }
 # sub get_rstarting_columns       {  $_[0]->[RSTARTING_COLUMNS] }
 # set_column($k, $value)
-# sub set_column { $_[0]->[RALIGNMENTS]->[ $_[1] ] = $_[2] }
-# sub set_rcolumns                { $_[0]->[RALIGNMENTS]                = $_[1] }
+# sub set_rcolumns                { $_[0]->[RCOLUMNS]                = $_[1] }
 # sub set_rstarting_columns       { $_[0]->[RSTARTING_COLUMNS]       = $_[1] }
 # -----------------------------------------------------------------------------
 
 # get_column($k) returns location of kth column on this line
-sub get_column           {  $_[0]->[RALIGNMENTS]->[ $_[1] ] }
+sub get_column {
+    my $old = $_[0]->old_get_column( $_[1] );
+    my $new = $_[0]->new_get_column( $_[1] );
+    my ($a,$b,$c)=caller();
+    my $ral = $_[0]->[RALIGNMENTS];
+    #if ( $old != $new ) { Perltidy::VerticalAligner::warning("BUBBA: old=$old; new=$new from $a $c\n") }
+    if ( $old != $new ) { print("BUBBA_ERROR: ref=$ral old=$old; new=$new from $a $c\n") }
+    #return $old;
+    return $new;
+}
+
+sub old_set_column { $_[0]->[RCOLUMNS]->[ $_[1] ] = $_[2] }
+sub new_set_column  {  $_[0]->[RALIGNMENTS]->[$_[1]]->set_column($_[2] ) }
+
+sub set_column {
+   $_[0]->old_set_column($_[1],$_[2]);
+   $_[0]->new_set_column($_[1],$_[2]);
+}
+
+sub old_get_column           {  $_[0]->[RCOLUMNS]->[ $_[1] ] }
+sub get_columns      {  @{$_[0]->[RCOLUMNS]} }
+
+sub get_alignment           {  $_[0]->[RALIGNMENTS]->[ $_[1] ] }
 sub get_alignments      {  @{$_[0]->[RALIGNMENTS]} }
-sub increment_column { $_[0]->[RALIGNMENTS]->[ $_[1] ] += $_[2] }
-sub set_alignments      {  my $self=shift; @{$self->[RALIGNMENTS]} = @_ }
+
+sub new_get_column  {  $_[0]->[RALIGNMENTS]->[$_[1]]->get_column( ) }
+sub new_get_starting_column  {  $_[0]->[RALIGNMENTS]->[$_[1]]->get_starting_column( ) }
+
+sub increment_column {
+    my $jmax = $_[0]->[JMAX];
+    my ( $a, $b, $c ) = caller();
+    if ( $_[1] > $jmax || $_[1] < 0 ) {
+        Perltidy::VerticalAligner::warning(
+            "BOOGA: index=$_[1] but jmax=$jmax from $a $c\n");
+        return;
+    }
+
+    $_[0]->[RCOLUMNS]->[ $_[1] ] += $_[2];
+    if ($_[0]->[RALIGNMENTS]->[ $_[1] ]) {
+    $_[0]->[RALIGNMENTS]->[ $_[1] ]->increment_column( $_[2] );
+    }
+    else {
+        Perltidy::VerticalAligner::warning(
+            "BOOGA1: undefined alignment at index=$_[1] jmax=$jmax from $a $c\n");
+    }
+}
+
+sub set_columns      {  my $self=shift; @{$self->[RCOLUMNS]} = @_ }
+sub set_alignments   {  my $self=shift; @{$self->[RALIGNMENTS]} = @_;
+#my ($a,$b,$c)=caller();
+#print "BOOGALOO set_alignments from $a $c\n";
+}
 
 sub get_starting_column  {  $_[0]->[RSTARTING_COLUMNS]->[ $_[1] ] }
 sub set_starting_column { $_[0]->[RSTARTING_COLUMNS]->[ $_[1] ] = $_[2] }
@@ -8043,7 +8098,6 @@ sub set_outdent_long_lines  { $_[0]->[OUTDENT_LONG_LINES]  = $_[1] }
 sub set_list_type           { $_[0]->[LIST_TYPE]           = $_[1] }
 sub set_is_hanging_side_comment { $_[0]->[IS_HANGING_SIDE_COMMENT] = $_[1] }
 
-
 }
 
 #####################################################################
@@ -8052,7 +8106,7 @@ sub set_is_hanging_side_comment { $_[0]->[IS_HANGING_SIDE_COMMENT] = $_[1] }
 # on a single column being aligned
 #
 #####################################################################
-package PerlTidy::VerticalAligner::Alignment;
+package Perltidy::VerticalAligner::Alignment;
 
 {
 
@@ -8471,7 +8525,7 @@ The log file warns the user if there are any such tabs.
     # because scan_list would put a break after the opening '('.
     # --------------------------------------------------------------------
     if ( $maximum_line_index >= 0 ) {
-        eliminate_group_fields( $new_line, $old_line );
+        eliminate_old_fields( $new_line, $old_line );
     }
 
     # --------------------------------------------------------------------
@@ -8480,7 +8534,7 @@ The log file warns the user if there are any such tabs.
     # fields of the new line.  
     # --------------------------------------------------------------------
     if ( $maximum_line_index >= 0 ) {
-        eliminate_line_fields( $new_line, $old_line );
+        eliminate_new_fields( $new_line, $old_line );
     }
 
     # --------------------------------------------------------------------
@@ -8548,20 +8602,21 @@ sub hanging_comment_check {
     $line->set_is_hanging_side_comment($is_hanging_side_comment);
 }
 
-sub eliminate_group_fields {
+sub eliminate_old_fields {
     my $new_line   = shift;
     my $old_line   = shift;
+
     my $jmax       = $new_line->get_jmax();
     my $rtokens    = $new_line->get_rtokens();
     my $rfields    = $new_line->get_rfields();
     my $rpatterns  = $new_line->get_rpatterns();
-    my $hid_equals = 0;
 
     my $old_rfields   = $old_line->get_rfields();
     my $old_rtokens   = $old_line->get_rtokens();
     my $old_rpatterns = $old_line->get_rpatterns();
+    my $maximum_field_index = $old_line->get_jmax();
 
-    my $maximum_field_index = $group_lines[0]->get_jmax();
+    my $hid_equals = 0;
 
     if ( $jmax > $maximum_jmax_seen ) { $maximum_jmax_seen = $jmax }
     if ( $jmax < $minimum_jmax_seen ) { $minimum_jmax_seen = $jmax }
@@ -8575,7 +8630,11 @@ sub eliminate_group_fields {
       )
     {
         my @new_alignments        = ();
+
+        #@
+        my @new_columns           = ();
         my @new_starting_columns  = ();
+        #@
         my @new_fields            = ();
         my @new_matching_patterns = ();
         my @new_matching_tokens   = ();
@@ -8600,8 +8659,9 @@ sub eliminate_group_fields {
                 $current_pattern = '';
                 #@
                 $new_matching_tokens[$j]   = $$old_rtokens[$k];
-                $new_alignments[$j]       = $old_line->get_column($k);
+                $new_columns[$j]       = $old_line->get_column($k);
                 $new_starting_columns[$j] = $old_line->get_starting_column($k);
+                $new_alignments[$j]       = $old_line->get_alignment($k);
                 #@
                 $j++;
             }
@@ -8624,13 +8684,15 @@ sub eliminate_group_fields {
             $new_matching_patterns[$j] = $current_pattern;
 
             #@
-            $new_alignments[$j]           = $old_line->get_column($k);
+            $new_columns[$j]           = $old_line->get_column($k);
             $new_starting_columns[$j]  = $old_line->get_starting_column($k);
+            $new_alignments[$j]        = $old_line->get_alignment($k);
             #@
             $maximum_field_index = $j;
 
-            $old_line->set_alignments(@new_alignments);
+            $old_line->set_columns(@new_columns);
             $old_line->set_all_starting_columns(@new_starting_columns);
+            $old_line->set_alignments(@new_alignments);
 
             $old_line->set_jmax($jmax);
             $old_line->set_rtokens( \@new_matching_tokens );
@@ -8695,7 +8757,7 @@ sub list_check {
     $line->set_list_type($list_type);
 }
 
-sub eliminate_line_fields {
+sub eliminate_new_fields {
     my $new_line = shift;
     my $old_line = shift;
 
@@ -8708,8 +8770,8 @@ sub eliminate_line_fields {
     my $old_rpatterns = $old_line->get_rpatterns();
     my $old_rtokens   = $old_line->get_rtokens();
     my $starting_jmax = $old_line->get_jmax_original_line();
+    my $maximum_field_index = $old_line->get_jmax();
 
-    my $maximum_field_index = $group_lines[0]->get_jmax();
     if ( ( $maximum_line_index >= 0 ) && ( $maximum_field_index < $jmax )
         && ( $starting_jmax == $minimum_jmax_seen )    # only if monotonic
         && ( $previous_maximum_jmax_seen <= $jmax )    # only if monotonic
@@ -8752,7 +8814,7 @@ sub check_match {
 
     my $new_line            = shift;
     my $old_line            = shift;
-    my $maximum_field_index = $group_lines[0]->get_jmax();
+    my $maximum_field_index = $old_line->get_jmax();
 
     my $jmax                    = $new_line->get_jmax();
     my $jmax_original_line      = $new_line->get_jmax_original_line();
@@ -8809,7 +8871,6 @@ sub check_match {
                 # Don't let line with fewer fields increase column widths
                 # ( align3.t )
                 if ( $maximum_field_index > $jmax ) {
-                    #my $pad = length( $$rfields[$j] ) - current_field_width($j);
                     my $pad = length( $$rfields[$j] ) - $old_line->current_field_width($j);
 
                     if ( $j == 0 ) {
@@ -8849,7 +8910,7 @@ sub check_fit {
     my $new_line = shift;
     my $old_line = shift;
 
-    my $maximum_field_index = $group_lines[0]->get_jmax();
+    my $maximum_field_index = $old_line->get_jmax();
 
     my $jmax                    = $new_line->get_jmax();
     my $leading_space_count     = $new_line->get_leading_space_count();
@@ -8867,9 +8928,18 @@ sub check_fit {
           $old_line->get_column($maximum_field_index);
 
         # save current columns in case this doesn't work
-        my @old_alignments = $old_line->get_alignments();
+        #my @old_columns = $old_line->get_columns();
+        #my @old_alignments = $old_line->get_alignments();
+
+        my @old_columns;
+        for my $j ( 0 .. $maximum_field_index ) {
+          $old_columns[$j] = $old_line->get_column($j);
+          #print "BOOGA: saving old_column[j=$j] = $old_columns[$j]\n";
+        }
 
         for my $j ( 0 .. $jmax ) {
+        #$old_columns[$j] = $old_line->get_column($j);
+
             my $pad = 
               length( $$rfields[$j] ) - $old_line->current_field_width($j);
 
@@ -8927,7 +8997,16 @@ sub check_fit {
             {
 
                 # revert to starting state then flush; things didn't work out
-                $old_line->set_alignments(@old_alignments);
+
+                for my $k ( 0 .. $maximum_field_index ) {
+                #print "BOOGA: restoring old_column[j=$k] = $old_columns[$k]\n";
+                $old_line->set_column($k, $old_columns[$k] );
+                }
+                
+                #$old_line->set_columns(@old_columns);
+                #$old_line->set_alignments(@old_alignments);
+                #print "BUBBABUBBA! doesnt fit\n";
+
                 flush();
                 last;
             }
@@ -8947,26 +9026,53 @@ sub accept_line {
     # initialize field lengths if starting new group
     if ( $maximum_line_index == 0 ) {
 
+        my @new_alignments  = ();
         my $jmax    = $new_line->get_jmax();
         my $rfields = $new_line->get_rfields();
         my $j;
 
-        my @new_alignments        = ();
+        #@---to be deleted-------------------------------
+        my @new_columns        = ();
         my @new_starting_columns  = ();
+        #@---to be deleted-------------------------------
+
 
         my $col = $new_line->get_leading_space_count();
 
         for $j ( 0 .. $jmax ) {
             $col += length( $$rfields[$j] );
-            push @new_alignments, $col;
+
+            # create initial alignments for the new group
+            my $alignment = new Perltidy::VerticalAligner::Alignment(
+                column          => $col,
+                starting_column => $col,
+                starting_line   => $maximum_line_index,
+                ending_line     => $maximum_line_index,
+            );
+
+            #@---to be deleted-------------------------------
+            push @new_alignments, $alignment;
+            push @new_columns, $col;
+            #@---to be deleted-------------------------------
             push @new_starting_columns, $col;
+
         }
 
         $new_line->set_alignments(@new_alignments);
+
+        #@---to be deleted-------------------------------
+        $new_line->set_columns(@new_columns);
         $new_line->set_all_starting_columns(@new_starting_columns);
+        #@---to be deleted-------------------------------
 
         $maximum_jmax_seen = $jmax;
         $minimum_jmax_seen = $jmax;
+    }
+
+    # use previous alignments otherwise
+    else {
+        my @new_alignments=$group_lines[$maximum_line_index-1]->get_alignments();
+        $new_line->set_alignments(@new_alignments);
     }
 }
 
@@ -9013,8 +9119,9 @@ sub flush {
 
     # loop to output all lines
     for my $i ( 0 .. $maximum_line_index ) {
-        write_line( $i, $min_ci_gap, $do_not_align, $group_leader_length,
-            $extra_leading_spaces );
+        my $line = $group_lines[$i];
+        write_vertically_aligned_line( $line, $min_ci_gap, $do_not_align, 
+            $group_leader_length, $extra_leading_spaces );
     }
 
     # initialize for new group
@@ -9054,7 +9161,6 @@ sub adjust_side_comment {
     my $maximum_field_index     = $group_lines[0]->get_jmax();
     for my $i ( 0 .. $maximum_line_index ) {
         my $line = $group_lines[$i];
-
         if ( length( $line->get_rfields()->[$maximum_field_index] ) ) {
             $have_side_comment       = 1;
             $first_side_comment_line = $i;
@@ -9187,18 +9293,14 @@ use overload '+' => \&plus,
     return $min_ci_gap;
 }
 
-sub write_line {
+sub write_vertically_aligned_line {
 
-    # output one vertically aligned line 
-
-    my ( $i, $min_ci_gap, $do_not_align, $group_leader_length,
+    my ( $line, $min_ci_gap, $do_not_align, $group_leader_length,
         $extra_leading_spaces ) = @_;
-    my $line                = $group_lines[$i];
     my $rfields             = $line->get_rfields();
     my $leading_space_count = $line->get_leading_space_count();
     my $outdent_long_lines  = $line->get_outdent_long_lines();
-
-    my $maximum_field_index = $group_lines[0]->get_jmax();
+    my $maximum_field_index = $line->get_jmax();
 
     # add any extra spaces
     if ( $leading_space_count > $group_leader_length ) {
@@ -9213,7 +9315,6 @@ sub write_line {
 
         # skip zero-length side comments
         last
-
           if ( ( $j == $maximum_field_index )
             && ( !defined( $$rfields[$j] ) || ( length( $$rfields[$j] ) == 0 ) )
         );
@@ -9233,7 +9334,7 @@ sub write_line {
 
         # add this field
         if ( !defined $$rfields[$j] ) {
-            write_diagnostics("UNDEFined field at i=$i j=$j\n");
+            write_diagnostics("UNDEFined field at j=$j\n");
         }
 
         # only add padding when we have a finite field;
@@ -9314,11 +9415,18 @@ sub combine_fields {
             $$rfields[0] .= $$rfields[$k];
         }
         $$rfields[1] = $$rfields[$maximum_field_index];
-        my @new_columns           = (0,0);
+
+        #my @new_columns           = (0,0);
         $line->set_jmax(1);
-        $line->set_alignments( @new_columns );
-        #$line->set_column( 0, 0 );
-        #$line->set_column( 1, 0 );
+        #$line->set_columns( @new_columns );
+        $line->set_column(0,0);
+        $line->set_column(1,0);
+
+        #my @new_alignments; 
+        #$new_alignments[0] = $line->get_alignment(0);
+        #$new_alignments[1] = $line->get_alignment($maximum_field_index);
+        #$line->set_alignments(@new_alignments);
+
     }
     $maximum_field_index = 1;
 
