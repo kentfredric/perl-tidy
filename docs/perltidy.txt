@@ -956,9 +956,9 @@ FORMATTING OPTIONS
     -fnl, --freeze-newlines
         If you do not want any changes to the line breaks in your script,
         set -fnl, and they will remain fixed, and the rest of the commands
-        in this section and sections "Breaking at Existing Line Breaks" and
-        "Blank Line Control" will be ignored. You may want to use -noll with
-        this.
+        in this section and sections "Retaining or Ignoring Existing Line
+        Breaks" and "Blank Line Control" will be ignored. You may want to
+        use -noll with this.
 
     -ce, --cuddled-else
         Enable the "cuddled else" style, in which "else" and "elsif" are
@@ -1278,46 +1278,24 @@ FORMATTING OPTIONS
         cause unexpected results. One example is curly braces, which should
         be controlled with the parameter bl provided for that purpose.
 
-  Breaking at Existing Line Breaks
-    Several parameters are available for controlling the extent to which
-    line breaks in the input script influence the output script. In most
-    cases, the default values are set so that, if a choice is possible, the
-    output style follows the input style. For example, if a short logical
-    container is broken in the input script, then the default behavior is
-    for it to remain broken in the output script.
+  Controlling list formatting
+    Perltidy attempts to place comma-separated arrays of values in tables
+    which look good. Its default algorithms usually work well, and they have
+    been improving with each release, but several parameters are available
+    for controlling it.
 
-    Most of the parameters in this section would only be required for a
-    one-time conversion of a script from short container lengths to longer
-    container lengths.
-
-    -iob, --ignore-old-breakpoints
-        Use this flag to tell perltidy to ignore existing line breaks to the
-        maximum extent possible. This will tend to produce the longest
-        possible lines which do not exceed the line length limit.
-
-    -bol, --break-at-old-logical-breakpoints
-        By default, if a logical expression is broken at a "&&", "||",
-        "and", or "or", then the container will remain broken. Also, breaks
-        at internal keywords "if" and "unless" will normally be retained. To
-        prevent this, use -nbol.
-
-    -bok, --break-at-old-keyword-breakpoints
-        By default, perltidy will retain a breakpoint before keywords which
-        may return lists, such as "sort" and <map>. This allows chains of
-        these operators to be displayed one per line. Use -nbok to prevent
-        retaining these breakpoints.
-
-    -boa, --break-at-old-arrow-breakpoints
-        The default behavior for a container with comma-arrows, '=>', is to
-        break after the next comma if the container spans multiple lines,
-        and not to break if the container spans one line. Use -nboa to tell
-        perltidy to ignore the old line breaks and instead to form the
-        longest possible one-line containers with comma-arrows.
+    At present, the automatic formatting of lists is only done for lists
+    which have no comments or empty lines between the opening and closing
+    tokens of the list container. If there are any comments or blank lines
+    between the opening and closing structural brace, parenthesis, or
+    bracket containing the list, then the original line breaks are used for
+    the entire list instead.
 
     -boc, --break-at-old-comma-breakpoints
-        This flag tells perltidy to try to break at all old commas.
-        Normally, perltidy makes a best guess at list formatting, and seldom
-        uses old comma breakpoints. Usually this works well, but consider:
+        This flag tells perltidy to try to break at all old commas. This is
+        not the default. Normally, perltidy makes a best guess at list
+        formatting, and seldom uses old comma breakpoints. Usually this
+        works well, but consider:
 
             my @list = (1,
                         1, 1,
@@ -1339,6 +1317,113 @@ FORMATTING OPTIONS
                         1, 2, 1,
                         1, 3, 3, 1,
                         1, 4, 6, 4, 1,);
+
+        A disadvantage of this flag is that all tables in the file must
+        already be nicely formatted.
+
+    -mft=n, --maximum-fields-per-table=n
+        If the computed number of fields for any table exceeds n, then it
+        will be reduced to n. The default value for n is a large number, 40.
+        While this value should probably be left unchanged as a general
+        rule, it might be used on a small section of code to force a list to
+        have a particular number of fields per line, and then either the
+        -boc flag could be used to retain this formatting, or a single
+        comment could be introduced somewhere to freeze the formatting in
+        future applications of perltidy.
+
+            # perltidy -mft=2
+            @month_of_year = (    
+                'Jan', 'Feb',
+                'Mar', 'Apr',
+                'May', 'Jun',
+                'Jul', 'Aug',
+                'Sep', 'Oct',
+                'Nov', 'Dec'
+            );
+
+    -cab=n, --comma-arrow-breakpoints=n
+        A comma which follows a comma arrow, '=>', requires special
+        consideration. In a long list, it is common to break at all such
+        commas. This parameter can be used to control how perltidy breaks at
+        these commas. (However, it will have no effect if old comma breaks
+        are being forced because -boc is used). The possible values of n
+        are:
+
+         n=0 break at all commas after =>  
+         n=1 stable: break at all commas after => unless this would break
+             an existing one-line container (default)
+         n=2 break at all commas after =>, but try to form the maximum
+             maximum one-line container lengths
+         n=3 do not treat commas after => specially at all 
+
+        For example, given the following single line, perltidy by default
+        will not add any line breaks because it would break the existing
+        one-line container:
+
+            bless { B => $B, Root => $Root } => $package;
+
+        Using -cab=0 will force a break after each comma-arrow item:
+
+            # perltidy -cab=0:
+            bless {
+                B    => $B,
+                Root => $Root
+            } => $package;
+
+        If perltidy is subsequently run with this container broken, then by
+        default it will break after each '=>' because the container is now
+        broken. To reform a one-line container, the parameter -cab=2 would
+        be needed.
+
+        The flag -cab=3 can be used to prevent these commas from being
+        treated specially. In this case, an item such as ""01" =" 31> is
+        treated as a single item in a table. The number of fields in this
+        table will be determined by the same rules that are used for any
+        other table. Here is an example.
+
+            # perltidy -cab=3
+            my %last_day = (
+                "01" => 31, "02" => 29, "03" => 31, "04" => 30,
+                "05" => 31, "06" => 30, "07" => 31, "08" => 31,
+                "09" => 30, "10" => 31, "11" => 30, "12" => 31
+            );
+
+  Retaining or Ignoring Existing Line Breaks
+    Several additional parameters are available for controlling the extent
+    to which line breaks in the input script influence the output script. In
+    most cases, the default parameter values are set so that, if a choice is
+    possible, the output style follows the input style. For example, if a
+    short logical container is broken in the input script, then the default
+    behavior is for it to remain broken in the output script.
+
+    Most of the parameters in this section would only be required for a
+    one-time conversion of a script from short container lengths to longer
+    container lengths. The opposite effect, of converting long container
+    lengths to shorter lengths, can be obtained by temporarily using a short
+    maximum line length.
+
+    -bol, --break-at-old-logical-breakpoints
+        By default, if a logical expression is broken at a "&&", "||",
+        "and", or "or", then the container will remain broken. Also, breaks
+        at internal keywords "if" and "unless" will normally be retained. To
+        prevent this, and thus form longer lines, use -nbol.
+
+    -bok, --break-at-old-keyword-breakpoints
+        By default, perltidy will retain a breakpoint before keywords which
+        may return lists, such as "sort" and <map>. This allows chains of
+        these operators to be displayed one per line. Use -nbok to prevent
+        retaining these breakpoints.
+
+    -bot, --break-at-old-trinary-breakpoints
+        By default, if a conditional (trinary) operator is broken at a ":",
+        then it will remain broken. To prevent this, and thereby form longer
+        lines, use -nbot.
+
+    -iob, --ignore-old-breakpoints
+        Use this flag to tell perltidy to ignore existing line breaks to the
+        maximum extent possible. This will tend to produce the longest
+        possible containers, regardless of type, which do not exceed the
+        line length limit.
 
   Blank Line Control
     Blank lines can improve the readability of a script if they are
@@ -1545,52 +1630,6 @@ FORMATTING OPTIONS
         VMS scripts, but it should be used for any script which is normally
         invoked with "perl -x".
 
-    Controlling list formatting and vertical alignment
-        Perltidy attempts to place comma-separated arrays of values in
-        tables which can be vertically aligned. The number of fields is, by
-        default, chosen to be the largest even number which fits in the
-        current page width (defined by -l=n). Usually this works well.
-
-        There are two ways to control this formatting. The first is with the
-        use of comments or empty lines. If there are any comments or blank
-        lines between the opening and closing structural brace, parenthesis,
-        or bracket containing the list, then the original line breaks will
-        be used for the entire list instead.
-
-        The second is with the parameter --mft=n or
-        --maximum-fields-per-table=n. The default value for n is a large
-        number, 40. If the computed number of fields for any table exceeds
-        n, then it will be reduced to n. While this value should probably be
-        left unchanged as a general rule, it might be used on a small
-        section of code to force a list to have a particular number of
-        fields per line, and then a single comment could be introduced
-        somewhere to freeze the formatting in future applications of
-        perltidy, like this:
-
-            # perltidy -mft=2
-            @month_of_year = (    
-                'Jan', 'Feb',
-                'Mar', 'Apr',
-                'May', 'Jun',
-                'Jul', 'Aug',
-                'Sep', 'Oct',
-                'Nov', 'Dec'
-            );
-
-        Vertical alignment refers to lining up similar tokens vertically,
-        like this:
-
-         my $lines = 0;    # checksum: #lines
-         my $bytes = 0;    # checksum: #bytes
-         my $sum   = 0;    # checksum: system V sum
-
-        Once the perltidy vertical aligner "locks on" to a pattern, such as
-        defined by the "=" and "#" in the above example, it retains the
-        pattern for as long as possible. However, a blank line or full-line
-        comment will cause it to forget the pattern and start looking for
-        another. Thus, a single blank line can be introduced to force the
-        aligner to stop aligning when it is undesirable.
-
     Making a file unreadable
         The goal of perltidy is to improve the readability of files, but
         there are two commands which have the opposite effect, --mangle and
@@ -1641,22 +1680,6 @@ FORMATTING OPTIONS
         one-line blocks following the keywords "map", "eval", and "sort",
         because these code blocks are often small and most clearly displayed
         in a single line.
-
-        Occasionally it is helpful to introduce line breaks in lists
-        containing a '=>' symbol, which is sometimes called a "comma-arrow".
-        To force perltidy to introduce breaks in a one-line block containing
-        comma arrows, use the --break-after-comma-arrows, or -baa, flag. For
-        example, given the following single line, perltidy will not add any
-        line breaks:
-
-            bless { B => $B, Root => $Root } => $package;   -nbaa (default)
-
-        To introduce breaks to show the structure, use -baa:
-
-            bless {                                         -baa
-                B    => $B,
-                Root => $Root
-            } => $package;
 
         One-line block rules can conflict with the cuddled-else option. When
         the cuddled-else option is used, perltidy retains existing one-line
@@ -1873,7 +1896,7 @@ SWITCHES WHICH MAY BE NEGATED
     The following list shows all short parameter names which allow a prefix
     'n' to produce the negated form:
 
-        D anl asc aws bbb bbc bbs bli boa boc bok bol baa syn ce csc 
+        D anl asc aws bbb bbc bbs bli boc bok bol syn ce csc 
         dac dbc dcsc dnl dws dp dpro dsm dsc ddf dln dop dsn dtt dwls dwrs 
         f fll hsc html ibc icb icp isbc lp log lal x lsl bl 
         sbl okw ola oll pvl q opt sbc sfs ssc sts se st sob 
@@ -1932,7 +1955,7 @@ SEE ALSO
     perlstyle(1), Perl::Tidy(3)
 
 VERSION
-    This man page documents perltidy version 20020408.
+    This man page documents perltidy version 20020411.
 
 CREDITS
     Michael Cartmell supplied code for adaptation to VMS and helped with

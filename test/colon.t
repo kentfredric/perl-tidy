@@ -1,4 +1,24 @@
+# Break at '='
+*{"${callpkg}::$sym"} = $type eq '&' ? \&{"${pkg}::$sym"}
+  : $type eq '$' ? \${"${pkg}::$sym"}
+  : $type eq '@' ? \@{"${pkg}::$sym"}
+  : $type eq '%' ? \%{"${pkg}::$sym"}
+  : $type eq '*' ? *{"${pkg}::$sym"}
+  : do { require Carp; Carp::croak("Can't export symbol: $type$sym") };
 {
+    if ($minbits < 32) {
+        while ($list) { 
+	    $top = $val if $val > $top;
+	}
+        $bits =
+	    $top > 0xffff ? 32 :
+	    $top > 0xff ? 16 :
+	    $top > 1 ? 8 : 1
+    }
+
+    @a = $horz
+      ? ( $XY, $slv->y )
+      : ( $slv->x, $XY );
     $cmd =
       (!ref $cmd) 
       ? $cmd
@@ -11,8 +31,26 @@
     $me = $Is_MSWin32 ? $ENV{'USERNAME'}
       : $^O eq 'os2' ? $ENV{'USER'} || $ENV{'LOGNAME'}
       : eval { getpwuid($<) };    # May be missing
-}
-{{{
+
+{
+        ( ref($usage_fref) =~ /CODE/ ) 
+          ? &$usage_fref
+          : ( &blast_usage, &blast_params, &blast_general_params );
+        exit 1;
+
+{
+            sprintf(
+                "%d%s",
+                $mday,
+                (
+                  ( $mday < 20 && $mday > 3 ) ? 'th'
+                : (
+                      $mday % 10 == 1 ? "st"
+                      : ( $mday % 10 == 2 ? "nd"
+                          : ( $mday % 10 == 3 ? "rd" : "th" ) )
+                  )
+                )
+            );
             # a simple ?/: pair to format
             ( $feat->strand == -1 )
               ? ( @range = ( $feat->end, $feat->start, $feat->strand ) )
@@ -124,6 +162,16 @@ $leapyear = $year % 4 ? 0
 
 
 {{{{{
+                $s->{seen}{$id} = [
+                    (
+                      ( $name =~ /^[@%]/ ) ? ( '\\' . $name )
+                    : ( $realtype eq 'CODE' and $name =~ /^[*](.*)$/ )
+                    ? ( '\\&' . $1 )
+                    : $name
+                    ),
+                    $val
+                ];
+
                     $_ =
                       ( ($_)
                       ? &process_math_in_latex( "indisplay", '', '',

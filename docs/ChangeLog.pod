@@ -5,7 +5,7 @@
  suggested improvement, please send a note to perltidy at
  users.sourceforge.net.  
 
-=head2 2002 04 08
+=head2 2002 04 11
 
  -Corrected a mistokenization of variables for a package with a name
   equal to a perl keyword.  For example: 

@@ -1,3 +1,10 @@
+    # broken by comment
+    @modified =
+      map { $_->[0] }
+      sort { $a->[1] <=> $b->[1] }
+      # -M is when $_ was last modified
+      map { [ $_, -M ] } @filenames;
+
     # Note the missing semicolon at the end; currently this will not
     # be added because this is a map block.
     return map {

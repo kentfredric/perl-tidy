@@ -1,3 +1,12 @@
+my %LAST_DAY = (	"01" => 31, "02" => 29, "03" => 31, "04" => 30,
+			"05" => 31, "06" => 30,	"07" => 31, "08" => 31,
+			"09" => 30, "10" => 31, "11" => 30, "12" => 31
+);
+
+my %MONTH_TO_DIGIT = (	Jan =>  0, Feb =>  1, Mar =>  2, Apr =>  3,
+			May =>  4, Jun =>  5, Jul =>  6, Aug =>  7,
+			Sep =>  8, Oct =>  9, Nov => 10, Dec => 11
+);
 # doesnt look good with -vtc=2:
 $main->Button( -text    => "Click Here For Registration Form",
                -command => \&register )->pack( -side => "left" );
@@ -77,6 +86,18 @@ map( $matchwords{ join "", sort split //, $_ } = $_, 'cig',
   = @_;
 
 {
+    return pack(
+        $_,
+        (
+            $fields{CONFFILES},   $fields{PRIORITY},  $fields{COMPRESSTYPE},
+            $fields{RELEASE},     $fields{COPYRIGHT}, $fields{CONFLICTS},
+            $fields{SETUPSCRIPT}, $fields{SUMMARY},   $fields{DESCRIPTION},
+            $fields{DEPENDS},     $fields{PROVIDES},  $fields{AUTHOR},
+            $fields{DATE},        $fields{COMPILER},  $fields{VERSION},
+            $fields{NAME},        $fields{BINFORMAT}, $fields{GROUP},
+            $fields{SLPKGVERSION},
+        )
+    );
     # This will get messed up...
     &InitKeymap(*emacs_keymap, 'SelfInsert', 'emacs_keymap',
 		($inDOS ? () : ('C-@',	'Ding') ),
@@ -392,6 +413,15 @@ my %ENTITIES = (
     );
 
 { 
+        print $patch (
+            "--- ",                               $new,
+            "\t" . localtime(0),                  "\n",
+            "+++ ",                               $new,
+            "\t" . localtime( ( stat($fh) )[9] ), "\n",
+            "\@\@ -0,0 +",                        $lines,
+            " \@\@\n"
+        );
+
         # big gaps
         ( $junk, $w[6] ) = radlablist(
             $w,                                   pad( 'Focus',  $p - 6 ),

@@ -4,7 +4,7 @@ Perltidy Change Log
      suggested improvement, please send a note to perltidy at
      users.sourceforge.net.  
 
-  2002 04 08
+  2002 04 11
      -Corrected a mistokenization of variables for a package with a name
       equal to a perl keyword.  For example: 
 
@@ -15,6 +15,27 @@ Perltidy Change Log
       In this case, the leading 'my' was mistokenized as a keyword, and a
       space was being place between 'my' and '::'.  This has been
       corrected.  Thanks to Martin Sluka for discovering this. 
+
+     -A new flag -iob (--ignore-old-breakpoints) has been added to
+      prevent the locations of old breakpoints from influencing the output
+      format.  This is one of several new parameters which give some 
+      control over the extent to which old line breaks influence the output
+      format.
+
+     -A new flag -boc has been added to allow existing list formatting
+      to be retained.  (--break-at-old-comma-breakpoints).  See updated manual.
+
+     -A new flag -boa (--break-at-old-arrow-breakpoints)
+      has been added to control whether containers with comma-arrow tokens
+      should be broken open.
+
+     -A new flag -bol (--break-at-old-logic-breakpoints)
+      has been added to control whether containers with logical expressions
+      should be broken open.
+
+     -A new flag -bok (--break-at-old-keyword-breakpoints)
+      has been added to follow breaks at old keywords which return lists,
+      such as sort and map.  This is the default.
 
      -Corrected problem where nested parentheses were not getting full
       indentation.  This has been on the todo list for some time; thanks 
@@ -118,9 +139,6 @@ Perltidy Change Log
       sort, map, or grep.  This brings perltidy into closer agreement
       with common practice.  Of course, you can still put semicolons 
       there if you like.  Thanks to Simon Perreault for a discussion of this.
-
-     -A new flag -wocb has been added to allow existing list formatting
-      to be retained.  (--want-old-comma-breaks).  See updated manual.
 
      -Most instances of extra semicolons are now deleted.  This is
       particularly important if the -csc option is used.  Thanks to Wolfgang
