@@ -3,6 +3,159 @@ Perltidy Change Log
      have hit a bug, unusual behavior, annoyance, or have a suggested
      improvement, please send a note to perltidy at users.sourceforge.net.  
 
+  2002 xx xx
+     -This version uses modules for the first time, and a standard perl
+      Makefile.PL has been supplied.  However, perltidy may still be
+      installed as a single script, without modules.  See INSTALL for
+      details.
+
+     -New parameter '--entab-leading-whitespace=n', or '-et=n', has been
+      added for those who prefer tabs.  This behaves different from the
+      existing '-t' parameter; see updated man page.  Suggested by Mark
+      Olesen.
+
+     -New parameter '--output-path=s'  or '-opath=s' will cause output
+      files to be placed in directory s.  See updated man page.  Thanks for
+      Mark Olesen for suggesting this.
+
+     -Added command --dump-profile (or -dpro) which will dump to standard output
+      the name of whatever configuration file is in effect, and its contents.
+
+     -Corrections added for a leading ':' and for leaving a leading 'tcsh'
+      line untouched.  Mark Olesen reported that lines of this form were
+      accepted by perl but not by perltidy:
+
+            : # use -*- perl -*-
+            eval 'exec perl -wS $0 "$@"'  # shell should exec 'perl'
+            unless 1;                     # but Perl should skip this one
+
+      Perl will silently swallow a leading colon on line 1 of a script, and now
+      perltidy will do likewise.  For example, this is a valid script, provided
+      that it is the first line, but not otherwise:
+
+            : print "Hello World\n";
+  
+      Also, perltidy will now mark a first line with leading ':' followed by
+      '#' as type SYSTEM (just as a #!  line), not to be formatted.
+
+     -List formatting improved for certain lists with special initial terms, such
+      as occur with 'printf', 'sprintf', 'push', 'pack', 'join', 'chmod'.  The 
+      special initial term is now placed on a line by itself.  For example,
+      perltidy -gnu
+
+         OLD:
+            $Addr = pack(
+                         "C4",                hex($SourceAddr[0]),
+                         hex($SourceAddr[1]), hex($SourceAddr[2]),
+                         hex($SourceAddr[3])
+                         );
+
+         NEW:
+            $Addr = pack("C4",
+                         hex($SourceAddr[0]), hex($SourceAddr[1]),
+                         hex($SourceAddr[2]), hex($SourceAddr[3]));
+
+          OLD:
+                push (
+                      @{$$self{states}}, '64', '66', '68',
+                      '70',              '72', '74', '76',
+                      '78',              '80', '82', '84',
+                      '86',              '88', '90', '92',
+                      '94',              '96', '98', '100',
+                      '102',             '104'
+                      );
+
+          NEW:
+                push (
+                      @{$$self{states}},
+                      '64', '66', '68', '70', '72',  '74',  '76',
+                      '78', '80', '82', '84', '86',  '88',  '90',
+                      '92', '94', '96', '98', '100', '102', '104'
+                      );
+
+     -Lists of complex items, such as matricies, are now detected and displayed
+      with just one item per row:
+
+        OLD (two per row):
+        for (
+            [ 'Shine', 40 ], [ 'Specular', [ 1, 1, 0.3, 0 ] ],
+            [ 'Ambient', [ 0.3, 1, 1, 0 ] ], [ 'Diffuse', [ 1, 0.3, 1, 0 ] ],
+            [ 'Emissive', [ 0, 0, 0 ] ]
+          )
+        {
+        }
+
+        NEW (one per row):
+        for (
+            [ 'Shine', 40 ],
+            [ 'Specular', [ 1,   1,   0.3, 0 ] ],
+            [ 'Ambient',  [ 0.3, 1,   1,   0 ] ],
+            [ 'Diffuse',  [ 1,   0.3, 1,   0 ] ],
+            [ 'Emissive', [ 0,   0,   0 ] ]
+          )
+        {
+        }
+
+     -Perltidy will now use system-generated temporary filenames when
+      necessary, rather than create files with .TMPI and .TMPO extensions.
+      Also, a control-C handler has been added to delete temporary files if
+      perltidy is interrupted.
+
+     -Merged patch sent by Yves Orton to handle appropriate configuration file
+      locations for different Windows varieties (2000, NT, XP, 95, 98).
+
+     -Added patch to properly handle a for/foreach loop without parens
+      around a list represented as a qw.  I didn't know this was possible
+      until Wolfgang Weisselberg pointed it out:
+
+            foreach my $key qw\Uno Due Tres Quadro\ {
+                print "Set $key\n";
+            }
+
+      But this is probably not a very good programming practice.  Perl will 
+      give a syntax error without the $ variable; ie this will not work:
+
+            foreach qw\Uno Due Tres Quadro\ {
+                print "Set $_\n";
+            }
+
+     -Merged Windows version detection code sent by Yves Orton.  Perltidy
+      now automatically turns off syntax checking for Win 9x/ME versions,
+      and this has solved a lot of robustness problems.  These systems 
+      cannot reliably handle backtick operators.  See man page for
+      details.
+  
+     -Merged VMS filename handling patch sent by Michael Cartmell.  (Invalid
+      output filenames were being created in some cases). 
+
+     -Numerous minor improvements have been made for -lp style indentation.
+
+     -Long C-style 'for' expressions will be broken after each ';'.   
+
+      'perltidy -gnu' gives:
+
+        OLD:
+        for ($status = $db->seq($key, $value, R_CURSOR()) ; $status == 0
+             and $key eq $origkey ; $status = $db->seq($key, $value, R_NEXT())) 
+
+        NEW:
+        for ($status = $db->seq($key, $value, R_CURSOR()) ;
+             $status == 0 and $key eq $origkey ;
+             $status = $db->seq($key, $value, R_NEXT()))
+
+     -For the -lp option, a single long term within parens (without commas) now 
+      has better alignment.  For example, perltidy -gnu
+
+                OLD:
+                $self->throw("Must specify a known host, not $location,"
+                      . " possible values ("
+                      . join (",", sort keys %hosts) . ")");
+
+                NEW:
+                $self->throw("Must specify a known host, not $location,"
+                             . " possible values ("
+                             . join (",", sort keys %hosts) . ")");
+
   2001 12 31
      -This version is about 20 percent faster than the previous version as a result
      of optimization work.  The largest gain came from switching to a dispatch hash

@@ -116,8 +116,9 @@ self-documenting and therefore useful in scripts.  It is customary to
 use two leading dashes for long names, but one may be used.</P>
 <P>Most parameters which serve as on/off flags can be negated with a
 leading ``n'' (for the short name) or a leading ``no'' (for the long
-name).  For example, the flag to use tabs is <STRONG>-t</STRONG> or <STRONG>--tabs</STRONG>.  The
-flag to use no tabs (the default) is <STRONG>-nt</STRONG> or <STRONG>--notabs</STRONG>.</P>
+name).  For example, the flag to have perl check syntax using perl -c 
+is <STRONG>-syn</STRONG> or <STRONG>--check-syntax</STRONG>.  The flag to skip this is
+<STRONG>-nsyn</STRONG> or <STRONG>--nocheck-syntax</STRONG>.</P>
 <P>Options may not be bundled together.  In other words, options <STRONG>-q</STRONG> and
 <STRONG>-g</STRONG> may NOT be entered as <STRONG>-qg</STRONG>.</P>
 <P>Option names may be terminated early as long as they are uniquely identified.
@@ -148,7 +149,7 @@ request outputting to the standard output.  For example,
   perltidy somefile.pl -st &gt;somefile.new.pl</PRE>
 <P>This option may only be used if there is just a single input file.  When
 this option is used, perltidy will have to create a temporary copy of
-the output file, perltidy.TMPO, to feed to perl for syntax checking,
+the output file to feed to perl for syntax checking,
 unless allow syntax checking is disabled.  This file will be deleted
 when the job finishes.  The default is <STRONG>-nst</STRONG> or <STRONG>-nostandard-output</STRONG>.</P>
 <P></P>
@@ -156,6 +157,23 @@ when the job finishes.  The default is <STRONG>-nst</STRONG> or <STRONG>-nostand
 <DD>
 Change the extension of the output file to be <EM>.ext</EM> instead of the
 default <EM>.tdy</EM>.
+<P></P>
+<DT><STRONG><A NAME="item_%2Dopath%3Dpath%2C_%2D%2Doutput%2Dpath%3Dpath"><STRONG>-opath</STRONG>=path,    <STRONG>--output-path</STRONG>=path</A></STRONG><BR>
+<DD>
+When perltidy creates a filename for an output file, by default it merely
+appends an extension to the path and basename of the input file.  This
+parameter causes the path to be changed to <EM>path</EM> instead.
+<P>The path should end in a valid path separator character, but perltidy will try
+to add one if it is missing.</P>
+<P>For example
+</P>
+<PRE>
+
+ perltidy somefile.pl -opath=/tmp/</PRE>
+<P>will produce <EM>/tmp/somefile.pl.tdy</EM>.  Otherwise, <EM>somefile.pl.tdy</EM> will
+appear in whatever directory contains <EM>somefile.pl</EM>.</P>
+<P>This parameter will be ignored if output is being directed to standard output,
+or if it is being specified explicitly with the <STRONG>-o=s</STRONG> parameter.</P>
 <P></P>
 <DT><STRONG><A NAME="item_%2Dse%2C_%2D%2Dstandard%2Derror%2Doutput"><STRONG>-se</STRONG>,    <STRONG>--standard-error-output</STRONG></A></STRONG><BR>
 <DD>
@@ -196,6 +214,9 @@ is detected in the output script.  The output script is not checked if the
 input script has a syntax error.  To skip syntax checking, use <STRONG>-nsyn</STRONG> or
 <STRONG>--nocheck-syntax</STRONG>.  Syntax checking is also deactivated by the <STRONG>--quiet</STRONG>
 flag, discussed above.
+<P>Please note that this flag only controls the invocation of perl for
+checking.  Even if it is deactivated, perltidy will still do extensive
+syntax checking on its own.</P>
 <P>The default is to do a syntax check.</P>
 <P></P>
 <DT><STRONG><A NAME="item_%2Dlog%2C_%2D%2Dlogfile"><STRONG>-log</STRONG>,    <STRONG>--logfile</STRONG></A></STRONG><BR>
@@ -1162,6 +1183,10 @@ The parameters in the <EM>.perltidyrc</EM>
 file can be switched off with the <STRONG>-npro</STRONG> option.
 <P></P>
 <LI>
+<STRONG>--dump-profile</STRONG> or <STRONG>-dpro</STRONG>  will write the name of the current 
+<EM>.perltidyrc</EM> file and its contents to standard output and quit.
+<P></P>
+<LI>
 The parameter <STRONG>-log</STRONG> will force a <EM>.LOG</EM> file to be written, which
 contains the path to the <EM>.perltidyrc</EM> file, if any, and a listing of
 its parameter settings.
@@ -1328,6 +1353,8 @@ the problem.</P>
 <DD>
 The following flags are available for debugging:
 <P><STRONG>--dump-defaults</STRONG> or <STRONG>-ddf</STRONG> will write the default option set to standard output and quit</P>
+<P><STRONG>--dump-profile</STRONG> or <STRONG>-dpro</STRONG>  will write the name of the current 
+configuration file and its contents to standard output and quit.</P>
 <P><STRONG>--dump-options</STRONG> or <STRONG>-dop</STRONG>  will write current option set to standard output and quit.</P>
 <P><STRONG>--dump-long-names</STRONG> or <STRONG>-dln</STRONG>  will write all command line long names (passed 
 to Get_options) to standard output and quit.</P>
@@ -1375,9 +1402,9 @@ page, perl2web(1).</P>
 'n' to produce the negated form:</P>
 <PRE>
     D anl asc aws bbb bbc bbs bli baa syn ce csc dac dbc dcsc dnl
-    dws dp dsm dsc ddf dln dop dsn dtt dwls dwrs f fll
-    hsc html ibc icb icp lp log lal x lsl bl sbl okw ola oll pvl
-    q opt sbc sfs ssc sts se st sob t tac tbc tp tsc tqw w</PRE>
+    dws dp dpro dsm dsc ddf dln dop dsn dtt dwls dwrs f fll
+    hsc html ibc icb icp lp log lal x lsl bl sbl okw ola oll
+    pvl q opt sbc sfs ssc sts se st sob t tac tbc tp tsc tqw w</PRE>
 <P>Equivalently, the prefix 'no' on the corresponding long names may be
 used.</P>
 <P>
@@ -1414,24 +1441,21 @@ in any way.  And, of course, it does not modify pod documents.
 When standard input is used, the log file, if saved, is <EM>perltidy.LOG</EM>,
 and any errors are written to <EM>perltidy.ERR</EM> unless the <STRONG>-se</STRONG> flag is
 set.  These are saved in the current working directory.  If syntax
-checking is used, a temporary copy of the input file will be created in
-the current working directory called <EM>perltidy.TMPI</EM>, but it will be
-removed when perltidy finishes.
+checking is used, a temporary copy of the input file will be created,
+but it will be removed when perltidy finishes.
 <P>When standard output and syntax checking are used, a temporary copy of the
-output file will be created in the current working directory called
-<EM>perltidy.TMPO</EM>.  It will be removed when perltidy finishes.</P>
+output file will be created.  It will be removed when perltidy finishes.</P>
 <P></P>
 <DT><STRONG><A NAME="item_Files_overwritten">Files overwritten</A></STRONG><BR>
 <DD>
 The following file extensions are used by perltidy, and files with these
-extensions may be overwritten or deleted: <EM>.tdy</EM>, <EM>.ERR</EM>, <EM>.LOG</EM>, <EM>.TEE</EM>,
-<EM>.TMPI</EM>, <EM>.TMPO</EM>.
+extensions may be overwritten or deleted: <EM>.tdy</EM>, <EM>.ERR</EM>, <EM>.LOG</EM>, <EM>.TEE</EM>.
 <P></P>
 <DT><STRONG><A NAME="item_Files_extensions_limitations">Files extensions limitations</A></STRONG><BR>
 <DD>
 Perltidy does not operate on files for which the run could produce a file with
 a duplicated file extension.  These extensions are <EM>.tdy</EM>, <EM>.LOG</EM>, <EM>.ERR</EM>,
-<EM>.TEE</EM>, <EM>.TMPI</EM>, <EM>.TMPO</EM>.  The purpose of this rule is to prevent generating
+<EM>.TEE</EM>.  The purpose of this rule is to prevent generating
 confusing filenames such as <EM>somefile.tdy.tdy.tdy</EM>.
 <P></P></DL>
 <P>

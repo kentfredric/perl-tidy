@@ -82,8 +82,9 @@ use two leading dashes for long names, but one may be used.
 
 Most parameters which serve as on/off flags can be negated with a
 leading "n" (for the short name) or a leading "no" (for the long
-name).  For example, the flag to use tabs is B<-t> or B<--tabs>.  The
-flag to use no tabs (the default) is B<-nt> or B<--notabs>.
+name).  For example, the flag to have perl check syntax using perl -c 
+is B<-syn> or B<--check-syntax>.  The flag to skip this is
+B<-nsyn> or B<--nocheck-syntax>.
 
 Options may not be bundled together.  In other words, options B<-q> and
 B<-g> may NOT be entered as B<-qg>.
@@ -129,6 +130,25 @@ when the job finishes.  The default is B<-nst> or B<-nostandard-output>.
 Change the extension of the output file to be F<.ext> instead of the
 default F<.tdy>.
 
+=item	B<-opath>=path,    B<--output-path>=path  
+
+When perltidy creates a filename for an output file, by default it merely
+appends an extension to the path and basename of the input file.  This
+parameter causes the path to be changed to F<path> instead.
+
+The path should end in a valid path separator character, but perltidy will try
+to add one if it is missing.
+
+For example
+ 
+ perltidy somefile.pl -opath=/tmp/
+
+will produce F</tmp/somefile.pl.tdy>.  Otherwise, F<somefile.pl.tdy> will
+appear in whatever directory contains F<somefile.pl>.
+
+This parameter will be ignored if output is being directed to standard output,
+or if it is being specified explicitly with the B<-o=s> parameter.
+
 =item	B<-se>,    B<--standard-error-output>
 
 If perltidy detects an error when processing file F<somefile.pl>, its
@@ -170,6 +190,10 @@ is detected in the output script.  The output script is not checked if the
 input script has a syntax error.  To skip syntax checking, use B<-nsyn> or
 B<--nocheck-syntax>.  Syntax checking is also deactivated by the B<--quiet>
 flag, discussed above.
+
+Please note that this flag only controls the invocation of perl for
+checking.  Even if it is deactivated, perltidy will still do extensive
+syntax checking on its own. 
 
 The default is to do a syntax check.
 
@@ -1546,9 +1570,9 @@ The following list shows all short parameter names which allow a prefix
 'n' to produce the negated form:
 
     D anl asc aws bbb bbc bbs bli baa syn ce csc dac dbc dcsc dnl
-    dws dp dsm dsc ddf dln dop dsn dtt dwls dwrs f fll
-    hsc html ibc icb icp lp log lal x lsl bl sbl okw ola oll pvl
-    q opt sbc sfs ssc sts se st sob t tac tbc tp tsc tqw w
+    dws dp dpro dsm dsc ddf dln dop dsn dtt dwls dwrs f fll
+    hsc html ibc icb icp lp log lal x lsl bl sbl okw ola oll
+    pvl q opt sbc sfs ssc sts se st sob t tac tbc tp tsc tqw w
 
 Equivalently, the prefix 'no' on the corresponding long names may be
 used.

@@ -2,6 +2,8 @@
 
 DOCS=perltidy.1 \
 perl2web.1 \
+INSTALL \
+INSTALL.html \
 README \
 README.html \
 perltidy.txt \
@@ -24,6 +26,9 @@ docs: $(DOCS)
 README: README.pod
 	pod2text README.pod >README
 
+INSTALL: INSTALL.pod
+	pod2text INSTALL.pod >INSTALL
+
 perltidy.1: perltidy.pod
 	pod2man perltidy.pod >perltidy.1
 
@@ -32,6 +37,9 @@ perl2web.1: perl2web.pod
 
 README.html: README.pod
 	pod2html README.pod >README.html
+
+INSTALL.html: INSTALL.pod
+	pod2html INSTALL.pod >INSTALL.html
 
 perltidy.txt: perltidy.pod
 	pod2text perltidy.pod >perltidy.txt

@@ -31,6 +31,7 @@
 #        v-strings.
 #      Hugh S. Myers supplied sub streamhandle and the supporting code to
 #        create a PerlTidy module which can operate on strings, arrays, etc.
+#      Yves Orton supplied coding to help detect Windows versions.
 #      Many others have supplied key ideas, suggestions, and bug reports;
 #        see the ChangeLog file.
 #
@@ -48,45 +49,144 @@ use vars qw{
   $VERSION
   @ISA
   @EXPORT
-  $missing_io_scalar
-  $missing_io_scalararray
 };
+
+##  $missing_io_scalar
+##  $missing_io_scalararray
 
 @EXPORT = qw( &perltidy );
 
 ## eval "use diagnostics";
-{ eval "use IO::Scalar";      $missing_io_scalar      = $@; }
-{ eval "use IO::ScalarArray"; $missing_io_scalararray = $@; }
+##{ eval "use IO::Scalar";      $missing_io_scalar      = $@; }
+##{ eval "use IO::ScalarArray"; $missing_io_scalararray = $@; }
 use IO::File;
+use File::Basename;
 
 BEGIN {
-    ($VERSION=q($Id: PerlTidy.pm,v 1.1 2002/02/05 20:29:41 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ($VERSION=q($Id: PerlTidy.pm,v 1.2 2002/02/10 01:57:53 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 # Preloaded methods go here.
 sub streamhandle {
+
+    # given filename and mode (r or w), create an object which:
+    #   has a 'getline' method if mode='r', and 
+    #   has a 'print' method if mode='w'.  
+    # The objects also need a 'close' method.
+    #
+    # How the object is made:
+    #
+    # if $filename is:     Make object using:
+    # ----------------     -----------------
+    # '-'                  (STDIN if mode = 'r', STDOUT if mode='w')
+    # string               IO::File
+    # ARRAY  ref           IO::ScalarArray          
+    # STRING ref           IO::Scalar
+    # object               object 
+    #                      (check for 'print' method for 'w' mode)
+    #                      (check for 'getline' method for 'r' mode)
     my $ref = ref( my $filename = shift );
     my $mode = shift;
     my $New;
     my $fh;
 
-    if ( $ref eq 'ARRAY' ) {
-        die $missing_io_scalararray if $missing_io_scalararray;
-        $New = sub { IO::ScalarArray->new(@_) };
+    # handle a reference
+    if ($ref) {
+        if ( $ref eq 'ARRAY' ) {
+            eval "use IO::ScalarArray";
+            confess <<EOM if $@;
+------------------------------------------------------------------------
+Your call to PerlTidy.pm has an ARRAY reference, which requires
+IO::ScalarArray.  Please install it and try again.  Trace follows:
+------------------------------------------------------------------------
+
+$@
+EOM
+            $New = sub { IO::ScalarArray->new(@_) };
+        }
+        elsif ( $ref eq 'SCALAR' ) {
+            eval "use IO::Scalar";
+            confess <<EOM if $@;
+------------------------------------------------------------------------
+Your call to PerlTidy.pm has an SCALAR reference, which requires
+IO::Scalar.  Please install it and try again.  Trace follows:
+------------------------------------------------------------------------
+
+$@
+EOM
+            $New = sub { IO::Scalar->new(@_) };
+        }
+        else {
+
+            # accept an object with a getline method for reading
+            if ( $mode =~ /[rR]/ ) {
+                if ( defined &{ $ref . "::getline" } ) {
+                    $New = sub { $filename };
+                }
+                else {
+                    $New = sub { undef };
+                    confess <<EOM;
+------------------------------------------------------------------------
+No 'getline' method is defined for object of class $ref
+Please check your call to PerlTidy::perltidy.  Trace follows.
+------------------------------------------------------------------------
+EOM
+                }
+            }
+
+            # accept an object with a print method for writing
+            if ( $mode =~ /[wW]/ ) {
+                if ( defined &{ $ref . "::print" } ) {
+                    $New = sub { $filename };
+                }
+                else {
+                    $New = sub { undef };
+                    confess <<EOM;
+------------------------------------------------------------------------
+No 'print' method is defined for object of class $ref
+Please check your call to PerlTidy::perltidy. Trace follows.
+------------------------------------------------------------------------
+EOM
+                }
+            }
+        }
     }
-    elsif ( $ref eq 'SCALAR' ) {
-        die $missing_io_scalar if $missing_io_scalar;
-        $New = sub { IO::Scalar->new(@_) };
-    }
-    elsif ( $filename eq '-' ) {
-        $New = sub { $mode eq 'w' ? *STDOUT : *STDIN }
-    }
+
+    # handle a string
     else {
-        $New = sub { IO::File->new(@_) };
+        if ( $filename eq '-' ) {
+            $New = sub { $mode eq 'w' ? *STDOUT : *STDIN }
+        }
+        else {
+            $New = sub { IO::File->new(@_) };
+        }
     }
     $fh = $New->( $filename, $mode )
       or warn "Couldn't open file:$filename in mode:$mode : $!\n";
     return $fh, ( $ref or $filename );
+}
+
+sub make_temporary_filename {
+
+    # make a temporary filename for syntax checking 
+    # needed when input or output is not from a known file
+    # If POSIX is not installed, user can just skip with -nsyn
+    eval "use POSIX qw(tmpnam)";
+    if ($@) {
+        print STDERR "Couldn't find POSIX.pm : rerun with -nsyn\n";
+        return ( undef, "(missing POSIX)" );
+    }
+    use IO::File;
+    my ( $name, $fh );
+    for ( 0 .. 9 ) {
+        $name = tmpnam();
+        $fh = IO::File->new( $name, O_RDWR | O_CREAT | O_EXCL );
+        if ($fh) {
+            return ( $fh, $name );
+            last;
+        }
+    }
+    return ( undef, $name );
 }
 
 =pod
@@ -156,58 +256,74 @@ basic perltidy distribution.
             destination => undef,
             stderr      => undef,
             argv        => undef,
+            perltidyrc  => undef,
         );
 
         my %input_hash = @_;
         if ( my @bad_keys = grep { !exists $defaults{$_} } keys %input_hash ) {
             local $" = ')(';
-            confess
-              "unknown parameters in call to PerlTidy::perltidy: (@bad_keys)\n";
+            my @good_keys = sort keys %defaults;
+            @bad_keys = sort @bad_keys;
+            confess <<EOM;
+------------------------------------------------------------------------
+Unknown perltidy parameter : (@bad_keys)
+PerlTidy::perltidy expects : (@good_keys)
+------------------------------------------------------------------------
+
+EOM
         }
 
         %input_hash = ( %defaults, %input_hash );
-        my $source_array      = $input_hash{'source'};
-        my $destination_array = $input_hash{'destination'};
-        my $stderr_array      = $input_hash{'stderr'};
-        my $argv              = $input_hash{'argv'};
+        my $source_stream      = $input_hash{'source'};
+        my $destination_stream = $input_hash{'destination'};
+        my $stderr_stream      = $input_hash{'stderr'};
+        my $perltidyrc_stream  = $input_hash{'perltidyrc'};
+        my $argv               = $input_hash{'argv'};
 
         # see if ARGV is overridden
         if ($argv) {
-                
-                my $rargv = ref $argv;
-                if ($rargv eq 'SCALAR') { $argv = $$argv; $rargv = undef }
-                if ($rargv) {
-                        if ($rargv eq 'ARRAY') {
-                           @ARGV = @$argv;
-                        }
-                        else {
-                                croak <<EOM; 
+
+            my $rargv = ref $argv;
+            if ( $rargv eq 'SCALAR' ) { $argv = $$argv; $rargv = undef }
+            if ($rargv) {
+                if ( $rargv eq 'ARRAY' ) {
+                    @ARGV = @$argv;
+                }
+                else {
+                    croak <<EOM;
+------------------------------------------------------------------------
 Please check value of -argv in call to perltidy;
 it must be a string or ref to ARRAY but is: $rargv
+------------------------------------------------------------------------
 EOM
-                        }
                 }
+            }
 
-                # string
-                else {
-                        $argv=~s/^\s+//;
-                        $argv=~s/\s+$//;
-                        @ARGV = split /\s+/, $argv;
-                }
+            # string
+            else {
+                $argv =~ s/^\s+//;
+                $argv =~ s/\s+$//;
+                @ARGV = split /\s+/, $argv;
+            }
         }
 
         # redirect STDERR if requested
-        if ($stderr_array) {
+        if ($stderr_stream) {
             my ( $fh_stderr, $stderr_file ) =
-                PerlTidy::streamhandle( $stderr_array, 'w' ); 
+              PerlTidy::streamhandle( $stderr_stream, 'w' );
             if ($fh_stderr) { *STDERR = $fh_stderr }
             else {
-                croak <<EOM; 
-Unable to redirect STDERR to $stderr_array
+                croak <<EOM;
+------------------------------------------------------------------------
+Unable to redirect STDERR to $stderr_stream
 Please check value of -stderr in call to perltidy
+------------------------------------------------------------------------
 EOM
             }
         }
+
+        my ( $is_Windows, $Windows_type, $Windows_config_path ) =
+          look_for_Windows();
 
         # VMS file names are restricted to a 40.40 format, so we append _tdy
         # instead of .tdy, etc. (but see also sub check_vms_filename)
@@ -225,27 +341,30 @@ EOM
         # handle command line options
         my ( $rOpts, $config_file, $rraw_options, $pending_complaint,
             $saw_extrude )
-          = process_command_line();
+          = process_command_line( $perltidyrc_stream, $is_Windows,
+            $Windows_type, $Windows_config_path );
+
         PerlTidy::Formatter::check_options($rOpts);
         if ( $rOpts->{'html'} ) {
             PerlTidy::HtmlWriter->check_options($rOpts);
         }
 
-        # create a diagnostics object if requested
+        # Create a diagnostics object if requested;
+        # This is only useful for code development
         my $diagnostics_object = undef;
         if ( $rOpts->{'DIAGNOSTICS'} ) {
             $diagnostics_object = PerlTidy::Diagnostics->new();
         }
 
         # no filenames should be given if input is from an array
-        if ($source_array) {
+        if ($source_stream) {
             if ( @ARGV > 0 ) {
                 die
 "You may not specify any filenames when a source array is given\n";
             }
 
             # we'll stuff the source array into ARGV 
-            unshift ( @ARGV, $source_array );
+            unshift ( @ARGV, $source_stream );
         }
 
         # use stdin by default if no source array and no args
@@ -263,7 +382,7 @@ EOM
         # expand wildcard filenames like '*.pl'.  In theory it should also
         # be ok to set the flag for any system, but I prefer not to do so
         # out of robustness concerns.
-        my $use_glob = ( $^O =~ /^(MSWin32|msdos|dos|win32)$/ );
+        my $use_glob = $is_Windows;
 
         while ( $input_file = shift @ARGV ) {
             my $fileroot;
@@ -274,7 +393,7 @@ EOM
             if ( $input_file eq '-' ) {    # '-' indicates input from STDIN
                 $fileroot = "perltidy";   # root name to use for .ERR, .LOG, etc
             }
-            elsif ($source_array) {
+            elsif ($source_stream) {
                 $fileroot = "perltidy";
             }
             else {
@@ -310,8 +429,47 @@ EOM
                 }
 
                 # we should have a valid filename now
+                $fileroot = $input_file;
+
                 if ( $^O eq 'VMS' ) {
-                    ( $fileroot, $dot ) = check_vms_filename($input_file);
+                    ( $fileroot, $dot ) = check_vms_filename($fileroot);
+                }
+
+                # add option to change path here
+                if ( defined( $rOpts->{'output-path'} ) ) {
+
+                    my ( $base, $old_path ) = fileparse($fileroot);
+                    my $new_path = $rOpts->{'output-path'};
+                    my $path     = $new_path;
+                    $fileroot = $path . $base;
+
+                    # check - we should get back the same basename
+                    my ( $check_base, $check_path ) = fileparse($fileroot);
+
+                    # if not, try to fix by adding a missing separator 
+                    if ( $check_base ne $base ) {
+                        unless ( $^O eq 'VMS' ) {    # VMS is too scary
+
+                            # using old separator should usually work..
+                            my $dd = chop $old_path;
+                            if ($dd) { $path .= $dd }
+
+                            # provide backup method if not..
+                            elsif ($is_Windows) { $path .= '\\'; }
+                            else { $path .= '/'; }
+                        }
+                        $fileroot = $path . $base;
+                        ( $check_base, $check_path ) = fileparse($fileroot);
+                    }
+
+                    # see if it's fixed
+                    if ( $check_base ne $base ) {
+                        $fileroot = $new_path . $base;
+                        croak <<EOM;
+The new path given by -opath=$new_path produces this invalid filename: 
+$fileroot
+EOM
+                    }
                 }
             }
 
@@ -325,7 +483,7 @@ EOM
             }
 
             if (
-                !$source_array
+                !$source_stream
                 && ( $input_file =~
                     /($dot_pattern)($output_extension|LOG|DEBUG|ERR|TEE)$/ )
                 || ( $input_file eq 'DIAGNOSTICS' )
@@ -355,7 +513,7 @@ EOM
                     if ( $rOpts->{'standard-output'} ) {
                         die "You may not use -o and -st together\n";
                     }
-                    elsif ($destination_array) {
+                    elsif ($destination_stream) {
                         die
 "You may not specify a destination array and -o together\n";
                     }
@@ -371,7 +529,7 @@ EOM
                 }
             }
             elsif ( $rOpts->{'standard-output'} ) {
-                if ($destination_array) {
+                if ($destination_stream) {
                     die
 "You may not specify a destination array and -st together\n";
                 }
@@ -383,14 +541,14 @@ EOM
                     die "You may not use -st with more than one input file\n";
                 }
             }
-            elsif ($destination_array) {
-                $output_file = $destination_array;
+            elsif ($destination_stream) {
+                $output_file = $destination_stream;
             }
-            elsif ($source_array) {   # source but no destination goes to stdout
+            elsif ($source_stream) {  # source but no destination goes to stdout
                 $output_file = '-';
             }
             elsif ( $input_file eq '-' ) {
-                $output_file = $input_file;
+                $output_file = '-';
             }
             else {
                 $output_file = $fileroot . $dot . $output_extension;
@@ -411,7 +569,7 @@ EOM
               PerlTidy::Logger->new( $rOpts, $log_file, $warning_file,
                 $saw_extrude );
             write_logfile_header( $rOpts, $logger_object, $config_file,
-                $rraw_options );
+                $rraw_options, $Windows_type, $Windows_config_path );
             if ($pending_complaint) {
                 $logger_object->complain($pending_complaint);
             }
@@ -504,9 +662,6 @@ sub check_vms_filename {
     #
     # Contributed by Michael Cartmell
     #
-    use File::Basename;
-
-    # get filename without directory
     my ( $base, $path ) = fileparse( $_[0] );
 
     # remove explicit ; version
@@ -532,10 +687,20 @@ sub check_vms_filename {
 }
 
 sub write_logfile_header {
-    my ( $rOpts, $logger_object, $config_file, $rraw_options ) = @_;
+    my ( $rOpts, $logger_object, $config_file, $rraw_options, $Windows_type,
+        $Windows_config_path )
+      = @_;
     $logger_object->write_logfile_entry(
 "perltidy version $VERSION log file on a $^O system, OLD_PERL_VERSION=$]\n"
     );
+    if ($Windows_type) {
+        $logger_object->write_logfile_entry("Windows type is $Windows_type\n");
+    }
+    if ($Windows_config_path) {
+        $Windows_config_path =~ s{/}{\\}g;
+        $logger_object->write_logfile_entry(
+            "System-wide config path is $Windows_config_path\n");
+    }
     my $options_string = join ( ' ', @$rraw_options );
 
     if ($config_file) {
@@ -564,6 +729,10 @@ sub write_logfile_header {
 }
 
 sub process_command_line {
+
+    my ( $perltidyrc_stream, $is_Windows, $Windows_type, $Windows_config_path )
+      = @_;
+
     use Getopt::Long;
 
     ######################################################################
@@ -603,9 +772,9 @@ sub process_command_line {
     # Define the option string passed to GetOptions.
     #---------------------------------------------------------------
 
-    my @option_string = ();
-    my %expansion     = ();
-    my $rexpansion    = \%expansion;
+    my @option_string     = ();
+    my %expansion         = ();
+    my $rexpansion        = \%expansion;
     my $pending_complaint = "";
 
     #  These options are parsed directly by perltidy:
@@ -650,108 +819,110 @@ sub process_command_line {
     # Install long option names which have a simple abbreviation.
     # Options with code '!' get standard negation ('no' for long names,
     # 'n' for abbreviations)
-    $add_option->( 'DEBUG',                             'D',    '!' );
-    $add_option->( 'DIAGNOSTICS',                       'I',    '!' );
-    $add_option->( 'add-newlines',                      'anl',  '!' );
-    $add_option->( 'add-semicolons',                    'asc',  '!' );
-    $add_option->( 'add-whitespace',                    'aws',  '!' );
-    $add_option->( 'big-space-jump',                    'bsj',  '=i' );
-    $add_option->( 'blanks-before-blocks',              'bbb',  '!' );
-    $add_option->( 'blanks-before-comments',            'bbc',  '!' );
-    $add_option->( 'blanks-before-subs',                'bbs',  '!' );
-    $add_option->( 'block-brace-tightness',             'bbt',  '=i' );
-    $add_option->( 'brace-left-and-indent',             'bli',  '!' );
-    $add_option->( 'brace-tightness',                   'bt',   '=i' );
-    $add_option->( 'break-after-comma-arrows',          'baa',  '!' );
-    $add_option->( 'break-after-opening-brace',         'bob',  '!' );
-    $add_option->( 'check-multiline-quotes',            'chk',  '!' );
-    $add_option->( 'check-syntax',                      'syn',  '!' );
-    $add_option->( 'continuation-indentation',          'ci',   '=i' );
-    $add_option->( 'closing-side-comments',             'csc',  '!' );
-    $add_option->( 'closing-side-comment-prefix',       'cscp', '=s' );
-    $add_option->( 'closing-side-comment-list',         'cscl', '=s' );
-    $add_option->( 'closing-side-comment-interval',     'csci', '=i' );
-    $add_option->( 'closing-side-comment-maximum-text', 'csct', '=i' );
-    $add_option->( 'closing-side-comment-warnings',     'cscw', '!' );
-    $add_option->( 'cuddled-else',                      'ce',   '!' );
-    $add_option->( 'delete-block-comments',             'dbc',  '!' );
-    $add_option->( 'delete-closing-side-comments',      'dcsc', '!' );
-    $add_option->( 'delete-old-newlines',               'dnl',  '!' );
-    $add_option->( 'delete-old-whitespace',             'dws',  '!' );
-    $add_option->( 'delete-pod',                        'dp',   '!' );
-    $add_option->( 'delete-semicolons',                 'dsm',  '!' );
-    $add_option->( 'delete-side-comments',              'dsc',  '!' );
-    $add_option->( 'dump-defaults',                     'ddf',  '!' );
-    $add_option->( 'dump-long-names',                   'dln',  '!' );
-    $add_option->( 'dump-options',                      'dop',  '!' );
-    $add_option->( 'dump-profile',                      'dpro', '!' );
-    $add_option->( 'dump-short-names',                  'dsn',  '!' );
-    $add_option->( 'dump-token-types',                  'dtt',  '!' );
-    $add_option->( 'dump-want-left-space',              'dwls', '!' );
-    $add_option->( 'dump-want-right-space',             'dwrs', '!' );
-    $add_option->( 'force-read-binary',                 'f',    '!' );
-    $add_option->( 'fuzzy-line-length',                 'fll',  '!' );
-    $add_option->( 'hanging-side-comments',             'hsc',  '!' );
-    $add_option->( 'help',                              'h',    '' );
-    $add_option->( 'ignore-old-line-breaks',            'iob',  '!' );
-    $add_option->( 'indent-block-comments',             'ibc',  '!' );
-    $add_option->( 'indent-closing-brace',              'icb',  '!' );
-    $add_option->( 'indent-closing-paren',              'icp',  '!' );
-    $add_option->( 'indent-columns',                    'i',    '=i' );
-    $add_option->( 'line-up-parentheses',               'lp',   '!' );
-    $add_option->( 'logfile',                           'log',  '!' );
-    $add_option->( 'logfile-gap',                       'g',    ':i' );
-    $add_option->( 'long-block-line-count',             'lbl',  '=i' );
-    $add_option->( 'look-for-autoloader',               'lal',  '!' );
-    $add_option->( 'look-for-hash-bang',                'x',    '!' );
-    $add_option->( 'look-for-selfloader',               'lsl',  '!' );
-    $add_option->( 'maximum-consecutive-blank-lines',   'mbl',  '=i' );
-    $add_option->( 'maximum-continuation-indentation',  'mci',  '=i' );
-    $add_option->( 'maximum-fields-per-table',          'mft',  '=i' );
-    $add_option->( 'maximum-line-length',               'l',    '=i' );
-    $add_option->( 'maximum-space-to-comment',          'xsc',  '=i' );
-    $add_option->( 'minimum-space-to-comment',          'msc',  '=i' );
-    $add_option->( 'nowant-left-space',                 'nwls', '=s' );
-    $add_option->( 'nowant-right-space',                'nwrs', '=s' );
-    $add_option->( 'opening-brace-always-on-right',     'bar',  '' );
-    $add_option->( 'opening-brace-on-new-line',         'bl',   '!' );
-    $add_option->( 'opening-sub-brace-on-new-line',     'sbl',  '!' );
-    $add_option->( 'outdent-labels',                    'ola',  '!' );
-    $add_option->( 'outdent-keywords',                  'okw',  '!' );
-    $add_option->( 'outdent-keyword-list',              'okwl', '=s' );
-    $add_option->( 'outdent-long-quotes',               'olq',  '!' );
-    $add_option->( 'outdent-long-comments',             'olc',  '!' );
-    $add_option->( 'outfile',                           'o',    '=s' );
-    $add_option->( 'output-file-extension',             'oext', '=s' );
-    $add_option->( 'paren-tightness',                   'pt',   '=i' );
-    $add_option->( 'pass-version-line',                 'pvl',  '!' );
-    $add_option->( 'profile',                           'pro',  '=s' );
-    $add_option->( 'quiet',                             'q',    '!' );
-    $add_option->( 'short-concatenation-item-length',   'scl',  '=i' );
-    $add_option->( 'show-options',                      'opt',  '!' );
-    $add_option->( 'space-for-semicolon',               'sfs',  '!' );
-    $add_option->( 'space-terminal-semicolon',          'sts',  '!' );
-    $add_option->( 'static-side-comments',              'ssc',  '!' );
-    $add_option->( 'static-side-comment-prefix',        'sscp', '=s' );
-    $add_option->( 'square-bracket-tightness',          'sbt',  '=i' );
-    $add_option->( 'standard-error-output',             'se',   '!' );
-    $add_option->( 'standard-output',                   'st',   '!' );
-    $add_option->( 'starting-indentation-level',        'sil',  '=i' );
-    $add_option->( 'static-block-comments',             'sbc',  '!' );
-    $add_option->( 'static-block-comment-prefix',       'sbcp', '=s' );
-    $add_option->( 'swallow-optional-blank-lines',      'sob',  '!' );
-    $add_option->( 'tabs',                              't',    '!' );
-    $add_option->( 'tee-block-comments',                'tbc',  '!' );
-    $add_option->( 'tee-pod',                           'tp',   '!' );
-    $add_option->( 'tee-side-comments',                 'tsc',  '!' );
-    $add_option->( 'tidy-output',                       'tdy',  '!' );
-    $add_option->( 'trim-qw',                           'tqw',  '!' );
-    $add_option->( 'version',                           'v',    '' );
-    $add_option->( 'want-break-after',                  'wba',  '=s' );
-    $add_option->( 'want-break-before',                 'wbb',  '=s' );
-    $add_option->( 'want-left-space',                   'wls',  '=s' );
-    $add_option->( 'want-right-space',                  'wrs',  '=s' );
-    $add_option->( 'warning-output',                    'w',    '!' );
+    $add_option->( 'DEBUG',                             'D',     '!' );
+    $add_option->( 'DIAGNOSTICS',                       'I',     '!' );
+    $add_option->( 'add-newlines',                      'anl',   '!' );
+    $add_option->( 'add-semicolons',                    'asc',   '!' );
+    $add_option->( 'add-whitespace',                    'aws',   '!' );
+    $add_option->( 'big-space-jump',                    'bsj',   '=i' );
+    $add_option->( 'blanks-before-blocks',              'bbb',   '!' );
+    $add_option->( 'blanks-before-comments',            'bbc',   '!' );
+    $add_option->( 'blanks-before-subs',                'bbs',   '!' );
+    $add_option->( 'block-brace-tightness',             'bbt',   '=i' );
+    $add_option->( 'brace-left-and-indent',             'bli',   '!' );
+    $add_option->( 'brace-tightness',                   'bt',    '=i' );
+    $add_option->( 'break-after-comma-arrows',          'baa',   '!' );
+    $add_option->( 'break-after-opening-brace',         'bob',   '!' );
+    $add_option->( 'check-multiline-quotes',            'chk',   '!' );
+    $add_option->( 'check-syntax',                      'syn',   '!' );
+    $add_option->( 'continuation-indentation',          'ci',    '=i' );
+    $add_option->( 'closing-side-comments',             'csc',   '!' );
+    $add_option->( 'closing-side-comment-prefix',       'cscp',  '=s' );
+    $add_option->( 'closing-side-comment-list',         'cscl',  '=s' );
+    $add_option->( 'closing-side-comment-interval',     'csci',  '=i' );
+    $add_option->( 'closing-side-comment-maximum-text', 'csct',  '=i' );
+    $add_option->( 'closing-side-comment-warnings',     'cscw',  '!' );
+    $add_option->( 'cuddled-else',                      'ce',    '!' );
+    $add_option->( 'delete-block-comments',             'dbc',   '!' );
+    $add_option->( 'delete-closing-side-comments',      'dcsc',  '!' );
+    $add_option->( 'delete-old-newlines',               'dnl',   '!' );
+    $add_option->( 'delete-old-whitespace',             'dws',   '!' );
+    $add_option->( 'delete-pod',                        'dp',    '!' );
+    $add_option->( 'delete-semicolons',                 'dsm',   '!' );
+    $add_option->( 'delete-side-comments',              'dsc',   '!' );
+    $add_option->( 'dump-defaults',                     'ddf',   '!' );
+    $add_option->( 'dump-long-names',                   'dln',   '!' );
+    $add_option->( 'dump-options',                      'dop',   '!' );
+    $add_option->( 'dump-profile',                      'dpro',  '!' );
+    $add_option->( 'dump-short-names',                  'dsn',   '!' );
+    $add_option->( 'dump-token-types',                  'dtt',   '!' );
+    $add_option->( 'dump-want-left-space',              'dwls',  '!' );
+    $add_option->( 'dump-want-right-space',             'dwrs',  '!' );
+    $add_option->( 'entab-leading-whitespace',          'et',    '=i' );
+    $add_option->( 'force-read-binary',                 'f',     '!' );
+    $add_option->( 'fuzzy-line-length',                 'fll',   '!' );
+    $add_option->( 'hanging-side-comments',             'hsc',   '!' );
+    $add_option->( 'help',                              'h',     '' );
+    $add_option->( 'ignore-old-line-breaks',            'iob',   '!' );
+    $add_option->( 'indent-block-comments',             'ibc',   '!' );
+    $add_option->( 'indent-closing-brace',              'icb',   '!' );
+    $add_option->( 'indent-closing-paren',              'icp',   '!' );
+    $add_option->( 'indent-columns',                    'i',     '=i' );
+    $add_option->( 'line-up-parentheses',               'lp',    '!' );
+    $add_option->( 'logfile',                           'log',   '!' );
+    $add_option->( 'logfile-gap',                       'g',     ':i' );
+    $add_option->( 'long-block-line-count',             'lbl',   '=i' );
+    $add_option->( 'look-for-autoloader',               'lal',   '!' );
+    $add_option->( 'look-for-hash-bang',                'x',     '!' );
+    $add_option->( 'look-for-selfloader',               'lsl',   '!' );
+    $add_option->( 'maximum-consecutive-blank-lines',   'mbl',   '=i' );
+    $add_option->( 'maximum-continuation-indentation',  'mci',   '=i' );
+    $add_option->( 'maximum-fields-per-table',          'mft',   '=i' );
+    $add_option->( 'maximum-line-length',               'l',     '=i' );
+    $add_option->( 'maximum-space-to-comment',          'xsc',   '=i' );
+    $add_option->( 'minimum-space-to-comment',          'msc',   '=i' );
+    $add_option->( 'nowant-left-space',                 'nwls',  '=s' );
+    $add_option->( 'nowant-right-space',                'nwrs',  '=s' );
+    $add_option->( 'opening-brace-always-on-right',     'bar',   '' );
+    $add_option->( 'opening-brace-on-new-line',         'bl',    '!' );
+    $add_option->( 'opening-sub-brace-on-new-line',     'sbl',   '!' );
+    $add_option->( 'outdent-labels',                    'ola',   '!' );
+    $add_option->( 'outdent-keywords',                  'okw',   '!' );
+    $add_option->( 'outdent-keyword-list',              'okwl',  '=s' );
+    $add_option->( 'outdent-long-quotes',               'olq',   '!' );
+    $add_option->( 'outdent-long-comments',             'olc',   '!' );
+    $add_option->( 'outfile',                           'o',     '=s' );
+    $add_option->( 'output-file-extension',             'oext',  '=s' );
+    $add_option->( 'output-path',                       'opath', '=s' );
+    $add_option->( 'paren-tightness',                   'pt',    '=i' );
+    $add_option->( 'pass-version-line',                 'pvl',   '!' );
+    $add_option->( 'profile',                           'pro',   '=s' );
+    $add_option->( 'quiet',                             'q',     '!' );
+    $add_option->( 'short-concatenation-item-length',   'scl',   '=i' );
+    $add_option->( 'show-options',                      'opt',   '!' );
+    $add_option->( 'space-for-semicolon',               'sfs',   '!' );
+    $add_option->( 'space-terminal-semicolon',          'sts',   '!' );
+    $add_option->( 'static-side-comments',              'ssc',   '!' );
+    $add_option->( 'static-side-comment-prefix',        'sscp',  '=s' );
+    $add_option->( 'square-bracket-tightness',          'sbt',   '=i' );
+    $add_option->( 'standard-error-output',             'se',    '!' );
+    $add_option->( 'standard-output',                   'st',    '!' );
+    $add_option->( 'starting-indentation-level',        'sil',   '=i' );
+    $add_option->( 'static-block-comments',             'sbc',   '!' );
+    $add_option->( 'static-block-comment-prefix',       'sbcp',  '=s' );
+    $add_option->( 'swallow-optional-blank-lines',      'sob',   '!' );
+    $add_option->( 'tabs',                              't',     '!' );
+    $add_option->( 'tee-block-comments',                'tbc',   '!' );
+    $add_option->( 'tee-pod',                           'tp',    '!' );
+    $add_option->( 'tee-side-comments',                 'tsc',   '!' );
+    $add_option->( 'tidy-output',                       'tdy',   '!' );
+    $add_option->( 'trim-qw',                           'tqw',   '!' );
+    $add_option->( 'version',                           'v',     '' );
+    $add_option->( 'want-break-after',                  'wba',   '=s' );
+    $add_option->( 'want-break-before',                 'wbb',   '=s' );
+    $add_option->( 'want-left-space',                   'wls',   '=s' );
+    $add_option->( 'want-right-space',                  'wrs',   '=s' );
+    $add_option->( 'warning-output',                    'w',     '!' );
 
     # The PerlTidy::HtmlWriter will add its own options to the string
     PerlTidy::HtmlWriter->make_getopt_long_names( \@option_string );
@@ -956,7 +1127,7 @@ sub process_command_line {
 
         # note: this must come before -pro and -profile, below:
         elsif ( $i =~ /-(dump-profile|dpro)$/ ) {
-            $saw_dump_profile=1;
+            $saw_dump_profile = 1;
         }
         elsif ( $i =~ /-(pro|profile)=(.+)/ ) {
             if ($config_file) {
@@ -964,6 +1135,10 @@ sub process_command_line {
 "Only one -pro=filename allowed, using '$2' instead of '$config_file'\n";
             }
             $config_file = $2;
+            unless ( -e $config_file ) {
+                warn "cannot find file given with -pro=$config_file: $!\n";
+                $config_file = "";
+            }
         }
         elsif ( $i =~ /-(pro|profile)=?$/ ) {
             print STDERR
@@ -999,9 +1174,9 @@ sub process_command_line {
         }
     }
 
-    if ($saw_dump_profile && $saw_ignore_profile) {
-            print STDERR "No profile to dump because of -npro\n";
-            exit 1;
+    if ( $saw_dump_profile && $saw_ignore_profile ) {
+        print STDERR "No profile to dump because of -npro\n";
+        exit 1;
     }
 
     #---------------------------------------------------------------
@@ -1009,52 +1184,81 @@ sub process_command_line {
     #---------------------------------------------------------------
     unless ($saw_ignore_profile) {
 
-        $config_file = find_config_file(\$pending_complaint) 
-          unless $config_file;
-
-        if ($saw_dump_profile) {
-          dump_config_file( $config_file );
-          exit 1;
+        # resolve possible conflict between $perltidyrc_stream passed
+        # as call parameter to perltidy and -pro=filename on command
+        # line.
+        if ($perltidyrc_stream) {
+            if ($config_file) {
+                print STDERR <<EOM;
+ Conflict: a perltidyrc configuration file was specified both as this
+ perltidy call parameter: $perltidyrc_stream 
+ and with this -profile=$config_file.
+ Using -profile=$config_file.
+EOM
+            }
+            else {
+                $config_file = $perltidyrc_stream;
+            }
         }
 
-        my $rconfig_list;
-        ( $config_file, $rconfig_list ) =
-          read_config_file( $config_file, \%expansion );
+        # look for a config file if we don't have one yet
+        $config_file = find_config_file($Windows_config_path)
+          unless $config_file;
 
-        # process any .perltidyrc parameters right now so we can localize errors
-        if (@$rconfig_list) {
-            local @ARGV = @$rconfig_list;
+        if ($config_file) {
 
-            expand_command_abbreviations( \%expansion, \@raw_options,
-                $config_file );
+            # open any config file
+            ( my $fh_config, $config_file ) =
+              PerlTidy::streamhandle( $config_file, 'r' );
 
-            if ( !GetOptions( \%Opts, @option_string ) ) {
-                die
-"Error in this config file: $config_file  \nUse -npro to ignore this file, -h for help'\n";
-            }
+            if ($fh_config) {
 
-            # Undo any options which cause premature exit.  They are not
-            # appropriate for a config file, and it could be hard to
-            # diagnose the cause of the premature exit.
-            foreach (
-                qw{
-                dump-defaults
-                dump-long-names
-                dump-options
-                dump-profile
-                dump-short-names
-                dump-token-types
-                dump-want-left-space
-                dump-want-right-space
-                help
-                stylesheet
-                version
+                if ($saw_dump_profile) {
+                    dump_config_file( $fh_config, $config_file );
+                    exit 1;
                 }
-              )
-            {
-                if ( defined( $Opts{$_} ) ) {
-                    delete $Opts{$_};
-                    print STDERR "ignoring --$_ in config file: $config_file\n";
+
+                my $rconfig_list =
+                  read_config_file( $fh_config, $config_file, \%expansion );
+
+                # process any .perltidyrc parameters right now so we can
+                # localize errors
+                if (@$rconfig_list) {
+                    local @ARGV = @$rconfig_list;
+
+                    expand_command_abbreviations( \%expansion, \@raw_options,
+                        $config_file );
+
+                    if ( !GetOptions( \%Opts, @option_string ) ) {
+                        die
+"Error in this config file: $config_file  \nUse -npro to ignore this file, -h for help'\n";
+                    }
+
+                    # Undo any options which cause premature exit.  They are not
+                    # appropriate for a config file, and it could be hard to
+                    # diagnose the cause of the premature exit.
+                    foreach (
+                        qw{
+                        dump-defaults
+                        dump-long-names
+                        dump-options
+                        dump-profile
+                        dump-short-names
+                        dump-token-types
+                        dump-want-left-space
+                        dump-want-right-space
+                        help
+                        stylesheet
+                        version
+                        }
+                      )
+                    {
+                        if ( defined( $Opts{$_} ) ) {
+                            delete $Opts{$_};
+                            print STDERR
+                              "ignoring --$_ in config file: $config_file\n";
+                        }
+                    }
                 }
             }
         }
@@ -1094,11 +1298,23 @@ sub process_command_line {
         $Opts{'check-syntax'} = 0;
     }
 
+    # Never let Windows 9x/ME systems run syntax check -- this will prevent a
+    # wide variety of problems on these systems.  Don't even think about
+    # changing this!
+    if ( $Opts{'check-syntax'}
+        && $is_Windows
+        && ( !$Windows_type || $Windows_type =~ /^9/ ) )
+    {
+        $Opts{'check-syntax'} = 0;
+    }
+
     # It's really a bad idea to check syntax as root unless you wrote 
     # the script yourself.  
 
     # everybody is root in windows 95/98, so we can't complain about it
-    unless ( $^O =~ /^(MSWin32|msdos|dos|win32)$/ ) {
+    # Still need to figure out Windows NT and 2000/XP
+    ##unless ( $^O =~ /^(MSWin32|msdos|dos|win32)$/ ) {
+    unless ($is_Windows) {
 
         if ( $< == 0 && $Opts{'check-syntax'} ) {
             $Opts{'check-syntax'} = 0;
@@ -1285,14 +1501,41 @@ EOM
     }
 }
 
+sub look_for_Windows {
+
+    # determine Windows sub-type and location of 
+    # system-wide configuration files
+    my ( $Windows_type, $Windows_config_path );
+    ##my $is_Windows = ( $^O =~ /^(MSWin32|msdos|dos|win32)$/ );
+    my $is_Windows = ( $^O =~ /win32|dos/i );
+    if ($is_Windows) {
+
+        # Note that search order is important
+        # (i.e., win 2000 also has WinNT/profiles/All Users/)
+        my @windows_config_locations = (
+            [ "2000/XP", "c:/Documents and Settings/All Users/" ], # 2000 and XP
+            [ "NT",      "c:/WinNT/profiles/All Users/" ],         # NT
+            [ "9x/ME", "c:/Windows/" ],    # 95, 98, and ME
+        );
+
+        foreach (@windows_config_locations) {
+            $Windows_type        = $_->[0];
+            $Windows_config_path = $_->[1];
+            if ( -d $_->[1] ) {
+                $Windows_type        = $_->[0];
+                $Windows_config_path = $_->[1];
+                last;
+            }
+        }
+    }
+    return ( $is_Windows, $Windows_type, $Windows_config_path );
+}
+
 sub find_config_file {
 
     # look for a .perltidyrc configuration file
+    my $Windows_config_path = shift;
 
-    # non-critical warning messages may be concatenated to the string to
-    # which $rpending_complaint points.  It  will be printed in a .LOG
-    # file and if -w is used.
-    my $rpending_complaint=shift;
     my $config_file;
 
     # look in current directory first
@@ -1316,50 +1559,20 @@ sub find_config_file {
 
     # then look for a system-wide definition
     # where to look varies with OS
-    if ( $^O =~ /win32|dos/i ) {    # Are we on an MS machine?
-        
-        # Example strings for Windows:
-        # $^O       |  `ver`
-        # MSWin32   |  Microsoft Windows 2000 [Version 5.00.2195]
-        if ( my ($WinType) = ( my $ver = qx/ver/ ) =~ /Windows\s(\w+)/ ) {
+    if ($Windows_config_path) {
 
-            if ( $WinType =~ /(2000|XP)/ ) {
-                $config_file =
-                  "c:/Documents and Settings/All Users/.perltidyrc";
-                return $config_file if -e $config_file;
-            }
-            elsif ( $WinType eq "NT" ) {
+        # FIXME: what do we want? .perltidyrc or just perltidyrc?
+        # or both?
 
-                $config_file = "c:/WinNT/profiles/All Users/.perltidyrc";
-                return $config_file if -e $config_file;
+        $config_file = $Windows_config_path . "perltidyrc";
+        return $config_file if -e $config_file;
 
-            }
-            elsif ( $WinType =~ /9[58]/ ) {
-
-                $config_file = "c:/Windows/.perltidyrc";
-                return $config_file if -e $config_file;
-            }
-            else {
-                ${$rpending_complaint} .= <<EOT;
-Not sure where to look for config file for MS OS $ver.
-Please contact the author with details and suggestions where .perltidyrc 
-should live
---------------------------------------------------------------------------
-EOT
-            }
-        }
-        else {
-            ${$rpending_complaint} .= <<EOT;
-You have a weird MicroSoft OS running 'ver' doesnt return a parsable string!
-Please contact the author with details and suggestions where .perltidyrc 
-should live
---------------------------------------------------------------------------
-EOT
-        }
+        $config_file = $Windows_config_path . ".perltidyrc";
+        return $config_file if -e $config_file;
     }
 
-    else {    
-    
+    else {
+
         # Other OSes, probably should be more options...
         $config_file = "/usr/local/etc/perltidyrc";
         return $config_file if -e $config_file;
@@ -1367,139 +1580,90 @@ EOT
         $config_file = "/etc/perltidyrc";
         return $config_file if -e $config_file;
     }
-    
+
     # Couldn't find a config file
     return;
 }
 
-sub old_find_config_file {
-
-    my $config_file;
-
-    # look in current directory first
-    if ( -e ".perltidyrc" ) {
-        $config_file = ".perltidyrc";
-    }
-
-    # then the home directory
-    elsif ( defined( $ENV{HOME} ) && -e "$ENV{HOME}/.perltidyrc" ) {
-        $config_file = "$ENV{HOME}/.perltidyrc";
-    }
-
-    # then look for a system-wide definition
-    elsif ( -e "/usr/local/etc/perltidyrc" ) {
-        $config_file = "/usr/local/etc/perltidyrc";
-    }
-    elsif ( -e "/etc/perltidyrc" ) {
-        $config_file = "/etc/perltidyrc";
-    }
-    return $config_file;
-}
-
 sub dump_config_file {
+    my $fh          = shift;
     my $config_file = shift;
-    if ( !defined($config_file) ) {
-        print STDOUT "No perltidy configuration file found\n";
+    print STDOUT "# Dump of file '$config_file'\n";
+    while ( $_ = $fh->getline() ) {
+        print;
     }
-    else {
-        if ( -e $config_file ) {
-            unless ( open CONFIG, "<$config_file" ) {
-                print STDERR "Cannot open config file '$config_file' : $!\n";
-            }
-            else {
-                print STDOUT "# Dump of file '$config_file'\n";
-                while (<CONFIG>) {
-                    print;
-                }
-            }
-        }
-    }
+    $fh->close();
 }
 
 sub read_config_file {
 
-    my ( $config_file, $rexpansion ) = @_;
+    my ( $fh, $config_file, $rexpansion ) = @_;
     my @config_list = ();
 
     my $name = undef;
     my $line_no;
-    if ( defined($config_file) && -e $config_file ) {
+    while ( $_ = $fh->getline() ) {
+        $line_no++;
+        chomp;
+        next if /^\s*#/;    # skip full-line comment
+        $_ = strip_comment( $_, $config_file, $line_no );
+        s/^\s*(.*?)\s*$/$1/;    # trim both ends
+        next unless $_;
 
-        unless ( open CONFIG, "<$config_file" ) {
-            warn "cannot open config file $config_file: $!\n";
-            $config_file = "";
-        }
-        else {
+        # look for something of the general form
+        #    newname { body }
+        # or just
+        #    body
 
-            while (<CONFIG>) {
-                $line_no++;
-                chomp;
-                next if /^\s*#/;    # skip full-line comment
-                $_ = strip_comment( $_, $config_file, $line_no );
-                s/^\s*(.*?)\s*$/$1/;    # trim both ends
-                next unless $_;
+        if ( $_ =~ /^((\w+)\s*\{)?([^}]*)(\})?$/ ) {
+            my ( $newname, $body, $curly ) = ( $2, $3, $4 );
 
-                # look for something of the general form
-                #    newname { body }
-                # or just
-                #    body
-
-                if ( $_ =~ /^((\w+)\s*\{)?([^}]*)(\})?$/ ) {
-                    my ( $newname, $body, $curly ) = ( $2, $3, $4 );
-
-                    # handle a new alias definition
-                    if ($newname) {
-                        if ($name) {
-                            die
+            # handle a new alias definition
+            if ($newname) {
+                if ($name) {
+                    die
 "No '}' seen after $name and before $newname in config file $config_file line $.\n";
-                        }
-                        $name = $newname;
+                }
+                $name = $newname;
 
-                        if ( ${$rexpansion}{$name} ) {
-                            local $" = ')(';
-                            my @names = sort keys %$rexpansion;
-                            print
-"Here is a list of all installed aliases\n(@names)\n";
-                            die
+                if ( ${$rexpansion}{$name} ) {
+                    local $" = ')(';
+                    my @names = sort keys %$rexpansion;
+                    print "Here is a list of all installed aliases\n(@names)\n";
+                    die
 "Attempting to redefine alias ($name) in config file $config_file line $.\n";
-                        }
-                        ${$rexpansion}{$name} = [];
-                    }
+                }
+                ${$rexpansion}{$name} = [];
+            }
 
-                    # now do the body
-                    if ($body) {
+            # now do the body
+            if ($body) {
 
-                        my $rbody_parts =
-                          parse_body( $body, $config_file, $line_no );
+                my $rbody_parts = parse_body( $body, $config_file, $line_no );
 
-                        if ($name) {
+                if ($name) {
 
-                            # remove leading dashes if this is an alias
-                            foreach (@$rbody_parts) { s/^\-+//; }
-                            push @{ ${$rexpansion}{$name} }, @$rbody_parts;
-                        }
+                    # remove leading dashes if this is an alias
+                    foreach (@$rbody_parts) { s/^\-+//; }
+                    push @{ ${$rexpansion}{$name} }, @$rbody_parts;
+                }
 
-                        else {
-                            push ( @config_list, @$rbody_parts );
-                        }
-                    }
-
-                    if ($curly) {
-                        unless ($name) {
-                            die
-"Unexpected '}' seen in config file $config_file line $.\n";
-                        }
-                        $name = undef;
-                    }
+                else {
+                    push ( @config_list, @$rbody_parts );
                 }
             }
-            close CONFIG;
+
+            if ($curly) {
+                unless ($name) {
+                    die
+"Unexpected '}' seen in config file $config_file line $.\n";
+                }
+                $name = undef;
+            }
         }
     }
-    else {
-        $config_file = "";
-    }
-    return ( $config_file, \@config_list );
+    $fh->close();
+    return ( \@config_list );
 }
 
 sub strip_comment {
@@ -1696,6 +1860,8 @@ and '=n' indicates a required integer.
 I/O control
  -h      show this help
  -o=file name of the output file (only if single input file)
+ -oext=ext    change output extension to be 'ext' instead of 'tdy'.
+ -opath=path  change path to be 'path' for output files
  -q      deactivate error messages (for running under editor)
  -w      include non-critical warning messages in the .ERR error output
  -syn    run perl -c to check syntax (default under unix systems)
@@ -1935,39 +2101,34 @@ package PerlTidy::LineSource;
 
 sub new {
 
-    my $class      = shift;
-    my $input_file = shift;
-    my $rOpts      = shift;
-    my $fh;
+    my $class           = shift;
+    my $input_file      = shift;
+    my $rOpts           = shift;
     my $input_file_copy = undef;
     my $fh_copy;
 
-    unless ( ( $fh, $input_file ) = PerlTidy::streamhandle( $input_file, 'r' ) )
-    {
-        return undef;
-    }
-    else {
+    ( my $fh, $input_file ) = PerlTidy::streamhandle( $input_file, 'r' );
+    return undef unless $fh;
 
-        # in order to check output syntax when standard output is used, we have
-        # to make a copy of the file
-        if ( $input_file eq '-' && $rOpts->{'check-syntax'} ) {
-            ( $fh_copy, $input_file_copy ) = make_temporary_filename();
-            unless ($fh_copy) {
-                print STDERR <<EOM;
+    # in order to check output syntax when standard output is used, 
+    # or when it is an object, we have to make a copy of the file
+    if ( ( $input_file eq '-' || ref $fh ) && $rOpts->{'check-syntax'} ) {
+        ( $fh_copy, $input_file_copy ) = PerlTidy::make_temporary_filename();
+        unless ($fh_copy) {
+            print STDERR <<EOM;
 Problem creating temporary file, last attempt was $input_file_copy
    --syntax check will be skipped, use -nsyn to deactivate
 EOM
-                $input_file_copy = '-';
-            }
+            $input_file_copy = '-';
         }
-
-        return bless {
-            _fh              => $fh,
-            _fh_copy         => $fh_copy,
-            _filename        => $input_file,
-            _input_file_copy => $input_file_copy,
-        }, $class;
     }
+
+    return bless {
+        _fh              => $fh,
+        _fh_copy         => $fh_copy,
+        _filename        => $input_file,
+        _input_file_copy => $input_file_copy,
+    }, $class;
 }
 
 sub get_input_file_copy_name {
@@ -1983,25 +2144,6 @@ sub close_input_file {
     my $self = shift;
     $self->{_fh}->close();
     $self->{_fh_copy}->close() if $self->{_fh_copy};
-}
-
-sub make_temporary_filename {
-    eval "use POSIX qw(tmpnam)";
-    if ($@) {
-        print STDERR "Couldn't find POSIX.pm : use -nsyn\n";
-        return ( undef, "(missing POSIX)" );
-    }
-    use IO::File;
-    my ( $name, $fh );
-    for ( 0 .. 9 ) {
-        $name = tmpnam();
-        $fh = IO::File->new( $name, O_RDWR | O_CREAT | O_EXCL );
-        if ($fh) {
-            return ( $fh, $name );
-            last;
-        }
-    }
-    return ( undef, $name );
 }
 
 sub unlink_copy {
@@ -2043,11 +2185,12 @@ sub new {
         $output_file_open = 1;
     }
 
-    # in order to check output syntax when standard output is used, we have to
-    # make a copy of the file
-    if ( $output_file eq '-' ) {
+    # in order to check output syntax when standard output is used, 
+    # or when it is an object, we have to make a copy of the file
+    if ( $output_file eq '-' || ref $fh ) {
         if ( $rOpts->{'check-syntax'} ) {
-            ( $fh_copy, $output_file_copy ) = make_temporary_filename();
+            ( $fh_copy, $output_file_copy ) =
+              PerlTidy::make_temporary_filename();
             unless ($fh_copy) {
                 print STDERR <<EOM;
 Problem creating temporary file, last attempt was $output_file_copy
@@ -2078,6 +2221,8 @@ sub write_line {
     my $fh_copy = $self->{_fh_copy};
 
     my $output_file_open = $self->{_output_file_open};
+
+    ##print "BUBBA: writing ($_[0])\n";
 
     $fh->print( $_[0] ) if ( $self->{_output_file_open} );
     print $fh_copy $_[0] if ( $self->{_output_file_copy} );
@@ -2132,25 +2277,6 @@ sub close_tee_file {
         close $self->{_fh_tee};
         $self->{_tee_file_opened} = 0;
     }
-}
-
-sub make_temporary_filename {
-    eval "use POSIX qw(tmpnam)";
-    if ($@) {
-        print STDERR "Couldn't find POSIX.pm : rerun with -nsyn\n";
-        return ( undef, "(missing POSIX)" );
-    }
-    use IO::File;
-    my ( $name, $fh );
-    for ( 0 .. 9 ) {
-        $name = tmpnam();
-        $fh = IO::File->new( $name, O_RDWR | O_CREAT | O_EXCL );
-        if ($fh) {
-            return ( $fh, $name );
-            last;
-        }
-    }
-    return ( undef, $name );
 }
 
 sub unlink_copy {
@@ -4078,10 +4204,11 @@ sub set_leading_whitespace {
               $gnu_stack[$max_gnu_stack_index]->get_SPACES();
             $available_space = $space_count - $min_gnu_indentation;
             ##print "BUBBA: min=$min_gnu_indentation avail=$available_space sc=$space_count\n";
-            if ($available_space < 0
-            ## BUBBA: TESTING:
-            ##|| $space_count > $half_maximum_line_length
-            )
+            if (
+                $available_space < 0
+                ## BUBBA: TESTING:
+                ##|| $space_count > $half_maximum_line_length
+              )
             {
                 $space_count     = $min_gnu_indentation;
                 $available_space = 0;
@@ -4107,7 +4234,7 @@ sub set_leading_whitespace {
                   ->tentatively_decrease_AVAILABLE_SPACES($available_space);
             }
 
-                ##print "BUBBA: spaces=$space_count lev=$level ci=$ci_level avail=$available_space align=$align_paren gnu=$gnu_position_predictor\n"; 
+            ##print "BUBBA: spaces=$space_count lev=$level ci=$ci_level avail=$available_space align=$align_paren gnu=$gnu_position_predictor\n"; 
         }
     }
 
@@ -4192,7 +4319,7 @@ sub set_leading_whitespace {
     if ( $max_index_to_go > $line_start_index_to_go ) {
         $gnu_position_predictor =
           total_line_length( $line_start_index_to_go, $max_index_to_go );
-          ##print "BUBBA: gnu=$gnu_position_predictor\n"; 
+        ##print "BUBBA: gnu=$gnu_position_predictor\n"; 
     }
     else {
         $gnu_position_predictor = $space_count +
@@ -4902,7 +5029,7 @@ They may be altered with the -wls parameter.
 For a list of token types, use perltidy --dump-token-types (-dtt)
  1 means the token wants a space to its left
 -1 means the token does not want a space to its left
----------------------------------------------------------------
+------------------------------------------------------------------------
 EOM
     foreach ( sort keys %want_left_space ) {
         print $fh "$_\t$want_left_space{$_}\n";
@@ -4918,7 +5045,7 @@ They may be altered with the -wrs parameter.
 For a list of token types, use perltidy --dump-token-types (-dtt)
  1 means the token wants a space to its right
 -1 means the token does not want a space to its right
----------------------------------------------------------------
+------------------------------------------------------------------------
 EOM
     foreach ( sort keys %want_right_space ) {
         print $fh "$_\t$want_right_space{$_}\n";
@@ -5821,7 +5948,7 @@ sub set_white_space_flag {
          /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
      Examples:
        *VERSION = \'1.01';
-       ( $VERSION ) = '$Revision: 1.1 $ ' =~ /\$Revision:\s+([^\s]+)/;
+       ( $VERSION ) = '$Revision: 1.2 $ ' =~ /\$Revision:\s+([^\s]+)/;
      We will pass such a line straight through (by changing it
      to a quoted string) unless -npvl is used
     
@@ -5830,7 +5957,7 @@ sub set_white_space_flag {
      block sequence numbers may see a closing sequence number but not
      the corresponding opening sequence number (sidecmt.t).  Example:
 
-    my $VERSION = do { my @r = (q$Revision: 1.1 $ =~ /\d+/g); sprintf
+    my $VERSION = do { my @r = (q$Revision: 1.2 $ =~ /\d+/g); sprintf
     "%d."."%02d" x $#r, @r }; 
 
     Here, the opening brace of 'do {' will not be seen, while the closing
@@ -9859,23 +9986,34 @@ sub find_token_starting_list {
         # find lengths of all items in the list
         my $comma_count = $item_count;
         my @item_lengths;
-        my $i_prev;
-        my $i = $i_opening_paren;
+        my @i_term_begin;
+        my @i_term_end;
+        my $i_prev_plus;
 
         # find max length of list items to calculate page layout
         my @max_length = ( 0, 0 );
         my $first_term_length;
-        $i = $i_opening_paren;
+        my $i      = $i_opening_paren;
         my $is_odd = 1;
         for ( my $j = 0 ; $j < $comma_count ; $j++ ) {
-            $is_odd = 1 - $is_odd;
-            $i_prev = $i;
-            $i      = $$rcomma_index[$j];
-            if ( !defined($i_prev) ) { $i_prev = -1 }
-            my $length = token_sequence_length( $i_prev + 1, $i );
-            push @item_lengths, token_sequence_length( $i_prev + 1, $i );
+            $is_odd      = 1 - $is_odd;
+            $i_prev_plus = $i + 1;
+            $i           = $$rcomma_index[$j];
 
-            ##print "j =$j length=$length\n";
+            my $i_term_end =
+              ( $types_to_go[ $i - 1 ] eq 'b' ) ? $i - 2 : $i - 1;
+            my $i_term_begin =
+              ( $types_to_go[$i_prev_plus] eq 'b' ) 
+              ? $i_prev_plus + 1
+              : $i_prev_plus;
+            push @i_term_begin, $i_term_begin;
+            push @i_term_end,   $i_term_end;
+
+            # currently adding 2 to all lengths (for comma and space)
+            my $length =
+              2 + token_sequence_length( $i_term_begin, $i_term_end );
+            push @item_lengths, $length;
+
             if ( $j == 0 ) {
                 $first_term_length = $length;
             }
@@ -9887,9 +10025,9 @@ sub find_token_starting_list {
             }
         }
 
-        # now we have to make a distinction between the comma count and item count,
-        # because the item count will be one greater than the comma count if
-        # the last item is not terminated with a comma
+        # now we have to make a distinction between the comma count and item
+        # count, because the item count will be one greater than the comma
+        # count if the last item is not terminated with a comma
         my $i_b =
           ( $types_to_go[ $i_last_comma + 1 ] eq 'b' ) 
           ? $i_last_comma + 1
@@ -9907,6 +10045,8 @@ sub find_token_starting_list {
             # add 2 to length because other lengths include a comma and a blank
             $last_item_length += 2;
             push @item_lengths, $last_item_length;
+            push @i_term_begin, $i_b + 1;
+            push @i_term_end,   $i_e;
 
             my $i_odd = $item_count % 2;
 
@@ -9985,6 +10125,8 @@ sub find_token_starting_list {
             $item_count--;
             return if $comma_count == 1;
             shift @item_lengths;
+            shift @i_term_begin;
+            shift @i_term_end;
         }
 
         # if not, update the metrics to include the first term
@@ -10001,69 +10143,51 @@ sub find_token_starting_list {
 
         # Number of free columns across the page width for laying out tables
         my $columns = table_columns_available($i_first_comma);
-        
-        # Number of fields which fit this space
-        my $number_of_fields =
-          maximum_number_of_fields( $columns, 
-            $odd_or_even, $max_width, $pair_width );
 
-        # ----------------------------------------------------------------------
-        # TESTING: if -lp is used and there are recoverable spaces, use fewer
-        # columns for formatting the list if possible.  This will happen when
-        # the opening paren is beyond the halfway point, because
-        # set_leading_whitespace will have used minimum indentation in that
-        # case.  For now, only do this if there are just a few items, because
-        # large tables may look better with minimal indentation.
-        # ----------------------------------------------------------------------
-        if ($rOpts_line_up_parentheses
-            && $number_of_fields >= 1
-            && $item_count <= 5)
+        # Estimated maximum number of fields which fit this space
+        # This will be our first guess
+        my $number_of_fields_max =
+          maximum_number_of_fields( $columns, $odd_or_even, $max_width,
+            $pair_width );
+        my $number_of_fields = $number_of_fields_max;
+
+        # Find the best-looking number of fields
+        # and make this our second guess if possible
+        my $number_of_fields_best =
+          find_best_table_field_count( \@i_term_begin, \@i_term_end,
+            \@item_lengths );
+        if ( $number_of_fields_best != 0
+            && $number_of_fields_best < $number_of_fields_max )
         {
-            my $indent = $leading_spaces_to_go[$i_first_comma];
-            my $recoverable_spaces = $indent->get_RECOVERABLE_SPACES();
-
-## TESTING:
-##            if ( $number_of_fields <= 1 ) {
-##                my $min_need = $columns - $max_width;
-##                if ( $recoverable_spaces > $min_need ) {
-##                    $recoverable_spaces = $min_need;
-##                }
-##                $number_of_fields=1;
-##                $columns -= $recoverable_spaces;
-##            }
-##            else {
-##                my $min_need = $columns - $pair_width;
-##                if ( $recoverable_spaces > $min_need ) {
-##                    $recoverable_spaces = $min_need;
-##                }
-##                $number_of_fields=2;
-##                $columns -= $recoverable_spaces;
-##            }
-
-##            $number_of_fields =
-##              maximum_number_of_fields( $columns, 
-##                $odd_or_even, $max_width, $pair_width );
-                                       ##print "BUBBA: now number=$number_of_fields columns$columns max=$max_width=rec=$recoverable_spaces $columns i=$i_first_comma tok=$tokens_to_go[$i_first_comma]\n";
+            $number_of_fields = $number_of_fields_best;
         }
 
         # ----------------------------------------------------------------------
         # If we are crowded and the -lp option is being used, try to
         # undo some indentation 
         # ----------------------------------------------------------------------
-
-        ##print "BUBBA n=$number_of_fields pair=$pair_width  cols=$columns\n";
-        if ( $number_of_fields < 2 && $rOpts_line_up_parentheses ) {
-
+        if (
+            $rOpts_line_up_parentheses
+            && (
+                $number_of_fields == 0
+                || ( $number_of_fields == 1
+                    && $number_of_fields != $number_of_fields_best )
+            )
+          )
+        {
             my $available_spaces = get_AVAILABLE_SPACES_to_go($i_first_comma);
             if ( $available_spaces > 0 ) {
 
                 my $spaces_wanted = $max_width - $columns;    # for 1 field
-                my $maximum_fields_wanted =
-                  get_maximum_fields_wanted( \@item_lengths );
 
-                if ( $maximum_fields_wanted != 1) {
+                if ( $number_of_fields_best == 0 ) {
+                    $number_of_fields_best =
+                      get_maximum_fields_wanted( \@item_lengths );
+                }
+
+                if ( $number_of_fields_best != 1 ) {
                     my $spaces_wanted_2 =
-                      1 + $pair_width - $columns;    # for 2 fields
+                      1 + $pair_width - $columns;             # for 2 fields
                     if ( $available_spaces > $spaces_wanted_2 ) {
                         $spaces_wanted = $spaces_wanted_2;
                     }
@@ -10076,13 +10200,15 @@ sub find_token_starting_list {
                     # redo the math
                     if ( $deleted_spaces > 0 ) {
                         $columns = table_columns_available($i_first_comma);
-                        $number_of_fields =
+                        $number_of_fields_max =
                           maximum_number_of_fields( $columns, $odd_or_even,
                             $max_width, $pair_width );
-                        if ( $maximum_fields_wanted == 1
-                            && $number_of_fields > 1 )
+                        $number_of_fields = $number_of_fields_max;
+
+                        if ( $number_of_fields_best == 1
+                            && $number_of_fields >= 1 )
                         {
-                            $number_of_fields = 1;
+                            $number_of_fields = $number_of_fields_best;
                         }
                     }
                 }
@@ -10096,8 +10222,8 @@ sub find_token_starting_list {
 
         # The user can place an upper bound on the number of fields,
         # which can be useful for doing maintenance on tables
-        if ($rOpts_maximum_fields_per_table
-            && $number_of_fields > $rOpts_maximum_fields_per_table)
+        if ( $rOpts_maximum_fields_per_table
+            && $number_of_fields > $rOpts_maximum_fields_per_table )
         {
             $number_of_fields = $rOpts_maximum_fields_per_table;
         }
@@ -10166,8 +10292,8 @@ sub find_token_starting_list {
             # break at every comma ...
             if (
 
-                # if user requested
-                $rOpts_maximum_fields_per_table == 1
+                # if requested by user or is best looking
+                $number_of_fields_best == 1
 
                 # or if this is a sublist of a larger list
                 || $in_hierarchical_list
@@ -10399,6 +10525,40 @@ EOM
     }
 }
 
+sub find_best_table_field_count {
+
+    # Look for complex tables which should be formatted with one term per line.
+    # Returns 0 if any number may be used.
+    my ( $ri_term_begin, $ri_term_end, $ritem_lengths ) = @_;
+    my $item_count            = @{$ri_term_begin};
+    my $complex_item_count    = 0;
+    my $number_of_fields_best = $rOpts_maximum_fields_per_table;
+    foreach ( 0 .. $item_count - 1 ) {
+        my $ib = $ri_term_begin->[$_];
+        my $ie = $ri_term_end->[$_];
+
+        ##my $str=join "", @tokens_to_go[$ib..$ie];
+
+        if ( $ib eq $ie ) {
+            if ( $types_to_go[$ib] =~ /^[qQ]$/ && $tokens_to_go[$ib] =~ /\s/ ) {
+                $complex_item_count++;
+            }
+            else {
+            }
+        }
+        else {
+            if ( grep { $_ eq 'b' } @types_to_go[ $ib .. $ie ] ) {
+                $complex_item_count++;
+            }
+        }
+    }
+    if ( $complex_item_count > $item_count / 2 && $number_of_fields_best != 2 )
+    {
+        $number_of_fields_best = 1;
+    }
+    return $number_of_fields_best;
+}
+
 sub get_maximum_fields_wanted {
 
     # Not all tables look good with more than one field of items.
@@ -10407,18 +10567,14 @@ sub get_maximum_fields_wanted {
     # This coding is still under development.
     my ($ritem_lengths) = @_;
 
-    # if user specified 1 or 2 fields, honor the request
-    my $maximum_fields_wanted = $rOpts_maximum_fields_per_table;
-    if ( $maximum_fields_wanted == 1 || $maximum_fields_wanted == 2 ) {
-        return $maximum_fields_wanted;
-    }
+    my $number_of_fields_best = 0;
 
     # For just a few items, we tentatively assume just 1 field.
     my $item_count = @{$ritem_lengths};
     if ( $item_count <= 5 ) {
-        $maximum_fields_wanted = 1;
+        $number_of_fields_best = 1;
     }
-    
+
     # For larger tables, look at it both ways and see what looks best
     else {
 
@@ -10460,10 +10616,10 @@ sub get_maximum_fields_wanted {
 
         my $factor = ( $item_count > 10 ) ? 1 : ( $item_count > 5 ) ? 0.75 : 0;
         unless ( $total_variation_2 < $factor * $total_variation_1 ) {
-            $maximum_fields_wanted = 1;
+            $number_of_fields_best = 1;
         }
     }
-    return ($maximum_fields_wanted);
+    return ($number_of_fields_best);
 }
 
 sub table_columns_available {
@@ -12137,6 +12293,7 @@ use vars qw(
   $rOpts_continuation_indentation
   $rOpts_indent_columns
   $rOpts_tabs
+  $rOpts_entab_leading_whitespace
 
   $rOpts_maximum_whitespace_columns
   $rOpts_minimum_space_to_comment
@@ -12175,6 +12332,7 @@ sub initialize {
     # frequently used parameters
     $rOpts_indent_columns             = $rOpts->{'indent-columns'};
     $rOpts_tabs                       = $rOpts->{'tabs'};
+    $rOpts_entab_leading_whitespace   = $rOpts->{'entab-leading-whitespace'};
     $rOpts_maximum_whitespace_columns = $rOpts->{'maximum-whitespace-columns'};
     $rOpts_minimum_space_to_comment   = $rOpts->{'minimum-space-to-comment'};
     $rOpts_maximum_space_to_comment   = $rOpts->{'maximum-space-to-comment'};
@@ -13461,11 +13619,23 @@ sub write_leader_and_string {
         my $leading_string;
 
         # Handle simple case of no tabs
-        if ( !$rOpts_tabs || $rOpts_indent_columns <= 0 ) {
+        if ( !( $rOpts_tabs || $rOpts_entab_leading_whitespace )
+            || $rOpts_indent_columns <= 0 )
+        {
             $leading_string = ( ' ' x $leading_whitespace_count );
         }
 
-        # Handle tabs
+        # Handle entab option
+        elsif ($rOpts_entab_leading_whitespace) {
+            my $space_count =
+              $leading_whitespace_count % $rOpts_entab_leading_whitespace;
+            my $tab_count =
+              int(
+                $leading_whitespace_count / $rOpts_entab_leading_whitespace );
+            $leading_string = "\t" x $tab_count . ' ' x $space_count;
+        }
+
+        # Handle option of one tab per level
         else {
             $leading_string = ( "\t" x $group_level );
             my $space_count =
@@ -14238,7 +14408,7 @@ sub report_tokenization_errors {
     if ( $tokenizer_self->{_saw_lc_filehandle} ) {
 
         warning( <<'EOM' );
-------------------------------------------------------------------
+------------------------------------------------------------------------
 PLEASE NOTE: If you get this message, it is because perltidy noticed
 possible ambiguous syntax at one or more places in your script, as
 noted above.  The problem is with statements accepting indirect objects,
@@ -14261,7 +14431,7 @@ or
 
 If you want to keep the line as it is, and are sure it is correct,
 you can use -w=0 to prevent this message.
-------------------------------------------------------------------
+------------------------------------------------------------------------
 EOM
 
     }
@@ -14590,6 +14760,13 @@ sub get_line {
     if ( $tokenizer_self->{_look_for_hash_bang}
         && !$tokenizer_self->{_saw_hash_bang} )
     {
+        $line_of_tokens->{_line_type} = 'SYSTEM';
+        return $line_of_tokens;
+    }
+
+    # a first line of the form ': #' will be marked as SYSTEM 
+    # since lines of this form may be used by tcsh
+    if ( $input_line_number == 1 && $input_line =~ /^\s*\:\s*\#/ ) {
         $line_of_tokens->{_line_type} = 'SYSTEM';
         return $line_of_tokens;
     }
@@ -15466,7 +15643,13 @@ sub reset_indentation_level {
                 && $is_for_foreach{$want_paren} )
             {
                 $last_nonblank_token = $want_paren;
-                $want_paren     = "";
+                if ( $last_last_nonblank_token eq $want_paren ) {
+                    warning(
+"syntax error at '$want_paren .. {' -- missing \$ loop variable\n"
+                    );
+
+                }
+                $want_paren = "";
             }
 
             # now identify which of the three possible types of
@@ -15604,9 +15787,19 @@ sub reset_indentation_level {
         },
         ':' => sub {
 
-            $type_sequence = decrease_nesting_depth( QUESTION_COLON, $i_tok );
-            if ( $last_nonblank_token eq '?' ) {
-                warning("Syntax error near ? :\n");
+            # if this is the first nonblank character, call it a label
+            # since perl seems to just swallow it
+            if ( $input_line_number == 1 && $last_nonblank_i == -1 ) {
+                $type = 'J';
+            }
+
+            # otherwise, it should be part of a ?/: operator
+            else {
+                $type_sequence =
+                  decrease_nesting_depth( QUESTION_COLON, $i_tok );
+                if ( $last_nonblank_token eq '?' ) {
+                    warning("Syntax error near ? :\n");
+                }
             }
         },
         '+' => sub {    # what kind of plus?
@@ -16405,7 +16598,7 @@ EOM
                 # various quote operators
                 elsif ( $is_q_qq_qw_qx_qr_s_y_tr_m{$tok} ) {
                     if ( $expecting == OPERATOR ) {
-            
+
                         # patch for paren-less for/foreach glitch, part 1
                         # perl will accept this construct as valid:
                         #

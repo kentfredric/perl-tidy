@@ -2,12 +2,11 @@
 
 package main;
 
-# FOR TESTING ONLY -- REMOVE BEFORE PACKAGING##################
+##BEGIN:REMOVE BEFORE PACKAGING#############################
 BEGIN {
     unshift @INC, '/home/steve/src/perldev/perltidy/src';
 }
-###############################################################
-
+##END:REMOVE BEFORE PACKAGING###############################
 use PerlTidy;
 
 # remove any temporary files if interrupted

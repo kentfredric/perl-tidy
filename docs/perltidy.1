@@ -130,7 +130,7 @@
 .\" ========================================================================
 .\"
 .IX Title "PERLTIDY 1"
-.TH PERLTIDY 1 "2001-12-31" "perl v5.6.1" "User Contributed Perl Documentation"
+.TH PERLTIDY 1 "2002-02-09" "perl v5.6.1" "User Contributed Perl Documentation"
 .UC
 .SH "NAME"
 perltidy \- a perl script indenter and reformatter
@@ -219,8 +219,9 @@ use two leading dashes for long names, but one may be used.
 .PP
 Most parameters which serve as on/off flags can be negated with a
 leading \*(L"n\*(R" (for the short name) or a leading \*(L"no\*(R" (for the long
-name).  For example, the flag to use tabs is \fB\-t\fR or \fB\-\-tabs\fR.  The
-flag to use no tabs (the default) is \fB\-nt\fR or \fB\-\-notabs\fR.
+name).  For example, the flag to have perl check syntax using perl \-c 
+is \fB\-syn\fR or \fB\-\-check\-syntax\fR.  The flag to skip this is
+\&\fB\-nsyn\fR or \fB\-\-nocheck\-syntax\fR.
 .PP
 Options may not be bundled together.  In other words, options \fB\-q\fR and
 \&\fB\-g\fR may \s-1NOT\s0 be entered as \fB\-qg\fR.
@@ -252,13 +253,32 @@ request outputting to the standard output.  For example,
 .Ve
 This option may only be used if there is just a single input file.  When
 this option is used, perltidy will have to create a temporary copy of
-the output file, perltidy.TMPO, to feed to perl for syntax checking,
+the output file to feed to perl for syntax checking,
 unless allow syntax checking is disabled.  This file will be deleted
 when the job finishes.  The default is \fB\-nst\fR or \fB\-nostandard\-output\fR.
 .IP "\fB\-oext\fR=ext,    \fB\-\-output\-file\-extension\fR=ext" 4
 .IX Item "-oext=ext,    --output-file-extension=ext"
 Change the extension of the output file to be \fI.ext\fR instead of the
 default \fI.tdy\fR.
+.IP "\fB\-opath\fR=path,    \fB\-\-output\-path\fR=path" 4
+.IX Item "-opath=path,    --output-path=path"
+When perltidy creates a filename for an output file, by default it merely
+appends an extension to the path and basename of the input file.  This
+parameter causes the path to be changed to \fIpath\fR instead.
+.Sp
+The path should end in a valid path separator character, but perltidy will try
+to add one if it is missing.
+.Sp
+For example
+.Sp
+.Vb 1
+\& perltidy somefile.pl -opath=/tmp/
+.Ve
+will produce \fI/tmp/somefile.pl.tdy\fR.  Otherwise, \fIsomefile.pl.tdy\fR will
+appear in whatever directory contains \fIsomefile.pl\fR.
+.Sp
+This parameter will be ignored if output is being directed to standard output,
+or if it is being specified explicitly with the \fB\-o=s\fR parameter.
 .IP "\fB\-se\fR,    \fB\-\-standard\-error\-output\fR" 4
 .IX Item "-se,    --standard-error-output"
 If perltidy detects an error when processing file \fIsomefile.pl\fR, its
@@ -298,6 +318,10 @@ is detected in the output script.  The output script is not checked if the
 input script has a syntax error.  To skip syntax checking, use \fB\-nsyn\fR or
 \&\fB\-\-nocheck\-syntax\fR.  Syntax checking is also deactivated by the \fB\-\-quiet\fR
 flag, discussed above.
+.Sp
+Please note that this flag only controls the invocation of perl for
+checking.  Even if it is deactivated, perltidy will still do extensive
+syntax checking on its own. 
 .Sp
 The default is to do a syntax check.
 .IP "\fB\-log\fR,    \fB\-\-logfile\fR" 4
@@ -1337,6 +1361,9 @@ when finished.
 The parameters in the \fI.perltidyrc\fR
 file can be switched off with the \fB\-npro\fR option.  
 .IP "\(bu" 4
+\&\fB\-\-dump\-profile\fR or \fB\-dpro\fR  will write the name of the current 
+\&\fI.perltidyrc\fR file and its contents to standard output and quit.
+.IP "\(bu" 4
 The parameter \fB\-log\fR will force a \fI.LOG\fR file to be written, which
 contains the path to the \fI.perltidyrc\fR file, if any, and a listing of
 its parameter settings.  
@@ -1527,6 +1554,9 @@ The following flags are available for debugging:
 .Sp
 \&\fB\-\-dump\-defaults\fR or \fB\-ddf\fR will write the default option set to standard output and quit
 .Sp
+\&\fB\-\-dump\-profile\fR or \fB\-dpro\fR  will write the name of the current 
+configuration file and its contents to standard output and quit.
+.Sp
 \&\fB\-\-dump\-options\fR or \fB\-dop\fR  will write current option set to standard output and quit.
 .Sp
 \&\fB\-\-dump\-long\-names\fR or \fB\-dln\fR  will write all command line long names (passed 
@@ -1582,9 +1612,9 @@ The following list shows all short parameter names which allow a prefix
 .PP
 .Vb 4
 \&    D anl asc aws bbb bbc bbs bli baa syn ce csc dac dbc dcsc dnl
-\&    dws dp dsm dsc ddf dln dop dsn dtt dwls dwrs f fll
-\&    hsc html ibc icb icp lp log lal x lsl bl sbl okw ola oll pvl
-\&    q opt sbc sfs ssc sts se st sob t tac tbc tp tsc tqw w
+\&    dws dp dpro dsm dsc ddf dln dop dsn dtt dwls dwrs f fll
+\&    hsc html ibc icb icp lp log lal x lsl bl sbl okw ola oll
+\&    pvl q opt sbc sfs ssc sts se st sob t tac tbc tp tsc tqw w
 .Ve
 Equivalently, the prefix 'no' on the corresponding long names may be
 used.
@@ -1618,23 +1648,20 @@ in any way.  And, of course, it does not modify pod documents.
 When standard input is used, the log file, if saved, is \fIperltidy.LOG\fR,
 and any errors are written to \fIperltidy.ERR\fR unless the \fB\-se\fR flag is
 set.  These are saved in the current working directory.  If syntax
-checking is used, a temporary copy of the input file will be created in
-the current working directory called \fIperltidy.TMPI\fR, but it will be
-removed when perltidy finishes.
+checking is used, a temporary copy of the input file will be created,
+but it will be removed when perltidy finishes.
 .Sp
 When standard output and syntax checking are used, a temporary copy of the
-output file will be created in the current working directory called
-\&\fIperltidy.TMPO\fR.  It will be removed when perltidy finishes.
+output file will be created.  It will be removed when perltidy finishes.
 .IP "Files overwritten" 4
 .IX Item "Files overwritten"
 The following file extensions are used by perltidy, and files with these
-extensions may be overwritten or deleted: \fI.tdy\fR, \fI.ERR\fR, \fI.LOG\fR, \fI.TEE\fR,
-\&\fI.TMPI\fR, \fI.TMPO\fR.
+extensions may be overwritten or deleted: \fI.tdy\fR, \fI.ERR\fR, \fI.LOG\fR, \fI.TEE\fR.
 .IP "Files extensions limitations" 4
 .IX Item "Files extensions limitations"
 Perltidy does not operate on files for which the run could produce a file with
 a duplicated file extension.  These extensions are \fI.tdy\fR, \fI.LOG\fR, \fI.ERR\fR,
-\&\fI.TEE\fR, \fI.TMPI\fR, \fI.TMPO\fR.  The purpose of this rule is to prevent generating
+\&\fI.TEE\fR.  The purpose of this rule is to prevent generating
 confusing filenames such as \fIsomefile.tdy.tdy.tdy\fR.
 .SH "SEE ALSO"
 .IX Header "SEE ALSO"

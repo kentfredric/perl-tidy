@@ -14,6 +14,7 @@
 	<LI><A HREF="#perltidy change log">Perltidy Change Log</A></LI>
 	<UL>
 
+		<LI><A HREF="#2002 xx xx">2002 xx xx</A></LI>
 		<LI><A HREF="#2001 12 31">2001 12 31</A></LI>
 		<LI><A HREF="#2001 11 28">2001 11 28</A></LI>
 		<LI><A HREF="#2001 10 20">2001 10 20</A></LI>
@@ -42,6 +43,164 @@
  You can help Perltidy evolve into a better program.  If you 
  have hit a bug, unusual behavior, annoyance, or have a suggested
  improvement, please send a note to perltidy at users.sourceforge.net.</PRE>
+<P>
+<H2><A NAME="2002 xx xx">2002 xx xx</A></H2>
+<PRE>
+ -This version uses modules for the first time, and a standard perl
+  Makefile.PL has been supplied.  However, perltidy may still be
+  installed as a single script, without modules.  See INSTALL for
+  details.</PRE>
+<PRE>
+ -New parameter '--entab-leading-whitespace=n', or '-et=n', has been
+  added for those who prefer tabs.  This behaves different from the
+  existing '-t' parameter; see updated man page.  Suggested by Mark
+  Olesen.</PRE>
+<PRE>
+ -New parameter '--output-path=s'  or '-opath=s' will cause output
+  files to be placed in directory s.  See updated man page.  Thanks for
+  Mark Olesen for suggesting this.</PRE>
+<PRE>
+ -Added command --dump-profile (or -dpro) which will dump to standard output
+  the name of whatever configuration file is in effect, and its contents.</PRE>
+<PRE>
+ -Corrections added for a leading ':' and for leaving a leading 'tcsh'
+  line untouched.  Mark Olesen reported that lines of this form were
+  accepted by perl but not by perltidy:</PRE>
+<PRE>
+        : # use -*- perl -*-
+        eval 'exec perl -wS $0 &quot;$@&quot;'  # shell should exec 'perl'
+        unless 1;                     # but Perl should skip this one</PRE>
+<PRE>
+  Perl will silently swallow a leading colon on line 1 of a script, and now
+  perltidy will do likewise.  For example, this is a valid script, provided
+  that it is the first line, but not otherwise:</PRE>
+<PRE>
+        : print &quot;Hello World\n&quot;;
+</PRE>
+<PRE>
+
+  Also, perltidy will now mark a first line with leading ':' followed by
+  '#' as type SYSTEM (just as a #!  line), not to be formatted.</PRE>
+<PRE>
+ -List formatting improved for certain lists with special initial terms, such
+  as occur with 'printf', 'sprintf', 'push', 'pack', 'join', 'chmod'.  The 
+  special initial term is now placed on a line by itself.  For example,
+  perltidy -gnu</PRE>
+<PRE>
+     OLD:
+        $Addr = pack(
+                     &quot;C4&quot;,                hex($SourceAddr[0]),
+                     hex($SourceAddr[1]), hex($SourceAddr[2]),
+                     hex($SourceAddr[3])
+                     );</PRE>
+<PRE>
+     NEW:
+        $Addr = pack(&quot;C4&quot;,
+                     hex($SourceAddr[0]), hex($SourceAddr[1]),
+                     hex($SourceAddr[2]), hex($SourceAddr[3]));</PRE>
+<PRE>
+      OLD:
+            push (
+                  @{$$self{states}}, '64', '66', '68',
+                  '70',              '72', '74', '76',
+                  '78',              '80', '82', '84',
+                  '86',              '88', '90', '92',
+                  '94',              '96', '98', '100',
+                  '102',             '104'
+                  );</PRE>
+<PRE>
+      NEW:
+            push (
+                  @{$$self{states}},
+                  '64', '66', '68', '70', '72',  '74',  '76',
+                  '78', '80', '82', '84', '86',  '88',  '90',
+                  '92', '94', '96', '98', '100', '102', '104'
+                  );</PRE>
+<PRE>
+ -Lists of complex items, such as matricies, are now detected and displayed
+  with just one item per row:</PRE>
+<PRE>
+    OLD (two per row):
+    for (
+        [ 'Shine', 40 ], [ 'Specular', [ 1, 1, 0.3, 0 ] ],
+        [ 'Ambient', [ 0.3, 1, 1, 0 ] ], [ 'Diffuse', [ 1, 0.3, 1, 0 ] ],
+        [ 'Emissive', [ 0, 0, 0 ] ]
+      )
+    {
+    }</PRE>
+<PRE>
+    NEW (one per row):
+    for (
+        [ 'Shine', 40 ],
+        [ 'Specular', [ 1,   1,   0.3, 0 ] ],
+        [ 'Ambient',  [ 0.3, 1,   1,   0 ] ],
+        [ 'Diffuse',  [ 1,   0.3, 1,   0 ] ],
+        [ 'Emissive', [ 0,   0,   0 ] ]
+      )
+    {
+    }</PRE>
+<PRE>
+ -Perltidy will now use system-generated temporary filenames when
+  necessary, rather than create files with .TMPI and .TMPO extensions.
+  Also, a control-C handler has been added to delete temporary files if
+  perltidy is interrupted.</PRE>
+<PRE>
+ -Merged patch sent by Yves Orton to handle appropriate configuration file
+  locations for different Windows varieties (2000, NT, XP, 95, 98).</PRE>
+<PRE>
+ -Added patch to properly handle a for/foreach loop without parens
+  around a list represented as a qw.  I didn't know this was possible
+  until Wolfgang Weisselberg pointed it out:</PRE>
+<PRE>
+        foreach my $key qw\Uno Due Tres Quadro\ {
+            print &quot;Set $key\n&quot;;
+        }</PRE>
+<PRE>
+  But this is probably not a very good programming practice.  Perl will 
+  give a syntax error without the $ variable; ie this will not work:</PRE>
+<PRE>
+        foreach qw\Uno Due Tres Quadro\ {
+            print &quot;Set $_\n&quot;;
+        }</PRE>
+<PRE>
+ -Merged Windows version detection code sent by Yves Orton.  Perltidy
+  now automatically turns off syntax checking for Win 9x/ME versions,
+  and this has solved a lot of robustness problems.  These systems 
+  cannot reliably handle backtick operators.  See man page for
+  details.
+</PRE>
+<PRE>
+
+ -Merged VMS filename handling patch sent by Michael Cartmell.  (Invalid
+  output filenames were being created in some cases).</PRE>
+<PRE>
+ -Numerous minor improvements have been made for -lp style indentation.</PRE>
+<PRE>
+ -Long C-style 'for' expressions will be broken after each ';'.</PRE>
+<PRE>
+  'perltidy -gnu' gives:</PRE>
+<PRE>
+    OLD:
+    for ($status = $db-&gt;seq($key, $value, R_CURSOR()) ; $status == 0
+         and $key eq $origkey ; $status = $db-&gt;seq($key, $value, R_NEXT()))</PRE>
+<PRE>
+    NEW:
+    for ($status = $db-&gt;seq($key, $value, R_CURSOR()) ;
+         $status == 0 and $key eq $origkey ;
+         $status = $db-&gt;seq($key, $value, R_NEXT()))</PRE>
+<PRE>
+ -For the -lp option, a single long term within parens (without commas) now 
+  has better alignment.  For example, perltidy -gnu</PRE>
+<PRE>
+            OLD:
+            $self-&gt;throw(&quot;Must specify a known host, not $location,&quot;
+                  . &quot; possible values (&quot;
+                  . join (&quot;,&quot;, sort keys %hosts) . &quot;)&quot;);</PRE>
+<PRE>
+            NEW:
+            $self-&gt;throw(&quot;Must specify a known host, not $location,&quot;
+                         . &quot; possible values (&quot;
+                         . join (&quot;,&quot;, sort keys %hosts) . &quot;)&quot;);</PRE>
 <P>
 <H2><A NAME="2001 12 31">2001 12 31</A></H2>
 <PRE>

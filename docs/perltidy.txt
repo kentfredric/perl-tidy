@@ -79,8 +79,8 @@ OPTIONS
 
     Most parameters which serve as on/off flags can be negated with a
     leading "n" (for the short name) or a leading "no" (for the long name).
-    For example, the flag to use tabs is -t or --tabs. The flag to use no
-    tabs (the default) is -nt or --notabs.
+    For example, the flag to have perl check syntax using perl -c is -syn or
+    --check-syntax. The flag to skip this is -nsyn or --nocheck-syntax.
 
     Options may not be bundled together. In other words, options -q and -g
     may NOT be entered as -qg.
@@ -113,14 +113,32 @@ OPTIONS
 
         This option may only be used if there is just a single input file.
         When this option is used, perltidy will have to create a temporary
-        copy of the output file, perltidy.TMPO, to feed to perl for syntax
-        checking, unless allow syntax checking is disabled. This file will
-        be deleted when the job finishes. The default is -nst or
-        -nostandard-output.
+        copy of the output file to feed to perl for syntax checking, unless
+        allow syntax checking is disabled. This file will be deleted when
+        the job finishes. The default is -nst or -nostandard-output.
 
     -oext=ext, --output-file-extension=ext
         Change the extension of the output file to be .ext instead of the
         default .tdy.
+
+    -opath=path, --output-path=path
+        When perltidy creates a filename for an output file, by default it
+        merely appends an extension to the path and basename of the input
+        file. This parameter causes the path to be changed to path instead.
+
+        The path should end in a valid path separator character, but
+        perltidy will try to add one if it is missing.
+
+        For example
+
+         perltidy somefile.pl -opath=/tmp/
+
+        will produce /tmp/somefile.pl.tdy. Otherwise, somefile.pl.tdy will
+        appear in whatever directory contains somefile.pl.
+
+        This parameter will be ignored if output is being directed to
+        standard output, or if it is being specified explicitly with the
+        -o=s parameter.
 
     -se, --standard-error-output
         If perltidy detects an error when processing file somefile.pl, its
@@ -160,6 +178,10 @@ OPTIONS
         script is not checked if the input script has a syntax error. To
         skip syntax checking, use -nsyn or --nocheck-syntax. Syntax checking
         is also deactivated by the --quiet flag, discussed above.
+
+        Please note that this flag only controls the invocation of perl for
+        checking. Even if it is deactivated, perltidy will still do
+        extensive syntax checking on its own.
 
         The default is to do a syntax check.
 
@@ -1140,6 +1162,9 @@ OPTIONS
         *   The parameters in the .perltidyrc file can be switched off with
             the -npro option.
 
+        *   --dump-profile or -dpro will write the name of the current
+            .perltidyrc file and its contents to standard output and quit.
+
         *   The parameter -log will force a .LOG file to be written, which
             contains the path to the .perltidyrc file, if any, and a listing
             of its parameter settings.
@@ -1319,6 +1344,9 @@ OPTIONS
         --dump-defaults or -ddf will write the default option set to
         standard output and quit
 
+        --dump-profile or -dpro will write the name of the current
+        configuration file and its contents to standard output and quit.
+
         --dump-options or -dop will write current option set to standard
         output and quit.
 
@@ -1372,9 +1400,9 @@ SWITCHES WHICH MAY BE NEGATED
     'n' to produce the negated form:
 
         D anl asc aws bbb bbc bbs bli baa syn ce csc dac dbc dcsc dnl
-        dws dp dsm dsc ddf dln dop dsn dtt dwls dwrs f fll
-        hsc html ibc icb icp lp log lal x lsl bl sbl okw ola oll pvl
-        q opt sbc sfs ssc sts se st sob t tac tbc tp tsc tqw w
+        dws dp dpro dsm dsc ddf dln dop dsn dtt dwls dwrs f fll
+        hsc html ibc icb icp lp log lal x lsl bl sbl okw ola oll
+        pvl q opt sbc sfs ssc sts se st sob t tac tbc tp tsc tqw w
 
     Equivalently, the prefix 'no' on the corresponding long names may be
     used.
@@ -1408,23 +1436,22 @@ FILES
         perltidy.LOG, and any errors are written to perltidy.ERR unless the
         -se flag is set. These are saved in the current working directory.
         If syntax checking is used, a temporary copy of the input file will
-        be created in the current working directory called perltidy.TMPI,
-        but it will be removed when perltidy finishes.
+        be created, but it will be removed when perltidy finishes.
 
         When standard output and syntax checking are used, a temporary copy
-        of the output file will be created in the current working directory
-        called perltidy.TMPO. It will be removed when perltidy finishes.
+        of the output file will be created. It will be removed when perltidy
+        finishes.
 
     Files overwritten
         The following file extensions are used by perltidy, and files with
         these extensions may be overwritten or deleted: .tdy, .ERR, .LOG,
-        .TEE, .TMPI, .TMPO.
+        .TEE.
 
     Files extensions limitations
         Perltidy does not operate on files for which the run could produce a
         file with a duplicated file extension. These extensions are .tdy,
-        .LOG, .ERR, .TEE, .TMPI, .TMPO. The purpose of this rule is to
-        prevent generating confusing filenames such as somefile.tdy.tdy.tdy.
+        .LOG, .ERR, .TEE. The purpose of this rule is to prevent generating
+        confusing filenames such as somefile.tdy.tdy.tdy.
 
 SEE ALSO
     perl2web(1), perlstyle(1)
