@@ -54,13 +54,13 @@ use vars qw{
 
 @EXPORT = qw( &perltidy );
 
-use diagnostics;
-eval "use IO::Scalar"; $missing_io_scalar=$@;
-eval "use IO::ScalarArray"; $missing_io_scalararray=$@;
+{ eval "use diagnostics"; }
+{ eval "use IO::Scalar";      $missing_io_scalar      = $@; }
+{ eval "use IO::ScalarArray"; $missing_io_scalararray = $@; }
 use IO::File;
 
 BEGIN {
-    ($VERSION=q($Id: perltidy,v 1.71 2001/12/14 18:41:20 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # one line for MakeMaker
+    ($VERSION=q($Id: perltidy,v 1.72 2001/12/17 16:11:08 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # one line for MakeMaker
 }
 
 # Preloaded methods go here.
@@ -138,7 +138,7 @@ basic perltidy distribution.
 sub perltidy {
 
     my %defaults = (
-        source=> undef,
+        source      => undef,
         destination => undef,
 
         # .. more to be added
@@ -147,12 +147,13 @@ sub perltidy {
     my %input_hash = @_;
     if ( my @bad_keys = grep { !exists $defaults{$_} } keys %input_hash ) {
         local $" = ')(';
-        confess "unknown parameters in call to PerlTidy::perltidy: (@bad_keys)\n";
+        confess
+          "unknown parameters in call to PerlTidy::perltidy: (@bad_keys)\n";
     }
 
     %input_hash = ( %defaults, %input_hash );
-    my $source_array=$input_hash{'source'};
-    my $destination_array=$input_hash{'destination'};
+    my $source_array      = $input_hash{'source'};
+    my $destination_array = $input_hash{'destination'};
 
     # VMS file names are restricted to a 40.40 format, so
     # we append _tdy instead of .tdy, etc.  
@@ -180,18 +181,18 @@ sub perltidy {
     if ( $rOpts->{'DIAGNOSTICS'} ) {
         $diagnostics_object = PerlTidy::Diagnostics->new();
     }
-    
+
     # no filenames should be given if input is from an array
     if ($source_array) {
         if ( @ARGV > 0 ) {
             die
 "You may not specify any filenames when a source array is given\n";
         }
-        
+
         # we'll stuff the source array into ARGV 
-        unshift ( @ARGV, $source_array ); 
+        unshift ( @ARGV, $source_array );
     }
-    
+
     # use stdin by default if no source array and no args
     else {
         unshift ( @ARGV, '-' ) unless @ARGV;
@@ -218,7 +219,7 @@ sub perltidy {
         if ( $input_file eq '-' ) {    # '-' indicates input from STDIN
             $fileroot = "perltidy";    # root name to use for .ERR, .LOG, etc
         }
-        elsif ($source_array ) {
+        elsif ($source_array) {
             $fileroot = "perltidy";
         }
         else {
@@ -259,9 +260,9 @@ sub perltidy {
         # perltidy over and over with wildcard input
         my $output_extension = $rOpts->{'html'} ? "html" : "tdy";
 
-        if ( !$source_array 
-            && (
-                $input_file =~
+        if (
+            !$source_array
+            && ( $input_file =~
                 /($dot_pattern)($output_extension|LOG|DEBUG|ERR|TEE|TMPI|TMPO)$/
             )
             || ( $input_file eq 'DIAGNOSTICS' )
@@ -291,7 +292,8 @@ sub perltidy {
                     die "You may not use -o and -st together\n";
                 }
                 elsif ($destination_array) {
-                    die "You may not specify a destination array and -o together\n";
+                    die
+"You may not specify a destination array and -o together\n";
                 }
                 $output_file = $rOpts->{outfile};
 
@@ -306,7 +308,8 @@ sub perltidy {
         }
         elsif ( $rOpts->{'standard-output'} ) {
             if ($destination_array) {
-                die "You may not specify a destination array and -st together\n";
+                die
+                  "You may not specify a destination array and -st together\n";
             }
             $output_file = '-';
 
@@ -319,7 +322,7 @@ sub perltidy {
         elsif ($destination_array) {
             $output_file = $destination_array;
         }
-        elsif ($source_array) { # source but no destination goes to stdout
+        elsif ($source_array) {    # source but no destination goes to stdout
             $output_file = '-';
         }
         elsif ( $input_file eq '-' ) {
@@ -3425,7 +3428,7 @@ sub set_leading_whitespace {
     # opening braces
     if ( $max_index_to_go == 0
         && $rOpts->{'brace-left-and-indent'}
-        && $block_type_to_go[$max_index_to_go] =~ /$bli_pattern/ )
+        && $block_type_to_go[$max_index_to_go] =~ /$bli_pattern/o )
     {
         $ci_level++;
     }
@@ -5103,10 +5106,11 @@ sub print_line_of_tokens {
 
     # create a hanging side comment if appropriate
     if (
-        $jmax == 0 && $$rtoken_type[0] eq '#'    # only token is a comment
-        && $last_line_had_side_comment           # last line had side comment
-        && $input_line =~ /^\s/                  # there is some leading space
-        && !$is_static_block_comment    # do not make static comment hanging
+        $jmax == 0
+        && $$rtoken_type[0] eq '#'    # only token is a comment
+        && $last_line_had_side_comment    # last line had side comment
+        && $input_line =~ /^\s/           # there is some leading space
+        && !$is_static_block_comment      # do not make static comment hanging
         && $rOpts->{'hanging-side-comments'}    # user is allowing this
       )
     {
@@ -5194,7 +5198,7 @@ sub print_line_of_tokens {
          /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
      Examples:
        *VERSION = \'1.01';
-       ( $VERSION ) = '$Revision: 1.71 $ ' =~ /\$Revision:\s+([^\s]+)/;
+       ( $VERSION ) = '$Revision: 1.72 $ ' =~ /\$Revision:\s+([^\s]+)/;
      We will pass such a line straight through (by changing it
      to a quoted string) unless -npvl is used
     
@@ -5203,7 +5207,7 @@ sub print_line_of_tokens {
      block sequence numbers may see a closing sequence number but not
      the corresponding opening sequence number (sidecmt.t).  Example:
 
-    my $VERSION = do { my @r = (q$Revision: 1.71 $ =~ /\d+/g); sprintf
+    my $VERSION = do { my @r = (q$Revision: 1.72 $ =~ /\d+/g); sprintf
     "%d."."%02d" x $#r, @r }; 
 
     Here, the opening brace of 'do {' will not be seen, while the closing
@@ -5523,7 +5527,7 @@ sub print_line_of_tokens {
 
             # now output this line
             unless ( !$rOpts->{'break-after-opening-brace'}
-                && $block_type =~ /$bli_pattern/
+                && $block_type =~ /$bli_pattern/o
                 && $max_index_to_go == 0 )
             {
                 unless ($no_internal_newlines) {
@@ -6502,8 +6506,8 @@ sub output_line_to_go {
 
     # output any new -cscw block comment
     if ($cscw_block_comment) {
-         flush();
-         $file_writer_object->write_code_line( $cscw_block_comment . "\n" );
+        flush();
+        $file_writer_object->write_code_line( $cscw_block_comment . "\n" );
     }
 }
 
@@ -6710,14 +6714,14 @@ sub add_closing_side_comment {
         && $mate_index_to_go[$i_terminal] < 0
 
         # ..and either
-        && ( 
-            
+        && (
+
             # this is the last token (line doesnt have a side comment) 
-            $i_terminal eq $max_index_to_go 
+            $i_terminal eq $max_index_to_go
 
             # or the old side comment is a closing side comment
-            || $tokens_to_go[$max_index_to_go] =~ 
-              /$closing_side_comment_prefix_pattern/o
+            || $tokens_to_go[$max_index_to_go] =~
+            /$closing_side_comment_prefix_pattern/o
         )
       )
     {
@@ -6730,7 +6734,7 @@ sub add_closing_side_comment {
         if ( $i_block_leading_text == $i_terminal ) {
             $token .= $block_leading_text;
         }
-        $token =~ s/\s*$//;  # trim any trailing whitespace
+        $token =~ s/\s*$//;    # trim any trailing whitespace
 
         # handle case of existing closing side comment
         if ( $i_terminal != $max_index_to_go ) {
@@ -6739,11 +6743,11 @@ sub add_closing_side_comment {
             if ( $rOpts->{'closing-side-comment-warnings'} ) {
                 my $old_csc = $tokens_to_go[$max_index_to_go];
                 my $new_csc = $token;
-                $new_csc =~ s/\.\.\.\s*$//;  # trim trailing '...'
+                $new_csc =~ s/\.\.\.\s*$//;    # trim trailing '...'
                 $old_csc =~ s/\.\.\.\s*$//;
-                $new_csc =~ s/\s+//g;  # trim all whitespace
+                $new_csc =~ s/\s+//g;          # trim all whitespace
                 $old_csc =~ s/\s+//g;
-                
+
                 # no problem if old comment is contained in new comment
                 if ( length($new_csc) > length($old_csc) ) {
                     $new_csc = substr( $new_csc, 0, length($old_csc) );
@@ -7236,7 +7240,8 @@ sub set_adjusted_indentation {
         # handle option to indent blocks 
         else {
             if (
-                $rOpts->{'indent-closing-brace'} && (
+                $rOpts->{'indent-closing-brace'}
+                && (
                     $i_terminal == $ibeg    #  isolated terminal '}'
                     || $is_semicolon_terminated
                 )
@@ -7960,7 +7965,7 @@ sub set_bond_strengths {
 
         # good to break before 'if', 'unless', etc
         if ( $if_brace_follower_pattern
-            && ( $next_nonblank_token =~ /$if_brace_follower_pattern/ ) )
+            && ( $next_nonblank_token =~ /$if_brace_follower_pattern/o ) )
         {
             $bond_str = VERY_WEAK;
         }
@@ -7968,7 +7973,7 @@ sub set_bond_strengths {
         # keywords like 'unless' 'if' make good breaks
         if ( $do_follower_pattern
             && ( $next_nonblank_type eq 'k' )
-            && ( $next_nonblank_token =~ /$do_follower_pattern/ ) )
+            && ( $next_nonblank_token =~ /$do_follower_pattern/o ) )
         {
             $bond_str = VERY_WEAK / 1.05;
         }
@@ -8184,19 +8189,14 @@ sub scan_list {
             $breakpoint_stack[$depth]              = $starting_breakpoint_count;
             $container_type[$depth]                = "";
             $last_nonblank_type[$depth]            = "";
+            $longest_term[$depth]                  = 0;
 
             # global arrays..
-            if ( !defined( $dont_align[$depth] ) ) {
-                $dont_align[$depth] = 0;
-            }
-            if ( !defined( $interrupted_list[$depth] ) ) {
-                $interrupted_list[$depth] = 0;
-            }
-            if ( !defined( $has_broken_sublist[$depth] ) ) {
-                $has_broken_sublist[$depth] = 0;
-            }
             if ( !defined( $maximum_nesting_depth[$depth] ) ) {
                 $maximum_nesting_depth[$depth] = $depth;
+                $dont_align[$depth]            = 0;
+                $interrupted_list[$depth]      = 0;
+                $has_broken_sublist[$depth]    = 0;
             }
         }
     };
@@ -8215,7 +8215,7 @@ sub scan_list {
         my $do_not_break_apart = 0;
         if ( $item_count_stack[$dd] && !$dont_align[$dd] ) {
 
-            my $fbc       = $forced_breakpoint_count;
+            my $fbc = $forced_breakpoint_count;
             set_comma_breakpoints(
                 $dd,
                 $opening_structure_index_stack[$dd],
@@ -8243,13 +8243,13 @@ sub scan_list {
     };
 
     my $set_logical_breakpoints = sub {
-        my $dd = shift;
+        my $dd        = shift;
         my $i_opening = $opening_structure_index_stack[$dd];
-        ##print "BUBBA: hi! items=$item_count_stack[$dd] fbp=$forced_breakpoint_count bp=$breakpoint_stack[$dd] i_opening=$i_opening tok=$tokens_to_go[$i_opening]\n";
-        if ( defined( $rand_or_list[$dd]) 
+        ##my ($a,$b,$c)=caller();
+        ##print "BUBBA: $a $c: items=$item_count_stack[$dd] fbp=$forced_breakpoint_count bp=$breakpoint_stack[$dd] i_opening=$i_opening tok=$tokens_to_go[$i_opening]\n";
+        if ( defined( $rand_or_list[$dd] )
             && $item_count_stack[$dd] == 0
-            && $container_type[$dd] =~ /$logical_pattern/o 
-        )
+            && $container_type[$dd] =~ /$logical_pattern/o )
         {
             while ( my $j = pop ( @{ $rand_or_list[$dd] } ) ) {
                 set_forced_breakpoint($j);
@@ -8379,9 +8379,7 @@ sub scan_list {
         # block -- but we will break in logical breaks below so that
         # they do not add to the forced_breakpoint_count
         if ( $type eq 'k' && $token eq 'or' ) {
-            if ( defined( $container_type[$depth] )
-                && $container_type[$depth] =~ /$logical_pattern/o )
-            {
+            if ( $container_type[$depth] =~ /$logical_pattern/o ) {
                 push @{ $rand_or_list[$depth] }, $i;
             }
             else {
@@ -8521,6 +8519,9 @@ sub scan_list {
         #------------------------------------------------------------
         elsif ( $depth < $current_depth ) {
 
+            # BUBBA: check for new minimum depth here
+            # then remove defined below; maybe include this:
+
             # remember how deep we have been 
             if ( !defined( $maximum_nesting_depth[$depth] )
                 || $maximum_nesting_depth[$depth] <
@@ -8547,8 +8548,6 @@ sub scan_list {
 
             #print "LISTY sees: i=$i type=$type  tok=$token  block=$block_type depth=$depth next=$next_nonblank_type next_block=$next_nonblank_block_type inter=$interrupted_list[$current_depth]\n";
 
-            ##my $list_type = $container_type[$current_depth];
-
             # set breaks at commas if necessary
             my $bp_count           = 0;
             my $do_not_break_apart = 0;
@@ -8559,10 +8558,7 @@ sub scan_list {
             }
 
             my $i_opening = $opening_structure_index_stack[$current_depth];
-            my $saw_opening_structure =
-              ( 
-                  ## defined($i_opening) && 
-              $i_opening >= 0 );
+            my $saw_opening_structure = ( $i_opening >= 0 );
 
             # this term is long if we had to break at interior commas..
             my $is_long_term = $bp_count > 0;
@@ -8834,21 +8830,19 @@ will be a forced break at its 'and'.
                 # work well and will catch the comma in something like
                 #  push @list, myfunc( $param, $param, ..
 
-                ## BUBBA: always defined
-                if ( defined($i_opening) ) {
-                    my $icomma = $last_comma_index[$depth];
-                    if ( defined($icomma) && ( $i_opening - $icomma ) < 5 ) {
-                        unless ( $forced_breakpoint_to_go[$icomma] ) {
-                            set_forced_breakpoint($icomma);
-                        }
+                my $icomma = $last_comma_index[$depth];
+                if ( defined($icomma) && ( $i_opening - $icomma ) < 5 ) {
+                    unless ( $forced_breakpoint_to_go[$icomma] ) {
+                        set_forced_breakpoint($icomma);
                     }
+                }
 
-                    # With the -lp option we will break at an '=' preceding
-                    # an open paren by a significant number of spaces.
-                    # This can help save space across the page.  The
-                    # constants in this are somewhat arbitrary.  But note
-                    # the patch above, which disables this for a list
-                    # which is more than 1 level deep.
+                # With the -lp option we will break at an '=' preceding
+                # an open paren by a significant number of spaces.
+                # This can help save space across the page.  The
+                # constants in this are somewhat arbitrary.  But note
+                # the patch above, which disables this for a list
+                # which is more than 1 level deep.
 
 =pod
 
@@ -8871,77 +8865,73 @@ will be a forced break at its 'and'.
 
 =cut
 
-                    if ( $rOpts->{'line-up-parentheses'} ) {
+                if ( $rOpts->{'line-up-parentheses'} ) {
 
-                        if ( $token eq ')' ) {
-                            my $iequals = $last_equals_index[$depth];
+                    if ( $token eq ')' ) {
+                        my $iequals = $last_equals_index[$depth];
 
-                            # We do not need to break at any '=' if there is
-                            # room for the call parameters.  
-                            my $recoverable = 0;
-                            my $icomma      = $last_comma_index[$current_depth];
-                            if ( defined($icomma) ) { # should always be defined
+                        # We do not need to break at any '=' if there is
+                        # room for the call parameters.  
+                        my $recoverable = 0;
+                        my $icomma      = $last_comma_index[$current_depth];
+                        if ( defined($icomma) ) {    # should always be defined
 
-                                # method 1: for comma lists this
-                                # information is available in the
-                                # indentation.
-                                $recoverable =
-                                  $leading_spaces_to_go[$icomma]
-                                  ->get_RECOVERABLE_SPACES() > 0
+                            # method 1: for comma lists this
+                            # information is available in the
+                            # indentation.
+                            $recoverable =
+                              $leading_spaces_to_go[$icomma]
+                              ->get_RECOVERABLE_SPACES() > 0
 
-                                  # method 2: for comma-arrow lists
-                                  # we need to use an alternate method
-                                  || $longest_term[$current_depth] >
-                                  table_columns_available($icomma);
+                              # method 2: for comma-arrow lists
+                              # we need to use an alternate method
+                              || $longest_term[$current_depth] >
+                              table_columns_available($icomma);
 
-                            }
-
-                            if ( $FORMATTER_DEBUG_FLAG{EQUALS} ) {
-                                if ( defined($iequals) ) {
-                                    print
-"EQUALS: considering = break iequals=$iequals rec=$recoverable\n";
-                                }
-                                else {
-                                    print
-                                      "EQUALS: at = break but '=' undefined\n";
-                                }
-                            }
-
-                            if (
-                                defined($iequals)
-
-                                && ( $recoverable > 0 )
-
-                                # more than 10 spaces from the '=' to the '('
-                                && (
-                                    token_sequence_length( $iequals,
-                                        $i_opening ) > 10
-                                )
-
-                                # and the '=' is more than 8 spaces 
-                                # from line start
-                                && ( token_sequence_length( 0, $iequals ) > 8 )
-                              )
-                            {
-                                unless ( $forced_breakpoint_to_go[$iequals] ) {
-                                    set_forced_breakpoint($iequals);
-                                }
-                            }
                         }
 
-                        # Do not allow break on '=' of a structure
-                        # containing this one because the space cannot
-                        # be recovered at the present time (gnu1.t).  We
-                        # might be left with a big gap.
-                        if ( $depth >= 1 ) {
-                            $last_equals_index[ $depth - 1 ] = undef;
-                            if ( $FORMATTER_DEBUG_FLAG{EQUALS} ) {
+                        if ( $FORMATTER_DEBUG_FLAG{EQUALS} ) {
+                            if ( defined($iequals) ) {
                                 print
-"EQUALS: undefining iequals after breaking a container at depth $depth\n";
+"EQUALS: considering = break iequals=$iequals rec=$recoverable\n";
+                            }
+                            else {
+                                print "EQUALS: at = break but '=' undefined\n";
                             }
                         }
-                    }    # end -lp logic
-                }
+
+                        if (
+                            defined($iequals)
+
+                            && ( $recoverable > 0 )
+
+                            # more than 10 spaces from the '=' to the '('
+                            && ( token_sequence_length( $iequals, $i_opening ) >
+                                10 )
+
+                            # and the '=' is more than 8 spaces 
+                            # from line start
+                            && ( token_sequence_length( 0, $iequals ) > 8 )
+                          )
+                        {
+                            unless ( $forced_breakpoint_to_go[$iequals] ) {
+                                set_forced_breakpoint($iequals);
+                            }
+                        }
+                    }
+
+                    # Do not allow break on '=' of a structure
+                    # containing this one because the space cannot
+                    # be recovered at the present time (gnu1.t).  We
+                    # might be left with a big gap.
+                    if ( $depth >= 1 ) {
+                        $last_equals_index[ $depth - 1 ] = undef;
+                        if ( $FORMATTER_DEBUG_FLAG{EQUALS} ) {
+                            print
+"EQUALS: undefining iequals after breaking a container at depth $depth\n";
+                        }
+                    }
+                }    # end -lp logic
             }    # end logic to open up a container
 
             # Handle long container which does not get opened up
@@ -9024,15 +9014,11 @@ will be a forced break at its 'and'.
             # break before the previous token if it looks safe
             # Example of something that we will not try to break before:
             #   DBI::SQL_SMALLINT() => $ado_consts->{adSmallInt},
-            if ( defined( $index_before_arrow[$depth] ) ) {
-                my $ibreak = $index_before_arrow[$depth] - 1;
-                if ( $ibreak > 0
-                    && $tokens_to_go[ $ibreak + 1 ] !~ /^[\)\}\]]$/ )
-                {
-                    if ( $tokens_to_go[$ibreak] eq '-' ) { $ibreak-- }
-                    if ( $types_to_go[$ibreak] =~ /^[,b\(\{\[]$/ ) {
-                        set_forced_breakpoint($ibreak);
-                    }
+            my $ibreak = $index_before_arrow[$depth] - 1;
+            if ( $ibreak > 0 && $tokens_to_go[ $ibreak + 1 ] !~ /^[\)\}\]]$/ ) {
+                if ( $tokens_to_go[$ibreak] eq '-' ) { $ibreak-- }
+                if ( $types_to_go[$ibreak] =~ /^[,b\(\{\[]$/ ) {
+                    set_forced_breakpoint($ibreak);
                 }
             }
 
@@ -9121,33 +9107,23 @@ will be a forced break at its 'and'.
 
     # Mark any pending list as having been interrupted
     $interrupted_list[$current_depth] = 1;
-
-    # break at all commas of any lists containing this one
-    if ( $current_depth > $minimum_depth + 1 ) {
-
-        for ( my $dd = $current_depth - 1 ; $dd >= $minimum_depth ; $dd-- ) {
-
-            # mark containing lists as having a broken sublist
-            # this will force a break at all commas
-            $has_broken_sublist[$dd] = 1;
-            $set_comma_breakpoints->($dd);
-            $set_logical_breakpoints->($dd);
-        }
-    }
-
-    # break at the commas of this list
     $item_count_stack[$current_depth] = $item_count;
-    $set_comma_breakpoints->($current_depth);
-    $set_logical_breakpoints->($current_depth);
 
-    # make any needed breaks at opening braces
-    for ( my $dd = $depth ; $dd >= $minimum_depth ; $dd-- ) {
+    # set breaks for any unfinished lists ..
+    for ( my $dd = $current_depth ; $dd >= $minimum_depth ; $dd-- ) {
+
+        $has_broken_sublist[$dd] = 1 if ( $dd < $current_depth );
+        $set_comma_breakpoints->($dd);
+        $set_logical_breakpoints->($dd) if $good_old_breakpoint > 0;
+
+        # make any needed breaks at opening braces
         my $i_opening = $opening_structure_index_stack[$dd];
         if (
-            ## defined($i_opening) && 
-            !$is_unbreakable_container->($dd) && !(
+            !$is_unbreakable_container->($dd)
 
-                # Avoid a break which would place an isolated ' or " on a line
+            # Avoid a break which would place an isolated ' or " 
+            # on a line
+            && !(
                 $type eq 'Q'
                 && $i_opening >= $max_index_to_go - 2
                 && $token =~ /^['"]$/
@@ -9158,7 +9134,6 @@ will be a forced break at its 'and'.
             #print "SCANLIST: dd=$dd iopen=$i_opening tok=$tokens_to_go[$i_opening] items=$item_count_stack[$dd] want=$want_comma_break[$dd] bpstk=$breakpoint_stack[$dd] count=$forced_breakpoint_count\n"; 
 
             set_forced_breakpoint($i_opening);
-
         }
     }
 
@@ -9170,6 +9145,7 @@ will be a forced break at its 'and'.
     my $saw_good_breakpoint =
       ( $old_breakpoint_count > 0
           && $old_breakpoint_count == $good_old_breakpoint );
+
     return $saw_good_breakpoint;
 }
 
@@ -9177,14 +9153,14 @@ sub update_longest_term {
     my ( $i, $i_opening, $i_comma, $longest_term ) = @_;
     if ( defined($i_comma) ) {
         my $length = token_sequence_length( $i_comma + 1, $i );
-        if ( !defined($longest_term) || $length > $longest_term ) {
+        if ( $length > $longest_term ) {
             $longest_term = $length;
         }
     }
     else {
 
         my $columns = table_columns_available($i);
-        if ( defined($i_opening) && $i_opening >= 0 ) {
+        if ( $i_opening >= 0 ) {
             my $length = token_sequence_length( $i_opening + 1, $i );
             $longest_term = $length;
         }
@@ -9233,11 +9209,10 @@ sub set_comma_breakpoints {
     # of the commas to allow nice alignment if possible.  This
     # list is an example:
     my (
-        $depth,              $i_opening_paren,    $i_closing_paren,
-        $item_count,         $identifier_count,   $rcomma_index,
-        $rmax_length,        $next_nonblank_type, $list_type,
-        $interrupted,
-        $rdo_not_break_apart,
+        $depth,       $i_opening_paren,    $i_closing_paren,
+        $item_count,  $identifier_count,   $rcomma_index,
+        $rmax_length, $next_nonblank_type, $list_type,
+        $interrupted, $rdo_not_break_apart,
       )
       = @_;
 
@@ -9263,9 +9238,6 @@ sub set_comma_breakpoints {
     #print "LISTX: in set_list $a $c interupt=$interrupted count=$item_count
     #i_first = $i_first_comma  i_last=$i_last_comma max=$max_index_to_go\n";
     #print "depth=$depth has_broken=$has_broken_sublist[$depth] is_multi=$is_multiline opening_paren=($i_opening_paren) \n";
-
-    # Do we have the opening token in this batch?
-    if ( !defined($i_opening_paren) ) { $i_opening_paren = -1 }
 
     #---------------------------------------------------------------
     # Interrupted List Rule:
@@ -9357,7 +9329,7 @@ sub set_comma_breakpoints {
     # list items might be a hash list.  But if we can be sure that it is
     # not a hash, then we can allow an odd number for more flexibility.
     my $odd_or_even = 2;    # 1 = odd field count ok, 2 = want even count
-    if ( $list_type =~ /^(my|local|our)$/ || $next_nonblank_type eq '=') {
+    if ( $list_type =~ /^(my|local|our)$/ || $next_nonblank_type eq '=' ) {
         $odd_or_even = 1;
     }
     if ( $identifier_count == $comma_count ) { $odd_or_even = 1 }   # seems safe
@@ -9497,12 +9469,12 @@ sub set_comma_breakpoints {
         elsif ($long_last_term) {
 
             set_forced_breakpoint($i_last_comma);
-            $$rdo_not_break_apart = 1 ; 
+            $$rdo_not_break_apart = 1;
         }
         elsif ($long_first_term) {
 
             set_forced_breakpoint($i_first_comma);
-            $$rdo_not_break_apart = 1 ; 
+            $$rdo_not_break_apart = 1;
         }
         else {
 
@@ -9562,7 +9534,7 @@ sub set_comma_breakpoints {
     {
         my $i_break = $$rcomma_index[0];
         set_forced_breakpoint($i_break);
-        $$rdo_not_break_apart = 1 ; 
+        $$rdo_not_break_apart = 1;
         return;
     }
 
@@ -9576,15 +9548,12 @@ sub set_comma_breakpoints {
         && $item_count < 9     # doesn't have too many items
         && $opening_environment eq 'BLOCK'    # not a sub-container
         && $opening_token       eq '('        # is paren list
-        && !(
-            defined( $maximum_nesting_depth[$depth] )   # doesn't have a sublist
-            && $maximum_nesting_depth[$depth] > $depth
-        )
+        && $maximum_nesting_depth[$depth] <= $depth    # has no sublist
       )
     {
 
         # let breaks be defined by bond strength logic
-        $$rdo_not_break_apart = 1 ; 
+        $$rdo_not_break_apart = 1;
         return;
     }
 
@@ -9681,7 +9650,7 @@ sub set_comma_breakpoints {
 
         # let the continuation logic handle it if 2 lines
         else {
-            $$rdo_not_break_apart = 1 ; 
+            $$rdo_not_break_apart = 1;
         }
         return;
     }
@@ -14686,10 +14655,11 @@ EOM
         my $test_tok = $tok . $$rtokens[ $i + 1 ];
 
         if (
-            $is_digraph{$test_tok} && ( $test_tok ne '/=' )   # might be pattern
-            && ( $test_tok ne 'x=' )                          # might be $x
-            && ( $test_tok ne '**' )                          # typeglob?
-            && ( $test_tok ne '*=' )                          # typeglob?
+            $is_digraph{$test_tok}
+            && ( $test_tok ne '/=' )    # might be pattern
+            && ( $test_tok ne 'x=' )    # might be $x
+            && ( $test_tok ne '**' )    # typeglob?
+            && ( $test_tok ne '*=' )    # typeglob?
           )
         {
             $tok = $test_tok;
@@ -19231,5 +19201,6 @@ PerlTidy::perltidy(
 
     # Place for future parameters
 );
+
 # vi: set ts=4 sw=4 :
 
