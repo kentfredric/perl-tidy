@@ -433,10 +433,10 @@ OPTIONS
         the next line. This is the default, and may be deactivated with
         -nasc or --noadd-semicolons.
 
-    -dsc, --delete-semicolons
-        Setting -dsc allows perltidy to delete extra semicolons which are
+    -dsm, --delete-semicolons
+        Setting -dsm allows perltidy to delete extra semicolons which are
         simply empty statements. This is the default, and may be deactivated
-        with -ndsc or --nodelete-semicolons. (Such semicolons are not
+        with -ndsm or --nodelete-semicolons. (Such semicolons are not
         deleted, however, if they would promote a side comment to a block
         comment).
 
@@ -603,12 +603,34 @@ OPTIONS
               important_function();
           }
 
-        This flag applies to all structural blocks, including sub's.
+        This flag applies to all structural blocks, including sub's (unless
+        the -sbl flag is set -- see next item).
 
         The default style, -nbl, places an opening brace on the same line as
         the keyword introducing it. For example,
 
           if ( $input_file eq '-' ) {   # -nbl (default)
+
+    -sbl, --opening-sub-brace-on-new-line
+        The flag -sbl can be used to override the value of -bl for opening
+        sub braces. For example,
+
+         perltidy -sbl
+
+        produces this result:
+
+         sub foo
+         {
+            if (!defined($_[0])) {
+                print("Hello, World\n");
+            }
+            else {
+                print($_[0], "\n");
+            }
+         }
+
+        This flag is negated with -nsbl. If -sbl is not specified, the value
+        of -bl is used.
 
     -bli, --brace-left-and-indent
         The flag -bli is the same as -bl but in addition it causes one unit
@@ -923,6 +945,11 @@ OPTIONS
         One-line block rules can conflict with the cuddled-else option. When
         the cuddled-else option is used, perltidy retains existing one-line
         blocks, even if they do not obey cuddled-else formatting.
+
+        Occasionally, when one-line blocks get broken because they exceed
+        the available line length, the formatting will violate the requested
+        brace style. If this happens, reformatting the script a second time
+        should correct the problem.
 
     Debugging
         The following flags are available for debugging:

@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.47 2001/10/03 04:33:19 perltidy Exp $
+    $Id: perltidy,v 1.48 2001/10/03 20:33:22 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -2778,6 +2778,7 @@ use vars qw{
   $last_output_indentation
 
   @block_type_to_go
+  @type_sequence_to_go
   @bond_strength_to_go
   @forced_breakpoint_to_go
   @lengths_to_go
@@ -4569,6 +4570,7 @@ sub print_line_of_tokens {
     my $rlevels         = $line_of_tokens->{_rlevels};
     my $rslevels        = $line_of_tokens->{_rslevels};
     my $rblock_type     = $line_of_tokens->{_rblock_type};
+    my $rtype_sequence  = $line_of_tokens->{_rtype_sequence};
     my $input_line      = $line_of_tokens->{_line_text};
     my $rnesting_tokens = $line_of_tokens->{_rnesting_tokens};
     my $rci_levels      = $line_of_tokens->{_rci_levels};
@@ -4582,6 +4584,7 @@ sub print_line_of_tokens {
     my $jmax = @$rtokens - 1;
     my ($rwhite_space_flag);
     my $block_type = "";
+    my $type_sequence = "";
 
     # Handle a continued quote..
     if ($in_continued_quote) {
@@ -4643,8 +4646,9 @@ sub print_line_of_tokens {
         unshift @$rtokens,         '';
         unshift @$rlevels,         $$rlevels[0];
         unshift @$rslevels,        $$rslevels[0];
-        unshift @$rblock_type,     $$rslevels[0];
-        unshift @$rnesting_tokens, $$rslevels[0];
+        unshift @$rblock_type,       ''; #$$rslevels[0];
+        unshift @$rtype_sequence,      '';
+        unshift @$rnesting_tokens, $$rnesting_tokens[0]; #$$rslevels[0];
         unshift @$rci_levels,      $$rci_levels[0];
         unshift @$rnesting_blocks, $$rnesting_blocks[0];
         $jmax = 1;
@@ -4674,11 +4678,11 @@ sub print_line_of_tokens {
         if ( $rOpts->{'indent-block-comments'} ) {
 
             store_token_to_go(
-                $$rtokens[0],         $$rtoken_type[0],
-                $$rblock_type[0],     0,
-                $$rlevels[0],         $$rslevels[0],
-                $$rnesting_blocks[0], $$rci_levels[0],
-                $in_continued_quote
+                $$rtokens[0],     $$rtoken_type[0],
+                $$rblock_type[0], $$rtype_sequence[0],
+                0,                $$rlevels[0],
+                $$rslevels[0],    $$rnesting_blocks[0],
+                $$rci_levels[0],  $in_continued_quote
             );
             flush();
         }
@@ -4708,7 +4712,7 @@ sub print_line_of_tokens {
     #     /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
     # Examples:
     #   *VERSION = \'1.01';
-    #   ( $VERSION ) = '$Revision: 1.47 $ ' =~ /\$Revision:\s+([^\s]+)/;
+    #   ( $VERSION ) = '$Revision: 1.48 $ ' =~ /\$Revision:\s+([^\s]+)/;
     # We will pass such a line straight through unless -npvl is used
     my $is_VERSION_statement = 0;
 
@@ -4733,8 +4737,9 @@ sub print_line_of_tokens {
             $input_line =~ s/\s*$//;    # trim right end
         }
 
-        store_token_to_go( $input_line, 'q', '', 0, $$rlevels[0], $$rslevels[0],
-            $$rnesting_blocks[0], $$rci_levels[0], $in_continued_quote );
+        store_token_to_go( $input_line, 'q', '', '', 0, $$rlevels[0],
+            $$rslevels[0], $$rnesting_blocks[0], $$rci_levels[0],
+            $in_continued_quote );
         output_line_to_go();
         return;
     }
@@ -4797,6 +4802,7 @@ sub print_line_of_tokens {
         $token      = $$rtokens[$j];
         $type       = $$rtoken_type[$j];
         $block_type = $$rblock_type[$j];
+        $type_sequence = $$rtype_sequence[$j];
         my $level          = $$rlevels[$j];
         my $slevel         = $$rslevels[$j];
         my $nesting_blocks = $$rnesting_blocks[$j];
@@ -4903,6 +4909,7 @@ sub print_line_of_tokens {
                 $token,
                 $type,
                 $block_type,
+                $type_sequence,
                 ( $no_internal_newlines || $side_comment_follows ),
                 $level,
                 $slevel,
@@ -4980,6 +4987,7 @@ sub print_line_of_tokens {
                         $token,
                         $type,
                         $block_type,
+                        $type_sequence,
                         ( $no_internal_newlines || $side_comment_follows ),
                         $level,
                         $slevel,
@@ -5058,7 +5066,7 @@ sub print_line_of_tokens {
                     if ( $types_to_go[$max_index_to_go] eq 'b' ) {
                         unstore_token_to_go();
                     }
-                    store_token_to_go( ';', ';', ' ', $no_internal_newlines,
+                    store_token_to_go( ';', ';', ' ', '', $no_internal_newlines,
                         $lev, $slev, $nesting_blocks, $ci_level,
                         $in_continued_quote );
                     note_added_semicolon();
@@ -5072,7 +5080,7 @@ sub print_line_of_tokens {
             if ($side_comment_follows) { $no_internal_newlines = 1 }
 
             # store the closing curly brace
-            store_token_to_go( $token, $type, $block_type,
+            store_token_to_go( $token, $type, $block_type, $type_sequence,
                 $no_internal_newlines, $level, $slevel, $nesting_blocks,
                 $ci_level, $in_continued_quote );
 
@@ -5126,7 +5134,7 @@ sub print_line_of_tokens {
             elsif ($block_type =~ /^sub\W*$/) {
 
                 # one-line anonumous subs also have ']' here...
-                # see tk3.t and BUBBA
+                # see tk3.t and PP.pm
                 if ($is_one_line_block) {
                     $brace_follower_pattern = '^(\,|\;|:|=>|or|and|\&\&|\|\}|\]|\)|)$';
                 }
@@ -5221,7 +5229,7 @@ sub print_line_of_tokens {
                     write_logfile_entry("Extra ';'\n");
                 }
             }
-            store_token_to_go( $token, $type, $block_type,
+            store_token_to_go( $token, $type, $block_type, $type_sequence,
                 $no_internal_newlines, $level, $slevel, $nesting_blocks,
                 $ci_level, $in_continued_quote );
 
@@ -5233,7 +5241,7 @@ sub print_line_of_tokens {
         elsif ( $type eq 'h' ) {    # here_doc target string...
             $no_internal_newlines = 1;    # no newlines after seeing here-target
             destroy_one_line_block();
-            store_token_to_go( $token, $type, $block_type,
+            store_token_to_go( $token, $type, $block_type, $type_sequence,
                 $no_internal_newlines, $level, $slevel, $nesting_blocks,
                 $ci_level, $in_continued_quote );
         }
@@ -5267,7 +5275,7 @@ sub print_line_of_tokens {
                 }
             }
 
-            store_token_to_go( $token, $type, $block_type,
+            store_token_to_go( $token, $type, $block_type, $type_sequence,
                 $no_internal_newlines, $level, $slevel, $nesting_blocks,
                 $ci_level, $in_continued_quote );
         }
@@ -5331,7 +5339,7 @@ sub insert_blank_token_to_go {
     my $nesting_blocks     = $nesting_blocks_to_go[$max_index_to_go];
     my $ci_level           = $ci_levels_to_go[$max_index_to_go];
     my $in_continued_quote = 0;
-    store_token_to_go( ' ', 'b', "", $no_internal_newlines, $level, $slevel,
+    store_token_to_go( ' ', 'b', "", '', $no_internal_newlines, $level, $slevel,
         $nesting_blocks, $ci_level, $in_continued_quote );
     return;
 }
@@ -5528,8 +5536,8 @@ sub store_token_to_go {
     # Place one token into the output stream.
     # Called once per output token.
 
-    my ( $token, $type, $block_type, $no_internal_newlines, $level, $slevel,
-        $nesting_blocks, $ci_level, $in_continued_quote ) = @_;
+    my ( $token, $type, $block_type, $type_sequence, $no_internal_newlines, 
+    $level, $slevel, $nesting_blocks, $ci_level, $in_continued_quote ) = @_;
 
     $tokens_to_go[ ++$max_index_to_go ] = $token;
     $types_to_go[$max_index_to_go]             = $type;
@@ -5537,6 +5545,7 @@ sub store_token_to_go {
     $old_breakpoint_to_go[$max_index_to_go]    = 0;
     $forced_breakpoint_to_go[$max_index_to_go] = 0;
     $block_type_to_go[$max_index_to_go]        = $block_type;
+    $type_sequence_to_go[$max_index_to_go]     = $type_sequence;
     $nesting_blocks_to_go[$max_index_to_go]    = $nesting_blocks;
     $ci_levels_to_go[$max_index_to_go]         = $ci_level;
     if ( $type ne 'b' ) {
@@ -6531,9 +6540,13 @@ sub set_bond_strengths {
         # values are based on trial-and-error, and need to be tweaked
         # occasionally to get desired results.  Things to keep in mind
         # are:
-        # 	1. relative strengths are important
+        # 	1. relative strengths are important.  small differences
+        #      in strengths can make big formatting differences.
         #	2. each indentation level adds one unit of bond strength
         #	3. a value of NO_BREAK makes an unbreakable bond
+        #	4. a value of VERY_WEAK is the strength of a ','
+        #	5. values below NOMINAL are considered ok break points
+        #	6. values above NOMINAL are considered poor break points
         # We are computing the strength of the bond between the current
         # token and the NEXT token.
         my $bond_str = VERY_STRONG;    # a default, high strength
@@ -6581,8 +6594,12 @@ sub set_bond_strengths {
             }
         }
 
-        if ( $next_nonblank_token =~ /^(and|or)$/ ) {
-            $bsl = VERY_WEAK;
+        # make or, and slightly weaker than a ','
+        if ( $next_nonblank_token eq 'or' ) {
+            $bsl = VERY_WEAK-0.02;
+        }
+        if ( $next_nonblank_token eq 'and' ) {
+            $bsl = VERY_WEAK-0.01;
         }
         elsif ( $next_nonblank_token =~ /^(ne|eq)$/ ) {
             $bsl = NOMINAL;
@@ -6612,7 +6629,7 @@ sub set_bond_strengths {
         #
         # Otherwise, the line before the { tends to be too short.
         if ( ( $type eq ')' ) && ( $next_nonblank_type eq '{' ) ) {
-            $bond_str = VERY_WEAK;
+            $bond_str = VERY_WEAK+0.03;
         }
 
         if ( ( $type eq '(' ) && ( $next_nonblank_type eq '{' ) ) {
@@ -8588,9 +8605,11 @@ sub set_continuation_breaks {
                   token_sequence_length( $i_beaten_question, $i_lowest ) - 4;
                 $line_count_at_colon_break = $line_count;
 
-                #                my $tok_ques=$tokens_to_go[$i_beaten_question];
-                #                my $tok_col=$tokens_to_go[$i_lowest];
-#                print "BOOGA: broke at ':' i_ques=$i_previous_question tok=$tok_ques i_low=$i_lowest tok=$tok_col len=$length_from_question\n";
+#                                my $seq_ques=$type_sequence_to_go[$i_beaten_question+1];
+#                                my $seq_colon=$type_sequence_to_go[$i_lowest+1];
+#                                my $tok_ques=$tokens_to_go[$i_beaten_question];
+#                                my $tok_col=$tokens_to_go[$i_lowest];
+#                print "BOOGA: broke at ':' seq:=$seq_colon seq?=$seq_ques i_ques=$i_previous_question tok=$tok_ques i_low=$i_lowest tok=$tok_col len=$length_from_question\n";
             }
         }
         #-------------------------------------------------------
@@ -10965,9 +10984,11 @@ use vars qw{
   $last_nonblank_token
   $last_nonblank_type
   $last_nonblank_block_type
+  $last_nonblank_type_sequence
   $last_last_nonblank_token
   $last_last_nonblank_type
   $last_last_nonblank_block_type
+  $last_last_nonblank_type_sequence
   $last_nonblank_prototype
   $statement_type
   $identifier
@@ -10992,6 +11013,8 @@ use vars qw{
   @depth_array
   @starting_line_of_current_depth
   @current_depth
+  @current_sequence_number
+  @nesting_sequence_number
   @lower_case_labels_at
   $saw_v_string
   %is_constant
@@ -11447,6 +11470,7 @@ sub get_line {
         _rlevels                  => undef,
         _rslevels                 => undef,
         _rblock_type              => undef,
+        _rtype_sequence              => undef,
         _rnesting_tokens          => undef,
         _rci_levels               => undef,
         _rnesting_blocks          => undef,
@@ -12059,9 +12083,11 @@ sub prepare_for_a_new_file {
     $last_nonblank_token      = ';';    # the only possible starting state which
     $last_nonblank_type       = ';';    # will make a leading brace a code block
     $last_nonblank_block_type = '';
+    $last_nonblank_type_sequence = '';
     $last_last_nonblank_token = ';';
     $last_last_nonblank_type  = ';';
     $last_last_nonblank_block_type = '';
+    $last_last_nonblank_type_sequence = '';
     $last_nonblank_prototype       = "";
     $identifier                    = '';
     $in_quote   = 0;     # flag telling if we are chasing a quote, and what kind
@@ -12074,7 +12100,12 @@ sub prepare_for_a_new_file {
     $brace_depth             = 0;
     $square_bracket_depth    = 0;
     $current_package         = "main";
-    @current_depth[ 0 .. 2 ] = ( 0, 0, 0 );
+    @current_depth[ 0 .. $#closing_brace_names ] = 
+      (0) x scalar @closing_brace_names;
+    @nesting_sequence_number[ 0 .. $#closing_brace_names ] = 
+      (0) x scalar @closing_brace_names;
+    @current_sequence_number = ();
+
     $paren_type[$paren_depth]            = '';
     $paren_semicolon_count[$paren_depth] = 0;
     $brace_type[$brace_depth] = ';';    # identify opening brace as code block
@@ -12217,6 +12248,7 @@ current version.
     use constant BRACE          => 0;
     use constant SQUARE_BRACKET => 1;
     use constant PAREN          => 2;
+    use constant QUESTION_COLON => 3;
     my ($line_of_tokens)       = @_;
     my ($untrimmed_input_line) = $line_of_tokens->{_line_text};
 
@@ -12253,12 +12285,14 @@ current version.
     my @output_token_list = ();    # stack of output token indexes
     my @output_token_type = ();    # token types
     my @output_block_type = ();    # types associated with ( ) { }
+    my @output_type_sequence = ();    # nesting sequential number 
 
     my $tok             = $last_nonblank_token;
     my $type            = $last_nonblank_type;
     my $prototype       = $last_nonblank_prototype;
     my $last_nonblank_i = -1;
     my $block_type      = $last_nonblank_block_type;
+    my $type_sequence      = $last_nonblank_type_sequence;
     my $next_tok;
     my $next_type;
     my $expecting;
@@ -12291,6 +12325,7 @@ current version.
     for my $i ( 0 .. $max_token_index + 3 ) {
         $output_token_type[$i] = "";
         $output_block_type[$i] = "";
+        $output_type_sequence[$i] = "";
     }
     my $i     = -1;
     my $i_tok = -1;
@@ -12387,10 +12422,12 @@ EOM
             $last_last_nonblank_token      = $last_nonblank_token;
             $last_last_nonblank_type       = $last_nonblank_type;
             $last_last_nonblank_block_type = $last_nonblank_block_type;
+            $last_last_nonblank_type_sequence = $last_nonblank_type_sequence;
             $last_nonblank_token           = $tok;
             $last_nonblank_type            = $type;
             $last_nonblank_prototype       = $prototype;
             $last_nonblank_block_type      = $block_type;
+            $last_nonblank_type_sequence      = $type_sequence;
             $last_nonblank_i               = $i_tok;
         }
 
@@ -12398,12 +12435,14 @@ EOM
         if ( $i_tok >= 0 ) {
             $output_token_type[$i_tok] = $type;
             $output_block_type[$i_tok] = $block_type;
+            $output_type_sequence[$i_tok] = $type_sequence;
         }
         my $pre_tok  = $$rtokens[$i];        # get the next pre-token
         my $pre_type = $$rtoken_type[$i];    # and type
         $tok        = $pre_tok;
         $type       = $pre_type; # to be modified as necessary
         $block_type = "";        # blank for all tokens except code block braces
+        $type_sequence = "";        # blank for all tokens except ?/:
         $prototype  = "";        # blank for all tokens except user defined subs
         $i_tok      = $i;
 
@@ -12876,7 +12915,7 @@ EOM
                 else {
                     $paren_type[$paren_depth] = $last_nonblank_token;
                 }
-                increase_nesting_depth( PAREN, $i_tok );
+                $type_sequence = increase_nesting_depth( PAREN, $i_tok );
 
                 # FUTURE UPDATE: give all parens full indentation 
                 # $type = '{';
@@ -12888,7 +12927,7 @@ EOM
 
                 # make most lists structural, including
                 # sub call parameter lists and &&, ||, !
-                elsif ( $last_nonblank_type =~ /^([wiZU!?:]|\|\||\&\&)$/ ) {
+                elsif ( $last_nonblank_type =~ /^([xwiZU!?:]|\|\||\&\&)$/ ) {
                     $type = '{';
                 }
 
@@ -12911,7 +12950,7 @@ EOM
 
             }
             elsif ( $tok eq ')' ) {
-                decrease_nesting_depth( PAREN, $i_tok );
+                $type_sequence = decrease_nesting_depth( PAREN, $i_tok );
 
                 if ( $paren_structural_type[$paren_depth] eq '{' ) {
                     $type = '}';
@@ -13051,7 +13090,7 @@ EOM
                 }
                 $brace_type[ ++$brace_depth ] = $block_type;
                 $brace_package[$paren_depth] = $current_package;
-                increase_nesting_depth( BRACE, $i_tok );
+                $type_sequence=increase_nesting_depth( BRACE, $i_tok );
                 $brace_structural_type[$brace_depth] = $type;
                 $brace_context[$brace_depth]         = $context;
             }
@@ -13066,7 +13105,7 @@ EOM
                 # can happen on brace error (caught elsewhere)
                 else {
                 }
-                decrease_nesting_depth( BRACE, $i_tok );
+                $type_sequence=decrease_nesting_depth( BRACE, $i_tok );
 
                 if ( $brace_structural_type[$brace_depth] eq 'L' ) {
                     $type = 'R';
@@ -13129,6 +13168,10 @@ EOM
                     $allowed_quote_modifiers = '[cgimosx]';    # TBD:check this
                     redo;
                 }
+                else{
+
+                    $type_sequence=increase_nesting_depth( QUESTION_COLON, $i_tok );
+                }
             }
             elsif ( $tok eq '*' ) {    # typeglob, or multiply?
 
@@ -13161,6 +13204,8 @@ EOM
                 }
             }
             elsif ( $tok eq ':' ) {
+
+                    $type_sequence=decrease_nesting_depth( QUESTION_COLON, $i_tok );
             }
             elsif ( $tok eq '+' ) {    # what kind of plus?
 
@@ -13200,7 +13245,7 @@ EOM
             elsif ( $tok eq '[' ) {
                 $square_bracket_type[ ++$square_bracket_depth ] =
                   $last_nonblank_token;
-                increase_nesting_depth( SQUARE_BRACKET, $i_tok );
+                $type_sequence=increase_nesting_depth( SQUARE_BRACKET, $i_tok );
 
                 # It may seem odd, but structural square brackets have
                 # type '{' and '}'.  This simplifies the indentation logic.
@@ -13210,7 +13255,7 @@ EOM
                 $square_bracket_structural_type[$square_bracket_depth] = $type;
             }
             elsif ( $tok eq ']' ) {
-                decrease_nesting_depth( SQUARE_BRACKET, $i_tok );
+                $type_sequence=decrease_nesting_depth( SQUARE_BRACKET, $i_tok );
 
                 if ( $square_bracket_structural_type[$square_bracket_depth] eq
                     '{' )
@@ -13356,15 +13401,18 @@ EOM
     if ( $i_tok >= 0 ) {
         $output_token_type[$i_tok] = $type;
         $output_block_type[$i_tok] = $block_type;
+        $output_type_sequence[$i_tok] = $type_sequence;
     }
 
     unless ( ( $type eq 'b' ) || ( $type eq '#' ) ) {
         $last_last_nonblank_token      = $last_nonblank_token;
         $last_last_nonblank_type       = $last_nonblank_type;
         $last_last_nonblank_block_type = $last_nonblank_block_type;
+        $last_last_nonblank_type_sequence = $last_nonblank_type_sequence;
         $last_nonblank_token           = $tok;
         $last_nonblank_type            = $type;
         $last_nonblank_block_type      = $block_type;
+        $last_nonblank_type_sequence      = $type_sequence;
         $last_nonblank_prototype       = $prototype;
     }
 
@@ -13382,6 +13430,7 @@ EOM
 
     my @token_type     = (); # stack of output token types
     my @block_type     = (); # stack of output code block types
+    my @type_sequence  = (); # stack of output type sequence numbers
     my @tokens         = (); # output tokens
     my @levels         = (); # structural brace levels of output tokens
     my @slevels        = (); # secondary nesting levels of output tokens
@@ -13483,6 +13532,7 @@ EOM
         #push ( @token_type, $output_token_type[$i] );
         push ( @token_type, $fix_type );
         push ( @block_type, $output_block_type[$i] );
+        push ( @type_sequence, $output_type_sequence[$i] );
 
         push ( @nesting_tokens, $nesting_token_string );
         push ( @nesting_types,  $nesting_type_string );
@@ -13764,6 +13814,7 @@ indentation, but only single continuation-indentation
     $line_of_tokens->{_rtoken_type}     = \@token_type;
     $line_of_tokens->{_rtokens}         = \@tokens;
     $line_of_tokens->{_rblock_type}     = \@block_type;
+    $line_of_tokens->{_rtype_sequence}  = \@type_sequence;
     $line_of_tokens->{_rlevels}         = \@levels;
     $line_of_tokens->{_rslevels}        = \@slevels;
     $line_of_tokens->{_rnesting_tokens} = \@nesting_tokens;
@@ -14208,8 +14259,8 @@ that it uses, which are initialized in the BEGIN section.
 
 =pod
 
-The following routines keep track of nesting depths of the three brace
-types, ( [ and {.  This is necessary for determining the indentation
+The following routines keep track of nesting depths of the nesting
+types, ( [ { and ?.  This is necessary for determining the indentation
 level, and also for debugging programs.  Not only do they keep track of
 nesting depths of the individual brace types, but they check that each
 of the other brace types is balanced within matching pairs.  For
@@ -14226,20 +14277,27 @@ example:
 
 which has an extra ] within the parens.  
 
-The brace types have indexes 0,1,2 , which are indexes into
+The brace types have indexes 0 .. 3 which are indexes into
 the matrices.
+
+The pair ? : are treated as just another nesting type, with ? acting
+as the opening brace and : acting as the closing brace.
 
 The matrix 
 
 		$depth_array[$a][$b][ $current_depth[$a] ] = $current_depth[$b];
 
 saves the nesting depth of brace type $b (where $b is either of the other
-two brace types) when brace type $a enters a new depth.  When this depth
+nesting types) when brace type $a enters a new depth.  When this depth
 decreases, a check is made that the current depth of brace types $b is
 unchanged, or otherwise there must have been an error.  This can
 be very useful for localizing errors, particularly when perl runs to
 the end of a large file (such as this one) and announces that there
 is a problem somewhere.
+
+A numerical sequence number is maintained for every nesting type,
+so that each matching pair can be uniquely identified in a simple
+way.
 
 =cut
 
@@ -14247,14 +14305,17 @@ sub increase_nesting_depth {
     my ( $a, $i_tok ) = @_;
     my $b;
     $current_depth[$a]++;
+    my $seqno=++$nesting_sequence_number[$a];
+    $current_sequence_number[$a][$current_depth[$a]] = $seqno;
     my $pos = $$rpretoken_map[$i_tok];
     $starting_line_of_current_depth[$a][ $current_depth[$a] ] =
       [ $input_line_number, $input_line, $pos ];
 
-    for $b ( 0 .. 2 ) {
+    for $b ( 0 .. $#closing_brace_names ) {
         next if ( $b == $a );
         $depth_array[$a][$b][ $current_depth[$a] ] = $current_depth[$b];
     }
+    return $seqno;
 }
 
 sub decrease_nesting_depth {
@@ -14262,11 +14323,14 @@ sub decrease_nesting_depth {
     my ( $a, $i_tok ) = @_;
     my $pos = $$rpretoken_map[$i_tok];
     my $b;
+    my $seqno="";
 
     if ( $current_depth[$a] > 0 ) {
 
+        $seqno = $current_sequence_number[$a][$current_depth[$a]]; 
+
         # check that any brace types $b contained within are balanced
-        for $b ( 0 .. 2 ) {
+        for $b ( 0 .. $#closing_brace_names) {
             next if ( $b == $a );
 
             unless ( $depth_array[$a][$b][ $current_depth[$a] ] ==
@@ -14336,12 +14400,13 @@ EOM
         }
         increment_brace_error();
     }
+    return $seqno;
 }
 
 sub check_final_nesting_depths {
     my ($a);
 
-    for $a ( 0 .. 2 ) {
+    for $a ( 0 .. $#closing_brace_names ) {
 
         if ( $current_depth[$a] ) {
             my $rsl = $starting_line_of_current_depth[$a][ $current_depth[$a] ];
@@ -16174,8 +16239,8 @@ sub matching_end_token {
 BEGIN {
 
     # These names are used in error messages
-    @opening_brace_names = qw# '{' '[' '(' #;
-    @closing_brace_names = qw# '}' ']' ')' #;
+    @opening_brace_names = qw# '{' '[' '(' '?' #;
+    @closing_brace_names = qw# '}' ']' ')' ':' #;
 
     my @digraphs = qw(
       .. :: << >> ** && .. ||  -> => += -= .= %= &= |= ^= *= <>

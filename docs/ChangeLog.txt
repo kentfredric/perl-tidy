@@ -3,6 +3,175 @@ Perltidy Change Log
      have hit a bug, unusual behavior, annoyance, or have a suggested
      improvement, please send a note to perltidy at users.sourceforge.net.  
 
+  2001 xx xx
+
+     -Added -html control over pod text, using a new abbreviation 'pd'.  See
+     updated perl2web man page. The default is to use the color of a comment,
+     but italicized.  Old .css style sheets will need a new line for
+     .pd to use this.  The old color was the color of a string, and there
+     was no control.  
+ 
+     -.css lines are now printed in sorted order.
+
+     -Fixed intrerpolation problem where html files had '$input_file' as title
+     instead of actual input file name.  Thanks to Simon Perreault for finding
+     this and sending a patch.
+
+     -Lines with a single ?/: pair will now be more likely to break at both
+     the ? and the :
+
+           OLD:
+                wantarray ? map( $dir::cwd->lookup($_)->path, @_ ) :
+                  $dir::cwd->lookup( $_[0] )->path;
+
+           NEW:
+                wantarray 
+                  ? map( $dir::cwd->lookup($_)->path, @_ )
+                  : $dir::cwd->lookup( $_[0] )->path;
+
+     -Long lines containing '?:' conditionals will now have the ':' placed
+     at the start of a line, one per line.  For example:
+
+        OLD:
+            $which_search =
+              $opts{"t"} ? 'title'   :
+              $opts{"s"} ? 'subject' : $opts{"a"} ? 'author' : 'title';
+
+        NEW:
+            $which_search =
+              $opts{"t"} ? 'title'
+              : $opts{"s"} ? 'subject'
+              : $opts{"a"} ? 'author'
+              : 'title';
+ 
+     You can use -wba=':' to recover the previous default which placed ':'
+     at the end of a line.  Thanks to Michael Cartmell for helpful
+     discussions and examples.  There are two main reasons for this.  First,
+     leading ':'s can be aligned and more easily seen.  Second, a ':' is
+     essentially equivalent to an 'else' or 'elsif', which is also at the
+     start of a line.  
+
+     -Tokenizer updated to do syntax checking for matched ?/: pairs.  Also,
+     the tokenizer now outputs a unique serial number for every balanced pair
+     of brace types and ?/: pairs.  This will simplify the formatter and 
+     allow future formatting improvements.
+
+     -Long lines with repeated 'and', 'or', '&&', '||'  will now have
+     one such item per line.  For example:
+
+        OLD:
+            if ( $opt_d || $opt_m || $opt_p || $opt_t || $opt_x
+                || ( -e $archive && $opt_r ) )
+            {
+                ( $pAr, $pNames ) = readAr($archive);
+            }
+
+        NEW:
+            if ( $opt_d
+                || $opt_m
+                || $opt_p
+                || $opt_t
+                || $opt_x
+                || ( -e $archive && $opt_r ) )
+            {
+                ( $pAr, $pNames ) = readAr($archive);
+            }
+
+       OLD:
+            if ( $vp->{X0} + 4 <= $x && $vp->{X0} + $vp->{W} - 4 >= $x
+                && $vp->{Y0} + 4 <= $y && $vp->{Y0} + $vp->{H} - 4 >= $y ) 
+
+       NEW:
+            if ( $vp->{X0} + 4 <= $x
+                && $vp->{X0} + $vp->{W} - 4 >= $x
+                && $vp->{Y0} + 4 <= $y
+                && $vp->{Y0} + $vp->{H} - 4 >= $y )
+
+     -Long lines with multiple concatenated tokens will have concatenated
+     terms (see below) placed one per line, except for short items.  For
+     example:
+
+       OLD:
+            $report .=
+              "Device type:" . $ib->family . "  ID:" . $ib->serial . "  CRC:"
+              . $ib->crc . ": " . $ib->model() . "\n";
+
+       NEW:
+            $report .= "Device type:"
+              . $ib->family . "  ID:"
+              . $ib->serial . "  CRC:"
+              . $ib->model()
+              . $ib->crc . ": " . "\n";
+
+     NOTE: at present 'short' means 8 characters or less.  There is a
+     tentative flag to change this (-scl), but it is undocumented and
+     is likely to be changed or removed later, so only use it for testing.  
+     In the above example, the tokens "  ID:", "  CRC:", and "\n" are below
+     this limit.  
+
+     -If a line which is short enough to fit on a single line was
+     nevertheless broken in the input file at a 'good' location (see below), 
+     perltidy will try to retain a break.  For example, the following line
+     will be formatted as:
+ 
+        open SUM, "<$file"
+          or die "Cannot open $file ($!)";
+ 
+     if it was broken in the input file, and like this if not:
+
+        open SUM, "<$file" or die "Cannot open $file ($!)";
+
+     GOOD: 'good' location means before 'and','or','if','unless','&&','||'
+
+     The reason perltidy does not just always break at these points is that if
+     there are multiple, similar statements, this would preclude alignment.  So
+     rather than check for this, perltidy just tries to follow the input style,
+     in the hopes that the author made a good choice. Here is an example where 
+     we might not want to break before each 'if':
+
+        ($Locale, @Locale) = ($English, @English) if (@English > @Locale);
+        ($Locale, @Locale) = ($German,  @German)  if (@German > @Locale);
+        ($Locale, @Locale) = ($French,  @French)  if (@French > @Locale);
+        ($Locale, @Locale) = ($Spanish, @Spanish) if (@Spanish > @Locale);
+
+     -Added wildcard file expansion for systems with shells which lack this.
+     Now 'perltidy *.pl' should work under MSDOS/Windows.  Thanks to Hugh Myers 
+     for suggesting this.  This uses builtin glob() for now; I may change that.
+
+     -Added new flag -sbl which, if specified, overrides the value of -bl
+     for opening sub braces.  This allows formatting of this type:
+
+     perltidy -sbl 
+
+     sub foo
+     {
+        if (!defined($_[0])) {
+            print("Hello, World\n");
+        }
+        else {
+            print($_[0], "\n");
+        }
+     }
+     Requested by Don Alexander.
+
+     -Fixed minor parsing error which prevented a space after a $$ variable
+     (pid) in some cases.  Thanks to Michael Cartmell for noting this.
+     For example, 
+       old: $$< 700 
+       new: $$ < 700
+
+     -Fixed error of multiple use of abbreviatioin '-dsc'.  -dsc remains 
+     abbreviation for delete-side-comments; -dsm is new abbreviation for 
+     delete-semicolons.
+
+     -Corrected and updated 'usage' help routine.  Thanks to Slaven Rezic for 
+     noting an error.
+
+     -Paranoia struck.  I added a -T flag when doing perl -c syntax check.
+     This is because I test it on a large number of scripts from sources
+     unknown, and who knows what might be hidden in initialization blocks?
+     Also, deactivated the syntax check if perltidy is run as root.
+
   2001 09 03
 
      -html updates:

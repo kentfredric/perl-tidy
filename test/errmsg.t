@@ -7,6 +7,9 @@
 
 =cut
 
+  # nesting error
+$b = $a ? ( $a : $a + 1 );
+
 # Some code to generate various error messages
 # No use strict, no -w
 

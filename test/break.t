@@ -1,3 +1,9 @@
+    # '||' alignment:
+    $to = $me->get('Reply-To')
+       || $me->get('From')
+       || $me->get('Return-Path')
+       || "";
+
         # This used to get broken up because the comma after '1.0'
         # triggerd a fake forced breakpoint.  
 	return 1 unless ( eval { $t->tagNextrange( sel => '1.0', 'end' ) });

@@ -1,3 +1,8 @@
+
+# the break at this if should be retained even though the line is short
+push @allowed, $_
+  if PDL->rpiccan($_) && defined $formats{$_};
+
 # the terminal '{' will be at character 80:
 {{{
     } elsif (/^FontBBox *(-?[0-9]*)  *(-?[0-9]*)  *(-?[0-9]*)  *(-?[0-9]*)/) {

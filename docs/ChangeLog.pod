@@ -52,6 +52,11 @@
  essentially equivalent to an 'else' or 'elsif', which is also at the
  start of a line.  
 
+ -Tokenizer updated to do syntax checking for matched ?/: pairs.  Also,
+ the tokenizer now outputs a unique serial number for every balanced pair
+ of brace types and ?/: pairs.  This will simplify the formatter and 
+ allow future formatting improvements.
+
  -Long lines with repeated 'and', 'or', '&&', '||'  will now have
  one such item per line.  For example:
 
@@ -163,10 +168,10 @@
  -Corrected and updated 'usage' help routine.  Thanks to Slaven Rezic for 
  noting an error.
 
- -Paranoia struck.  Added -T flag when doing perl -c syntax check.  This
- is because I run a large number of scripts from sources unknown, and who
- knows what might be hidden in initialization blocks?  Also, deactivated 
- the syntax check if perltidy is run as root.
+ -Paranoia struck.  I added a -T flag when doing perl -c syntax check.
+ This is because I test it on a large number of scripts from sources
+ unknown, and who knows what might be hidden in initialization blocks?
+ Also, deactivated the syntax check if perltidy is run as root.
 
 =head2 2001 09 03 
 

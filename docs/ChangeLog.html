@@ -14,6 +14,7 @@
 	<LI><A HREF="#perltidy change log">Perltidy Change Log</A></LI>
 	<UL>
 
+		<LI><A HREF="#2001 xx xx">2001 xx xx</A></LI>
 		<LI><A HREF="#2001 09 03">2001 09 03</A></LI>
 		<LI><A HREF="#2001 07 31">2001 07 31</A></LI>
 		<LI><A HREF="#2001 07 23">2001 07 23 </A></LI>
@@ -38,6 +39,182 @@
  You can help Perltidy evolve into a better program.  If you 
  have hit a bug, unusual behavior, annoyance, or have a suggested
  improvement, please send a note to perltidy at users.sourceforge.net.</PRE>
+<P>
+<H2><A NAME="2001 xx xx">2001 xx xx</A></H2>
+<PRE>
+
+ -Added -html control over pod text, using a new abbreviation 'pd'.  See
+ updated perl2web man page. The default is to use the color of a comment,
+ but italicized.  Old .css style sheets will need a new line for
+ .pd to use this.  The old color was the color of a string, and there
+ was no control.</PRE>
+<PRE>
+
+ -.css lines are now printed in sorted order.</PRE>
+<PRE>
+ -Fixed intrerpolation problem where html files had '$input_file' as title
+ instead of actual input file name.  Thanks to Simon Perreault for finding
+ this and sending a patch.</PRE>
+<PRE>
+ -Lines with a single ?/: pair will now be more likely to break at both
+ the ? and the :</PRE>
+<PRE>
+       OLD:
+            wantarray ? map( $dir::cwd-&gt;lookup($_)-&gt;path, @_ ) :
+              $dir::cwd-&gt;lookup( $_[0] )-&gt;path;</PRE>
+<PRE>
+       NEW:
+            wantarray 
+              ? map( $dir::cwd-&gt;lookup($_)-&gt;path, @_ )
+              : $dir::cwd-&gt;lookup( $_[0] )-&gt;path;</PRE>
+<PRE>
+ -Long lines containing '?:' conditionals will now have the ':' placed
+ at the start of a line, one per line.  For example:</PRE>
+<PRE>
+    OLD:
+        $which_search =
+          $opts{&quot;t&quot;} ? 'title'   :
+          $opts{&quot;s&quot;} ? 'subject' : $opts{&quot;a&quot;} ? 'author' : 'title';</PRE>
+<PRE>
+    NEW:
+        $which_search =
+          $opts{&quot;t&quot;} ? 'title'
+          : $opts{&quot;s&quot;} ? 'subject'
+          : $opts{&quot;a&quot;} ? 'author'
+          : 'title';
+</PRE>
+<PRE>
+
+ You can use -wba=':' to recover the previous default which placed ':'
+ at the end of a line.  Thanks to Michael Cartmell for helpful
+ discussions and examples.  There are two main reasons for this.  First,
+ leading ':'s can be aligned and more easily seen.  Second, a ':' is
+ essentially equivalent to an 'else' or 'elsif', which is also at the
+ start of a line.</PRE>
+<PRE>
+ -Tokenizer updated to do syntax checking for matched ?/: pairs.  Also,
+ the tokenizer now outputs a unique serial number for every balanced pair
+ of brace types and ?/: pairs.  This will simplify the formatter and 
+ allow future formatting improvements.</PRE>
+<PRE>
+ -Long lines with repeated 'and', 'or', '&amp;&amp;', '||'  will now have
+ one such item per line.  For example:</PRE>
+<PRE>
+    OLD:
+        if ( $opt_d || $opt_m || $opt_p || $opt_t || $opt_x
+            || ( -e $archive &amp;&amp; $opt_r ) )
+        {
+            ( $pAr, $pNames ) = readAr($archive);
+        }</PRE>
+<PRE>
+    NEW:
+        if ( $opt_d
+            || $opt_m
+            || $opt_p
+            || $opt_t
+            || $opt_x
+            || ( -e $archive &amp;&amp; $opt_r ) )
+        {
+            ( $pAr, $pNames ) = readAr($archive);
+        }</PRE>
+<PRE>
+   OLD:
+        if ( $vp-&gt;{X0} + 4 &lt;= $x &amp;&amp; $vp-&gt;{X0} + $vp-&gt;{W} - 4 &gt;= $x
+            &amp;&amp; $vp-&gt;{Y0} + 4 &lt;= $y &amp;&amp; $vp-&gt;{Y0} + $vp-&gt;{H} - 4 &gt;= $y )</PRE>
+<PRE>
+   NEW:
+        if ( $vp-&gt;{X0} + 4 &lt;= $x
+            &amp;&amp; $vp-&gt;{X0} + $vp-&gt;{W} - 4 &gt;= $x
+            &amp;&amp; $vp-&gt;{Y0} + 4 &lt;= $y
+            &amp;&amp; $vp-&gt;{Y0} + $vp-&gt;{H} - 4 &gt;= $y )</PRE>
+<PRE>
+ -Long lines with multiple concatenated tokens will have concatenated
+ terms (see below) placed one per line, except for short items.  For
+ example:</PRE>
+<PRE>
+   OLD:
+        $report .=
+          &quot;Device type:&quot; . $ib-&gt;family . &quot;  ID:&quot; . $ib-&gt;serial . &quot;  CRC:&quot;
+          . $ib-&gt;crc . &quot;: &quot; . $ib-&gt;model() . &quot;\n&quot;;</PRE>
+<PRE>
+   NEW:
+        $report .= &quot;Device type:&quot;
+          . $ib-&gt;family . &quot;  ID:&quot;
+          . $ib-&gt;serial . &quot;  CRC:&quot;
+          . $ib-&gt;model()
+          . $ib-&gt;crc . &quot;: &quot; . &quot;\n&quot;;</PRE>
+<PRE>
+ NOTE: at present 'short' means 8 characters or less.  There is a
+ tentative flag to change this (-scl), but it is undocumented and
+ is likely to be changed or removed later, so only use it for testing.  
+ In the above example, the tokens &quot;  ID:&quot;, &quot;  CRC:&quot;, and &quot;\n&quot; are below
+ this limit.</PRE>
+<PRE>
+ -If a line which is short enough to fit on a single line was
+ nevertheless broken in the input file at a 'good' location (see below), 
+ perltidy will try to retain a break.  For example, the following line
+ will be formatted as:
+</PRE>
+<PRE>
+
+    open SUM, &quot;&lt;$file&quot;
+      or die &quot;Cannot open $file ($!)&quot;;</PRE>
+<PRE>
+
+ if it was broken in the input file, and like this if not:</PRE>
+<PRE>
+    open SUM, &quot;&lt;$file&quot; or die &quot;Cannot open $file ($!)&quot;;</PRE>
+<PRE>
+ GOOD: 'good' location means before 'and','or','if','unless','&amp;&amp;','||'</PRE>
+<PRE>
+ The reason perltidy does not just always break at these points is that if
+ there are multiple, similar statements, this would preclude alignment.  So
+ rather than check for this, perltidy just tries to follow the input style,
+ in the hopes that the author made a good choice. Here is an example where 
+ we might not want to break before each 'if':</PRE>
+<PRE>
+    ($Locale, @Locale) = ($English, @English) if (@English &gt; @Locale);
+    ($Locale, @Locale) = ($German,  @German)  if (@German &gt; @Locale);
+    ($Locale, @Locale) = ($French,  @French)  if (@French &gt; @Locale);
+    ($Locale, @Locale) = ($Spanish, @Spanish) if (@Spanish &gt; @Locale);</PRE>
+<PRE>
+ -Added wildcard file expansion for systems with shells which lack this.
+ Now 'perltidy *.pl' should work under MSDOS/Windows.  Thanks to Hugh Myers 
+ for suggesting this.  This uses builtin glob() for now; I may change that.</PRE>
+<PRE>
+ -Added new flag -sbl which, if specified, overrides the value of -bl
+ for opening sub braces.  This allows formatting of this type:</PRE>
+<PRE>
+ perltidy -sbl</PRE>
+<PRE>
+ sub foo
+ {
+    if (!defined($_[0])) {
+        print(&quot;Hello, World\n&quot;);
+    }
+    else {
+        print($_[0], &quot;\n&quot;);
+    }
+ }
+ Requested by Don Alexander.</PRE>
+<PRE>
+ -Fixed minor parsing error which prevented a space after a $$ variable
+ (pid) in some cases.  Thanks to Michael Cartmell for noting this.
+ For example, 
+   old: $$&lt; 700 
+   new: $$ &lt; 700</PRE>
+<PRE>
+ -Fixed error of multiple use of abbreviatioin '-dsc'.  -dsc remains 
+ abbreviation for delete-side-comments; -dsm is new abbreviation for 
+ delete-semicolons.</PRE>
+<PRE>
+ -Corrected and updated 'usage' help routine.  Thanks to Slaven Rezic for 
+ noting an error.</PRE>
+<PRE>
+ -Paranoia struck.  I added a -T flag when doing perl -c syntax check.
+ This is because I test it on a large number of scripts from sources
+ unknown, and who knows what might be hidden in initialization blocks?
+ Also, deactivated the syntax check if perltidy is run as root.</PRE>
 <P>
 <H2><A NAME="2001 09 03">2001 09 03</A></H2>
 <PRE>
