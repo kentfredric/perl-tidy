@@ -353,6 +353,19 @@ previous example with <STRONG>-icp</STRONG> would give,
         'Nov', 'Dec'
         );</PRE>
 <P></P>
+<DT><STRONG><A NAME="item_%2Dicb%2C_%2D%2Dindent%2Dclosing%2Dbrace"><STRONG>-icb</STRONG>, <STRONG>--indent-closing-brace</STRONG></A></STRONG><BR>
+<DD>
+The <STRONG>-icb</STRONG> option leaves a brace which terminates a code block 
+indented with the same indentation as the previous line.  For example,
+<PRE>
+        if ($task) {
+            yyy();
+            }    # -icb
+        else {
+            zzz();
+            }</PRE>
+<P>The default is not to do this, indicated by <STRONG>-nicb</STRONG>.</P>
+<P></P>
 <DT><STRONG><A NAME="item_%2Dibc%2C_%2D%2Dindent%2Dblock%2Dcomments"><STRONG>-ibc</STRONG>,  <STRONG>--indent-block-comments</STRONG></A></STRONG><BR>
 <DD>
 Block comments, meaning full-line comments, normally look best when they
@@ -962,7 +975,7 @@ confusing filenames such as <EM>somefile.tdy.tdy.tdy</EM>.
 <P>
 <HR>
 <H1><A NAME="version">VERSION</A></H1>
-<P>This man page documents perltidy version 20010702.</P>
+<P>This man page documents perltidy version 20010723.</P>
 <P>
 <HR>
 <H1><A NAME="author">AUTHOR</A></H1>

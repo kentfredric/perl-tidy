@@ -9,6 +9,15 @@ Perltidy TODO List
     working on them as time permits, with priority given to items that are
     of interest to perltidy users.
 
+  Option to reformat block comments
+
+    A future option should use Text::Autoformat to reformat block comments.
+    Thanks to Tim Maher for this suggestion.
+
+  Improved Vertical Alignment
+
+    Coding modifications are underway to enhance the vertical alignment.
+
   BUGS
 
     There are still a couple of bugs listed in the BUGS file that need to be

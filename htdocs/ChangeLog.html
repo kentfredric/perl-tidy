@@ -14,6 +14,7 @@
 	<LI><A HREF="#perltidy change log">Perltidy Change Log</A></LI>
 	<UL>
 
+		<LI><A HREF="#2001 07 23">2001 07 23 </A></LI>
 		<LI><A HREF="#2001 07 02">2001 07 02</A></LI>
 		<LI><A HREF="#2001 07 01">2001 07 01</A></LI>
 		<LI><A HREF="#2001 06 17">2001 06 17</A></LI>
@@ -35,6 +36,35 @@
  You can help perltidy evolve into a better program.  If you 
  have hit a bug, unusual behavior, annoyance, or have a suggested
  improvement, please send a note to perltidy at users.sourceforge.net.</PRE>
+<P>
+<H2><A NAME="2001 07 23">2001 07 23</A></H2>
+<PRE>
+
+ -Fixed a very rare problem in which an unwanted semicolon was inserted
+ due to misidentification of anonymous hash reference curly as a code
+ block curly.  A workaround for older versions of perltidy is to use
+ -nasc.</PRE>
+<PRE>
+ -Added -icb (-indent-closing-brace) parameter to indent a brace which
+ terminates a code block to the same level as the previous line.
+ Suggested by Andrew Cutler.  For example,</PRE>
+<PRE>
+        if ($task) {
+            yyy();
+            }    # -icb
+        else {
+            zzz();
+            }</PRE>
+<PRE>
+ -Rewrote error message triggered by an unknown bareword in a print or
+ printf filehandle position, and added flag -w=0 to prevent issuing this
+ error message.  Suggested by Byron Jones.</PRE>
+<PRE>
+ -Added modification to align a one-line 'if' block with similar
+ following 'elsif' one-line blocks, like this:
+      if    ( $something eq &quot;simple&quot; )  { &amp;handle_simple }
+      elsif ( $something eq &quot;hard&quot; )    { &amp;handle_hard }
+ (Suggested by  Wolfgang Weisselberg).</PRE>
 <P>
 <H2><A NAME="2001 07 02">2001 07 02</A></H2>
 <PRE>

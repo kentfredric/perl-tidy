@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.21 2001/07/23 02:41:46 perltidy Exp $
+    $Id: perltidy,v 1.22 2001/07/25 16:51:54 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -9510,6 +9510,9 @@ use vars qw{
   $last_nonblank_token
   $last_nonblank_type
   $last_nonblank_block_type
+  $last_last_nonblank_token
+  $last_last_nonblank_type
+  $last_last_nonblank_block_type
   $statement_type
   $identifier
   $in_quote
@@ -10400,6 +10403,9 @@ sub prepare_for_a_new_file {
     $last_nonblank_token      = ';';    # the only possible starting state which
     $last_nonblank_type       = ';';    # will make a leading brace a code block
     $last_nonblank_block_type = '';    
+    $last_last_nonblank_token = ';';
+    $last_last_nonblank_type  = ';';
+    $last_last_nonblank_block_type = '';    
     $identifier               = '';
     $in_quote   = 0;     # flag telling if we are chasing a quote, and what kind
     $quote_type = 'Q';
@@ -10715,6 +10721,9 @@ EOM
                     write_logfile_entry("Should 'ne' be '!=' here ?\n");
                 }
             }
+            $last_last_nonblank_token = $last_nonblank_token;
+            $last_last_nonblank_type  = $last_nonblank_type;
+            $last_last_nonblank_block_type  = $last_nonblank_block_type;
             $last_nonblank_token = $tok;
             $last_nonblank_type  = $type;
             $last_nonblank_block_type  = $block_type;
@@ -11124,9 +11133,24 @@ EOM
                     $type = '{';
                 }
 
+                # paren after keyword..
                 elsif ( $last_nonblank_type =~ /^[k]$/
-                  && $is_keyword_taking_list{$last_nonblank_token} )
+
+                    # which is in designated list
+                    && ( $is_keyword_taking_list{$last_nonblank_token}
+
+                    # and paren after keyword which has continuation indentation
+                    # (unless.t).  
+                    || !( ($last_last_nonblank_type =~ /[;J]/)
+                    || ( $last_last_nonblank_token =~ /[\{\}]/
+
+                    && $last_last_nonblank_block_type ) ) )
+                    #
+                    )
                 {
+                    my $in_continuation = !( ($last_last_nonblank_type =~ /[;J]/)
+                    || ( $last_last_nonblank_token =~ /[\{\}]/
+                    && $last_last_nonblank_block_type ) ); 
                     $type = '{';
                 }
 
@@ -11549,6 +11573,9 @@ EOM
     }
 
     unless ( ( $type eq 'b' ) || ( $type eq '#' ) ) {
+        $last_last_nonblank_token = $last_nonblank_token;
+        $last_last_nonblank_type  = $last_nonblank_type;
+        $last_last_nonblank_block_type  = $last_nonblank_block_type;
         $last_nonblank_token = $tok;
         $last_nonblank_type  = $type;
         $last_nonblank_block_type  = $block_type;

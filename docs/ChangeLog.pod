@@ -4,14 +4,16 @@
  have hit a bug, unusual behavior, annoyance, or have a suggested
  improvement, please send a note to perltidy at users.sourceforge.net.  
 
- -Fixed problem in which an unwanted semicolon was inserted due to
- misidentification of anonymous hash reference curly as a code 
- block curly.  A workaround for older versions of perltidy is to
- use -nasc.
+=head2 2001 07 23 
+ 
+ -Fixed a very rare problem in which an unwanted semicolon was inserted
+ due to misidentification of anonymous hash reference curly as a code
+ block curly.  A workaround for older versions of perltidy is to use
+ -nasc.
 
- -Added -icb (-indent-closing-brace) parameter to indent a 
- brace which terminates a code block to the same level as the previous
- line.  Suggested by Andrew Cutler.  For example, 
+ -Added -icb (-indent-closing-brace) parameter to indent a brace which
+ terminates a code block to the same level as the previous line.
+ Suggested by Andrew Cutler.  For example, 
 
         if ($task) {
             yyy();
@@ -20,9 +22,9 @@
             zzz();
             }
 
- -Rewrote error message triggered by an unknown bareword in a
- print or printf filehandle position, and added flag -w=0 to prevent
- issuing this error message.  Suggested by Byron Jones.
+ -Rewrote error message triggered by an unknown bareword in a print or
+ printf filehandle position, and added flag -w=0 to prevent issuing this
+ error message.  Suggested by Byron Jones.
 
  -Added modification to align a one-line 'if' block with similar
  following 'elsif' one-line blocks, like this:
