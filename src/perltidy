@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.15 2001/07/08 18:51:03 perltidy Exp $
+    $Id: perltidy,v 1.16 2001/07/09 13:54:58 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -7687,6 +7687,19 @@ use vars qw(
   %VALIGN_DEBUG_FLAG
 );
 
+    # storage indexes for a line
+    use constant JMAX                    => 0;
+    use constant JMAX_ORIGINAL_LINE      => 1;
+    use constant RTOKENS                 => 2;
+    use constant RFIELDS                 => 3;
+    use constant RPATTERNS               => 4;
+    use constant INDENTATION             => 5;
+    use constant LEADING_SPACE_COUNT     => 6;
+    use constant IS_FORCED_BREAK         => 7;
+    use constant OUTDENT_LONG_LINES      => 8;
+    use constant LIST_TYPE               => 9;
+    use constant IS_HANGING_SIDE_COMMENT => 10;
+
 sub initialize {
 
     ( $rOpts, $file_writer_object, $logger_object, $diagnostics_object ) = @_;
@@ -7897,7 +7910,6 @@ The log file warns the user if there are any such tabs.
             elsif ( ( $zero_count > 3 )
               || ( ( $leading_space_count + length( $$rfields[0] ) ) >
               get_column(0) ))
-              #$columns[1] ) )
             {
                 flush();
             }
@@ -7927,10 +7939,113 @@ The log file warns the user if there are any such tabs.
     }
 
     # --------------------------------------------------------------------
+    # create a structure to hold this line
+    # --------------------------------------------------------------------
+    my $line                    = [];
+    my $is_hanging_side_comment = 0;
+    my $list_type               = "";
+    $line->[JMAX]                    = $jmax;
+    $line->[JMAX_ORIGINAL_LINE]      = $jmax;
+    $line->[RTOKENS]                 = $rtokens;
+    $line->[RFIELDS]                 = $rfields;
+    $line->[RPATTERNS]               = $rpatterns;
+    $line->[INDENTATION]             = $indentation;
+    $line->[LEADING_SPACE_COUNT]     = $leading_space_count;
+    $line->[IS_FORCED_BREAK]         = $is_forced_break;
+    $line->[OUTDENT_LONG_LINES]      = $outdent_long_lines;
+    $line->[LIST_TYPE]               = $list_type;
+    $line->[IS_HANGING_SIDE_COMMENT] = $is_hanging_side_comment;
+
+    # --------------------------------------------------------------------
     # Step 1a. Allow hanging side comment to join current group, if any
     # This will help keep side comments aligned, because otherwise we
     # will have to start a new group, making alignment less likely.
     # --------------------------------------------------------------------
+    hanging_comment_check($line);
+
+    # --------------------------------------------------------------------
+    # Step 2. It simplifies things to create a zero length side comment
+    # if none exists.
+    # --------------------------------------------------------------------
+    $jmax = $line->[JMAX];
+    if ( ( $jmax == 0 ) || ( $$rtokens[ $jmax - 1 ] ne '#' ) ) {
+        $$rtokens[$jmax] = '#';
+        $$rfields[ ++$jmax ] = '';
+        $$rpatterns[$jmax] = '#';
+        $lines_since_last_side_comment++;
+        $line->[JMAX] = $jmax;
+    }
+    else {
+        $lines_since_last_side_comment = 0;
+    }
+
+    # --------------------------------------------------------------------
+    # Step 2a. Decide if this is a simple list of items
+    # Select from 3 list types: none, comma, comma-arrow
+    # We use this below to be less restrictive in deciding what to align
+    # --------------------------------------------------------------------
+    list_check($line);
+
+    # --------------------------------------------------------------------
+    # Step 3. If there is just one previous line, and it has more fields
+    # than the new line, try to join fields together to get a match with
+    # the new line.  At the present time, only a single leading '=' is
+    # allowed to be compressed out.  This is useful in rare cases where
+    # a table is forced to use old breakpoints because of side comments,
+    # and the table starts out something like this:
+    #   my %MonthChars = ('0', 'Jan',	# side comment
+    #                     '1', 'Feb',
+    #                     '2', 'Mar',
+    # Eliminating the '=' field will allow the remaining fields to line up.
+    # This situation does not occur if there are no side comments
+    # because scan_list would put a break after the opening '('.
+    # --------------------------------------------------------------------
+    eliminate_group_fields($line);
+
+    # --------------------------------------------------------------------
+    # Step 4. If the new line has more fields than the current group,
+    # see if we can match the first fields and combine the remaining
+    # fields of the new line.  
+    # --------------------------------------------------------------------
+    eliminate_line_fields($line);
+
+    # --------------------------------------------------------------------
+    # Step 5. Flush previous group unless all common tokens and patterns match..
+    # --------------------------------------------------------------------
+    check_match ( $line);
+
+    # --------------------------------------------------------------------
+    # Step 6. See if there is space for this line in the current group
+    # --------------------------------------------------------------------
+    check_fit ( $line);
+
+    # --------------------------------------------------------------------
+    # Step 7. Append this line to the current group (or start new group)
+    # --------------------------------------------------------------------
+    accept_line ( $line);
+
+    # --------------------------------------------------------------------
+    # Step 8. Some old debugging stuff
+    # --------------------------------------------------------------------
+    if ( $VALIGN_DEBUG_FLAG{APPEND} ) {
+        print "APPEND fields:";
+        dump_array(@$rfields);
+        print "APPEND tokens:";
+        dump_array(@$rtokens);
+        print "APPEND patterns:";
+        dump_array(@$rpatterns);
+        print "APPEND common columns:";
+        dump_array(@columns);
+    }
+}
+
+sub hanging_comment_check {
+
+    my $line = shift;
+    my $jmax = $line->[JMAX];
+    my $rtokens = $line->[RTOKENS];
+    my $rfields = $line->[RFIELDS];
+    my $rpatterns = $line->[RPATTERNS];
     my $is_hanging_side_comment = 0;
 
     if ( $jmax == 1 && $$rtokens[ $jmax - 1 ] eq '#' && $$rfields[0] =~ /^\s*$/
@@ -7948,64 +8063,16 @@ The log file warns the user if there are any such tabs.
             $$rpatterns[ $j - 1 ] = "";
         }
     }
+    $line->[JMAX] = $jmax;
+    $line->[IS_HANGING_SIDE_COMMENT] = $is_hanging_side_comment;
+}
 
-    # --------------------------------------------------------------------
-    # Step 2. It simplifies things to create a zero length side comment
-    # if none exists.
-    # --------------------------------------------------------------------
-    my $jmax_original_line = $jmax;
-    if ( ( $jmax == 0 ) || ( $$rtokens[ $jmax - 1 ] ne '#' ) ) {
-        $$rtokens[$jmax] = '#';
-        $$rfields[ ++$jmax ] = '';
-        $$rpatterns[$jmax] = '#';
-        $lines_since_last_side_comment++;
-    }
-    else {
-        $lines_since_last_side_comment = 0;
-    }
-
-    # --------------------------------------------------------------------
-    # Step 2a. Decide if this is a simple list of items
-    # Select from 3 list types: none, comma, comma-arrow
-    # We use this below to be less restrictive in deciding what to align
-    # --------------------------------------------------------------------
-    my $list_type  = "";
-    my $test_token = $$rtokens[0];
-
-    # A list will be taken to be a line with a forced break in which all
-    # of the field separators are commas or comma-arrows (except for the
-    # trailing #)
-    if ( $is_forced_break > 0 ) {
-
-        # List separator tokens are things like ',3'   or '=>2',
-        # where the trailing digit is the nesting depth.  Allow braces
-        # to allow nested list items.
-        if ( $test_token =~ /^(\,|=>)/ ) {
-            $list_type = $test_token;
-            foreach my $i ( 1 .. $jmax - 2 ) {
-
-                if ( $$rtokens[$i] !~ /^(\,|=>|\{)/ ) {
-                    $list_type = "";
-                    last;
-                }
-            }
-        }
-    }
-
-    # --------------------------------------------------------------------
-    # Step 3. If there is just one previous line, and it has more fields
-    # than the new line, try to join fields together to get a match with
-    # the new line.  At the present time, only a single leading '=' is
-    # allowed to be compressed out.  This is useful in rare cases where
-    # a table is forced to use old breakpoints because of side comments,
-    # and the table starts out something like this:
-    #   my %MonthChars = ('0', 'Jan',	# side comment
-    #                     '1', 'Feb',
-    #                     '2', 'Mar',
-    # Eliminating the '=' field will allow the remaining fields to line up.
-    # This situation does not occur if there are no side comments
-    # because scan_list would put a break after the opening '('.
-    # --------------------------------------------------------------------
+sub eliminate_group_fields {
+    my $line = shift;
+    my $jmax = $line->[JMAX];
+    my $rtokens = $line->[RTOKENS];
+    my $rfields = $line->[RFIELDS];
+    my $rpatterns = $line->[RPATTERNS];
     my $hid_equals = 0;
 
     if ( $jmax > $maximum_jmax_seen ) { $maximum_jmax_seen = $jmax }
@@ -8074,12 +8141,49 @@ The log file warns the user if there are any such tabs.
             @matching_patterns = @$rpatterns;
         }
     }
+}
 
-    # --------------------------------------------------------------------
-    # Step 4. If the new line has more fields than the current group,
-    # see if we can match the first fields and combine the remaining
-    # fields of the new line.  
-    # --------------------------------------------------------------------
+sub list_check {
+
+    my $line = shift;
+    my $jmax = $line->[JMAX];
+    my $is_forced_break = $line->[IS_FORCED_BREAK];
+    my $rtokens = $line->[RTOKENS];
+    my $rfields = $line->[RFIELDS];
+    my $rpatterns = $line->[RPATTERNS];
+
+    my $list_type  = "";
+    my $test_token = $$rtokens[0];
+
+    # A list will be taken to be a line with a forced break in which all
+    # of the field separators are commas or comma-arrows (except for the
+    # trailing #)
+    if ( $is_forced_break > 0 ) {
+
+        # List separator tokens are things like ',3'   or '=>2',
+        # where the trailing digit is the nesting depth.  Allow braces
+        # to allow nested list items.
+        if ( $test_token =~ /^(\,|=>)/ ) {
+            $list_type = $test_token;
+            foreach my $i ( 1 .. $jmax - 2 ) {
+
+                if ( $$rtokens[$i] !~ /^(\,|=>|\{)/ ) {
+                    $list_type = "";
+                    last;
+                }
+            }
+        }
+    }
+    $line->[LIST_TYPE] = $list_type;
+}
+
+sub eliminate_line_fields {
+    my $line = shift;
+    my $jmax = $line->[JMAX];
+    my $list_type = $line->[LIST_TYPE];
+    my $rtokens = $line->[RTOKENS];
+    my $rfields = $line->[RFIELDS];
+    my $rpatterns = $line->[RPATTERNS];
     if ( ( $maximum_line_index >= 0 ) && ( $maximum_field_index < $jmax )
       && ( $starting_jmax == $minimum_jmax_seen )    # only if monotonic
       && ( $previous_maximum_jmax_seen <= $jmax )    # only if monotonic
@@ -8113,13 +8217,22 @@ The log file warns the user if there are any such tabs.
             $$rfields[$maximum_field_index]   = $$rfields[$jmax];
             $$rpatterns[$maximum_field_index] = $$rpatterns[$jmax];
             $jmax = $maximum_field_index;
-
         }
     }
+    $line->[JMAX] = $jmax;
+}
 
-    # --------------------------------------------------------------------
-    # Step 5. Flush previous group unless all common tokens and patterns match..
-    # --------------------------------------------------------------------
+
+sub check_match {
+    my $line = shift;
+    my $jmax = $line->[JMAX];
+    my $jmax_original_line = $line->[JMAX_ORIGINAL_LINE];
+    my $leading_space_count = $line->[LEADING_SPACE_COUNT];
+    my $is_hanging_side_comment = $line->[IS_HANGING_SIDE_COMMENT];
+    my $list_type = $line->[LIST_TYPE];
+    my $rtokens = $line->[RTOKENS];
+    my $rfields = $line->[RFIELDS];
+    my $rpatterns = $line->[RPATTERNS];
 
     # flush if this line has too many fields
     if ( $jmax > $maximum_field_index ) { flush(); }
@@ -8191,10 +8304,20 @@ The log file warns the user if there are any such tabs.
 
         flush() unless ($everything_matches);
     }
+}
 
-    # --------------------------------------------------------------------
-    # Step 6. See if there is space for this line in the current group
-    # --------------------------------------------------------------------
+sub check_fit {
+
+    #my ( $jmax, $leading_space_count, $is_hanging_side_comment, $rfields, 
+    #  $rtokens, $rpatterns ) = @_;
+    my $line = shift;
+    my $jmax = $line->[JMAX];
+    my $leading_space_count = $line->[LEADING_SPACE_COUNT];
+    my $is_hanging_side_comment = $line->[IS_HANGING_SIDE_COMMENT];
+    my $rtokens = $line->[RTOKENS];
+    my $rfields = $line->[RFIELDS];
+    my $rpatterns = $line->[RPATTERNS];
+
     if ( $maximum_line_index >= 0 ) {
         my $padding_so_far    = 0;
         my $padding_available =
@@ -8270,10 +8393,20 @@ The log file warns the user if there are any such tabs.
             $padding_available -= $pad;
         }
     }
+}
 
-    # --------------------------------------------------------------------
-    # Step 7. Append this line to the current group (or start new group)
-    # --------------------------------------------------------------------
+sub accept_line {
+
+    my $line = shift;
+    my $jmax = $line->[JMAX];
+    my $list_type = $line->[LIST_TYPE];
+    my $leading_space_count = $line->[LEADING_SPACE_COUNT];
+    my $indentation = $line->[INDENTATION];
+    my $outdent_long_lines = $line->[OUTDENT_LONG_LINES];
+    my $rtokens = $line->[RTOKENS];
+    my $rfields = $line->[RFIELDS];
+    my $rpatterns = $line->[RPATTERNS];
+
     $maximum_line_index++;
     $leading_space_count[$maximum_line_index] = $leading_space_count;
     $indentation[$maximum_line_index]         = $indentation;
@@ -8301,20 +8434,6 @@ The log file warns the user if there are any such tabs.
         for $j ( 0 .. $jmax - 1 ) {
             $matching_tokens[$j] = $$rtokens[$j];
         }
-    }
-
-    # --------------------------------------------------------------------
-    # Step 8. Some old debugging stuff
-    # --------------------------------------------------------------------
-    if ( $VALIGN_DEBUG_FLAG{APPEND} ) {
-        print "APPEND fields:";
-        dump_array(@$rfields);
-        print "APPEND tokens:";
-        dump_array(@$rtokens);
-        print "APPEND patterns:";
-        dump_array(@$rpatterns);
-        print "APPEND common columns:";
-        dump_array(@columns);
     }
 }
 
