@@ -43,13 +43,16 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.43 2001/09/08 14:30:23 perltidy Exp $
+    $Id: perltidy,v 1.44 2001/09/18 15:06:55 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
 }
 
 =pod
+
+POD NOTE: Documentation is contained in separately supplied .pod files;
+pod is used here only for long comments. 
 
 Here is a map of the flow of data from the input file to the output
 file:
@@ -87,7 +90,9 @@ messages.  It writes a .LOG file, which is automatically saved if
 perltidy detects an error.  The .LOG file may also be saved with a
 '-log' flag.
 
-Some comments refer to test files, most of which are in the test directory.
+Some comments in this file refer to separate test files, most of which
+are in the test directory which can be downloaded in addition to the
+basic perltidy distribution.
 
 =cut
 
@@ -2084,7 +2089,13 @@ BEGIN {
 
     # Now we have to map actual token types into one of the above short
     # names; any token types not mapped will get 'punctuation'
-    # properties.
+    # properties.  
+
+    # The values of this hash table correspond to the keys of the
+    # previous hash table.
+    # The keys of this hash table are token types and can be seen
+    # by running with --dump-token-types. 
+
     # When adding NEW_TOKENS: update this hash table
     # $type => $short_name
     %token_short_names = (
@@ -2311,6 +2322,7 @@ EOM
 
     while ( my ( $short_name, $long_name ) = each %short_to_long_names ) {
         my $abbrev = '.' . $short_name;
+        if (length($short_name) == 1) {$abbrev .= ' '}  # for alignment
         my $color  = $html_color{$short_name};
         if ( !defined($color) ) { $color = $text_color }
         print $fh "$abbrev \{ color: $color;";
@@ -2376,7 +2388,7 @@ HTML_START
         if ( $rOpts->{'html-linked-style-sheet'} ) {
             print HTML
               qq(<link rel=stylesheet href="$css_linkname" type="text/css">);
-            print HTML <<'ENDCSS';
+            print HTML <<"ENDCSS";
 <TITLE>$input_file</TITLE>
 </HEAD>
 <BODY> 
@@ -2390,7 +2402,7 @@ ENDCSS
 <!--
 ENDCSS
             write_style_sheet_data(*HTML);
-            print HTML <<'ENDCSS';
+            print HTML <<"ENDCSS";
 -->
 </STYLE>
 <TITLE>$input_file</TITLE>
@@ -2556,8 +2568,10 @@ sub write_line {
 
     # add the line number if requested
     if ( $rOpts->{'html-line-numbers'} ) {
-        my $extra_space .= ( $line_number < 10 ) ? "   " :
-          ( $line_number < 100 ) ? "  " : ( $line_number < 1000 ) ? " " : "";
+        my $extra_space .= ( $line_number < 10 ) ? "   "
+          : ( $line_number < 100 )  ? "  "
+          : ( $line_number < 1000 ) ? " "
+          : "";
         $html_line = $extra_space . $line_number . " " . $html_line;
     }
 
@@ -2667,6 +2681,7 @@ use vars qw{
   @ci_stack
   $last_line_had_side_comment
   $want_break_before_comma
+  $want_break_before_colon
 
   %FORMATTER_DEBUG_FLAG
   %tightness
@@ -3738,9 +3753,14 @@ EOM
     }
 
     # implement user break preferences
+    $want_break_before_comma = 0;
+    $want_break_before_colon = 1;
+    my $want_break_before_question = 1;
     if ( $rOpts->{'want-break-after'} ) {
         @list = split /\s/, $rOpts->{'want-break-after'};
         foreach my $tok (@list) {
+            if ( $tok eq ':' ) { $want_break_before_colon = 0; }
+            if ( $tok eq '?' ) { $want_break_before_question = 0; }
             my $lbs = $left_bond_strength{$tok};
             my $rbs = $right_bond_strength{$tok};
             if ( defined($lbs) && defined($rbs) && $lbs < $rbs ) {
@@ -3750,7 +3770,6 @@ EOM
         }
     }
 
-    $want_break_before_comma = 0;
     if ( $rOpts->{'want-break-before'} ) {
         @list = split /\s/, $rOpts->{'want-break-before'};
         foreach my $tok (@list) {
@@ -3762,6 +3781,22 @@ EOM
                 ( $right_bond_strength{$tok}, $left_bond_strength{$tok} ) =
                   ( $lbs, $rbs );
             }
+        }
+
+        # swap : ? strengths if we break after a :
+        if (!$want_break_before_colon || !$want_break_before_question) { 
+            if ($want_break_before_question) { 
+                ( $right_bond_strength{'?'}, $left_bond_strength{'?'} ) =
+                ( $left_bond_strength{'?'}, $right_bond_strength{'?'} );
+            }
+            if ($want_break_before_colon) { 
+                ( $right_bond_strength{':'}, $left_bond_strength{':'} ) =
+                ( $left_bond_strength{':'}, $right_bond_strength{':'} );
+            }
+            ($right_bond_strength{':'}, $right_bond_strength{'?'}) = 
+            ($right_bond_strength{'?'}, $right_bond_strength{':'}); 
+            ($left_bond_strength{':'}, $left_bond_strength{'?'}) = 
+            ($left_bond_strength{'?'}, $left_bond_strength{':'}); 
         }
     }
 
@@ -4501,7 +4536,7 @@ sub print_line_of_tokens {
     #     /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
     # Examples:
     #   *VERSION = \'1.01';
-    #   ( $VERSION ) = '$Revision: 1.43 $ ' =~ /\$Revision:\s+([^\s]+)/;
+    #   ( $VERSION ) = '$Revision: 1.44 $ ' =~ /\$Revision:\s+([^\s]+)/;
     # We will pass such a line straight through unless -npvl is used
     my $is_VERSION_statement = 0;
 
@@ -6204,10 +6239,17 @@ sub set_bond_strengths {
         # an '=' and a quote (NOMINAL),
         # make strength of ':' slightly less than '?' to help
         # break long chains of ? : after the colons
-        $right_bond_strength{':'} = 0.6 * WEAK + 0.4 * NOMINAL;
-        $left_bond_strength{':'}  = NO_BREAK;
-        $right_bond_strength{'?'} = 0.4 * WEAK + 0.6 * NOMINAL;
-        $left_bond_strength{'?'}  = NO_BREAK;
+
+        # TESTING:
+        #$right_bond_strength{':'} = 0.6 * WEAK + 0.4 * NOMINAL;
+        #$left_bond_strength{':'}  = NO_BREAK;
+        #$right_bond_strength{'?'} = 0.4 * WEAK + 0.6 * NOMINAL;
+        #$left_bond_strength{'?'}  = NO_BREAK;
+
+        $left_bond_strength{'?'} = 0.6 * WEAK + 0.4 * NOMINAL;
+        $right_bond_strength{'?'}  = NO_BREAK;
+        $left_bond_strength{':'} = 0.4 * WEAK + 0.6 * NOMINAL;
+        $right_bond_strength{':'}  = NO_BREAK;
 
         $left_bond_strength{','}  = VERY_STRONG;
         $right_bond_strength{','} = VERY_WEAK;
@@ -6352,7 +6394,11 @@ sub set_bond_strengths {
         }
 
         # in long ?: conditionals, bias toward just one set per line (colon.t)
-        if ( $type eq ':' ) {
+        if ( $type eq ':' && !$want_break_before_colon) {
+            $bond_str   += $colon_bias;
+            $colon_bias += 0.0001;
+        }
+        if ( $next_nonblank_type eq ':' && $want_break_before_colon) {
             $bond_str   += $colon_bias;
             $colon_bias += 0.0001;
         }
@@ -6360,22 +6406,22 @@ sub set_bond_strengths {
         #--------------------------------------------------------------------
         # Possible Future Coding: This needs to be coordinated with
         # sub set_continuation breaks to take alignment into account
-        #        elsif ( $next_nonblank_type eq '&&' ) {
-        #            $bond_str   += $amp_bias;
-        #            $amp_bias += 0.0001;
-        #        }
-        #        elsif ( $next_nonblank_type eq '||' ) {
-        #            $bond_str   += $bar_bias;
-        #            $bar_bias += 0.0001;
-        #        }
-#        elsif ($next_nonblank_type eq 'k' && $next_nonblank_token eq 'and') {
-        #            $bond_str   += $and_bias;
-        #            $and_bias += 0.0001;
-        #        }
-#        elsif ($next_nonblank_type eq 'k' && $next_nonblank_token eq 'or') {
-        #            $bond_str   += $or_bias;
-        #            $or_bias += 0.0001;
-        #        }
+        elsif ( $next_nonblank_type eq '&&' ) {
+                    $bond_str   += $amp_bias;
+                    $amp_bias += 0.0001;
+        }
+        elsif ( $next_nonblank_type eq '||' ) {
+                    $bond_str   += $bar_bias;
+                    $bar_bias += 0.0001;
+        }
+        elsif ($next_nonblank_type eq 'k' && $next_nonblank_token eq 'and') {
+                    $bond_str   += $and_bias;
+                    $and_bias += 0.0001;
+                }
+        elsif ($next_nonblank_type eq 'k' && $next_nonblank_token eq 'or') {
+                    $bond_str   += $or_bias;
+                    $or_bias += 0.0001;
+                }
         #--------------------------------------------------------------------
 
         # keep matrix and hash indices together
@@ -7856,6 +7902,11 @@ sub recombine_breakpoints {
                 );
             }
 
+            # do not recombine lines with leading &&, ||, or :
+            elsif ( $types_to_go[$imidr] =~ /^(:|\&\&|\|\|)$/) {
+               next;
+            }
+
             # for keywords..
             elsif ( $types_to_go[$imid] eq 'k' ) {
 
@@ -7961,6 +8012,8 @@ sub set_continuation_breaks {
     my $leading_spaces      = leading_spaces_to_go($imin);
     my $line_count          = 0;
     my $last_break_strength = NO_BREAK;
+    my $i_last_break = -1;
+    my $max_bias = 0.001;
 
     while ( $i_begin <= $imax ) {
         my $lowest_strength = NO_BREAK;
@@ -8040,9 +8093,20 @@ sub set_continuation_breaks {
 
             if ( ( $strength <= $lowest_strength ) && ( $strength < NO_BREAK ) )
             {
+
                 $lowest_strength = $strength;
                 $i_lowest        = $i_test;
                 last if $must_break;
+
+                # break to avoid two of certain types on a line
+                last
+                  if ( $line_count > 0 && $i_test<$imax
+                    && ($lowest_strength - $last_break_strength <= $max_bias)
+                    && ( $types_to_go[$i_begin] =~ /^(\&\&|\|\||:)$/
+                        && $types_to_go[$i_begin] eq $next_nonblank_type)
+                    || ( $tokens_to_go[$i_begin] =~ /^(and|or)$/
+                        && $tokens_to_go[$i_begin] eq $next_nonblank_token)
+                );
             }
 
             my $too_long =
@@ -8087,6 +8151,7 @@ sub set_continuation_breaks {
 
         $i_begin             = $i_lowest + 1;
         $last_break_strength = $lowest_strength;
+        $i_last_break = $i_lowest;
 
         if ( ( $i_begin <= $imax ) && ( $types_to_go[$i_begin] eq 'b' ) ) {
             $i_begin++;
@@ -15197,8 +15262,18 @@ updated id_scan_state and the next index after the identifier.
                     }
                 }
                 elsif ( $identifier eq '$$' ) {
+
+                    # perl does not allow references to punctuation
+                    # variables without braces.  For example, this 
+                    # won't work:
+                    #  $:=\4;
+                    #  $a = $$:;
+                    # You would have to use
+                    #  $a = ${$:};
+
                     $i = $i_save;
-                    if ( $tok =~ /^[\{]$/ ) { $type = 'i' }
+                    if ( $tok =~ /^[\{]$/ ) { $type = 't' }
+                    else {$type = 'i'}
                 }
                 elsif ( $identifier eq '->' ) {
                     $i = $i_save;

@@ -4,6 +4,18 @@
  have hit a bug, unusual behavior, annoyance, or have a suggested
  improvement, please send a note to perltidy at users.sourceforge.net.  
 
+=head2 2001 xx xx
+
+ -Fixed intrerpolation problem where html files had '$input_file' as title
+ instead of actual input file name.  Thanks to Simon Perreault for finding
+ this and sending a patch.
+ 
+ -Fixed minor parsing error which prevented a space after a $$ variable
+ (pid) in some cases.  Thanks to Michael Cartmell for noting this.
+ For example, 
+   old: $$< 700 
+   new: $$ < 700
+
 =head2 2001 09 03 
 
  -html updates:
