@@ -1,4 +1,10 @@
-    {
+{{{{
+# break at '-' not '->'
+                $temptotalr +=
+                  $charges[$i2]->{'amount'} - $charges[$i2]
+                  ->{'amountoutstanding'};
+}}}
+{
 
     # This is difficult because the map statement
     # We want to break at the ',' before 'join' and 'map' to display

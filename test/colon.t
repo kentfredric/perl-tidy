@@ -1,3 +1,24 @@
+{{
+# quite difficult:
+	$filecol =
+	    (/^$/)     ? $filecol					 :
+	    (s/^\+//)  ? $filecol  + $_					 :
+	    (s/^\-//)  ? $filecol  - $_					 :
+	    (s/^>//)   ? ($filecol + $_) % $pages			 :
+	    (s/^]//)   ? (($filecol + $_ >= $pages) ? 0 : $filecol + $_) :
+	    (s/^<//)   ? ($filecol - $_) % $pages			 :
+	    (s/^\[//)  ? (($filecol == 0) ? $pages - ($pages % $_ || $_) :
+			  ($filecol - $_ < 0) ? 0 : $filecol - $_)	 :
+	    (/^\d/)    ? $_ - 1						 :
+	    (s/^\\?//) ? (($col{$_}, $row{$_}) = &pageto($_))[0]	 : 0;
+}}
+
+# indent here: between line ending in '=' and one with leading ':'
+my $message =
+    "There " . ( $words == 1 ) ? "is"
+  : "are" . " $words word" . ( $words == 1 ) ? ""
+  : "s" . " in the text \n";
+
 # Break at '='
 *{"${callpkg}::$sym"} = $type eq '&' ? \&{"${pkg}::$sym"}
   : $type eq '$' ? \${"${pkg}::$sym"}

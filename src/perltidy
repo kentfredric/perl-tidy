@@ -2051,9 +2051,9 @@ the results then merged.  Note: perltidy creates a temporary file when
 Pod::Html is used; see L<"FILES">.  Also, Pod::Html creates temporary
 files for its cache.
 
-If there is a single pod text section (one =cut line), the pod text will
-be at the top of the html output and the perl code will follow.
-Otherwise, the order of pod text and perl code will be unchanged.
+NOTE: Perltidy counts the number of C<=cut> lines, and either moves the
+pod text to the top of the html file if there is one C<=cut>, or leaves
+the pod text in its original order (interleaved with code) otherwise.
 
 Most of the flags accepted by pod2html may be included in the perltidy
 command line, and they will be passed to pod2html.  In some cases,

@@ -6,6 +6,13 @@
     return &postponed_sub
       unless ref \$_[0] eq 'GLOB';  # A subroutine is compiled.
                                     # Cannot be done before the file is compiled
+
+    # this will go out as two groups but will work ok
+    if ( !defined $format || $format eq "" ) {    # Format not given? -
+                                                  # find max length of default
+        $len = 0;
+    }
+
 }
 
 # At one time the middle line was not lined up because of $VERSION

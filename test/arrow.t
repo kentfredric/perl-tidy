@@ -1,3 +1,18 @@
+# lost alignment at one time (side comments)
+my (%protonum) = (    ## protocol table
+    'TCP'  => 6,      ## tcp
+    'tcp'  => 6,      ## tcp
+    'UDP'  => 17,     ## udp
+    'udp'  => 17,     ## udp
+    'ICMP' => 1,      ## icmp
+    'icmp' => 1       ## icmp
+);
+# I dont know if this is a bug or a feature, but you might want to add it to
+# unwanted '=>' alignment
+$logo->Label( -image => $image, -padx => 50 )->pack( -ipadx => 25 );
+$logo->Label( -text => $address )->pack( -ipadx => 25 );
+$info->Label( -text => $copy )->pack( -side     => 'right', -ipadx => 25);
+
 # remove spaces around arrows
 my $obj = Bio::Variation::AAChange -> new;
 my $termcap = Term::Cap -> Tgetent( { TERM => undef } );

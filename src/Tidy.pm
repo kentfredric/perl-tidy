@@ -61,7 +61,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.40 2003/01/10 15:41:56 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.41 2003/01/23 02:34:22 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 sub streamhandle {
@@ -4850,6 +4850,7 @@ use vars qw{
   $last_last_nonblank_type_to_go
   $last_last_nonblank_token_to_go
   @nonblank_lines_at_depth
+  $starting_in_quote
 
   $forced_breakpoint_count
   $forced_breakpoint_undo_count
@@ -4910,6 +4911,8 @@ use vars qw{
   %is_sort_map_grep_eval
   %is_block_without_semicolon
   %is_if_unless_and_or
+  %is_assignment
+  %is_chain_operator
 
   @has_broken_sublist
   @dont_align
@@ -4994,6 +4997,19 @@ BEGIN {
 
     @_ = qw( ... **= <<= >>= &&= ||= <=> );
     @is_trigraph{@_} = (1) x scalar(@_);
+
+    @_ = qw(
+      = **= += *= &= <<= &&=
+      -= /= |= >>= ||=
+      .= %= ^=
+      x=
+    );
+    @is_assignment{@_} = (1) x scalar(@_);
+
+##    # these operators are frequently combined in chains which can be aligned
+##    # used by sub recombine_breakpoints and sub set_logical_padding
+##    @_ = qw(&& || and or : ? .);
+##    @is_chain_operator{@_} = (1) x scalar(@_);
 
     @_ = qw(
       grep
@@ -5279,6 +5295,7 @@ sub prepare_for_new_input_lines {
     $lengths_to_go[0]               = 0;
     $old_line_count_in_batch        = 1;
     $comma_count_in_batch           = 0;
+    $starting_in_quote              = 0;
 
     destroy_one_line_block();
 }
@@ -5745,13 +5762,17 @@ sub set_leading_whitespace {
     # non-list character, we give up and don't look for any more commas.
     if ( $type eq '=>' ) {
         $gnu_arrow_count{$total_depth}++;
+
+        # BUBBA: tentatively treating '=>' like '=' for estimating breaks
+        # this could use some experimentation
+        $last_gnu_equals{$total_depth} = $max_index_to_go;
     }
 
-    if ( $type eq ',' ) {
+    elsif ( $type eq ',' ) {
         $gnu_comma_count{$total_depth}++;
     }
 
-    elsif ( $type =~ /=/ ) {
+    elsif ( $is_assignment{$type} ) { 
         $last_gnu_equals{$total_depth} = $max_index_to_go;
     }
 
@@ -5789,8 +5810,7 @@ sub set_leading_whitespace {
 
             # or this is after an assignment after a closing structure
             || (
-                   $last_nonblank_type_to_go =~ /=/
-                && $last_nonblank_type_to_go !~ /(==|!=|>=|<=|=~|=>)/
+                   $is_assignment{$last_nonblank_type_to_go}
                 && (
                     $last_last_nonblank_type_to_go =~ /^[\}\)\]]$/
 
@@ -7502,7 +7522,8 @@ sub set_white_space_flag {
         $rci_levels             = $line_of_tokens->{_rci_levels};
         $rnesting_blocks        = $line_of_tokens->{_rnesting_blocks};
 
-        $in_continued_quote       = $line_of_tokens->{_starting_in_quote};
+        $in_continued_quote = $starting_in_quote =
+          $line_of_tokens->{_starting_in_quote};
         $in_quote                 = $line_of_tokens->{_ending_in_quote};
         $python_indentation_level =
           $line_of_tokens->{_python_indentation_level};
@@ -7682,7 +7703,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.40 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.41 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -8624,235 +8645,335 @@ sub undo_lp_ci {
       @reduced_spaces_to_go[ @$ri_first[ $line_1 .. $n ] ];
 }
 
-sub set_logical_padding {
+{
 
-    # Look at a batch of lines and see if extra padding can improve the
-    # alignment when there are leading logical operators. Here is an
-    # example, in which some extra space is introduced before
-    # '( $year' to make it line up with the subsequent lines:
-    #
-    #       if (   ( $Year < 1601 )
-    #           || ( $Year > 2899 )
-    #           || ( $EndYear < 1601 )
-    #           || ( $EndYear > 2899 ) )
-    #       {
-    #           &Error_OutOfRange;
-    #       }
-    #
-    #  We will also do something similar with certain ?/: chains
-    #
-    my ( $ri_first, $ri_last ) = @_;
-    my $max_line = @$ri_first - 1;
-
-    my ( $ibeg, $ibeg_next, $ibegm, $iend, $iendm, $ipad, $line, $pad_spaces,
-        $tok_next, $has_leading_op_next, $has_leading_op );
-
-    # looking at each line of this batch..
-    foreach $line ( 0 .. $max_line - 1 ) {
-
-        # see if the next line begins with a logical operator
-        $ibeg                = $$ri_first[$line];
-        $iend                = $$ri_last[$line];
-        $ibeg_next           = $$ri_first[ $line + 1 ];
-        $tok_next            = $tokens_to_go[$ibeg_next];
-        $has_leading_op_next = ( $tok_next =~ /^(\&\&|\|\||and|or|\:)$/ );
-        next unless ($has_leading_op_next);
-
-        # next line must not be at lesser depth
-        next
-          if ( $nesting_depth_to_go[$ibeg] > $nesting_depth_to_go[$ibeg_next] );
-
-        # identify the token in this line to be padded on the left
-        $ipad = undef;
-
-        # handle lines at same depth...
-        if ( $nesting_depth_to_go[$ibeg] == $nesting_depth_to_go[$ibeg_next] ) {
-
-            # previous line must be at lesser depth if this is not first line
-            # of the batch
-            if ( $line > 0 ) {
-                
-                # skip if we are at same depth as a previous line
-                # with leading logical operator
-                next if $has_leading_op;
-
-                # For ':' chains, add space after a line ending in some
-                # type of equality.  Example:
-                #    $leapyear =
-                #        $year % 4   ? 0     # <- We are here
-                #      : $year % 100 ? 1
-                #      : $year % 400 ? 0
-                #      : 1;
-                if ( $tok_next eq ':' ) {
-                    next unless $types_to_go[$iendm] =~ /=$/;
-                }
-
-                # For other operators, previous line must be lesser depth
-                #       if (   ( $Year < 1601 )
-                #           || ( $Year > 2899 )     # <- We are here
-                #           || ( $EndYear < 1601 )
-                #           || ( $EndYear > 2899 ) )
-                #       {
-                else {
-                    next
-                      if $nesting_depth_to_go[$ibegm] >=
-                      $nesting_depth_to_go[$ibeg];
-                }
-
-                $ipad = $ibeg;
-            }
-
-            # for first line of the batch..
-            else {
-
-                # if this is text after closing '}'
-                # then look for an interior token to pad
-                if ( $types_to_go[$ibeg] eq '}' ) {
-
-                }
-
-                # otherwise, we might pad if it looks really good
-                else {
-
-                    # we might pad token $ibeg, so be sure that it
-                    # is at the same depth as the next line.
-                    next
-                      if ( $nesting_depth_to_go[ $ibeg + 1 ] !=
-                        $nesting_depth_to_go[$ibeg_next] );
-
-                    # We can pad on line 1 of a statement if at least 3
-                    # lines will be aligned. Otherwise, it
-                    # can look very confusing.
-                    if ( $max_line > 2 ) {
-                        my $leading_token = $tokens_to_go[$ibeg_next];
-                        my $count         = 1;
-                        foreach my $l ( 2 .. 3 ) {
-                            my $ibeg_next_next = $$ri_first[ $line + $l ];
-                            next
-                              unless $tokens_to_go[$ibeg_next_next] eq
-                              $leading_token;
-                            $count++;
-                        }
-                        next unless $count == 3;
-                        $ipad = $ibeg;
-                    }
-                    else {
-                        next;
-                    }
-                }
-            }
-        }
-
-        # find interior token to pad if necessary
-        if ( !defined($ipad) ) {
-
-            for ( my $i = $ibeg ; ( $i < $iend ) && !$ipad ; $i++ ) {
-
-                # find any unclosed container
-                next
-                  unless ( $type_sequence_to_go[$i]
-                    && $mate_index_to_go[$i] > $iend );
-
-                # find next nonblank token to pad
-                $ipad = $i + 1;
-                if ( $types_to_go[$ipad] eq 'b' ) {
-                    $ipad++;
-                    last if ( $ipad > $iend );
-                }
-            }
-            last unless $ipad;
-        }
-
-        # lines must be somewhat similar to be padded..
-        my $iend_next  = $$ri_last[ $line + 1 ];
-        my $inext_next = $ibeg_next + 1;
-        if ( $types_to_go[$inext_next] eq 'b' ) {
-            $inext_next++;
-        }
-        my $type = $types_to_go[$ipad];
-
-        # see if there are multiple continuation lines
-        my $logical_continuation_lines = 1;
-        if ( $line + 2 <= $max_line ) {
-            my $leading_token  = $tokens_to_go[$ibeg_next];
-            my $ibeg_next_next = $$ri_first[ $line + 2 ];
-            if (   $tokens_to_go[$ibeg_next_next] eq $leading_token
-                && $nesting_depth_to_go[$ibeg_next] eq
-                $nesting_depth_to_go[$ibeg_next_next] )
-            {
-                $logical_continuation_lines++;
-            }
-        }
-        if (
-
-            # next line must not be at greater depth
-            $nesting_depth_to_go[ $iend_next + 1 ] <=
-            $nesting_depth_to_go[$ipad]
-
-            # and ..
-            && (
-
-                # either we have multiple continuation lines to follow
-                # and we are not padding the first token
-                ( $logical_continuation_lines > 1 && $ipad > 0 )
-
-                # or..
-                || (
-
-                    # types must match
-                    $types_to_go[$inext_next] eq $type
-
-                    # and keywords must match if keyword
-                    && !(
-                           $type eq 'k'
-                        && $tokens_to_go[$ipad] ne $tokens_to_go[$inext_next]
-                    )
-                )
-            )
-          )
-        {
-            my $length_1 = total_line_length( $ibeg,      $ipad - 1 );
-            my $length_2 = total_line_length( $ibeg_next, $inext_next - 1 );
-            $pad_spaces = $length_2 - $length_1;
-
-            # make sure this won't change if -lp is used
-            my $indentation_1 = $leading_spaces_to_go[$ibeg];
-            if ( ref($indentation_1) ) {
-                if ( $indentation_1->get_RECOVERABLE_SPACES() == 0 ) {
-                    my $indentation_2 = $leading_spaces_to_go[$ibeg_next];
-                    unless ( $indentation_2->get_RECOVERABLE_SPACES() == 0 ) {
-                        $pad_spaces = 0;
-                    }
-                }
-            }
-
-            # we might be able to handle a pad of -1 by removing a blank
-            # token
-            if ( $pad_spaces < 0 ) {
-                if ( $pad_spaces == -1 ) {
-                    if ( $ipad > $ibeg && $types_to_go[ $ipad - 1 ] eq 'b' ) {
-                        $tokens_to_go[ $ipad - 1 ] = '';
-                    }
-                }
-                $pad_spaces = 0;
-            }
-
-            # now apply any padding for alignment
-            if ( $ipad >= 0 && $pad_spaces ) {
-                my $length_t = total_line_length( $ibeg, $iend );
-                if ( $pad_spaces + $length_t <= $rOpts_maximum_line_length ) {
-                    $tokens_to_go[$ipad] =
-                      ' ' x $pad_spaces . $tokens_to_go[$ipad];
-                }
-            }
-        }
+    # Identify certain operators which often occur in chains.
+    # We will try to improve alignment when these lead a line.
+    my %is_chain_operator;
+    BEGIN {
+        @_ = qw(&& || and or : ? .);
+        @is_chain_operator{@_} = (1) x scalar(@_);
     }
-    continue {
-        $iendm          = $iend;
-        $ibegm          = $ibeg;
-        $has_leading_op = $has_leading_op_next;
-    }    # end of loop over lines
-    return;
+
+    sub set_logical_padding {
+
+        # Look at a batch of lines and see if extra padding can improve the
+        # alignment when there are certain leading operators. Here is an
+        # example, in which some extra space is introduced before
+        # '( $year' to make it line up with the subsequent lines:
+        #
+        #       if (   ( $Year < 1601 )
+        #           || ( $Year > 2899 )
+        #           || ( $EndYear < 1601 )
+        #           || ( $EndYear > 2899 ) )
+        #       {
+        #           &Error_OutOfRange;
+        #       }
+        #
+        my ( $ri_first, $ri_last ) = @_;
+        my $max_line = @$ri_first - 1;
+
+        my ( $ibeg, $ibeg_next, $ibegm, $iend, $iendm, $ipad, $line,
+            $pad_spaces, $tok_next, $has_leading_op_next, $has_leading_op );
+
+        # looking at each line of this batch..
+        foreach $line ( 0 .. $max_line - 1 ) {
+
+            # see if the next line begins with a logical operator
+            $ibeg      = $$ri_first[$line];
+            $iend      = $$ri_last[$line];
+            $ibeg_next = $$ri_first[ $line + 1 ];
+            $tok_next  = $tokens_to_go[$ibeg_next];
+            $has_leading_op_next = $is_chain_operator{$tok_next};
+            next unless ($has_leading_op_next);
+
+            # next line must not be at lesser depth
+            next
+              if ( $nesting_depth_to_go[$ibeg] >
+                $nesting_depth_to_go[$ibeg_next] );
+
+            # identify the token in this line to be padded on the left
+            $ipad = undef;
+
+            # handle lines at same depth...
+            if ( $nesting_depth_to_go[$ibeg] ==
+                $nesting_depth_to_go[$ibeg_next] )
+            {
+
+                # if this is not first line of the batch ...
+                if ( $line > 0 ) {
+
+                    # and we have leading operator
+                    next if $has_leading_op;
+
+                    # and ..
+                    # 1. the previous line is at lesser depth, or
+                    # 2. the previous line ends in an assignment
+                    #
+                    # Example 1: previous line at lesser depth
+                    #       if (   ( $Year < 1601 )      # <- we are here but
+                    #           || ( $Year > 2899 )      #  list has not yet
+                    #           || ( $EndYear < 1601 )   # collapsed vertically
+                    #           || ( $EndYear > 2899 ) )
+                    #       {
+                    #
+                    # Example 2: previous line ending in assignment:
+                    #    $leapyear =
+                    #        $year % 4   ? 0     # <- We are here
+                    #      : $year % 100 ? 1
+                    #      : $year % 400 ? 0
+                    #      : 1;
+                    next
+                      unless (
+                        $is_assignment{ $types_to_go[$iendm] }
+                        || ( $nesting_depth_to_go[$ibegm] <
+                            $nesting_depth_to_go[$ibeg] )
+                      );
+
+                    # we will add padding before the first token
+                    $ipad = $ibeg;
+                }
+
+                # for first line of the batch..
+                else {
+                        
+                    # WARNING: Never indent if first line is starting in a
+                    # continued quote, which would change the quote.
+                    next if $starting_in_quote;
+
+                    # if this is text after closing '}'
+                    # then look for an interior token to pad
+                    if ( $types_to_go[$ibeg] eq '}' ) {
+
+                    }
+
+                    # otherwise, we might pad if it looks really good
+                    else {
+
+                        # we might pad token $ibeg, so be sure that it
+                        # is at the same depth as the next line.
+                        next
+                          if ( $nesting_depth_to_go[ $ibeg + 1 ] !=
+                            $nesting_depth_to_go[$ibeg_next] );
+
+                        # We can pad on line 1 of a statement if at least 3
+                        # lines will be aligned. Otherwise, it
+                        # can look very confusing.
+                        if ( $max_line > 2 ) {
+                            my $leading_token = $tokens_to_go[$ibeg_next];
+
+                            # never indent line 1 of a '.' series because
+                            # previous line is most likely at same level.
+                            # TODO: we should also look at the leasing_spaces
+                            # of the last output line and skip if it is same
+                            # as this line.
+                            next if ($leading_token eq '.');
+
+                            my $count         = 1;
+                            foreach my $l ( 2 .. 3 ) {
+                                my $ibeg_next_next = $$ri_first[ $line + $l ];
+                                next
+                                  unless $tokens_to_go[$ibeg_next_next] eq
+                                  $leading_token;
+                                $count++;
+                            }
+                            next unless $count == 3;
+                            $ipad = $ibeg;
+                        }
+                        else {
+                            next;
+                        }
+                    }
+                }
+            }
+
+            # find interior token to pad if necessary
+            if ( !defined($ipad) ) {
+
+                for ( my $i = $ibeg ; ( $i < $iend ) && !$ipad ; $i++ ) {
+
+                    # find any unclosed container
+                    next
+                      unless ( $type_sequence_to_go[$i]
+                        && $mate_index_to_go[$i] > $iend );
+
+                    # find next nonblank token to pad
+                    $ipad = $i + 1;
+                    if ( $types_to_go[$ipad] eq 'b' ) {
+                        $ipad++;
+                        last if ( $ipad > $iend );
+                    }
+                }
+                last unless $ipad;
+            }
+                
+            # next line must not be at greater depth
+            my $iend_next  = $$ri_last[ $line + 1 ];
+            next
+              if ( $nesting_depth_to_go[ $iend_next + 1 ] >
+                $nesting_depth_to_go[$ipad] );
+
+            # lines must be somewhat similar to be padded..
+            my $inext_next = $ibeg_next + 1;
+            if ( $types_to_go[$inext_next] eq 'b' ) {
+                $inext_next++;
+            }
+            my $type = $types_to_go[$ipad];
+
+            # see if there are multiple continuation lines
+            my $logical_continuation_lines = 1;
+            if ( $line + 2 <= $max_line ) {
+                my $leading_token  = $tokens_to_go[$ibeg_next];
+                my $ibeg_next_next = $$ri_first[ $line + 2 ];
+                if (   $tokens_to_go[$ibeg_next_next] eq $leading_token
+                    && $nesting_depth_to_go[$ibeg_next] eq
+                    $nesting_depth_to_go[$ibeg_next_next] )
+                {
+                    $logical_continuation_lines++;
+                }
+            }
+            if (
+
+
+                # and ..
+                ##&& (
+
+                    # either we have multiple continuation lines to follow
+                    # and we are not padding the first token
+                    ( $logical_continuation_lines > 1 && $ipad > 0 )
+
+                    # or..
+                    || (
+
+                        # types must match
+                        $types_to_go[$inext_next] eq $type
+
+                        # and keywords must match if keyword
+                        && !(
+                               $type eq 'k'
+                            && $tokens_to_go[$ipad] ne
+                            $tokens_to_go[$inext_next]
+                        )
+                    )
+                    ##)
+              )
+            {
+
+                #----------------------begin special check---------------
+                #
+                # One more check is needed before we can make the pad.
+                # If we are in a list with some long items, we want each
+                # item to stand out.  So in the following example, the
+                # first line begining with '$casefold->' would look good
+                # padded to align with the next line, but then it
+                # would be indented more than the last line, so we
+                # won't do it.
+                #
+                #  ok(
+                #      $casefold->{code}         eq '0041'
+                #        && $casefold->{status}  eq 'C'
+                #        && $casefold->{mapping} eq '0061',
+                #      'casefold 0x41'
+                #  );
+                #
+                # Note:
+                # It would be faster, and almost as good, to use a comma
+                # count, and not pad if comma_count > 1 and the previous
+                # line did not end with a comma.
+                #
+                my $ok_to_pad = 1;
+
+                my $ibg   = $$ri_first[ $line + 1 ];
+                my $depth = $nesting_depth_to_go[ $ibg + 1 ];
+
+                # just use simplified formula for leading spaces to avoid
+                # needless sub calls
+                ##my $lsp   = leading_spaces_to_go($ibg);
+                my $lsp = $levels_to_go[$ibg] * 2 + $ci_levels_to_go[$ibg];
+
+                # look at each line beyond the next ..
+                my $l=$line+1;
+                foreach $l ( $line + 2 .. $max_line ) {
+                    my $ibg = $$ri_first[$l];
+
+                    # quit looking at the end of this container
+                    last
+                      if ( $nesting_depth_to_go[ $ibg + 1 ] < $depth )
+                      || ( $nesting_depth_to_go[$ibg] < $depth );
+
+                    # cannot do the pad if a later line would be
+                    # outdented more
+                    ##if ( leading_spaces_to_go($ibg) < $lsp ) {
+                    if ( $levels_to_go[$ibg] * 2 + $ci_levels_to_go[$ibg] <
+                        $lsp )
+                    {
+                        $ok_to_pad = 0;
+                        last;
+                    }
+                }
+
+                # don't pad if we end in a broken list
+                if ( $l == $max_line ) {
+                    my $i2 = $$ri_last[$l];
+                    if ( $types_to_go[$i2] eq '#' ) {
+                        my $i1 = $$ri_first[$l];
+                        next
+                          if (
+                            terminal_type( \@types_to_go, \@block_type_to_go,
+                                $i1, $i2 ) eq ','
+                          );
+                    }
+                }
+                next unless $ok_to_pad;
+
+                #----------------------end special check---------------
+
+                my $length_1 = total_line_length( $ibeg,      $ipad - 1 );
+                my $length_2 = total_line_length( $ibeg_next, $inext_next - 1 );
+                $pad_spaces = $length_2 - $length_1;
+
+                # make sure this won't change if -lp is used
+                my $indentation_1 = $leading_spaces_to_go[$ibeg];
+                if ( ref($indentation_1) ) {
+                    if ( $indentation_1->get_RECOVERABLE_SPACES() == 0 ) {
+                        my $indentation_2 = $leading_spaces_to_go[$ibeg_next];
+                        unless ( $indentation_2->get_RECOVERABLE_SPACES() == 0 )
+                        {
+                            $pad_spaces = 0;
+                        }
+                    }
+                }
+
+                # we might be able to handle a pad of -1 by removing a blank
+                # token
+                if ( $pad_spaces < 0 ) {
+                    if ( $pad_spaces == -1 ) {
+                        if ( $ipad > $ibeg && $types_to_go[ $ipad - 1 ] eq 'b' )
+                        {
+                            $tokens_to_go[ $ipad - 1 ] = '';
+                        }
+                    }
+                    $pad_spaces = 0;
+                }
+
+                # now apply any padding for alignment
+                if ( $ipad >= 0 && $pad_spaces ) {
+                    my $length_t = total_line_length( $ibeg, $iend );
+                    if ( $pad_spaces + $length_t <= $rOpts_maximum_line_length )
+                    {
+                        $tokens_to_go[$ipad] =
+                          ' ' x $pad_spaces . $tokens_to_go[$ipad];
+                    }
+                }
+            }
+        }
+        continue {
+            $iendm          = $iend;
+            $ibegm          = $ibeg;
+            $has_leading_op = $has_leading_op_next;
+        }    # end of loop over lines
+        return;
+    }
 }
 
 sub correct_lp_indentation {
@@ -10601,7 +10722,11 @@ sub set_vertical_tightness_flags {
     my %is_vertical_alignment_keyword;
 
     BEGIN {
-        @_ = qw#{ ? : => = += -= =~ *= /= .= && || ||= #;
+
+        @_ = qw#
+          = **= += *= &= <<= &&= -= /= |= >>= ||= .= %= ^= x=
+          { ? : => =~ && ||
+        #;
         @is_vertical_alignment_type{@_} = (1) x scalar(@_);
 
         @_ = qw(if unless and or eq ne for foreach while until);
@@ -11220,7 +11345,7 @@ sub terminal_type {
                 $bond_str = 0.9 * STRONG + 0.1 * NOMINAL;
             }
 
-            if ( $next_nonblank_type eq 'i' && $next_nonblank_token =~ /^->/ ) {
+            if ( $next_nonblank_token =~ /^->/ ) {
 
                 # increase strength to the point where a break in the following
                 # will be after the opening paren rather than at the arrow:
@@ -11854,7 +11979,7 @@ sub pad_array_to_go {
                     }
                 }
             }
-            elsif ( $type eq '=' ) {
+            elsif ( $is_assignment{$type}) {
                 $i_equals[$depth] = $i;
             }
 
@@ -12322,7 +12447,7 @@ sub pad_array_to_go {
 
                     # break before an '=' following closing structure
                     if (
-                        $next_nonblank_type eq '='
+                        $is_assignment{$next_nonblank_type}
                         && ( $breakpoint_stack[$current_depth] !=
                             $forced_breakpoint_count )
                       )
@@ -12386,7 +12511,7 @@ sub pad_array_to_go {
             # not a list.  Note that '=' could be in any of the = operators
             # (lextest.t). We can't just use the reported environment
             # because it can be incorrect in some cases.
-            elsif ($type =~ /(^[\;\<\>\~]$)|[=]/
+            elsif ( ($type =~ /^[\;\<\>\~]$/ || $is_assignment{$type})
                 && $container_environment_to_go[$i] ne 'LIST' )
             {
                 $dont_align[$depth]         = 1;
@@ -12788,7 +12913,7 @@ sub find_token_starting_list {
         my $odd_or_even = 2;    # 1 = odd field count ok, 2 = want even count
 
         if (   $identifier_count >= $item_count - 1
-            || $next_nonblank_type eq '='
+            || $is_assignment{$next_nonblank_type}
             || ( $list_type && $list_type ne '=>' && $list_type !~ /^[\:\?]$/ )
           )
         {
@@ -13781,15 +13906,16 @@ sub undo_forced_breakpoint_stack {
                 }
 
                 # if '=' at end of line ...
-                elsif ( $types_to_go[$imid] eq '=' ) {
-
-                    # always ok to join isolated '='
+                elsif ( $is_assignment{$types_to_go[$imid]}){
+                    
+                    # otherwise always ok to join isolated '='
                     unless ( $if == $imid ) {
 
                         my $is_math = (
                             ( $types_to_go[$il] =~ /^[+-\/\*\)]$/ )
 
-                   # note no '$' in pattern because -> can start long identifier
+                              # note no '$' in pattern because -> can 
+                              # start long identifier
                               && !grep { $_ =~ /^(->|=>|[\,])/ }
                               @types_to_go[ $imidr .. $il ]
                         );
@@ -13991,7 +14117,7 @@ sub undo_forced_breakpoint_stack {
                         # keywords look best at start of lines,
                         # but combine things like "1 while"
 
-                        unless ( $types_to_go[$imid] eq '=' ) {
+                        unless ( $is_assignment{$types_to_go[$imid] }) {
                             next
                               if ( ( $types_to_go[$imid] ne 'k' )
                                 && ( $tokens_to_go[$imidr] !~ /^(while)$/ ) );
@@ -15626,8 +15752,10 @@ sub append_line {
         # This will help keep side comments aligned, because otherwise we
         # will have to start a new group, making alignment less likely.
         # --------------------------------------------------------------------
-        $is_hanging_side_comment =
-          hanging_comment_check( $new_line, $current_line );
+##        $is_hanging_side_comment =
+##          join_hanging_comment( $new_line, $current_line );
+        join_hanging_comment( $new_line, $current_line )
+          if $is_hanging_side_comment;
 
         # --------------------------------------------------------------------
         # If there is just one previous line, and it has more fields
@@ -15687,7 +15815,7 @@ sub append_line {
     };
 }
 
-sub hanging_comment_check {
+sub join_hanging_comment {
 
     my $line = shift;
     my $jmax = $line->get_jmax();

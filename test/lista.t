@@ -711,6 +711,20 @@ make_node(
        (undef) x 8,
       );
 
+# Nice example of a mixed list:
+GetOptions(
+           "h",
+           "help"    => \$opt_h,
+           "version" => \$opt_version,
+           "i",
+           "increment" => \$opt_i,
+           "a",
+           "append" => \$opt_a,
+           "v=s",
+           "newversion=s" => \$opt_v,
+           "p", "preserve" => \$opt_p
+  );
+
 # Broken list with =>'s
 %Slinke::COMMANDS = ( CMD_PORT_DONE      => 0x00,  CMD_PORT_SM        => 0x1F,
 		      # port commands
