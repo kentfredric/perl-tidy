@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.61 2001/11/17 00:15:04 perltidy Exp $
+    $Id: perltidy,v 1.62 2001/11/19 16:01:08 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -401,7 +401,7 @@ sub process_command_line {
     # =s takes a mandatory string
     # :s takes an optional string  (DO NOT USE - filenames will get eaten up)
     # =i takes a mandatory integer
-    # :i takes an optional integer
+    # :i takes an optional integer (NOT RECOMMENDED - can cause trouble)
     # ! does not take an argument and may be negated
     #  i.e., -foo and -nofoo are allowed
     # a double dash signals the end of the options list
@@ -456,6 +456,7 @@ sub process_command_line {
     add_option( 'closing-side-comment-interval',    'csci', '=i', $rop, $rex );
     add_option( 'cuddled-else',                     'ce',   '!',  $rop, $rex );
     add_option( 'delete-block-comments',            'dbc',  '!',  $rop, $rex );
+    add_option( 'delete-closing-side-comments',     'dcsc', '!',  $rop, $rex );
     add_option( 'delete-old-newlines',              'dnl',  '!',  $rop, $rex );
     add_option( 'delete-old-whitespace',            'dws',  '!',  $rop, $rex );
     add_option( 'delete-pod',                       'dp',   '!',  $rop, $rex );
@@ -515,8 +516,8 @@ sub process_command_line {
     add_option( 'standard-error-output',            'se',   '!',  $rop, $rex );
     add_option( 'standard-output',                  'st',   '!',  $rop, $rex );
     add_option( 'starting-indentation-level',       'sil',  '=i', $rop, $rex );
-    add_option( 'sticky-block-comments',            'sbc',  '!',  $rop, $rex );
-    add_option( 'sticky-block-comment-prefix',      'sbcp', '=s', $rop, $rex );
+    add_option( 'static-block-comments',            'sbc',  '!',  $rop, $rex );
+    add_option( 'static-block-comment-prefix',      'sbcp', '=s', $rop, $rex );
     add_option( 'swallow-optional-blank-lines',     'sob',  '!',  $rop, $rex );
     add_option( 'tabs',                             't',    '!',  $rop, $rex );
     add_option( 'tee-block-comments',               'tbc',  '!',  $rop, $rex );
@@ -542,7 +543,7 @@ sub process_command_line {
     my @defaults = qw(
       nohtml
       recombine
-      sticky-block-comments
+      static-block-comments
       add-newlines
       add-whitespace
       blanks-before-blocks
@@ -593,7 +594,7 @@ sub process_command_line {
       noignore-old-line-breaks
       check-syntax
       closing-side-comment-interval=6
-      static-side-comments
+      nostatic-side-comments
     );
 
     #---------------------------------------------------------------
@@ -1461,13 +1462,14 @@ Other controls
  -okw    outdent control keywords (redo, next, last, goto, return)
  -okwl=s specify alternative keywords for -okw command
 
- -sbc    use 'sticky block comments' identified by leading '##' (default)
- -sbcp=s change sticky block comment identifier to be other than '##'
-
  -csc    add or update closing side comments after closing BLOCK brace
+ -dcsc   delete closing side comments created by a -csc command
  -cscp=s change closing side comment prefix to be other than '## end'
  -cscl=s change closing side comment to apply to selected list of blocks
  -csci=n minimum number of lines needed to apply a -csc tag, default n=6
+
+ -sbc    use 'static block comments' identified by leading '##' (default)
+ -sbcp=s change static block comment identifier to be other than '##'
 
  -ssc    use 'static side comments' identified by leading '##' (default)
  -sscp=s change static side comment identifier to be other than '##'
@@ -2876,6 +2878,7 @@ use vars qw{
   $leading_block_text
   $leading_block_text_level
   $leading_block_text_length_exceeded
+  $leading_block_text_line_number
   $closing_side_comment_prefix_pattern
   $closing_side_comment_list_pattern
 
@@ -2910,7 +2913,7 @@ use vars qw{
   $last_line_had_side_comment
   %want_break_before
   %outdent_keyword
-  $sticky_block_comment_pattern
+  $static_block_comment_pattern
   $static_side_comment_pattern
 
   %FORMATTER_DEBUG_FLAG
@@ -3994,7 +3997,11 @@ sub check_options {
     my ( $tabbing_string, $tab_msg );
     my @list;    # working storage
 
-    make_sticky_block_comment_pattern();
+    # if we are making closing side comments, we have to delete old ones
+    if ($rOpts->{'closing-side-comments'}) {
+        $rOpts->{'delete-closing-side-comments'} = 1;
+    }
+    make_static_block_comment_pattern();
     make_static_side_comment_pattern();
     make_closing_side_comment_prefix();
     make_closing_side_comment_list_pattern();
@@ -4201,14 +4208,14 @@ EOM
     );
 }
 
-sub make_sticky_block_comment_pattern {
+sub make_static_block_comment_pattern {
 
-    # create the pattern used to identify sticky block comments
-    $sticky_block_comment_pattern = '^(\s*)##';
+    # create the pattern used to identify static block comments
+    $static_block_comment_pattern = '^(\s*)##';
 
     # allow the user to change it
-    if ( $rOpts->{'sticky-block-comment-prefix'} ) {
-        my $prefix = $rOpts->{'sticky-block-comment-prefix'};
+    if ( $rOpts->{'static-block-comment-prefix'} ) {
+        my $prefix = $rOpts->{'static-block-comment-prefix'};
         $prefix =~ s/^\s*//;
         if ( $prefix !~ /^#/ ) {
             die "ERROR: the -sbcp prefix '$prefix' must begin with '#'\n";
@@ -4220,7 +4227,7 @@ sub make_sticky_block_comment_pattern {
             die
 "ERROR: the -sbc prefix '$prefix' causes the invalid regex '$pattern'\n";
         }
-        $sticky_block_comment_pattern = $pattern;
+        $static_block_comment_pattern = $pattern;
     }
 }
 
@@ -4344,7 +4351,6 @@ sub make_closing_side_comment_prefix {
         }
     }
     $rOpts->{'closing-side-comment-prefix'} = $csc_prefix;
-    ##$closing_side_comment_prefix_pattern = '^## end';
     $closing_side_comment_prefix_pattern = $csc_prefix_pattern;
 }
 
@@ -4960,23 +4966,23 @@ sub print_line_of_tokens {
         return;
     }
 
-    # see if this is a sticky block comment (starts with ##)
-    my $is_sticky_block_comment                       = 0;
-    my $is_sticky_block_comment_without_leading_space = 0;
+    # see if this is a static block comment (starts with ##)
+    my $is_static_block_comment                       = 0;
+    my $is_static_block_comment_without_leading_space = 0;
     if ( $jmax == 0
         && $$rtoken_type[0] eq '#'
-        && $rOpts->{'sticky-block-comments'}
-        && $input_line =~ /$sticky_block_comment_pattern/o )
+        && $rOpts->{'static-block-comments'}
+        && $input_line =~ /$static_block_comment_pattern/o )
     {
-        $is_sticky_block_comment                       = 1;
-        $is_sticky_block_comment_without_leading_space = ( length($1) <= 0 );
+        $is_static_block_comment                       = 1;
+        $is_static_block_comment_without_leading_space = ( length($1) <= 0 );
     }
 
     # create a hanging side comment if appropriate
     if ( $jmax == 0 && $$rtoken_type[0] eq '#'    # only token is a comment
         && $last_line_had_side_comment    # last line had side comment
         && $input_line =~ /^\s/           # there is some leading space
-        && !$is_sticky_block_comment      # do not make sticky comment hanging
+        && !$is_static_block_comment      # do not make static comment hanging
         && $rOpts->{'hanging-side-comments'}    # user is allowing this
       )
     {
@@ -5014,7 +5020,7 @@ sub print_line_of_tokens {
         # output a blank line before block comments
         if ( $last_line_leading_type !~ /^[#b]$/
             && $rOpts->{'blanks-before-comments'}    # only if allowed
-            && !$is_sticky_block_comment    # never before sticky block comments
+            && !$is_static_block_comment    # never before static block comments
           )
         {
             $file_writer_object->write_blank_code_line();
@@ -5022,7 +5028,7 @@ sub print_line_of_tokens {
         }
 
         if ( $rOpts->{'indent-block-comments'}
-            && !$is_sticky_block_comment_without_leading_space )
+            && !$is_static_block_comment_without_leading_space )
         {
 
             store_token_to_go(
@@ -5061,7 +5067,7 @@ sub print_line_of_tokens {
     #     /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
     # Examples:
     #   *VERSION = \'1.01';
-    #   ( $VERSION ) = '$Revision: 1.61 $ ' =~ /\$Revision:\s+([^\s]+)/;
+    #   ( $VERSION ) = '$Revision: 1.62 $ ' =~ /\$Revision:\s+([^\s]+)/;
     # We will pass such a line straight through unless -npvl is used
     #
 
@@ -5072,7 +5078,7 @@ sub print_line_of_tokens {
      block sequence numbers may see a closing sequence number but not
      the corresponding opening sequence number (sidecmt.t).  Example:
 
-    my $VERSION = do { my @r = (q$Revision: 1.61 $ =~ /\d+/g); sprintf
+    my $VERSION = do { my @r = (q$Revision: 1.62 $ =~ /\d+/g); sprintf
     "%d."."%02d" x $#r, @r }; 
 
 =cut
@@ -5184,10 +5190,9 @@ sub print_line_of_tokens {
 
             if ( $rOpts->{'delete-side-comments'}
 
-                # delete closing side comments if either -csc or -ncsc is given.
-                # the default is to leave csc undefined, so we can tell if
-                # either was specified.  This is safest.
-                || ( defined( $rOpts->{'closing-side-comments'} )
+                # delete closing side comments if necessary
+                ##|| ( defined( $rOpts->{'closing-side-comments'} )
+                || ( $rOpts->{'delete-closing-side-comments'} 
                     && $token =~ /$closing_side_comment_prefix_pattern/o
                     && $last_nonblank_block_type =~
                     /$closing_side_comment_list_pattern/o )
@@ -6394,6 +6399,7 @@ sub reset_block_text_accumulator {
     $leading_block_text                 = "";
     $leading_block_text_level           = 0;
     $leading_block_text_length_exceeded = 0;
+    $leading_block_text_line_number     = 0;
 }
 
 sub set_block_text_accumulator {
@@ -6401,6 +6407,8 @@ sub set_block_text_accumulator {
     $accumulating_text_for_block        = $tokens_to_go[$i];
     $leading_block_text                 = "";
     $leading_block_text_level           = $levels_to_go[$i];
+    $leading_block_text_line_number     = 
+       $vertical_aligner_object->get_output_line_number();
     $leading_block_text_length_exceeded = 0;
 }
 
@@ -6411,6 +6419,9 @@ sub accumulate_block_text {
     my ($i) = @_;
     if ( $types_to_go[$i] ne '#' && $accumulating_text_for_block ) {
         if ( length($leading_block_text) < 20 ) {
+            if ($i == 0) {
+                $leading_block_text .= ' ';
+            }
             $leading_block_text .= $tokens_to_go[$i];
         }
         elsif ( $types_to_go[$i] ne 'b'
@@ -6472,17 +6483,19 @@ sub add_closing_side_comment {
                 }
                 else {
 
-                    # DELETE AFTER TESTING COMPLETE
                     # This can happen in the unusual case where a $VERSION line
-                    # has been quoted to keep MakeMaker happy
-                    warning(
-                        "BUBBA: block opening line undefined for this line\n");
+                    # has been quoted to keep MakeMaker happy.  It is not a
+                    # significant problem.
+                    #warning(
+                    #    "Note: block opening line undefined for this line\n");
                 }
             }
 
             elsif ( $token eq '{' ) {
+
+                my $line_number=$vertical_aligner_object->get_output_line_number();
                 $block_opening_line_number{$type_sequence} =
-                  $vertical_aligner_object->get_output_line_number();
+                  $line_number;
 
                 if ( $accumulating_text_for_block
                     && $levels_to_go[$i] == $leading_block_text_level )
@@ -6490,16 +6503,18 @@ sub add_closing_side_comment {
                     if ( $accumulating_text_for_block eq $block_type ) {
                         $block_leading_text{$type_sequence} =
                           $leading_block_text;
+                        $block_opening_line_number{$type_sequence} =
+                          $leading_block_text_line_number;
                         reset_block_text_accumulator();
                     }
                     else {
-
-                        ## DELETE WHEN CODING FINISHED
-                        warning(
-"BUBBA: accumulating block type $accumulating_text_for_block but found '{' for type $block_type\n"
-                        );
+##                         shouldn't happen, but not serious.
+##                         warning(
+## "NOTE: accumulating block type $accumulating_text_for_block but found '{' for type $block_type\n"
+##                         );
                     }
                 }
+
             }
         }
 
@@ -6702,14 +6717,12 @@ sub send_lines_to_vertical_aligner {
             # long block comments if allowed
             || ( $types_to_go[$ibeg] eq '#' && $rOpts->{'outdent-long-comments'}
 
-                # but not if this is a sticky block comment!
+                # but not if this is a static block comment!
                 && !(
-                    $rOpts->{'sticky-block-comments'}
-                    && $tokens_to_go[$ibeg] =~ /$sticky_block_comment_pattern/o
+                    $rOpts->{'static-block-comments'}
+                    && $tokens_to_go[$ibeg] =~ /$static_block_comment_pattern/o
                 )
-
               )
-
         );
 
         # flush an outdented line to avoid any unwanted vertical alignment
@@ -10798,7 +10811,7 @@ to flush.
 =cut
 
 use vars qw(
-  $aligner_self
+  $vertical_aligner_self
   $current_line
   $maximum_alignment_index
   $ralignment_list
@@ -10813,10 +10826,9 @@ use vars qw(
   $zero_count
   @group_lines
   $last_comment_column
-  $lines_since_last_side_comment
-  $last_lines_since_last_side_comment
+  $last_side_comment_line_number
   $last_side_comment_length
-  $last_comment_level
+  $last_side_comment_level
   $outdented_line_count
   $first_outdented_line_at
   $last_outdented_line_at
@@ -10840,8 +10852,6 @@ sub initialize {
     $group_level                   = 0;
     $last_group_level_written      = -1;
     $extra_indent_ok               = 0;    # can we move all lines to the right?
-    $lines_since_last_side_comment = 100;
-    $last_lines_since_last_side_comment = 100;
     $last_side_comment_length           = 0;
     $maximum_jmax_seen                  = 0;
     $minimum_jmax_seen                  = 0;
@@ -10854,16 +10864,16 @@ sub initialize {
     $outdented_line_count    = 0;
     $first_outdented_line_at = 0;
     $last_outdented_line_at  = 0;
+    $last_side_comment_line_number = 0;
+    $last_side_comment_level  = -1;
 
-    ##$last_comment_column           = 0;
-    ##$last_comment_level            = 0;
     forget_side_comment();
 
     initialize_for_new_group();
 
-    $aligner_self = {};
-    bless $aligner_self, $class;
-    return $aligner_self;
+    $vertical_aligner_self = {};
+    bless $vertical_aligner_self, $class;
+    return $vertical_aligner_self;
 }
 
 sub initialize_for_new_group {
@@ -10968,7 +10978,6 @@ sub restore_alignment_columns {
 
 sub forget_side_comment {
     $last_comment_column = 0;
-    $last_comment_level  = 0;
 }
 
 sub append_line {
@@ -11052,14 +11061,6 @@ The log file warns the user if there are any such tabs.
     # patch until new aligner is finished
     if ($do_not_pad) { flush() }
 
-    $last_lines_since_last_side_comment = $lines_since_last_side_comment;
-
-    # don't remember old side comment location for very long
-    if ( $lines_since_last_side_comment > 12 ) {
-        ##$last_comment_column = 0;
-        forget_side_comment();
-    }
-
     # shouldn't happen:
     if ( $level < 0 ) { $level = 0 }
 
@@ -11079,8 +11080,6 @@ The log file warns the user if there are any such tabs.
         # able to do some -lp alignment if necessary.
         $extra_indent_ok = ( $is_terminal_statement && $level > $group_level );
 
-        ##$last_comment_column = 0;
-        forget_side_comment();
         $group_level = $level;
 
         # wait until after the above flush to get the leading space
@@ -11122,7 +11121,6 @@ The log file warns the user if there are any such tabs.
         {
             write_leader_and_string( $leading_space_count, $$rfields[0], 0,
                 $outdent_long_lines );
-            $lines_since_last_side_comment++;
             return;
         }
     }
@@ -11161,7 +11159,7 @@ The log file warns the user if there are any such tabs.
     # It simplifies things to create a zero length side comment
     # if none exists.
     # --------------------------------------------------------------------
-    make_side_comment($new_line);
+    make_side_comment($new_line, $level_end);
 
     # --------------------------------------------------------------------
     # Decide if this is a simple list of items.
@@ -11367,6 +11365,7 @@ sub eliminate_old_fields {
 # create an empty side comment if none exists
 sub make_side_comment {
     my $new_line = shift;
+    my $level_end = shift;
     my $jmax     = $new_line->get_jmax();
     my $rtokens  = $new_line->get_rtokens();
 
@@ -11376,12 +11375,22 @@ sub make_side_comment {
         $$rtokens[$jmax] = '#';
         $$rfields[ ++$jmax ] = '';
         $$rpatterns[$jmax] = '#';
-        $lines_since_last_side_comment++;
         $new_line->set_jmax($jmax);
         $new_line->set_jmax_original_line($jmax);
     }
     else {
-        $lines_since_last_side_comment = 0;
+
+        # don't remember old side comment location for very long
+        # and don't remember across level changes
+        my $line_number = $vertical_aligner_self->get_output_line_number();
+        if ( 
+            $level_end < $last_side_comment_level ||
+            $line_number - $last_side_comment_line_number > 12 )
+        {
+            forget_side_comment();
+        }
+        $last_side_comment_line_number = $line_number;
+        $last_side_comment_level = $level_end;
     }
 }
 
@@ -11853,7 +11862,6 @@ sub adjust_side_comment {
 
             # reset side comment column if we can't align
             else {
-                ##$last_comment_column = 0;
                 forget_side_comment();
             }
         }

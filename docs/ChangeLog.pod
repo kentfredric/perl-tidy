@@ -27,6 +27,28 @@
   this to be able to easily test perltidy with a variety of different
   configuration files.
 
+ -Side comment alignment has been improved somewhat across frequent level
+  changes, as in short if/else blocks.  Thanks to Wolfgang Weisselberg 
+  for pointing out this problem.  For example:
+    
+    OLD:
+    if ( ref $self ) {    # Called as a method
+        $format = shift;
+    }
+    else {    # Regular procedure call
+        $format = $self;
+        undef $self;
+    }
+
+    NEW:
+    if ( ref $self ) {    # Called as a method
+        $format = shift;
+    }
+    else {                # Regular procedure call
+        $format = $self;
+        undef $self;
+    }
+
  -New command -ssc (--static-side-comment) and related command allows
   side comments to be spaced close to preceding character.  This is
   useful for displaying commented code as side comments.
