@@ -1,5 +1,23 @@
 # some side comments to line up
 
+# The hanging side comments did not stay aligned because of the cuddled else:
+if ( $size1 == 0 || $size2 == 0 ) {    # special handling for zero-length
+    if ( $size2 + $size1 == 0 ) {      # files.
+        exit 0;
+    } else {                           # Can't we say 'differ at byte zero'
+                                       # and so on here?  That might make
+                                       # more sense than this behavior.
+                                       # Also, this should be made consistent
+                                       # with the behavior when skip >=
+                                       # filesize.
+        if ($volume) {
+            warn "$0: EOF on $file1\n" unless $size1;
+            warn "$0: EOF on $file2\n" unless $size2;
+        }
+        exit 1;
+    }
+}
+
 {
     # hanging side comment aligned with a long line:
     # caused trouble at one time

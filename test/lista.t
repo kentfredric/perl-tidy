@@ -1,3 +1,98 @@
+# originally lost alignment due to '.' 
+my $a = [
+    "erste",                   "zweite",
+    "dritte",                  "vierte",
+    "f$u" . "nfte",            "sechste",
+    "siebente",                "achte",
+    "neunte",                  "zehnte",
+    "elfte",                   "zw$o" . "lfte",
+    "dreizehnte",              "vierzehnte",
+    "f$u" . "nfzehnte",        "sechzehnte",
+    "siebzehnte",              "achtzehnte",
+    "neunzehnte",              "zwanzigste",
+    "einundzwanzigste",        "zweiundzwanzigste",
+    "dreiundzwanzigste",       "vierundzwanzigste",
+    "f$u" . "nfundzwanzigste", "sechundzwanzigste",
+    "siebundzwanzigste",       "achtundzwanzigste",
+    "neunundzwanzigste",       "drei$b" . "igste",
+    "einunddrei$b" . "igste"
+];
+
+# long items in last list line
+my (
+    $widgetName,  $key,             %hash2,  $miscSelect,
+    $adminSelect, $clipboardSelect, $widget, @widgetArray,
+    %hash,        $output,          $contentSelect
+);
+
+@cp1252 = (
+    0 .. 127, 0x20AC, 0x0081, 0x201A, 0x0192, 0x201E,
+    0x2026,   0x2020, 0x2021, 0x02C6, 0x2030, 0x0160,
+    0x2039,   0x0152, 0x008D, 0x017D, 0x008F, 0x0090,
+    0x2018,   0x2019, 0x201C, 0x201D, 0x2022, 0x2013,
+    0x2014,   0x02DC, 0x2122, 0x0161, 0x203A, 0x0153,
+    0x009D,   0x017E, 0x0178, 0xA0 .. 0xFF
+);
+
+@Original_Commands = (
+    'next_reverse',  'next_search',   'pager_show',  'show',  'quit', 'quit',
+    'quit_nodelete', 'quit_nodelete', 'auto_refile', 'reply', 'refile',
+    'sortm', 'type', 'headers', 'undelete', 'print_versionnnn',
+
+    # broken list
+);
+
+$behaviour = {
+    cat   => { nap    => "lap",   eat  => "meat" },
+    dog   => { prowl  => "growl", pool => "drool" },
+    mouse => { nibble => "kibble" },
+};
+$car_list->insert(
+    'end',    # Insert at end, the following list
+    "Acura",       "BMW", "Ferrari", "Lotus", "Maserati",
+    "Lamborghini", "Chevrolet"
+);
+our %EXPORT_TAGS = (
+    onetwo      => [ 'sym1',                 'sym2' ],
+    threefour   => [ 'sym3',                 'sym4' ],
+    onetwothree => [qw(sym1 sym2 sym3)],
+    all         => [qw(sym1 sym2 sym3 sym4)],
+);
+our %EXPORT_TAGS = (
+    onetwo      => [ 'sym1', 'sym2' ],
+    threefour   => [ 'sym3', 'sym4' ],
+    onetwothree => [qw(sym1 sym2 sym3)],
+    all         => [qw(sym1 sym2 sym3 sym4)],
+);
+
+{
+    local (
+        $len,    $pts,      @colspec, $char, $cols,
+        $repeat, $celldata, $at_text, $after_text
+    );
+
+    my $record = join( ':',
+        $self->{name}, $self->{location},     $self->{mapref},
+        $self->{type}, $self->{description} );
+    return join( ".",
+        $self->{"dfi"},  $self->{"aa"}, $self->rsvd,     $self->{"rd"},
+        $self->{"area"}, $self->{"id"}, $self->{"sel"} );
+}
+{{
+        return bless {
+            count   => [ 3, 2, 1 ],
+            message => 'Liftoff!',
+          },
+          shift;
+}}
+# last line is not aligned with help of new flag 'is_comma_list' when
+# sending lines to aligner
+map( $substwords{ join "", sort split //, $_ } = $_,
+    'ego',  'egoism', 'em',  'es',    'ex',  'exes',  'gee',  'go',
+    'goes', 'ie',     'ism', 'iso',   'me',  'meese', 'meso', 'mig',
+    'mix',  'os',     'ox',  'oxime', 'see', 'seem',  'seg',  'sex',
+    'sig', 'six', 'smog', 'sog', 'some', 'xi' );
+
 my %LAST_DAY = (	"01" => 31, "02" => 29, "03" => 31, "04" => 30,
 			"05" => 31, "06" => 30,	"07" => 31, "08" => 31,
 			"09" => 30, "10" => 31, "11" => 30, "12" => 31

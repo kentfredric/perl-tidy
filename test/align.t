@@ -1,4 +1,113 @@
-# some alignment tests
+# -pvt=2   -pvtc=2
+if ((   !(     $from
+            || $to
+            || $subject
+            || $size
+            || ( $fieldname && $fieldval ) )
+        || !$ruletype )
+    && !$dest )
+{
+    next;
+}
+{{
+            my ( $pre, $post ) = @{
+                {
+                    "pp_anonlist" => [ "[", "]" ],
+                    "pp_anonhash" => [ "{", "}" ]
+                }->{ $kid->ppaddr }
+              };
+
+            # do not pad: the && line is not balanced
+            if (
+                ( $day > 30 )
+                && (   ( $month == 4 )
+                    || ( $month == 6 )
+                    || ( $month == 9 )
+                    || ( $month == 11 ) )
+              )
+              {}
+}}
+debug(
+    "Connecting to DB.",
+    "Extra-Parameters: " . join( "<->", $extra_parms ),
+    "Config: " . join( "<->",           %config )
+);
+local (@a) =
+(split (/$pathsep/o, $ENV{'P_SGML_PATH'}),
+split (/$pathsep/o, $ENV{'SGML_SEARCH_PATH'}));
+
+ /^Number Of Independent Variables=(\d+)/i
+&& ($1 > 1)
+&& (print STDERR "\nMore than 1 independent variable!\n\n")
+&& exit;
+
+# align opening parens
+if (   ( index( $msg_line_lc, $nick1 ) != -1 )
+    || ( index( $msg_line_lc, $nick2 ) != -1 )
+    || ( index( $msg_line_lc, $nick3 ) != -1 ) )
+{
+    do_something();
+}
+
+return ( /^#!\s+\/bin\/nawk/
+      || /^#!\s+\/usr\/bin\/nawk/
+      || /^#!\s+\/usr\/local\/bin\/nawk/
+      || /^#!\s+\/bin\/gawk/
+      || /^#!\s+\/usr\/bin\/gawk/
+      || /^#!\s+\/usr\/local\/bin\/gawk/
+      || /^#!\s+\/bin\/awk/
+      || /^#!\s+\/usr\/bin\/awk/
+      || /^BEGIN\s+/ );
+
+# good alignment tests
+if (   $ARGV[0] eq "--v"
+    || $ARGV[0] eq "--ve"
+    || $ARGV[0] eq "--ver"
+    || $ARGV[0] eq "--vers"
+    || $ARGV[0] eq "--versi"
+    || $ARGV[0] eq "--versio"
+    || $ARGV[0] eq "--version" )
+{
+}
+
+$a = $ARGV[0] eq "--v" || $ARGV[0] eq "--ve" || $ARGV[0] eq "--ver";
+
+if (   /^-[CUuaEhRrz]$/
+    || /^-I[24]$/
+    || /^-onetrip$/
+    || /^-![clPR]$/
+    || /^-ext$/
+    || /^-!bs$/
+    || /^-W[1-9][0-9]*$/
+    || /^-w8$/
+    || /^-w66$/
+    || /^-r8$/
+    || /^-N[^n][0-9]+$/ )
+{
+}
+
+elsif ($_ eq 'no-installman'
+    || $_ eq 'no-installinfo'
+    || $_ eq 'dist-shar'
+    || $_ eq 'dist-zip'
+    || $_ eq 'dist-tarZ'
+    || $_ eq 'dejagnu'
+    || $_ eq 'no-texinfo.tex'
+    || $_ eq 'readme-alpha'
+    || $_ eq 'check-news' )
+{
+}
+
+my @category = (
+    'radweg'  => ['RW0', 'Radweg',              'Radwege'],
+    'pflicht' => ['RW1', 'benutzungspflichtig', 'benutzungspflichtige Radwege'],
+    'suggestiv' => ['RW2', 'Suggestivstreifen'],      # wird nicht verwendet
+    'spur'      => ['RW3', 'Radstreifen'],
+    'bus'       => ['RW4', 'Busspur', 'Busspuren'],
+    'ruhig'     => ['RW5', 'verkehrsberuhigt'],
+    'radstr' => ['RW6', 'Fahrradstraße', 'Fahrradstraßen'],
+    'kein' => [undef, 'kein Radweg', 'keine Radwege'],
+    );
 
 # align for
 $priv{$_}{16}  = "INBIN"  for ( "open", "backtick" );

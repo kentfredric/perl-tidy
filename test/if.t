@@ -1,3 +1,11 @@
+# Good example: 
+if (
+    $USE_UTF
+    || (   !$NO_UTF
+        && ( defined %unicode_table )
+        && length(%unicode_table) > 2 )
+  )
+  {}
 # complex -- contains equals, brace, 'last'
 if    ( $i eq "-a" ) { $host = "whois.arin.net";  last; }
 elsif ( $i eq "-d" ) { $host = "whois.nic.mil";   last; }

@@ -1,3 +1,10 @@
+   # unusual; not too good
+    my %out = map {
+             $_ => exists( $$parobjs{$_} )
+          && exists( $$parobjs{$_}{FlagOut} )
+          && !exists( $$parobjs{$_}{FlagCreateAlways} )
+    } @args;
+
     my %ret_hash = map { $_ => $current_package{$_} } 
         qw(NAME TITLE AUTHOR VERSION ABSTRACT PERLCORE_VER);
 
@@ -152,4 +159,9 @@ sub Guess_Case {
       }
       grep { -f } glob "*.mdl";
     return $mdl;
+}
+{
+    my @new_code =
+      map { $_ unless $is_label{$_} && !$is_target{$_} }
+      @{ $output_lines{'code'} };
 }

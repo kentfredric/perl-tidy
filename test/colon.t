@@ -1,4 +1,11 @@
 {
+    $this->{'tracks'} =
+      (defined($options_r->{'tracks'})
+        and ref($options_r->{'tracks'}) eq 'ARRAY') 
+      ? $options_r->{'tracks'}
+      : [];
+    return;
+
     # ok
     defined $uri
       or $uri =

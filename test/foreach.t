@@ -9,6 +9,19 @@ $command .=
 # break at foreach, not ','
     s/^&//, $export_cache->{$_} = 1
       foreach (@$exports, @{"$pkg\::EXPORT_OK"});
+{
+    {
+        # ok - 'ci' would be nice here but maybe too hard:
+        for (
+            $j = 0, $match_j = -1 ;
+            $j < $sub_len
+            && substr( $sub, $j, 1 ) eq substr( $big, $i + $j, 1 ) ;
+            $j++
+          )
+        {
+        }
+    }
+}
 
 {
     # break at all ';'s

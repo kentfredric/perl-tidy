@@ -1,3 +1,9 @@
+{{
+        $retarray = [
+            &{ $sth->{'xbase_parsed_sql'}{'selectfn'} }( $xbase, $values,
+                $sth->{'xbase_bind_values'} ) ]
+          if defined $values;
+}}
 {{{
 # break at '-' not '->'
                 $temptotalr +=

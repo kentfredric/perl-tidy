@@ -61,7 +61,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.42 2003/01/29 15:23:55 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.43 2003/02/06 14:58:35 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 sub streamhandle {
@@ -7716,7 +7716,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.42 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.43 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -8692,7 +8692,7 @@ sub undo_lp_ci {
 
         my ( $ibeg, $ibeg_next, $ibegm, $iend, $iendm, $ipad, $line,
             $pad_spaces, $tok_next, $has_leading_op_next, $has_leading_op );
-
+        
         # looking at each line of this batch..
         foreach $line ( 0 .. $max_line - 1 ) {
 
@@ -8899,8 +8899,7 @@ sub undo_lp_ci {
 
                 # just use simplified formula for leading spaces to avoid
                 # needless sub calls
-                ##my $lsp   = leading_spaces_to_go($ibg);
-                my $lsp = $levels_to_go[$ibg] * 2 + $ci_levels_to_go[$ibg];
+                my $lsp = $levels_to_go[$ibg] + $ci_levels_to_go[$ibg];
 
                 # look at each line beyond the next ..
                 my $l = $line + 1;
@@ -8914,8 +8913,7 @@ sub undo_lp_ci {
 
                     # cannot do the pad if a later line would be
                     # outdented more
-                    ##if ( leading_spaces_to_go($ibg) < $lsp ) {
-                    if ( $levels_to_go[$ibg] * 2 + $ci_levels_to_go[$ibg] <
+                    if ( $levels_to_go[$ibg] + $ci_levels_to_go[$ibg] <
                         $lsp )
                     {
                         $ok_to_pad = 0;
@@ -9969,6 +9967,7 @@ sub send_lines_to_vertical_aligner {
 
     # loop to prepare each line for shipment
     my $n_last_line = @$ri_first - 1;
+    my $in_comma_list; 
     for my $n ( 0 .. $n_last_line ) {
         my $ibeg = $$ri_first[$n];
         my $iend = $$ri_last[$n];
@@ -10131,14 +10130,23 @@ sub send_lines_to_vertical_aligner {
         Perl::Tidy::VerticalAligner::flush() if ($is_outdented_line);
 
         # send this new line down the pipe
+        my $forced_breakpoint= $forced_breakpoint_to_go[$iend];
         Perl::Tidy::VerticalAligner::append_line(
-            $lev,                            $level_end,
-            $indentation,                    \@fields,
-            \@tokens,                        \@patterns,
-            $forced_breakpoint_to_go[$iend], $outdent_long_lines,
-            $is_semicolon_terminated,        $do_not_pad,
-            $rvertical_tightness_flags,      $level_jump,
+            $lev,
+            $level_end,
+            $indentation,
+            \@fields,
+            \@tokens,
+            \@patterns,
+            $forced_breakpoint_to_go[$iend] || $in_comma_list,
+            $outdent_long_lines,
+            $is_semicolon_terminated,
+            $do_not_pad,
+            $rvertical_tightness_flags,
+            $level_jump,
         );
+        $in_comma_list =
+          $tokens_to_go[$iend] eq ',' && $forced_breakpoint_to_go[$iend];
 
         # flush an outdented line to avoid any unwanted vertical alignment
         Perl::Tidy::VerticalAligner::flush() if ($is_outdented_line);
@@ -11235,7 +11243,6 @@ sub terminal_type {
             {
                 $bsl = NOMINAL;
             }
-##          elsif ( $next_nonblank_token =~ /^(lt|gt|le|ge)$/ ) {
             elsif ( $is_lt_gt_le_ge{$next_nonblank_token} ) {
                 $bsl = 0.9 * NOMINAL + 0.1 * STRONG;
             }
@@ -11564,8 +11571,29 @@ sub terminal_type {
             }
 
             # Do not break before a possible file handle
-            #if ( ( $type eq 'Z' ) || ( $next_nonblank_type eq 'Z' ) ) {
-            if ( $next_nonblank_type eq 'Z' ) {
+            if ( $next_nonblank_type eq 'Z' )  {
+                $bond_str = NO_BREAK;
+            }
+
+            # As a defensive measure, do not break between a '(' and a
+            # filehandle.  In some cases, this can cause an error.  For
+            # example, the following program works:
+            #    my $msg="hi!\n";
+            #    print
+            #    ( STDOUT
+            #    $msg
+            #    );
+            #
+            # But this program fails: 
+            #    my $msg="hi!\n";
+            #    print
+            #    (
+            #    STDOUT
+            #    $msg
+            #    );
+            #
+            # This is normally only a problem with the 'extrude' option
+            if ( $next_nonblank_type eq 'Y' && $token eq '(') {
                 $bond_str = NO_BREAK;
             }
 
@@ -16298,7 +16326,16 @@ sub check_fit {
     save_alignment_columns();
 
     my ( $j, $pad, $eight );
+    my $maximum_field_index = $old_line->get_jmax();
     for $j ( 0 .. $jmax ) {
+
+        ## BUBBA: testing patch to avoid excessive gaps in previous lines,
+        # due to a line of fewer fields.
+        #   return join( ".",
+        #       $self->{"dfi"},  $self->{"aa"}, $self->rsvd,     $self->{"rd"},
+        #       $self->{"area"}, $self->{"id"}, $self->{"sel"} );
+## MOVED BELOW AS A TEST
+        ##next if ($jmax < $maximum_field_index && $j==$jmax-1); 
 
         $pad = length( $$rfields[$j] ) - $old_line->current_field_width($j);
 
@@ -16334,6 +16371,9 @@ sub check_fit {
             my_flush();
             last;
         }
+
+        # TESTING PATCH moved from above to be sure we fit
+        next if ($jmax < $maximum_field_index && $j==$jmax-1); 
 
         # looks ok, squeeze this field in
         $old_line->increase_field_width( $j, $pad );
@@ -20989,31 +21029,9 @@ sub code_block_type {
         return $last_nonblank_token;
     }
 
-    # bareword
+    # check bareword
     elsif ( $last_nonblank_type eq 'w' ) {
         return decide_if_code_block( $i, $rtokens, $rtoken_type );
-
-##      optional - but maybe not worthwhile
-##        my $block_type = decide_if_code_block( $i, $rtokens, $rtoken_type );
-##        # Create a prototype for a block after an unknown bareword.
-##        # This isn't really necessary but will prevent guessing again.
-##        if ($block_type) {
-##            if (
-##                $block_type =~ m/
-##               ((?:\w*(?:'|::))*)  # package - something that ends in :: or '
-##               (\w+)               # sub name
-##             /x
-##              )
-##            {
-##                my $package = ( defined($1) && $1 ) ? $1 : $current_package;
-##                my $sub=$2;
-##                $package =~ s/\'/::/g;
-##                if ( $package =~ /^\:/ ) { $package = 'main' . $package }
-##                $package =~ s/::$//;
-##                $is_block_function{$package}{$sub} = 1;
-##            }
-##        }
-##        return $block_type;
     }
 
     # anything else must be anonymous hash reference
