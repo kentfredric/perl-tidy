@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.20 2001/07/22 17:11:18 perltidy Exp $
+    $Id: perltidy,v 1.21 2001/07/23 02:41:46 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -4546,11 +4546,12 @@ sub print_line_of_tokens {
                   ( $last_nonblank_token ne ';' )
 
                   # patch until some block type issues are fixed:
-                  # Do not add semi-colon for block types '{' and ';'
+                  # Do not add semi-colon for block types '{', '}', and ';'
                   # because we cannot be sure yet that this
-                  # is a block and not an anonomyous hash (blktype.t)
+                  # is a block and not an anonomyous hash 
+                  # (blktype.t, blktype1.t)
                   # && ($block_type ne '{')
-                  && ( $block_type !~ /^[\{;]$/ )
+                  && ( $block_type !~ /^[\{\};]$/ )
 
                   # and we are allowed to do so.
                   && $rOpts->{'add-semicolons'} )
@@ -8003,8 +8004,9 @@ The log file warns the user if there are any such tabs.
         $last_comment_column = 0;
         $group_level         = $level;
 
-# wait until after the above flush to get the leading space count because it 
-        # may have been changed if the -icp flag is in effect
+        # wait until after the above flush to get the leading space
+        # count because it may have been changed if the -icp flag is in
+        # effect
         $leading_space_count = get_SPACES($indentation);
 
     }
@@ -8053,7 +8055,7 @@ The log file warns the user if there are any such tabs.
     }
 
     # --------------------------------------------------------------------
-    # create a structure to hold this line
+    # create an object to hold this line
     # --------------------------------------------------------------------
     my $new_line = new Perltidy::VerticalAligner::Line(
         jmax                    => $jmax,
@@ -8236,8 +8238,8 @@ sub eliminate_group_fields {
                 $new_matching_patterns[$j] = $current_pattern;
                 $current_field   = '';
                 $current_pattern = '';
-                $new_columns[ $j + 1 ]          = get_column($k);
-                $new_starting_columns[ $j + 1 ] = get_starting_column($k);
+                $new_columns[ $j ]          = get_column($k);
+                $new_starting_columns[ $j ] = get_starting_column($k);
                 $j++;
             }
             else {
@@ -8257,8 +8259,8 @@ sub eliminate_group_fields {
             $current_pattern .= $$old_rpatterns[$k];
             $new_fields[$j]            = $current_field;
             $new_matching_patterns[$j] = $current_pattern;
-            $new_columns[ $j + 1 ]          = get_column($k);
-            $new_starting_columns[ $j + 1 ] = get_starting_column($k);
+            $new_columns[ $j ]          = get_column($k);
+            $new_starting_columns[ $j ] = get_starting_column($k);
             $maximum_field_index = $j;
 
             @$rcolumns          = @new_columns;
@@ -8581,28 +8583,32 @@ sub accept_line {
         for $j ( 0 .. $jmax ) {
             $col += length( $$rfields[$j] );
             set_column( $j, $col );
+            set_starting_column( $j, $col );
         }
 
-        @$rstarting_columns = @$rcolumns;
         $maximum_jmax_seen  = $jmax;
         $minimum_jmax_seen  = $jmax;
     }
 }
 
 sub set_column {
-    $$rcolumns[ $_[0] + 1 ] = $_[1];
+    $$rcolumns[ $_[0] ] = $_[1];
+}
+
+sub set_starting_column {
+    $$rstarting_columns[ $_[0] ] = $_[1];
 }
 
 sub increment_column {
-    $$rcolumns[ $_[0] + 1 ] += $_[1];
+    $$rcolumns[ $_[0] ] += $_[1];
 }
 
 sub get_starting_column {
-    return $$rstarting_columns[ $_[0] + 1 ];
+    return $$rstarting_columns[ $_[0] ];
 }
 
 sub get_column {
-    return $$rcolumns[ $_[0] + 1 ];
+    return $$rcolumns[ $_[0] ];
 }
 
 sub increase_field_width {
@@ -8616,26 +8622,26 @@ sub increase_field_width {
 
 sub field_width_growth {
     my ($j) = @_;
-    return $$rcolumns[ $j + 1 ] - $$rstarting_columns[ $j + 1 ];
+    return get_column($j) - get_starting_column($j);
 }
 
 sub current_field_width {
     my ($j) = @_;
     if ( $j == 0 ) {
-        return $$rcolumns[ $j + 1 ];
+        return get_column($j);
     }
     else {
-        return $$rcolumns[ $j + 1 ] - $$rcolumns[$j];
+        return get_column($j) - get_column($j-1);
     }
 }
 
 sub starting_field_width {
     my ($j) = @_;
     if ( $j == 0 ) {
-        return $$rstarting_columns[ $j + 1 ];
+        return get_starting_column($j);
     }
     else {
-        return $$rstarting_columns[ $j + 1 ] - $$rstarting_columns[$j];
+        return get_starting_column($j) - get_column($j);
     }
 }
 
@@ -9503,6 +9509,7 @@ use vars qw{
   $id_scan_state
   $last_nonblank_token
   $last_nonblank_type
+  $last_nonblank_block_type
   $statement_type
   $identifier
   $in_quote
@@ -10392,6 +10399,7 @@ sub prepare_for_a_new_file {
     $statement_type           = '';     # currently either '' or 'use'
     $last_nonblank_token      = ';';    # the only possible starting state which
     $last_nonblank_type       = ';';    # will make a leading brace a code block
+    $last_nonblank_block_type = '';    
     $identifier               = '';
     $in_quote   = 0;     # flag telling if we are chasing a quote, and what kind
     $quote_type = 'Q';
@@ -10583,7 +10591,7 @@ current version.
     my $tok             = $last_nonblank_token;
     my $type            = $last_nonblank_type;
     my $last_nonblank_i = -1;
-    my $block_type      = "";
+    my $block_type      = $last_nonblank_block_type;
     my $next_tok;
     my $next_type;
     my $expecting;
@@ -10709,6 +10717,7 @@ EOM
             }
             $last_nonblank_token = $tok;
             $last_nonblank_type  = $type;
+            $last_nonblank_block_type  = $block_type;
             $last_nonblank_i     = $i_tok;
         }
 
@@ -11542,6 +11551,7 @@ EOM
     unless ( ( $type eq 'b' ) || ( $type eq '#' ) ) {
         $last_nonblank_token = $tok;
         $last_nonblank_type  = $type;
+        $last_nonblank_block_type  = $block_type;
     }
 
     # reset indentation level if necessary at a sub or package
@@ -11972,6 +11982,7 @@ sub code_block_type {
 
     # handle case of multiple '{'s
 
+
     if ( $last_nonblank_token =~ /^[\{]$/
       && $last_nonblank_type eq $last_nonblank_token )
     {
@@ -12000,9 +12011,16 @@ sub code_block_type {
       && $last_nonblank_type eq $last_nonblank_token )
     {
 
-        # a } { situation is code because we can't have
-        # adjacent hash references
-        return $last_nonblank_token;
+        # a } { situation ...
+        # could be hash reference after code block..(blktype1.t)
+        if ($last_nonblank_block_type) {
+            return decide_if_code_block();
+        }
+
+        # must be a block if it follows a closing hash reference
+        else {
+           return $last_nonblank_token;
+        }
     }
 
     # brace after label:

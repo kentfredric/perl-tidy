@@ -4,6 +4,11 @@
  have hit a bug, unusual behavior, annoyance, or have a suggested
  improvement, please send a note to perltidy at users.sourceforge.net.  
 
+ -Fixed problem in which an unwanted semicolon was inserted due to
+ misidentification of anonymous hash reference curly as a code 
+ block curly.  A workaround for older versions of perltidy is to
+ use -nasc.
+
  -Added -icb (-indent-closing-brace) parameter to indent a 
  brace which terminates a code block to the same level as the previous
  line.  Suggested by Andrew Cutler.  For example, 
