@@ -17,3 +17,6 @@ print $::opt_m ? "  Files:  ".my_wrap("","          ",$v) : $v;
 use constant CAKE => atan2(1,1)/2;
 if ($arc >= - CAKE && $arc <= CAKE) {
 }
+
+# do not remove the space after 'JUNK':
+print JUNK ("<","&",">")[rand(3)];# make these a bit more likely

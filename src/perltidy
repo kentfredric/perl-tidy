@@ -60,7 +60,7 @@ eval "use diagnostics";
 use IO::File;
 
 BEGIN {
-    ($VERSION=q($Id: perltidy,v 1.76 2001/12/25 00:59:00 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ($VERSION=q($Id: perltidy,v 1.77 2001/12/25 23:12:40 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 # Preloaded methods go here.
@@ -1142,7 +1142,7 @@ DIE
 
 # Debug routine -- this will dump the expansion hash
 sub dump_short_names {
-    my ($rexpansion) = @_;
+    my $rexpansion = shift;
     print STDOUT <<EOM;
 List of short names.  This list shows how all abbreviations are
 translated into other abbreviations and, eventually, into long names.
@@ -1967,7 +1967,8 @@ sub new {
         _at_end_of_file                => 0,
         _use_prefix                    => 1,
         _block_log_output              => 0,
-        _line_information_string       => "",
+        _line_of_tokens                => undef,
+        _output_line_number            => undef,
         _wrote_line_information_string => 0,
         _wrote_column_headings         => 0,
         _warning_file                  => $warning_file,
@@ -2029,15 +2030,19 @@ sub we_are_at_the_last_line {
 sub black_box {
     my $self = shift;
     my ( $line_of_tokens, $output_line_number ) = @_;
-    my $input_line                   = $line_of_tokens->{_line_text};
-    my $input_line_number            = $line_of_tokens->{_line_number};
-    my $rlevels                      = $line_of_tokens->{_rlevels};
-    my $structural_indentation_level = $$rlevels[0];
-    my $python_indentation_level = $line_of_tokens->{_python_indentation_level};
+    my $input_line        = $line_of_tokens->{_line_text};
+    my $input_line_number = $line_of_tokens->{_line_number};
+
+    # save line information in case we have to write a logfile message
+    $self->{_line_of_tokens}                = $line_of_tokens;
+    $self->{_output_line_number}            = $output_line_number;
+    $self->{_wrote_line_information_string} = 0;
 
     # make columns of information for every line in case a logfile message
     # needs to go out
-    $self->make_line_information_string( $line_of_tokens, $output_line_number );
+    ## $self->make_line_information_string( $line_of_tokens, $output_line_number );
+    ##$self->make_line_information_string( );
+    ##$self->{_line_information_string} = undef;
 
     my $last_input_line_written = $self->{_last_input_line_written};
     my $rOpts                   = $self->{_rOpts};
@@ -2049,6 +2054,8 @@ sub black_box {
         || ( $input_line =~ /^\s*(sub|package)\s+(\w+)/ )
       )
     {
+        my $rlevels                      = $line_of_tokens->{_rlevels};
+        my $structural_indentation_level = $$rlevels[0];
         $self->{_last_input_line_written} = $input_line_number;
         ( my $out_str = $input_line ) =~ s/^\s*//;
         chomp $out_str;
@@ -2086,8 +2093,11 @@ EOM
 }
 
 sub make_line_information_string {
-    my $self = shift;
-    my ( $line_of_tokens, $output_line_number ) = @_;
+
+    # make columns of information when a logfile message needs to go out
+    my $self                     = shift;
+    my $line_of_tokens           = $self->{_line_of_tokens};
+    my $output_line_number       = $self->{_output_line_number};
     my $brace_depth              = $line_of_tokens->{_curly_brace_depth};
     my $paren_depth              = $line_of_tokens->{_paren_depth};
     my $square_bracket_depth     = $line_of_tokens->{_square_bracket_depth};
@@ -2099,6 +2109,7 @@ sub make_line_information_string {
     my $rnesting_blocks          = $line_of_tokens->{_rnesting_blocks};
 
     my $structural_indentation_level = $$rlevels[0];
+    my $line_information_string      = "";
 
     if ($input_line_number) {
         $self->write_column_headings() unless $self->{_wrote_column_headings};
@@ -2131,10 +2142,12 @@ sub make_line_information_string {
               $nesting_string_new . " " x ( 8 - length($nesting_string_new) );
         }
 
-        $self->{_line_information_string} =
+        ##$self->{_line_information_string} =
+        $line_information_string =
 "L$input_line_number:$output_line_number$extra_space i$python_indentation_level:$structural_indentation_level $ci_level $bk $nesting_string";
-        $self->{_wrote_line_information_string} = 0;
+##$self->{_wrote_line_information_string} = 0;
     }
+    return $line_information_string;
 }
 
 sub logfile_output {
@@ -2147,7 +2160,8 @@ sub logfile_output {
         print $fh "$msg";
     }
     else {
-        my $line_information_string = $self->{_line_information_string};
+        my $line_information_string = $self->make_line_information_string();
+        ##$self->{_line_information_string};
         $self->{_wrote_line_information_string} = 1;
 
         if ($line_information_string) {
@@ -3080,6 +3094,7 @@ use vars qw{
   $rOpts_indent_columns
   $rOpts_line_up_parentheses
   $rOpts_maximum_line_length
+  $rOpts_brace_left_and_indent
 
   %is_vertical_alignment_type
   %is_logical_container
@@ -3487,8 +3502,9 @@ sub set_leading_whitespace {
 
     # patch for -bli, which adds one continuation indentation for 
     # opening braces
-    if ( $max_index_to_go == 0
-        && $rOpts->{'brace-left-and-indent'}
+    if ( 
+        $rOpts_brace_left_and_indent
+        && $max_index_to_go == 0
         && $block_type_to_go[$max_index_to_go] =~ /$bli_pattern/o )
     {
         $ci_level++;
@@ -4420,6 +4436,7 @@ EOM
     $rOpts_indent_columns           = $rOpts->{'indent-columns'};
     $rOpts_line_up_parentheses      = $rOpts->{'line-up-parentheses'};
     $rOpts_maximum_line_length      = $rOpts->{'maximum-line-length'};
+    $rOpts_brace_left_and_indent    = $rOpts->{'brace-left-and-indent'};
 
 }
 
@@ -4660,6 +4677,10 @@ sub is_essential_whitespace {
       # (testfiles prnterr1.t with --extrude and mangle.t with --mangle)
       || ( $typel eq 'Z' || $typell eq 'Z' )
 
+      # keep any space between filehandle and paren:
+      # file mangle.t with --mangle:
+      || ( $typel eq 'Y' || $tokenr eq '(' )
+
       # retain any space after here doc operator ( hereerr.t)
       || ( $typel eq 'h' )
 
@@ -4857,7 +4878,7 @@ sub set_white_space_flag {
             next;
         }
 
-        # set a default value, to be chaned as needed
+        # set a default value, to be changed as needed
         $ws              = undef;
         $last_token      = $token;
         $last_type       = $type;
@@ -5029,14 +5050,16 @@ sub set_white_space_flag {
 
             # avoid any space before the brace or bracket in something like
             #  @opts{'a','b',...}
-            if ( $last_type eq 'i' && $last_token =~ /^[\@]/ ) {
+            ##if ( $last_type eq 'i' && $last_token =~ /^[\@]/ ) {
+            if ( $last_type eq 'i' && $last_token =~ /^\@/ ) {
                 $ws = WS_NO;
             }
         }
 
         # always preserver whatever space was used after a possible
         # filehandle or here doc operator
-        elsif ( $last_type =~ /^[Zh]$/ ) {
+        ##elsif ( $last_type =~ /^[Zh]$/ ) {
+        elsif ( $last_type eq 'Z' || $last_type eq 'h' ) {    ##=~ /^[Zh]$/ ) {
             $ws = WS_OPTIONAL;
         }
         elsif ( $type eq 'i' ) {
@@ -5091,10 +5114,10 @@ sub set_white_space_flag {
                 "WS flag is undefined for tokens $last_token $token\n");
         }
 
-        if ( ( $last_type !~ /^[Zh]$/ )
+        if ( ( $ws == 0 )
             && $j > 0
             && $j < $jmax
-            && ( $ws == 0 ) )
+            && ( $last_type !~ /^[Zh]$/ ) )
         {
 
             # If this happens, we have a non-fatal but undesirable 
@@ -5286,7 +5309,7 @@ sub set_white_space_flag {
 
     sub print_line_of_tokens {
 
-        my ($line_of_tokens) = @_;
+        my $line_of_tokens = shift;
 
         # this routine is called once per input line to process all of the
         # tokens on that line.  Each token is sent to sub store_token_to_go,
@@ -5480,7 +5503,7 @@ sub set_white_space_flag {
          /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
      Examples:
        *VERSION = \'1.01';
-       ( $VERSION ) = '$Revision: 1.76 $ ' =~ /\$Revision:\s+([^\s]+)/;
+       ( $VERSION ) = '$Revision: 1.77 $ ' =~ /\$Revision:\s+([^\s]+)/;
      We will pass such a line straight through (by changing it
      to a quoted string) unless -npvl is used
     
@@ -5489,7 +5512,7 @@ sub set_white_space_flag {
      block sequence numbers may see a closing sequence number but not
      the corresponding opening sequence number (sidecmt.t).  Example:
 
-    my $VERSION = do { my @r = (q$Revision: 1.76 $ =~ /\d+/g); sprintf
+    my $VERSION = do { my @r = (q$Revision: 1.77 $ =~ /\d+/g); sprintf
     "%d."."%02d" x $#r, @r }; 
 
     Here, the opening brace of 'do {' will not be seen, while the closing
@@ -6729,7 +6752,7 @@ sub reset_block_text_accumulator {
 }
 
 sub set_block_text_accumulator {
-    my ($i) = @_;
+    my $i = shift;
     $accumulating_text_for_block    = $tokens_to_go[$i];
     $leading_block_text             = "";
     $leading_block_text_level       = $levels_to_go[$i];
@@ -6739,7 +6762,7 @@ sub set_block_text_accumulator {
 }
 
 sub accumulate_block_text {
-    my ($i) = @_;
+    my $i = shift;
 
     # accumulate leading text, but ignore any side comments
     if ( $accumulating_text_for_block
@@ -7186,18 +7209,20 @@ sub send_lines_to_vertical_aligner {
         @unmatched_opening_indexes_in_this_batch = ();
         @unmatched_closing_indexes_in_this_batch = ();
 
-        foreach my $i ( 0 .. $max_index_to_go ) {
-            my $type_sequence = $type_sequence_to_go[$i];
-            if ($type_sequence) {
-                my $token = $tokens_to_go[$i];
+        my ( $i, $i_mate, $token );
+        foreach $i ( 0 .. $max_index_to_go ) {
+            if ( $type_sequence_to_go[$i] ) {
+                $token = $tokens_to_go[$i];
                 if ( $token =~ /^[\(\[\{\?]$/ ) {
                     push @unmatched_opening_indexes_in_this_batch, $i;
                 }
                 elsif ( $token =~ /^[\)\]\}\:]$/ ) {
 
-                    my $i_mate = pop @unmatched_opening_indexes_in_this_batch;
+                    $i_mate = pop @unmatched_opening_indexes_in_this_batch;
                     if ( defined($i_mate) && $i_mate >= 0 ) {
-                        if ( $type_sequence_to_go[$i_mate] == $type_sequence ) {
+                        if ( $type_sequence_to_go[$i_mate] ==
+                            $type_sequence_to_go[$i] )
+                        {
                             $mate_index_to_go[$i]      = $i_mate;
                             $mate_index_to_go[$i_mate] = $i;
                         }
@@ -9894,8 +9919,8 @@ EOM
 }
 
 sub table_columns_available {
-    my ($i_first_comma) = @_;
-    my $columns =
+    my $i_first_comma = shift;
+    my $columns       =
       $rOpts_maximum_line_length - leading_spaces_to_go($i_first_comma);
 
     # Patch: the vertical formatter does not line up lines whose lengths
@@ -9985,7 +10010,7 @@ sub set_fake_breakpoint {
 }
 
 sub set_forced_breakpoint {
-    my ($i) = @_;
+    my $i = shift;
 
     # when called with certain tokens, use bond strengths to decide
     # if we break before or after it
@@ -10037,7 +10062,7 @@ sub clear_breakpoint_undo_stack {
 
 sub undo_forced_breakpoint_stack {
 
-    my ($i_start) = @_;
+    my $i_start = shift;
     if ( $i_start < 0 ) {
         $i_start = 0;
         my ( $a, $b, $c ) = caller();
@@ -10491,10 +10516,10 @@ sub set_continuation_breaks {
     # keep the line lengths below the maximum desired length.  There is
     # an implied break after the last token, so it need not be included.
     # We'll break at points where the bond strength is lowest.
-    my ($saw_good_break) = @_;
-    my @i_first        = ();    # the first index to output
-    my @i_last         = ();    # the last index to output
-    my @i_colon_breaks = ();    # needed to decide if we have to break at ?'s
+    my $saw_good_break = shift;
+    my @i_first        = ();      # the first index to output
+    my @i_last         = ();      # the last index to output
+    my @i_colon_breaks = ();      # needed to decide if we have to break at ?'s
     if ( $tokens_to_go[0] eq ':' ) { push @i_colon_breaks, 0 }
 
     set_bond_strengths();
@@ -10891,7 +10916,7 @@ sub set_closing_breakpoint {
 
     # set a breakpoint at a matching closing token
     # at present, this is only used to break at a ':' which matches a '?'
-    my ($i_break) = @_;
+    my $i_break = shift;
 
     if ( $mate_index_to_go[$i_break] >= 0 ) {
 
@@ -11057,17 +11082,17 @@ sub tentatively_decrease_AVAILABLE_SPACES {
 }
 
 sub get_STACK_DEPTH {
-    my ($self) = @_;
+    my $self = shift;
     return $self->[STACK_DEPTH];
 }
 
 sub get_SPACES {
-    my ($self) = @_;
+    my $self = shift;
     return $self->[SPACES];
 }
 
 sub get_MARKED {
-    my ($self) = @_;
+    my $self = shift;
     return $self->[MARKED];
 }
 
@@ -11080,7 +11105,7 @@ sub set_MARKED {
 }
 
 sub get_AVAILABLE_SPACES {
-    my ($self) = @_;
+    my $self = shift;
     return $self->[AVAILABLE_SPACES];
 }
 
@@ -11101,12 +11126,12 @@ sub decrease_AVAILABLE_SPACES {
 }
 
 sub get_ALIGN_PAREN {
-    my ($self) = @_;
+    my $self = shift;
     return $self->[ALIGN_PAREN];
 }
 
 sub get_RECOVERABLE_SPACES {
-    my ($self) = @_;
+    my $self = shift;
     return $self->[RECOVERABLE_SPACES];
 }
 
@@ -11127,27 +11152,27 @@ sub increase_RECOVERABLE_SPACES {
 }
 
 sub get_CI_LEVEL {
-    my ($self) = @_;
+    my $self = shift;
     return $self->[CI_LEVEL];
 }
 
 sub get_LEVEL {
-    my ($self) = @_;
+    my $self = shift;
     return $self->[LEVEL];
 }
 
 sub get_SEQUENCE_NUMBER {
-    my ($self) = @_;
+    my $self = shift;
     return $self->[SEQUENCE_NUMBER];
 }
 
 sub get_INDEX {
-    my ($self) = @_;
+    my $self = shift;
     return $self->[INDEX];
 }
 
 sub get_STARTING_INDEX {
-    my ($self) = @_;
+    my $self = shift;
     return $self->[STARTING_INDEX];
 }
 
@@ -11160,7 +11185,7 @@ sub set_HAVE_CHILD {
 }
 
 sub get_HAVE_CHILD {
-    my ($self) = @_;
+    my $self = shift;
     return $self->[HAVE_CHILD];
 }
 
@@ -11173,7 +11198,7 @@ sub set_LAST_EQUALS {
 }
 
 sub get_LAST_EQUALS {
-    my ($self) = @_;
+    my $self = shift;
     return $self->[LAST_EQUALS];
 }
 
@@ -11186,7 +11211,7 @@ sub set_COMMA_COUNT {
 }
 
 sub get_COMMA_COUNT {
-    my ($self) = @_;
+    my $self = shift;
     return $self->[COMMA_COUNT];
 }
 
@@ -11199,7 +11224,7 @@ sub set_CLOSED {
 }
 
 sub get_CLOSED {
-    my ($self) = @_;
+    my $self = shift;
     return $self->[CLOSED];
 }
 
@@ -11330,13 +11355,13 @@ package PerlTidy::VerticalAligner::Line;
 
     sub field_width_growth {
         my $self = shift;
-        my ($j) = @_;
+        my $j    = shift;
         return $self->get_column($j) - $self->get_starting_column($j);
     }
 
     sub starting_field_width {
         my $self = shift;
-        my ($j) = @_;
+        my $j    = shift;
         if ( $j == 0 ) {
             return $self->get_starting_column($j);
         }
@@ -11574,6 +11599,8 @@ sub initialize {
     $last_side_comment_level       = -1;
 
     # frequently used parameters
+    $rOpts_indent_columns             = $rOpts->{'indent-columns'};
+    $rOpts_tabs                       = $rOpts->{'tabs'};
     $rOpts_maximum_whitespace_columns = $rOpts->{'maximum-whitespace-columns'};
     $rOpts_big_space_jump             = $rOpts->{'big-space-jump'};
     $rOpts_minimum_space_to_comment   = $rOpts->{'minimum-space-to-comment'};
@@ -11626,7 +11653,7 @@ sub get_SPACES {
     # return the number of leading spaces associated with an indentation
     # variable $indentation is either a constant number of spaces or an
     # object with a get_SPACES method.
-    my ($indentation) = @_;
+    my $indentation = shift;
     return ref($indentation) ? $indentation->get_SPACES() : $indentation;
 }
 
@@ -11635,13 +11662,13 @@ sub get_RECOVERABLE_SPACES {
     # return the number of spaces (+ means shift right, - means shift left)
     # that we would like to shift a group of lines with the same indentation
     # to get them to line up with their opening parens
-    my ($indentation) = @_;
+    my $indentation = shift;
     return ref($indentation) ? $indentation->get_RECOVERABLE_SPACES() : 0;
 }
 
 sub get_STACK_DEPTH {
 
-    my ($indentation) = @_;
+    my $indentation = shift;
     return ref($indentation) ? $indentation->get_STACK_DEPTH() : 0;
 }
 
@@ -12496,7 +12523,7 @@ sub decide_if_aligned {
 
 sub adjust_side_comment {
 
-    my ($do_not_align) = @_;
+    my $do_not_align = shift;
 
     # let's see if we can move the side comment field out a little
     # to improve readability (the last field is always a side comment field)
@@ -12841,42 +12868,55 @@ sub write_leader_and_string {
     $extra_indent_ok          = 0;
 }
 
-sub get_leading_string {
+{
+    my @leading_string;
 
-    # define the leading whitespace string for this line..
-    my ($leading_whitespace_count) = @_;
+    sub get_leading_string {
 
-    my $leading_string;
+        # define the leading whitespace string for this line..
+        my $leading_whitespace_count = shift;
 
-    # Handle case of zero whitespace, which includes multi-line quotes
-    # (which may have a finite level; this prevents tab problems)
-    if ( $leading_whitespace_count <= 0 ) {
-        $leading_string = "";
-    }
+        # Handle case of zero whitespace, which includes multi-line quotes
+        # (which may have a finite level; this prevents tab problems)
+        if ( $leading_whitespace_count <= 0 ) {
+            return "";
+        }
 
-    # Handle simple case of no tabs
-    elsif ( !$rOpts->{'tabs'} || $rOpts->{'indent-columns'} <= 0 ) {
-        $leading_string = ( ' ' x $leading_whitespace_count );
-    }
+        # look for previous result
+        elsif ( $leading_string[$leading_whitespace_count] ) {
+            return $leading_string[$leading_whitespace_count];
+        }
 
-    # Handle tabs
-    else {
-        $leading_string = ( "\t" x $group_level );
-        my $space_count =
-          $leading_whitespace_count - $group_level * $rOpts->{'indent-columns'};
+        # must compute a string for this number of spaces
+        my $leading_string;
 
-        # shouldn't happen:
-        if ( $space_count < 0 ) {
-            warning(
-"Error in append_line: for level=$group_level count=$leading_whitespace_count\n"
-            );
+        # Handle simple case of no tabs
+        ##elsif ( !$rOpts->{'tabs'} || $rOpts->{'indent-columns'} <= 0 ) {
+        if ( !$rOpts_tabs || $rOpts_indent_columns <= 0 ) {
             $leading_string = ( ' ' x $leading_whitespace_count );
         }
+
+        # Handle tabs
         else {
-            $leading_string .= ( ' ' x $space_count );
+            $leading_string = ( "\t" x $group_level );
+            my $space_count =
+              $leading_whitespace_count - $group_level * $rOpts_indent_columns;
+            ##$leading_whitespace_count - $group_level * $rOpts->{'indent-columns'};
+
+            # shouldn't happen:
+            if ( $space_count < 0 ) {
+                warning(
+"Error in append_line: for level=$group_level count=$leading_whitespace_count\n"
+                );
+                $leading_string = ( ' ' x $leading_whitespace_count );
+            }
+            else {
+                $leading_string .= ( ' ' x $space_count );
+            }
         }
+        $leading_string[$leading_whitespace_count] = $leading_string;
+        return $leading_string;
     }
-    return $leading_string;
 }
 
 sub report_anything_unusual {
@@ -12990,7 +13030,7 @@ sub write_blank_code_line {
 
 sub write_code_line {
     my $self = shift;
-    my ($a) = @_;
+    my $a    = shift;
 
     if ( $a =~ /^\s*$/ ) {
         my $rOpts = $self->{_rOpts};
@@ -13009,7 +13049,7 @@ sub write_code_line {
 
 sub write_line {
     my $self = shift;
-    my ($a) = @_;
+    my $a    = shift;
     $self->{_line_sink_object}->write_line($a);
     if ( $a =~ /\n$/ ) { $self->{_output_line_number}++; }
 
@@ -13143,8 +13183,8 @@ sub write_debug_entry {
     # This is a debug dump routine which may be modified as necessary
     # to dump tokens on a line-by-line basis.  The output will be written
     # to the .DEBUG file when the -D flag is entered.
-    my $self = shift;
-    my ($line_of_tokens) = @_;
+    my $self           = shift;
+    my $line_of_tokens = shift;
 
     my $input_line        = $line_of_tokens->{_line_text};
     my $rtoken_type       = $line_of_tokens->{_rtoken_type};
@@ -13233,8 +13273,8 @@ sub new {
 }
 
 sub peek_ahead {
-    my $self = shift;
-    my ($buffer_index) = @_;
+    my $self               = shift;
+    my $buffer_index       = shift;
     my $line               = undef;
     my $input_file_copy    = $self->{_input_file_copy};
     my $line_source_object = $self->{_line_source_object};
@@ -13753,7 +13793,7 @@ EOM
 sub report_v_string {
 
     # warn if this version can't handle v-strings
-    my ($tok) = @_;
+    my $tok = shift;
     $saw_v_string = $input_line_number;
     if ( $] < 5.006 ) {
         warning(
@@ -15256,7 +15296,7 @@ current version.
 
 =cut
 
-        my ($line_of_tokens)       = @_;
+        my $line_of_tokens = shift;
         my ($untrimmed_input_line) = $line_of_tokens->{_line_text};
 
         # patch while coding change is underway
@@ -16825,7 +16865,8 @@ that it uses, which are initialized in the BEGIN section.
     }
 
     # handle bare word..
-    elsif ( $last_nonblank_type =~ /^[w]$/ ) {
+    ##elsif ( $last_nonblank_type =~ /^[w]$/ ) {
+    elsif ( $last_nonblank_type eq 'w' ) {    ## /^[w]$/ ) {
 
         # unfortunately, we can't tell what type of token to expect next
         # after most bare words
@@ -16882,7 +16923,8 @@ that it uses, which are initialized in the BEGIN section.
     # keywords as "last_nonblank_token" and caught above.
     # (This statement is order dependent, and must come after checking
     # $last_nonblank_token).
-    elsif ( $last_nonblank_type =~ /^\}$/ ) {
+    ##elsif ( $last_nonblank_type =~ /^\}$/ ) {
+    elsif ( $last_nonblank_type eq '}' ) {    ##=~ /^\}$/ ) {
         $op_expected = TERM;
     }
 
@@ -17178,7 +17220,7 @@ sub peek_ahead_for_n_nonblank_pre_tokens {
 
     # returns next n pretokens if they exist
     # returns undef's if hits eof without seeing any pretokens
-    my ($max_pretokens) = @_;
+    my $max_pretokens = shift;
     my $line;
     my $i = 0;
     my ( $rpre_tokens, $rmap, $rpre_types );
@@ -17197,7 +17239,7 @@ sub peek_ahead_for_n_nonblank_pre_tokens {
 
 # look ahead for next non-blank, non-comment line of code
 sub peek_ahead_for_nonblank_token {
-    my ($rtokens) = @_;
+    my $rtokens = shift;
     my $line;
     my $i = 0;
 
@@ -17675,7 +17717,7 @@ sub guess_if_here_doc {
     # little reason to change it.
     use constant HERE_DOC_WINDOW => 40;
 
-    my ($next_token) = @_;
+    my $next_token        = shift;
     my $here_doc_expected = 0;
     my $line;
     my $k   = 0;
@@ -18402,8 +18444,6 @@ updated id_scan_state and the next index after the identifier.
         elsif ( $tok eq '::' ) {
             $id_scan_state = 'A';
         }
-
-        #elsif ( $tok =~ /[A-Za-z_]/ ) {
         elsif ( $tok =~ /^[A-Za-z_]/ ) {
             $id_scan_state = ':';
         }
@@ -18520,18 +18560,6 @@ updated id_scan_state and the next index after the identifier.
 
                 # else:
                 # space after '->' is ok
-                # other cases?
-
-                ##elsif ( $identifier =~ /^(->)$/ ) {
-                ## BUBBA: this seems to do nothing!!
-##                elsif ( $identifier =~ /^(->)$/ ) {
-##
-##                    if ( length($identifier) > 2 ) {
-##                        warning("BUBBA! identifier is $identifier\n");
-##                        $id_scan_state = '';
-##                        last;
-##                    }
-##                }
             }
             elsif ( $tok eq '^' ) {
 
@@ -18946,7 +18974,7 @@ sub follow_quoted_string {
 sub matching_end_token {
 
     # find closing character for a pattern
-    my ($beginning_token) = @_;
+    my $beginning_token = shift;
 
     if ( $beginning_token eq '{' ) {
         '}';
