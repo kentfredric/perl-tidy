@@ -61,7 +61,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.44 2003/04/30 21:09:34 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.45 2003/07/26 14:05:41 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 sub streamhandle {
@@ -473,9 +473,12 @@ EOM
         }
 
         # make the pattern of file extensions that we shouldn't touch
-        $_ = quotemeta($output_extension);
-        my $forbidden_file_extensions = "(($dot_pattern)(LOG|DEBUG|ERR|TEE)|$_";
-        if ($in_place_modify) {
+        my $forbidden_file_extensions = "(($dot_pattern)(LOG|DEBUG|ERR|TEE)";
+        if ($output_extension) {
+            $_ = quotemeta($output_extension);
+            $forbidden_file_extensions .= "|$_";
+        }
+        if ($in_place_modify && $backup_extension) {
             $_ = quotemeta($backup_extension);
             $forbidden_file_extensions .= "|$_";
         }
@@ -600,7 +603,7 @@ EOM
             # rerun perltidy over and over with wildcard input.
             if (
                 !$source_stream
-                && (   $input_file =~ /$forbidden_file_extensions/
+                && (   $input_file =~ /$forbidden_file_extensions/o
                     || $input_file eq 'DIAGNOSTICS' )
               )
             {
@@ -1857,7 +1860,7 @@ EOS
 
     # Unfortunately the logic used for the various versions isnt so clever..
     # so we have to handle an outside case.
-    return ( $os eq "2000" & $major != 5 ) ? "NT4" : $os;
+    return ( $os eq "2000" && $major != 5 ) ? "NT4" : $os;
 }
 
 sub look_for_Windows {
@@ -2466,7 +2469,7 @@ sub process_this_file {
     }
 
     # finish up
-    eval { $beauty->close_formatter() };
+    eval { $beauty->finish_formatting() };
     $truth->report_tokenization_errors();
 }
 
@@ -4130,7 +4133,7 @@ sub pod_to_html {
         }
 
         # Copy the perltidy css, if any, after <body> tag
-        elsif ( $line =~ /^\s*<body>\s*$/i ) {
+        elsif ( $line =~ /^\s*<body.*>\s*$/i ) {
             $saw_body = 1;
             $html_print->($css_string) if $css_string;
             $html_print->($line);
@@ -4166,8 +4169,9 @@ sub pod_to_html {
         }
 
         # Copy one perltidy section after each marker
-        elsif ( $line =~ /<!-- pERLTIDY sECTION -->(.*)$/ ) {
-            $line = $1;
+        elsif ( $line =~ /^(.*)<!-- pERLTIDY sECTION -->(.*)$/ ) {
+            $line = $2;
+            $html_print->($1) if $1;
 
             # Intermingle code and pod sections if we saw multiple =cut's.
             if ( $self->{_pod_cut_count} > 1 ) {
@@ -4663,7 +4667,7 @@ sub escape_html {
     return $token;
 }
 
-sub close_formatter {
+sub finish_formatting {
 
     # called after last line
     my $self = shift;
@@ -6089,7 +6093,7 @@ sub excess_line_length {
       token_sequence_length( $ifirst, $ilast ) - $rOpts_maximum_line_length;
 }
 
-sub close_formatter {
+sub finish_formatting {
 
     # flush buffer and write any informative messages
     my $self = shift;
@@ -7737,7 +7741,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.44 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.45 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -18058,6 +18062,7 @@ sub get_line {
         }
 
         # check for error of extra whitespace
+        # note for PERL6: leading whitespace is allowed
         else {
             $candidate_target =~ s/\s*$//;
             $candidate_target =~ s/^\s*//;
@@ -24293,7 +24298,7 @@ to perltidy.
 
 =head1 VERSION
 
-This man page documents Perl::Tidy version 20021130.
+This man page documents Perl::Tidy version 20030726.
 
 =head1 AUTHOR
 

@@ -5,7 +5,20 @@
  suggested improvement, please send a note to perltidy at
  users.sourceforge.net.  
 
-=head2 2002 xx xx
+=head2 2003 07 26
+
+ -Corrected cause of warning message with recent versions of Perl:
+    "Possible precedence problem on bitwise & operator at ..."
+  Thanks to Jim Files.
+
+ -fixed bug with -html with '=for pod2html' sections, in which code/pod
+ output order was incorrect.  Thanks to Tassilo von Parseval.
+
+ -fixed bug when the -html flag is used, in which the following error
+ message, plus others, appear:
+     did not see <body> in pod2html output
+ This was caused by a change in the format of html output by pod2html
+ VERSION 1.04 (included with perl 5.8).  Thanks to Tassilo von Parseval.
 
  -Fixed bug where an __END__ statement would be mistaken for a label
  if it is immediately followed by a line with a leading colon. Thanks
