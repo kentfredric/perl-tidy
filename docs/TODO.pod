@@ -37,44 +37,6 @@ future release.  this will make nested ?: statements more readable.
 Coding modifications are underway to improve the vertical alignment
 logic.
 
-=head2 Implement 'Vertical Tightness' parameters
-
-At present, perltidy usually breaks open container when they
-contain multiple lines.  For example, using perltidy -lp,
-
-        %romanNumerals = (
-                           one   => 'I',
-                           two   => 'II',
-                           three => 'III',
-                           four  => 'IV',
-                           five  => 'V',
-                           six   => 'VI',
-                           seven => 'VII',
-                           eight => 'VIII',
-                           nine  => 'IX',
-                           ten   => 'X'
-        );
-
-Some prefer to keep the container unbroken, if possible, like this:
-
-        %romanNumerals = ( one   => 'I',
-                           two   => 'II',
-                           three => 'III',
-                           four  => 'IV',
-                           five  => 'V',
-                           six   => 'VI',
-                           seven => 'VII',
-                           eight => 'VIII',
-                           nine  => 'IX',
-                           ten   => 'X');
-
-Parameters to control this are being studied.  They could be, for
-example, B<paren-vertical-tightness>,
-B<square-bracket-vertical-tightness>,
-B<brace-vertical-tightness>.  This update requires further development
-of the vertical alignment logic, and will probably be implemented
-in steps.
-
 =head2 Documentation
 
 A FAQ is being written to explain some of the more subtle formatting

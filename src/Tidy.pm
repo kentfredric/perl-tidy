@@ -61,7 +61,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ($VERSION=q($Id: Tidy.pm,v 1.10 2002/03/15 20:42:37 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ($VERSION=q($Id: Tidy.pm,v 1.11 2002/03/19 17:14:43 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 # Preloaded methods go here.
@@ -871,6 +871,8 @@ sub process_command_line {
     $add_option->( 'block-brace-tightness',             'bbt',   '=i' );
     $add_option->( 'brace-left-and-indent',             'bli',   '!' );
     $add_option->( 'brace-tightness',                   'bt',    '=i' );
+    $add_option->( 'brace-closing-vertical-tightness',  'bcvt',  '=i' );
+    $add_option->( 'brace-vertical-tightness',  'bvt',  '=i' );
     $add_option->( 'break-after-comma-arrows',          'baa',   '!' );
     $add_option->( 'break-after-opening-brace',         'bob',   '!' );
     $add_option->( 'check-multiline-quotes',            'chk',   '!' );
@@ -937,6 +939,8 @@ sub process_command_line {
     $add_option->( 'output-file-extension',             'oext',  '=s' );
     $add_option->( 'output-path',                       'opath', '=s' );
     $add_option->( 'paren-tightness',                   'pt',    '=i' );
+    $add_option->( 'paren-closing-vertical-tightness',  'pcvt',  '=i' );
+    $add_option->( 'paren-vertical-tightness',  'pvt',  '=i' );
     $add_option->( 'pass-version-line',                 'pvl',   '!' );
     $add_option->( 'perl-syntax-check-flags',           'pscf',  '=s' );
     $add_option->( 'profile',                           'pro',   '=s' );
@@ -947,9 +951,11 @@ sub process_command_line {
     $add_option->( 'space-terminal-semicolon',          'sts',   '!' );
     $add_option->( 'static-side-comments',              'ssc',   '!' );
     $add_option->( 'static-side-comment-prefix',        'sscp',  '=s' );
-    $add_option->( 'square-bracket-tightness',          'sbt',   '=i' );
-    $add_option->( 'standard-error-output',             'se',    '!' );
-    $add_option->( 'standard-output',                   'st',    '!' );
+    $add_option->( 'square-bracket-tightness',                  'sbt',   '=i' );
+    $add_option->( 'square-bracket-closing-vertical-tightness', 'sbcvt', '=i' );
+    $add_option->( 'square-bracket-vertical-tightness', 'sbvt', '=i' );
+    $add_option->( 'standard-error-output',                     'se',    '!' );
+    $add_option->( 'standard-output',                           'st',    '!' );
     $add_option->( 'starting-indentation-level',        'sil',   '=i' );
     $add_option->( 'static-block-comments',             'sbc',   '!' );
     $add_option->( 'static-block-comment-prefix',       'sbcp',  '=s' );
@@ -983,6 +989,8 @@ sub process_command_line {
       blanks-before-subs
       block-brace-tightness=0
       brace-tightness=1
+      brace-closing-vertical-tightness=1
+      brace-vertical-tightness=0
       break-after-opening-brace
       check-syntax
       closing-side-comment-interval=6
@@ -1021,11 +1029,15 @@ sub process_command_line {
       nowarning-output
       outdent-long-quotes
       paren-tightness=1
+      paren-closing-vertical-tightness=1
+      paren-vertical-tightness=0
       pass-version-line
       recombine
       short-concatenation-item-length=8
       space-for-semicolon
       square-bracket-tightness=1
+      square-bracket-closing-vertical-tightness=1
+      square-bracket-vertical-tightness=0
       static-block-comments
       trim-qw
       format=tidy
@@ -3767,6 +3779,8 @@ use vars qw{
   %outdent_keyword
   $static_block_comment_pattern
   $static_side_comment_pattern
+  %opening_vertical_tightness
+  %closing_vertical_tightness
 
   $rOpts_add_newlines
   $rOpts_add_whitespace
@@ -3805,6 +3819,8 @@ use vars qw{
   $bli_pattern
   %is_closing_type
   %is_opening_type
+  %is_closing_token
+  %is_opening_token
 };
 
 BEGIN {
@@ -3848,6 +3864,12 @@ BEGIN {
     # 'R' is token for closing } at hash key
     @_ = qw" R } ) ] ";
     @is_closing_type{@_} = (1) x scalar(@_);
+
+    @_ = qw" { ( [ ";
+    @is_opening_token{@_} = (1) x scalar(@_);
+
+    @_ = qw" } ) ] ";
+    @is_closing_token{@_} = (1) x scalar(@_);
 }
 
 # whitespace codes
@@ -5161,6 +5183,26 @@ EOM
     $rOpts_swallow_optional_blank_lines =
       $rOpts->{'swallow-optional-blank-lines'};
     $half_maximum_line_length = $rOpts_maximum_line_length / 2;
+
+    # Note that both opening and closing tokens can access the opening
+    # and closing flags of their container types.
+    %opening_vertical_tightness=(
+            '('=> $rOpts->{'paren-vertical-tightness'},
+            '{'=> $rOpts->{'brace-vertical-tightness'},
+            '['=> $rOpts->{'square-bracket-vertical-tightness'},
+            ')'=> $rOpts->{'paren-vertical-tightness'},
+            '}'=> $rOpts->{'brace-vertical-tightness'},
+            ']'=> $rOpts->{'square-bracket-vertical-tightness'},
+    );
+
+    %closing_vertical_tightness=(
+            '('=> $rOpts->{'paren-closing-vertical-tightness'},
+            '{'=> $rOpts->{'brace-closing-vertical-tightness'},
+            '['=> $rOpts->{'square-bracket-closing-vertical-tightness'},
+            ')'=> $rOpts->{'paren-closing-vertical-tightness'},
+            '}'=> $rOpts->{'brace-closing-vertical-tightness'},
+            ']'=> $rOpts->{'square-bracket-closing-vertical-tightness'},
+    );
 }
 
 sub make_static_block_comment_pattern {
@@ -6280,7 +6322,7 @@ sub set_white_space_flag {
          /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
      Examples:
        *VERSION = \'1.01';
-       ( $VERSION ) = '$Revision: 1.10 $ ' =~ /\$Revision:\s+([^\s]+)/;
+       ( $VERSION ) = '$Revision: 1.11 $ ' =~ /\$Revision:\s+([^\s]+)/;
      We will pass such a line straight through (by changing it
      to a quoted string) unless -npvl is used
     
@@ -6289,7 +6331,7 @@ sub set_white_space_flag {
      block sequence numbers may see a closing sequence number but not
      the corresponding opening sequence number (sidecmt.t).  Example:
 
-    my $VERSION = do { my @r = (q$Revision: 1.10 $ =~ /\d+/g); sprintf
+    my $VERSION = do { my @r = (q$Revision: 1.11 $ =~ /\d+/g); sprintf
     "%d."."%02d" x $#r, @r }; 
 
     Here, the opening brace of 'do {' will not be seen, while the closing
@@ -8175,7 +8217,8 @@ sub send_lines_to_vertical_aligner {
     }
 
     # loop to prepare each line for shipment
-    for my $n ( 0 .. @$ri_first - 1 ) {
+    my $n_last_line = @$ri_first-1;
+    for my $n ( 0 .. $n_last_line ) {
         my $ibeg = $$ri_first[$n];
         my $iend = $$ri_last[$n];
 
@@ -8244,11 +8287,12 @@ sub send_lines_to_vertical_aligner {
                 # map certain keywords to the same 'if' class to align
                 # long if/elsif sequences. my testfile: elsif.pl
                 my $tok = $tokens_to_go[$i];
-                if ( $n == 0 ) {
-                    if ( $tok eq 'elsif' )  { $tok = 'if' }
-                    if ( $tok eq 'else' )   { $tok = 'if' }
-                    if ( $tok eq 'unless' ) { $tok = 'if' }
-                }
+                if ( $n == 0 && $tok =~ /^(elsif|else|unless)$/) {$tok='if'}
+##                if ( $n == 0 ) {
+##                    if ( $tok eq 'elsif' )  { $tok = 'if' }
+##                    if ( $tok eq 'else' )   { $tok = 'if' }
+##                    if ( $tok eq 'unless' ) { $tok = 'if' }
+##                }
                 $patterns[$j] .= $tok;
             }
         }
@@ -8280,6 +8324,84 @@ sub send_lines_to_vertical_aligner {
             )
         );
 
+        # Apply vertical tightness controls.  We create an array of
+        # parameters which tell the vertical aligner if we should
+        # combine this line with the next line to achieve the desired
+        # vertical tightness.  The array of parameters contains:
+        #
+        #   [0] type: 1=opening  2=closing
+        #   [1] value of flag: -pvt (if opening) or -pcvt (if closing)
+        #   [2] sequence number of container if symmetric closing used
+        #   [3] spaces of padding to closing token
+        my $rcombination_flags;
+        
+        # This must NEVER be used with the last line of a batch, or we
+        # risk losing a line!  We must be sure that a line of code
+        # follows immediately to flush any cached line.
+        if ( $n < $n_last_line ) {
+
+            # see if last token is an opening token...not a BLOCK...
+            my $ibeg_next = $$ri_first[ $n + 1 ];
+            my $token_end = $tokens_to_go[$iend];
+            if ( $type_sequence_to_go[$iend]
+                && !$block_type_to_go[$iend]
+                && $is_opening_token{$token_end}
+                && $opening_vertical_tightness{$token_end} > 0 )
+            {
+
+##                my $diff      = $nesting_depth_to_go[$iend_next] -
+##                      $nesting_depth_to_go[$ibeg_next];
+##                print "BUBBA: tok=$token_end diff=$diff= $nesting_depth_to_go[$iend_next] - $nesting_depth_to_go[$ibeg_next] tok=$tokens_to_go[$ibeg_next]  tok=$tokens_to_go[$iend_next]\n";
+
+
+                # avoid multiple jumps in nesting depth in one line if
+                # requested
+                my $ot = $opening_vertical_tightness{$token_end};
+                my $iend_next = $$ri_last[ $n + 1 ];
+                unless (
+                    $ot == 1
+                    && ( $nesting_depth_to_go[$iend_next] >
+                        $nesting_depth_to_go[$ibeg_next]
+                        || $is_opening_token{ $tokens_to_go[$iend_next] } )
+                  )
+                {
+                    $rcombination_flags->[0] = 1;
+                    $rcombination_flags->[1] = $ot;
+
+                    # Note: pass 0 sequence number unless symmetric closing is
+                    # used.  This avoids possibly creating a needless large
+                    # hash table in the vertical aligner.
+                    my $seqno = 0;
+                    if ( $closing_vertical_tightness{$token_end} == 1 ) {
+                        $seqno = $type_sequence_to_go[$iend];
+                    }
+                    $rcombination_flags->[2] = $seqno;
+                    $rcombination_flags->[3] =
+                      $tightness{$token_end} == 2 ? 0 : 1;
+                }
+            }
+
+            # see if first token of next line is a closing token...
+            # ..and be sure this line does not have a side comment
+            my $token_next     = $tokens_to_go[$ibeg_next];
+            if ( $type_sequence_to_go[$ibeg_next]
+                && !$block_type_to_go[$ibeg_next]
+                && $is_closing_token{$token_next}
+                && $types_to_go[$iend] !~ '#' )
+            {
+                my $ot = $opening_vertical_tightness{$token_next};
+                my $ct = $closing_vertical_tightness{$token_next};
+                if ( $ct == 2 || $ct == 1 && $ot > 0 ) {
+                    $rcombination_flags->[0] = 2;
+                    $rcombination_flags->[1] = $ct;
+                    $rcombination_flags->[2] =
+                      $type_sequence_to_go[$ibeg_next];
+                    $rcombination_flags->[3] =
+                      $tightness{$token_next} == 2 ? 0 : 1;
+                }
+            }
+        }
+
         # flush an outdented line to avoid any unwanted vertical alignment
         Perl::Tidy::VerticalAligner::flush() if ($is_outdented_line);
 
@@ -8289,7 +8411,8 @@ sub send_lines_to_vertical_aligner {
             $indentation,                    \@fields,
             \@tokens,                        \@patterns,
             $forced_breakpoint_to_go[$iend], $outdent_long_lines,
-            $is_semicolon_terminated,        $do_not_pad
+            $is_semicolon_terminated,        $do_not_pad,
+            $rcombination_flags,
         );
 
         # flush an outdented line to avoid any unwanted vertical alignment
@@ -9662,11 +9785,6 @@ sub pad_array_to_go {
             );
             $bp_count           = $forced_breakpoint_count - $fbc;
             $do_not_break_apart = 0 if $must_break_open;
-
-##            if ($do_not_break_apart) {
-##                $do_not_break_apart = 0
-##                  if ( $last_nonblank_type[$dd] !~ /^[kwiU]$/ );
-##            }
         }
         return ( $bp_count, $do_not_break_apart );
     }
@@ -10682,6 +10800,19 @@ sub find_token_starting_list {
         if ( $i_effective_last_comma >= $max_index_to_go ) {
             $i_effective_last_comma = $max_index_to_go - 1;
         }
+        
+        # Now that the term lengths are known, we can set a flag
+        # indicating if we need to break open to keep -lp items aligned.
+        # This is necessary if any of the list terms exceeds the
+        # available space after the '('. 
+        my $need_lp_break_open = $must_break_open;
+        if ( $rOpts_line_up_parentheses && !$must_break_open ) {
+            my $columns_if_unbroken = $rOpts_maximum_line_length -
+              total_line_length( $i_opening_minus, $i_opening_paren );
+            $need_lp_break_open = ( $max_length[0] > $columns_if_unbroken )
+              || ( $max_length[1] > $columns_if_unbroken )
+              || ( $first_term_length > $columns_if_unbroken );
+        }
 
         # Specify if the list must have an even number of fields or not.  It is
         # generally safest to assume an even number, because the list items
@@ -10707,24 +10838,6 @@ sub find_token_starting_list {
               && $first_term_length >
               2 * $max_length[1] - 2    # need long first term
         );
-
-        # Set a flag indicating if we must break open to keep -lp items
-        # aligned
-        ##my $lp_must_break = $must_break;
-        my $need_lp_break_open = $must_break_open;
-        if ( $rOpts_line_up_parentheses && !$must_break_open ) {
-            my $columns_if_unbroken = $rOpts_maximum_line_length -
-              total_line_length( $i_opening_minus, $i_opening_paren );
-            $need_lp_break_open = ( $max_length[0] > $columns_if_unbroken )
-              || ( $max_length[1] > $columns_if_unbroken )
-              || ( $first_term_length > $columns_if_unbroken );
-
-##            my $BUBBA =
-##              join ( '',
-##                @tokens_to_go[ $i_opening_minus .. $i_opening_paren ] );
-##            print
-##"must=$lp_must_break i_minus=$i_opening_minus  i_par=$i_opening_paren toks=$BUBBA cols=$columns_if_unbroken, \n";
-        }
 
         # or do we know from the type of list that the first term should
         # be placed alone? 
@@ -11019,6 +11132,7 @@ sub find_token_starting_list {
         {
 
             # Shortcut method 1: for -lp and just one comma:
+            # This is a no-brainer, just break at the comma.
             if (
                 $rOpts_line_up_parentheses        # -lp
                 && $item_count == 2               # two items, one comma
@@ -11033,50 +11147,14 @@ sub find_token_starting_list {
 
             # method 2 is for most small ragged lists which might look
             # best if not displayed as a table.
-            my $shortcut_2_ok = 0;
             if (
-                ( $new_identifier_count > 0 )    # isn't all quotes
-                && $sparsity > 0.15    # would be fairly spaced gaps if aligned
+                ( $number_of_fields == 2 && $item_count == 3 )
+                || (
+                    $new_identifier_count > 0    # isn't all quotes
+                    && $sparsity > 0.15
+                )    # would be fairly spaced gaps if aligned
               )
             {
-                $shortcut_2_ok = 1;
-            }
-
-            # method 3 is for a list which fits on one line except for
-            # the last term.  We may want to break at the last comma in
-            # this case.
-            my $shortcut_3_ok = 0;
-            if ( !$must_break_open ) {
-                my $i_last_comma = $$rcomma_index[ $comma_count - 1 ];
-                if ( excess_line_length( 0, $i_last_comma ) <= 0 ) {
-                    my $max_index = @item_lengths - 1;
-
-                    # avoid needlessly breaking open container
-                    if ( $number_of_fields == 2 && $item_count % 2 == 1 ) {
-                        $shortcut_3_ok = 1;
-                    }
-
-                    # we want the last term shorter than the first for
-                    # good visibility.
-                    elsif ( $sparsity > 0.15
-                        && $item_lengths[0] >= $item_lengths[$max_index] )
-                    {
-                        $shortcut_3_ok = 1;
-
-                        # if method 2 has found just one break, we will
-                        # prefer breaking at the last term.
-                        if ( $shortcut_2_ok && @{$ri_ragged_break_list} == 1 ) {
-                            $shortcut_2_ok = 0;
-                        }
-                    }
-
-                }
-            }
-
-            # Shortcut method 2: for relatively simple 2 line function calls
-            # which usually look better without aligning commas and opening 
-            # up the container
-            if ($shortcut_2_ok) {
 
                 my $break_count =
                   set_ragged_breakpoints( \@i_term_comma,
@@ -11099,19 +11177,6 @@ sub find_token_starting_list {
                 return;
             }
 
-            # Shortcut method 3: break at last comma if it will just strand one
-            # short, simple term.  This is usually easiest to read.
-            if ($shortcut_3_ok) {
-
-                # we don't want to actually set a break at the last
-                # comma, and will let the continuation logic set 
-                # it if really necessary.  Sometimes other breaks
-                # make it unnecessary (example: sprintf may have
-                # already set a break).
-                $$rdo_not_break_apart = 1;
-                return;
-
-            }
         }    # end shortcut methods
 
         # debug stuff
@@ -11176,14 +11241,9 @@ sub find_token_starting_list {
         # sparser the list that can be allowed and still look ok.
         #---------------------------------------------------------------
 
-        if (
-            ##BUBBA: !$must_break_open_container && 
-            (
-                ( $formatted_lines < 3 && $packed_lines < $formatted_lines )
-                || ( $formatted_lines < 2 )
-                || ( $unused_columns >
-                    $max_allowed_sparsity * $formatted_columns )
-            )
+        if ( ( $formatted_lines < 3 && $packed_lines < $formatted_lines )
+            || ( $formatted_lines < 2 )
+            || ( $unused_columns > $max_allowed_sparsity * $formatted_columns )
           )
         {
 
@@ -11314,7 +11374,6 @@ sub study_list_complexity {
 
         # now mark a ragged break after this item it if it is 'long and
         # complex':
-        ##if ( $item_complexity[$i] >= $definitely_complex ) {
         if ( $weighted_length >= $definitely_complex ) {
 
             # if we broke after the previous term
@@ -11341,7 +11400,6 @@ sub study_list_complexity {
         elsif ( $i == $i_max
             && $i_last_break == $i - 1
             && $weighted_length <= $definitely_simple )
-          ##&& $item_complexity[$i] <= $definitely_simple )
         {
             pop @i_ragged_break_list;
         }
@@ -12828,6 +12886,7 @@ package Perl::Tidy::VerticalAligner::Line;
     use constant IS_HANGING_SIDE_COMMENT => 9;
     use constant RALIGNMENTS             => 10;
     use constant MAXIMUM_LINE_LENGTH     => 11;
+    use constant RCOMBINATION_FLAG        => 12;
 
     my %_index_map;
     $_index_map{jmax}                    = JMAX;
@@ -12842,6 +12901,7 @@ package Perl::Tidy::VerticalAligner::Line;
     $_index_map{is_hanging_side_comment} = IS_HANGING_SIDE_COMMENT;
     $_index_map{ralignments}             = RALIGNMENTS;
     $_index_map{maximum_line_length}     = MAXIMUM_LINE_LENGTH;
+    $_index_map{rcombination_flags}      = RCOMBINATION_FLAG;
 
     my @_default_data = ();
     $_default_data[JMAX]                    = undef;
@@ -12856,6 +12916,7 @@ package Perl::Tidy::VerticalAligner::Line;
     $_default_data[IS_HANGING_SIDE_COMMENT] = undef;
     $_default_data[RALIGNMENTS]             = [];
     $_default_data[MAXIMUM_LINE_LENGTH]     = undef;
+    $_default_data[RCOMBINATION_FLAG]        = undef;
 
     {
 
@@ -12902,6 +12963,7 @@ package Perl::Tidy::VerticalAligner::Line;
     sub get_outdent_long_lines      { $_[0]->[OUTDENT_LONG_LINES] }
     sub get_list_type               { $_[0]->[LIST_TYPE] }
     sub get_is_hanging_side_comment { $_[0]->[IS_HANGING_SIDE_COMMENT] }
+    sub get_rcombination_flags      { $_[0]->[RCOMBINATION_FLAG] }
 
     sub set_column     { $_[0]->[RALIGNMENTS]->[ $_[1] ]->set_column( $_[2] ) }
     sub get_alignment  { $_[0]->[RALIGNMENTS]->[ $_[1] ] }
@@ -13132,6 +13194,14 @@ use vars qw(
   $diagnostics_object
   $logger_object
   $file_writer_object
+
+  $cached_line_text
+  $cached_line_type
+  $cached_tightness_flag
+  $cached_seqno
+  $cached_pad
+  %last_prepend_successful
+
   $rOpts
 
   $rOpts_maximum_line_length
@@ -13173,6 +13243,14 @@ sub initialize {
     $last_outdented_line_at        = 0;
     $last_side_comment_line_number = 0;
     $last_side_comment_level       = -1;
+
+    # write_leader_and_string cache:
+    $cached_line_text        = "";
+    $cached_line_type        = 0; 
+    $cached_tightness_flag   = 0;
+    $cached_seqno            = 0;
+    $cached_pad              = 0;
+    %last_prepend_successful = ();
 
     # frequently used parameters
     $rOpts_indent_columns             = $rOpts->{'indent-columns'};
@@ -13355,10 +13433,10 @@ The log file warns the user if there are any such tabs.
 =cut
 
     my (
-        $level,           $level_end,          $indentation,
-        $rfields,         $rtokens,            $rpatterns,
-        $is_forced_break, $outdent_long_lines, $is_terminal_statement,
-        $do_not_pad
+        $level,           $level_end,             $indentation,
+        $rfields,         $rtokens,               $rpatterns,
+        $is_forced_break, $outdent_long_lines,    $is_terminal_statement,
+        $do_not_pad,      $rcombination_flags,
       )
       = @_;
 
@@ -13369,6 +13447,7 @@ The log file warns the user if there are any such tabs.
     my $jmax = $#{$rfields};
     $previous_minimum_jmax_seen = $minimum_jmax_seen;
     $previous_maximum_jmax_seen = $maximum_jmax_seen;
+    ##print "BUBBA: level=$level end=$level_end\n";
 
     VALIGN_DEBUG_FLAG_APPEND0 && do {
         print
@@ -13437,7 +13516,7 @@ The log file warns the user if there are any such tabs.
         if ( $maximum_line_index < 0 && !get_RECOVERABLE_SPACES($indentation) )
         {
             write_leader_and_string( $leading_space_count, $$rfields[0], 0,
-                $outdent_long_lines );
+                $outdent_long_lines, $rcombination_flags );
             return;
         }
     }
@@ -13470,6 +13549,7 @@ The log file warns the user if there are any such tabs.
         list_type               => "",
         is_hanging_side_comment => $is_hanging_side_comment,
         maximum_line_length     => $rOpts->{'maximum-line-length'},
+        rcombination_flags        => $rcombination_flags,
     );
 
     # --------------------------------------------------------------------
@@ -14236,6 +14316,7 @@ sub write_vertically_aligned_line {
     my $leading_space_count = $line->get_leading_space_count();
     my $outdent_long_lines  = $line->get_outdent_long_lines();
     my $maximum_field_index = $line->get_jmax();
+    my $rcombination_flags    = $line->get_rcombination_flags();
 
     # add any extra spaces
     if ( $leading_space_count > $group_leader_length ) {
@@ -14287,7 +14368,7 @@ sub write_vertically_aligned_line {
 
     # ship this line off
     write_leader_and_string( $leading_space_count + $extra_leading_spaces,
-        $str, $side_comment_length, $outdent_long_lines );
+        $str, $side_comment_length, $outdent_long_lines, $rcombination_flags );
 }
 
 sub get_extra_leading_spaces {
@@ -14383,32 +14464,20 @@ sub get_output_line_number {
 
 sub write_leader_and_string {
 
-    my ( $leading_space_count, $str, $side_comment_length, $outdent_long_lines )
+    my (
+        $leading_space_count, $str,              $side_comment_length,
+        $outdent_long_lines,  $rcombination_flags
+      )
       = @_;
 
     my $leading_string = get_leading_string($leading_space_count);
 
-    # reduce continuation indentation if it will make the line fit
-    # in the available page width.  Do not include side comment length
-    # when considering the excess.
-    my $excess =
-      length($str) - $side_comment_length + $leading_space_count -
-      $rOpts_maximum_line_length;
-
-    # handle long lines:
-    if ( $excess > 0 ) {
-
-        # TODO: consider re-implementing this logic
-        # Reduce continuation indentation if that solves the problem
-        #if ( length($spaces) >= $excess ) {
-        #    $spaces = substr( $spaces, 0, length($spaces) - $excess );
-
-        #}
-
-        # Otherwise, outdent if permitted
-        #else {
-
-        if ($outdent_long_lines) {
+    # handle outdenting of long lines:
+    if ($outdent_long_lines) {
+        my $excess =
+          length($str) - $side_comment_length + $leading_space_count -
+          $rOpts_maximum_line_length;
+        if ( $excess > 0 ) {
             $leading_string         = "";
             $last_outdented_line_at =
               $file_writer_object->get_output_line_number();
@@ -14418,11 +14487,92 @@ sub write_leader_and_string {
             }
             $outdented_line_count++;
         }
-
-        #}
     }
 
-    $file_writer_object->write_code_line( $leading_string . $str . "\n" );
+    # unpack any recombination data; contents is:
+    #   [0] - open/close flag: 1 = opening, 2=closing
+    #   [1] - tightness flag for this token
+    #   [2] - container sequence number
+    #   [3] - spaces of padding to use
+    # it was packed by sub send_lines_to_vertical_aligner
+    my ( $open_or_close, $tightness_flag, $seqno, $pad );
+    if ($rcombination_flags) {
+        ( $open_or_close, $tightness_flag, $seqno, $pad ) =
+          @{$rcombination_flags};
+    }
+
+    # handle any cached line ..
+    # either append this line to it or write it out
+    if ($cached_line_text) {
+
+        # handle cached line with opening container token
+        if ( $cached_line_type == 1 ) {
+
+            my $gap = $leading_space_count - length($cached_line_text);
+
+            # handle option of just one tight opening per line:
+            if ( $cached_tightness_flag == 1 ) {
+                if ( defined($open_or_close) && $open_or_close == 1 ) {
+                    $gap = -1;
+                }
+            }
+
+            if ( $gap >= 0 ) {
+                $leading_string = $cached_line_text . ' ' x $gap;
+                $last_prepend_successful{$cached_seqno} = 1;
+            }
+            else {
+                $file_writer_object->write_code_line(
+                    $cached_line_text . "\n" );
+                delete $last_prepend_successful{$cached_seqno};
+            }
+        }
+
+        # handle cached line to place before this closing container token
+        else {
+            my $test_line = $cached_line_text . ' ' x $cached_pad . $str;
+            if ( length($test_line) <= $rOpts_maximum_line_length ) {
+                $str            = $test_line;
+                $leading_string = "";
+            }
+            else {
+                $file_writer_object->write_code_line(
+                    $cached_line_text . "\n" );
+            }
+        }
+    }
+    $cached_line_type = 0;
+    $cached_line_text = "";
+
+    my $line = $leading_string . $str;
+
+    # write or cache this line
+    if (
+        !$rcombination_flags
+        || $side_comment_length > 0
+        || !$tightness_flag
+        || (
+            $open_or_close == 2
+            && (
+                $tightness_flag == 1
+                && !$last_prepend_successful{$seqno}
+            )
+        )
+      )
+    {
+        $file_writer_object->write_code_line( $line . "\n" );
+    }
+    else {
+        $cached_line_text      = $line;
+        $cached_line_type      = $open_or_close;
+        $cached_tightness_flag = $tightness_flag;
+        $cached_seqno          = $seqno;
+        $cached_pad            = $pad;
+    }
+    if ( $seqno && $open_or_close == 2 ) {
+        delete $last_prepend_successful{$seqno};
+    }
+
     $last_group_level_written = $group_level;
     $last_side_comment_length = $side_comment_length;
     $extra_indent_ok          = 0;

@@ -4,11 +4,76 @@ Perltidy Change Log
      suggested improvement, please send a note to perltidy at
      users.sourceforge.net.  
 
+     -Lists which do not format well in uniform columns are now better
+      identified and formated.
+
+        OLD:
+        return $c->create( 'polygon', $x, $y, $x + $ruler_info{'size'},
+            $y + $ruler_info{'size'}, $x - $ruler_info{'size'},
+            $y + $ruler_info{'size'} );
+
+        NEW:
+        return $c->create(
+            'polygon', $x, $y,
+            $x + $ruler_info{'size'},
+            $y + $ruler_info{'size'},
+            $x - $ruler_info{'size'},
+            $y + $ruler_info{'size'}
+        );
+
+        OLD:
+          radlablist($f1, pad('Initial', $p), $b->{Init}->get_panel_ref, 'None ',
+                     'None', 'Default', 'Default', 'Simple', 'Simple');
+        NEW:
+          radlablist($f1,
+                     pad('Initial', $p),
+                     $b->{Init}->get_panel_ref,
+                     'None ', 'None', 'Default', 'Default', 'Simple', 'Simple');
+
+     -Corrected problem where an incorrect html filename was generated for 
+      external calls to Tidy.pm module.  Fixed incorrect html title when
+      Tidy.pm is called with IO::Scalar or IO::Array source.
+
+     -Output file permissons are now set as follows.  An output script file
+      gets the same permission as the input file, except that owner
+      read/write permission is added (otherwise, perltidy could not be
+      rerun).  Html output files use system defaults.  Previously chmod 0755
+      was used in all cases.  Thanks to Mark Olesen for bringing this up.
+
+     -Missing semicolons will not be added in multi-line blocks of type
+      sort, map, or grep.  This brings perltidy into closer agreement
+      with common practice.  Of course, you can still put semicolons 
+      there if you like.  Thanks to Simon Perreault for a discussion of this.
+
+     -Removed undocumented parameter --maximum-space-to-comment, which isn't
+      necessary and causes some unwanted limitations. Thanks to Wolfgang 
+      Weisselberg.
+
+     -Most instances of extra semicolons are now deleted.  This is
+      particularly important if the -csc option is used.  Thanks to Wolfgang
+      Weisselberg for noting this.  For example, the following line
+      (produced by 'h2xs' :) has an extra semicolon which will now be
+      removed:
+
+         BEGIN { plan tests => 1 };
+
+     -New parameter -csce (--closing-side-comment-else-flag) can be used
+      to control what text is appended to 'else' and 'elsif' blocks.
+      Default is to just add leading 'if' text to an 'else'.  See manual.
+
+     -The -csc option now labels 'else' blocks with additinal information
+      from the opening if statement and elsif statements, if space.
+      Thanks to Wolfgang Weisselberg for suggesting this.
+
+     -The -csc option will now remove any old closing side comments
+      below the line interval threshold. Thanks to Wolfgang Weisselberg for
+      suggesting this.
+
      -The abbreviation feature, which was broken in the previous version,
       is now fixed.  Thanks to Michael Cartmell for noting this.
 
      -Vertical alignment is now done for '||='  .. somehow this was 
-      missing.
+      overlooked.
 
   2002 02 25
      -This version uses modules for the first time, and a standard perl
@@ -129,7 +194,7 @@ Perltidy Change Log
 
      -Merged patch sent by Yves Orton to handle appropriate
       configuration file locations for different Windows varieties
-      (2000, NT, XP, 95, 98).
+      (2000, NT, Me, XP, 95, 98).
 
      -Added patch to properly handle a for/foreach loop without
       parens around a list represented as a qw.  I didn't know this

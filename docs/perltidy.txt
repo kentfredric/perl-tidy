@@ -548,6 +548,75 @@ FORMATTING OPTIONS
          %bf = map { $_ => -M $_ } grep {/\.deb$/} dirents '.';   # -bbt=1
          %bf = map {$_ => -M $_} grep {/\.deb$/} dirents '.';     # -bbt=2
 
+    Vertical tightness of curly braces, parentheses, and square brackets.
+        The "tightness" of the previous section really referred to what
+        might better be called "horizontal tightness". A separate set of
+        parameters control what we call vertical tightness. Some important
+        notes regarding these parameters are:
+
+        *   Most of these parameters require the variable indentation
+            provided by the -lp flag, or otherwise they probably will not
+            work properly.
+
+        *   Also, please note that these vertical tightness flags are merely
+            hints to the formatter, and it is not always possible for it to
+            obey then. Things which make it difficult or impossible include
+            comments, blank lines, and blocks of code within a list. Also,
+            these flags will often be ignored for very small lists.
+
+        The -pvt=n or --paren-vertical-tightness=n parameter controls if and
+        when a parenthesized container is "broken open". The default is n=0,
+        and causes most significant lists to be broken open. A value n=1
+        will cause a list to remain closed provided that this does not
+        produce two or more indentation steps on a single line (which can be
+        difficult to read). A value of n=2 will try to keep all
+        parenthesized containers closed.
+
+        Here are some examples:
+
+            # perltidy -lp -pvt=0 (default)
+            @month_of_year = (
+                               'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                               'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+            );
+
+            # perltidy -lp -pvt=1
+            @month_of_year = ( 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                               'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' );
+
+        In the examples so far, the closing paren has behaved symmetrically
+        with the opening paren, either opening or closing. This is the
+        default, but it can be controlled independently with the flag
+        -pcvt=n or -paren-closing-vertical-tightness=n. The possible values
+        for n are n=0, always open up, n=1 (default) do whatever the opening
+        paren does, and n=2 always stay closed. Here are a few examples:
+
+            # perltidy -lp -pvt=1 -pcvt=0
+            @month_of_year = ( 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                               'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+            );
+
+            # perltidy -lp -pvt=0 -pcvt=2
+            @month_of_year = (
+                               'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                               'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' );
+
+            # perltidy -pcvt=2
+            @month_of_year = (
+                'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' );
+
+        Similar parameters for non-code block braces are -bvt=n or
+        --brace-vertical-tightness, and -bcvt=n or
+        --brace-closing-vertical-tightness=n.
+
+        Likewise, the parameters for square brackets are -sbvt=n or
+        --square-bracket-vertical-tightness=n, and -sbcvt=n or
+        --square-bracket-closing-vertical-tightness=n.
+
+        Similar parameters for controlling code block braces are not
+        currently available.
+
     -sts, --space-terminal-semicolon
         Some programmers prefer a space before all terminal semicolons. The
         default is for no such space, and is indicated with -nsts or
@@ -786,15 +855,30 @@ FORMATTING OPTIONS
             block is " ( !defined( $_[0] )...". The existing limit of "n=20"
             caused this text to be truncated, as indicated by the ....
 
+        -csce=n, or -closing-side-comment-else-flag=n
+            The text after an "else" block will be given the text of the
+            "if" block which introduces it. Additional text can be appended
+            to "else" and "elsif" closing side comments, as follows:
+
+             n=0: else blocks get leading if block text (default)
+             n=1: same as 0 plus:
+                    - elsif blocks also get leading if block text, and
+                    - else block gets terminal elsif block text if any,
+                  provided line length limit is not exceeded.
+             n=2: same as 1 regardless of line length
+        
         -cscw, or -closing-side-comment-warnings
             This parameter is intended to help make the initial transition
-            to the use of closing side comments. It will help prevent the
-            loss of any existing side comment which happens to have the
-            closing side comment prefix. It causes two things to happen if a
-            closing side comment replaces an existing, different closing
-            side comment: first, an error message will be issued, and
-            second, the original side comment will be placed alone on a new
-            specially marked comment line for later attention.
+            to the use of closing side comments. It causes two things to
+            happen if a closing side comment replaces an existing, different
+            closing side comment: first, an error message will be issued,
+            and second, the original side comment will be placed alone on a
+            new specially marked comment line for later attention.
+
+            The intent is to avoid clobbering existing hand-written side
+            comments which happen to match the pattern of closing side
+            comments. This flag should only be needed on the first run with
+            -csc.
 
         Important Notes on Closing Side Comments:
 

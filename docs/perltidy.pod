@@ -569,7 +569,7 @@ within.  A numerical value of 0, 1, or 2 defines the tightness, with
 are always symmetric, so if there is a space after a C<(> then there
 will be a space before the corresponding C<)>.
 
-The B<-pt=n> or B<--paren-tightness> parameter controls the space within
+The B<-pt=n> or B<--paren-tightness=n> parameter controls the space within
 parens.  The example below shows the effect of the three possible
 values, 0, 1, and 2:
 
@@ -582,7 +582,7 @@ of a ')'.  For n=2 there is never a space.  For n=1, the default, there
 is a space unless the quantity within the parens is a single token, such
 as an identifier or quoted string.  
 
-Likewise, the parameter B<-sbt=n> or B<--square-bracket-tightness>
+Likewise, the parameter B<-sbt=n> or B<--square-bracket-tightness=n>
 controls the space within square brackets, as illustrated below.
 
  $width = $col[ $j + $k ] - $col[ $j ];  # -sbt=0
@@ -603,6 +603,83 @@ example below.
  %bf = map { $_ => -M $_ } grep { /\.deb$/ } dirents '.'; # -bbt=0 (default)
  %bf = map { $_ => -M $_ } grep {/\.deb$/} dirents '.';   # -bbt=1
  %bf = map {$_ => -M $_} grep {/\.deb$/} dirents '.';     # -bbt=2
+
+=item Vertical tightness of curly braces, parentheses, and square brackets.
+
+The "tightness" of the previous section really referred to what might
+better be called "horizontal tightness".  A separate set of parameters
+control what we call vertical tightness.  Some important notes
+regarding these parameters are:
+
+=over 4
+
+=item *
+
+Most of these parameters require the variable indentation provided
+by the B<-lp> flag, or otherwise they probably will not work properly.
+
+=item *
+
+Also, please note that these vertical tightness flags are merely hints
+to the formatter, and it is not always possible for it to obey then.
+Things which make it difficult or impossible include comments, blank
+lines, and blocks of code within a list.  Also, these flags will often
+be ignored for very small lists.
+
+=back
+
+The B<-pvt=n> or B<--paren-vertical-tightness=n> parameter controls if
+and when a parenthesized container is "broken open".  The default is
+B<n=0>, and causes most significant lists to be broken open.  A value
+B<n=1> will cause a list to remain closed provided that this does not
+produce two or more indentation steps on a single line (which can be
+difficult to read).  A value of B<n=2> will try to keep all
+parenthesized containers closed.
+
+Here are some examples:
+
+    # perltidy -lp -pvt=0 (default)
+    @month_of_year = (
+                       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    );
+
+    # perltidy -lp -pvt=1
+    @month_of_year = ( 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' );
+
+In the examples so far, the closing paren has behaved symmetrically with
+the opening paren, either opening or closing.  This is the default, but
+it can be controlled independently with the flag B<-pcvt=n> or
+B<--paren-closing-vertical-tightness=n>.  The possible values for B<n>
+are B<n=0>, always open up,  B<n=1> (default) do whatever the opening
+paren does, and B<n=2> always stay closed.  Here are a few examples:
+
+    # perltidy -lp -pvt=1 -pcvt=0
+    @month_of_year = ( 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    );
+
+    # perltidy -lp -pvt=0 -pcvt=2
+    @month_of_year = (
+                       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' );
+
+    # perltidy -pcvt=2
+    @month_of_year = (
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' );
+
+Similar parameters for non-code block braces are B<-bvt=n> or
+B<--brace-vertical-tightness=n>, and B<-bcvt=n> or
+B<--brace-closing-vertical-tightness=n>.
+
+Likewise, the parameters for square brackets are B<-sbvt=n> or
+B<--square-bracket-vertical-tightness=n>, and B<-sbcvt=n> or
+B<--square-bracket-closing-vertical-tightness=n>.
+
+Similar parameters for controlling code block braces are not currently
+available.
 
 =item B<-sts>,   B<--space-terminal-semicolon>
 
@@ -866,13 +943,12 @@ C<if> block which introduces it.  Additional text can be appended to
 C<else> and C<elsif> closing side comments, as follows:
  
  n=0: else blocks get leading if block text (default)
- n=1: same as 0 plus, provided line length limit is not exceeded,
+ n=1: same as 0 plus:
         - elsif blocks also get leading if block text, and
-        - else block gets terminal elsif block text if any.
- n=2: same as 1 but not line length limit checks.
+        - else block gets terminal elsif block text if any,
+      provided line length limit is not exceeded.
+ n=2: same as 1 regardless of line length
         
-The latter options may be helpful when the cuddled-else style is used.
-
 =item B<-cscw>, or B<-closing-side-comment-warnings> 
 
 This parameter is intended to help make the initial transition to the use of

@@ -130,7 +130,7 @@
 .\" ========================================================================
 .\"
 .IX Title "PERLTIDY 1"
-.TH PERLTIDY 1 "2002-02-25" "perl v5.6.1" "User Contributed Perl Documentation"
+.TH PERLTIDY 1 "2002-03-19" "perl v5.6.1" "User Contributed Perl Documentation"
 .UC
 .SH "NAME"
 perltidy \- a perl script indenter and reformatter
@@ -712,6 +712,83 @@ example below.
 \& %bf = map { $_ => -M $_ } grep {/\e.deb$/} dirents '.';   # -bbt=1
 \& %bf = map {$_ => -M $_} grep {/\e.deb$/} dirents '.';     # -bbt=2
 .Ve
+.IP "Vertical tightness of curly braces, parentheses, and square brackets." 4
+.IX Item "Vertical tightness of curly braces, parentheses, and square brackets."
+The \*(L"tightness\*(R" of the previous section really referred to what might
+better be called \*(L"horizontal tightness\*(R".  A separate set of parameters
+control what we call vertical tightness.  Some important notes
+regarding these parameters are:
+.RS 4
+.IP "\(bu" 4
+Most of these parameters require the variable indentation provided
+by the \fB\-lp\fR flag, or otherwise they probably will not work properly.
+.IP "\(bu" 4
+Also, please note that these vertical tightness flags are merely hints
+to the formatter, and it is not always possible for it to obey then.
+Things which make it difficult or impossible include comments, blank
+lines, and blocks of code within a list.  Also, these flags will often
+be ignored for very small lists.
+.RE
+.RS 4
+.Sp
+The \fB\-pvt=n\fR or \fB\-\-paren\-vertical\-tightness=n\fR parameter controls if
+and when a parenthesized container is \*(L"broken open\*(R".  The default is
+\&\fBn=0\fR, and causes most significant lists to be broken open.  A value
+\&\fBn=1\fR will cause a list to remain closed provided that this does not
+produce two or more indentation steps on a single line (which can be
+difficult to read).  A value of \fBn=2\fR will try to keep all
+parenthesized containers closed.
+.Sp
+Here are some examples:
+.Sp
+.Vb 5
+\&    # perltidy -lp -pvt=0 (default)
+\&    @month_of_year = (
+\&                       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+\&                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+\&    );
+.Ve
+.Vb 3
+\&    # perltidy -lp -pvt=1
+\&    @month_of_year = ( 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+\&                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' );
+.Ve
+In the examples so far, the closing paren has behaved symmetrically with
+the opening paren, either opening or closing.  This is the default, but
+it can be controlled independently with the flag \fB\-pcvt=n\fR or
+\&\fB\-paren\-closing\-vertical\-tightness=n\fR.  The possible values for \fBn\fR
+are \fBn=0\fR, always open up,  \fBn=1\fR (default) do whatever the opening
+paren does, and \fBn=2\fR always stay closed.  Here are a few examples:
+.Sp
+.Vb 4
+\&    # perltidy -lp -pvt=1 -pcvt=0
+\&    @month_of_year = ( 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+\&                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+\&    );
+.Ve
+.Vb 4
+\&    # perltidy -lp -pvt=0 -pcvt=2
+\&    @month_of_year = (
+\&                       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+\&                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' );
+.Ve
+.Vb 4
+\&    # perltidy -pcvt=2
+\&    @month_of_year = (
+\&        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+\&        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' );
+.Ve
+Similar parameters for non-code block braces are \fB\-bvt=n\fR or
+\&\fB\-\-brace\-vertical\-tightness\fR, and \fB\-bcvt=n\fR or
+\&\fB\-\-brace\-closing\-vertical\-tightness=n\fR.
+.Sp
+Likewise, the parameters for square brackets are \fB\-sbvt=n\fR or
+\&\fB\-\-square\-bracket\-vertical\-tightness=n\fR, and \fB\-sbcvt=n\fR or
+\&\fB\-\-square\-bracket\-closing\-vertical\-tightness=n\fR.
+.Sp
+Similar parameters for controlling code block braces are not currently
+available.
+.RE
 .IP "\fB\-sts\fR,   \fB\-\-space\-terminal\-semicolon\fR" 4
 .IX Item "-sts,   --space-terminal-semicolon"
 Some programmers prefer a space before all terminal semicolons.  The
@@ -960,15 +1037,33 @@ sub names, are never truncated, however, so actual lengths may exceed
 this).  To illustrate, in the above example, the appended text of the
 first block is \f(CW\*(C` ( !defined( $_[0] )...\*(C'\fR.  The existing limit of
 \&\f(CW\*(C`n=20\*(C'\fR caused this text to be truncated, as indicated by the \f(CW...\fR.
+.IP "\fB\-csce=n\fR, or \fB\-closing\-side\-comment\-else\-flag=n\fR" 4
+.IX Item "-csce=n, or -closing-side-comment-else-flag=n"
+The text after an \f(CW\*(C`else\*(C'\fR block will be given the text of the
+\&\f(CW\*(C`if\*(C'\fR block which introduces it.  Additional text can be appended to
+\&\f(CW\*(C`else\*(C'\fR and \f(CW\*(C`elsif\*(C'\fR closing side comments, as follows:
+.Sp
+.Vb 6
+\& n=0: else blocks get leading if block text (default)
+\& n=1: same as 0 plus:
+\&        - elsif blocks also get leading if block text, and
+\&        - else block gets terminal elsif block text if any,
+\&      provided line length limit is not exceeded.
+\& n=2: same as 1 regardless of line length
+.Ve
 .IP "\fB\-cscw\fR, or \fB\-closing\-side\-comment\-warnings\fR" 4
 .IX Item "-cscw, or -closing-side-comment-warnings"
 This parameter is intended to help make the initial transition to the use of
-closing side comments.  It will help prevent the loss of any existing side
-comment which happens to have the closing side comment prefix.  It causes two
+closing side comments.  
+It causes two
 things to happen if a closing side comment replaces an existing, different
 closing side comment:  first, an error message will be issued, and second, the
 original side comment will be placed alone on a new specially marked comment
 line for later attention. 
+.Sp
+The intent is to avoid clobbering existing hand-written side comments
+which happen to match the pattern of closing side comments. This flag
+should only be needed on the first run with \fB\-csc\fR.
 .RE
 .RS 4
 .Sp
