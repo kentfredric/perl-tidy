@@ -1,3 +1,16 @@
+# example from koha:
+my @rowtitl = ("Card Number","Surname","First Name","Other Names","Initials",
+     "Address","Area","Town","Telephone","Email","Fax Number","Alt Address",
+     "Alt Area","Alt Town","Alt Phone","Contact Name");
+
+$ans = pdl(
+           [0, 0, 0, 0, 0],
+           [0, 0, 2, 0, 0],
+           [0, 1, 5, 2, 0],
+           [0, 0, 4, 0, 0],
+           [0, 0, 0, 0, 0]
+           );
+
 my %EuroRates = (
          BEF => {EUR=>0.0247899055505,   BEF => 1},
          DEM => {EUR=>0.511291881196,	 DEM => 1},
@@ -47,6 +60,49 @@ map( $matchwords{ join "", sort split //, $_ } = $_, 'cig',
   = @_;
 
 {
+    # bare words not identifiers
+    %SQLStmtTypes = (
+                      SQL_CLOSE,        "SQL_CLOSE",
+                      SQL_DROP,         "SQL_DROP",
+                      SQL_UNBIND,       "SQL_UNBIND",
+                      SQL_RESET_PARAMS, "SQL_RESET_PARAMS"
+    );
+
+    for (
+        [ 'Shine', 40 ], [ 'Specular', [ 1, 1, 0.3, 0 ] ],
+        [ 'Ambient', [ 0.3, 1, 1, 0 ] ], [ 'Diffuse', [ 1, 0.3, 1, 0 ] ],
+        [ 'Emissive', [ 0, 0, 0 ] ]
+      )
+    {
+    }
+
+    # ragged list
+    print mktablerow(
+        4, 'white',
+        $issues->[$i]->{'title'},
+        $issues->[$i]->{'author'},
+        $issues->[$i]->{'returndate'},
+        $issues->[$i]->{'volumeddesc'}
+    );
+    # a ragged list
+    my @msgs = (
+                 "Good day, all!",
+                 $i + 2,
+                 $i++,
+                 [ $j, $k ],
+                 "Hi!",
+                 "Ah, back again.",
+                 "Friends!",
+                 "I have returned.",
+                 "Well, hello everyone!",
+                 "Good morning sir!",
+                 "Morning.  Shall I make a pot of coffee?",
+                 "Now, where was I...?",
+                 "Howdy!",
+                 "How y'all doin'?",
+                 "Hola!",
+    );
+
     # a ragged list
     return $c->create(
         'polygon', $x, $y,

@@ -61,7 +61,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ($VERSION=q($Id: Tidy.pm,v 1.9 2002/03/10 14:47:11 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ($VERSION=q($Id: Tidy.pm,v 1.10 2002/03/15 20:42:37 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 # Preloaded methods go here.
@@ -116,9 +116,13 @@ EOM
         }
         else {
 
-            # accept an object with a getline method for reading
+            # Accept an object with a getline method for reading. Note:
+            # IO::File is built-in and does not respond to the defined
+            # operator.  If this causes trouble, the check can be
+            # skipped and we can just let it crash if there is no
+            # getline.
             if ( $mode =~ /[rR]/ ) {
-                if ( defined &{ $ref . "::getline" } ) {
+                if ( $ref eq 'IO::File' || defined &{ $ref . "::getline" } ) {
                     $New = sub { $filename };
                 }
                 else {
@@ -132,9 +136,10 @@ EOM
                 }
             }
 
-            # accept an object with a print method for writing
+            # Accept an object with a print method for writing.
+            # See note above about IO::File
             if ( $mode =~ /[wW]/ ) {
-                if ( defined &{ $ref . "::print" } ) {
+                if ( $ref eq 'IO::File' || defined &{ $ref . "::print" } ) {
                     $New = sub { $filename };
                 }
                 else {
@@ -270,12 +275,14 @@ basic perltidy distribution.
     sub perltidy {
 
         my %defaults = (
-            source      => undef,
-            destination => undef,
-            stderr      => undef,
             argv        => undef,
-            perltidyrc  => undef,
+            destination => undef,
             formatter   => undef,
+            logfile     => undef,
+            errorfile   => undef,
+            perltidyrc  => undef,
+            source      => undef,
+            stderr      => undef,
         );
 
         my %input_hash = @_;
@@ -286,18 +293,20 @@ basic perltidy distribution.
             confess <<EOM;
 ------------------------------------------------------------------------
 Unknown perltidy parameter : (@bad_keys)
-Perl::Tidy::perltidy expects : (@good_keys)
+perltidy only understands : (@good_keys)
 ------------------------------------------------------------------------
 
 EOM
         }
 
         %input_hash = ( %defaults, %input_hash );
-        my $source_stream      = $input_hash{'source'};
-        my $destination_stream = $input_hash{'destination'};
-        my $stderr_stream      = $input_hash{'stderr'};
-        my $perltidyrc_stream  = $input_hash{'perltidyrc'};
         my $argv               = $input_hash{'argv'};
+        my $destination_stream = $input_hash{'destination'};
+        my $errorfile_stream   = $input_hash{'errorfile'};
+        my $logfile_stream     = $input_hash{'logfile'};
+        my $perltidyrc_stream  = $input_hash{'perltidyrc'};
+        my $source_stream      = $input_hash{'source'};
+        my $stderr_stream      = $input_hash{'stderr'};
         my $user_formatter     = $input_hash{'formatter'};
 
         # future checks on $user_formatter go here
@@ -355,6 +364,8 @@ EOM
 
         my $rpending_complaint;
         $$rpending_complaint = "";
+        my $rpending_logfile_message;
+        $$rpending_logfile_message = "";
 
         my ( $is_Windows, $Windows_type ) =
           look_for_Windows($rpending_complaint);
@@ -444,11 +455,11 @@ EOM
             #---------------------------------------------------------------
             # determine the input file name
             #---------------------------------------------------------------
-            if ( $input_file eq '-' ) {    # '-' indicates input from STDIN
-                $fileroot = "perltidy";   # root name to use for .ERR, .LOG, etc
-            }
-            elsif ($source_stream) {
+            if ($source_stream) {
                 $fileroot = "perltidy";
+            }
+            elsif ( $input_file eq '-' ) {    # '-' indicates input from STDIN
+                $fileroot = "perltidy";   # root name to use for .ERR, .LOG, etc
             }
             else {
                 $fileroot = $input_file;
@@ -521,8 +532,8 @@ EOM
             if (
                 !$source_stream
                 && ( $input_file =~
-                    /($dot_pattern)($output_extension|LOG|DEBUG|ERR|TEE)$/ )
-                || ( $input_file eq 'DIAGNOSTICS' )
+                    /($dot_pattern)($output_extension|LOG|DEBUG|ERR|TEE)$/
+                    || $input_file eq 'DIAGNOSTICS' )
               )
             {
                 print "skipping file: $input_file: wrong extension\n";
@@ -532,7 +543,7 @@ EOM
             # the 'source_object' supplies a method to read the input file
             my $source_object =
               Perl::Tidy::LineSource->new( $input_file, $rOpts,
-                $rpending_complaint );
+                $rpending_logfile_message );
             next unless ($source_object);
 
             # register this file name with the Diagnostics package
@@ -596,13 +607,15 @@ EOM
             my $tee_file    = $fileroot . $dot . "TEE";
             my $sink_object =
               Perl::Tidy::LineSink->new( $output_file, $tee_file, $rOpts,
-                $rpending_complaint );
+                $rpending_logfile_message );
 
             #---------------------------------------------------------------
             # initialize the error logger
             #---------------------------------------------------------------
             my $warning_file = $fileroot . $dot . "ERR";
-            my $log_file     = $fileroot . $dot . "LOG";
+            if ($errorfile_stream) { $warning_file = $errorfile_stream }
+            my $log_file = $fileroot . $dot . "LOG";
+            if ($logfile_stream) { $log_file = $logfile_stream }
 
             my $logger_object =
               Perl::Tidy::Logger->new( $rOpts, $log_file, $warning_file,
@@ -611,6 +624,9 @@ EOM
                 $rOpts,        $logger_object, $config_file,
                 $rraw_options, $Windows_type
             );
+            if ($$rpending_logfile_message) {
+                $logger_object->write_logfile_entry($$rpending_logfile_message);
+            }
             if ($$rpending_complaint) {
                 $logger_object->complain($$rpending_complaint);
             }
@@ -709,9 +725,6 @@ EOM
 
             $logger_object->finish( $infile_syntax_ok, $formatter )
               if $logger_object;
-
-            # no more temporary files -- they are nothing but trouble
-            ##delete_temporary_files();
 
         }    # end of loop to process all files
 
@@ -868,6 +881,7 @@ sub process_command_line {
     $add_option->( 'closing-side-comment-list',         'cscl',  '=s' );
     $add_option->( 'closing-side-comment-interval',     'csci',  '=i' );
     $add_option->( 'closing-side-comment-maximum-text', 'csct',  '=i' );
+    $add_option->( 'closing-side-comment-else-flag',    'csce',  '=i' );
     $add_option->( 'closing-side-comment-warnings',     'cscw',  '!' );
     $add_option->( 'cuddled-else',                      'ce',    '!' );
     $add_option->( 'delete-block-comments',             'dbc',   '!' );
@@ -973,6 +987,7 @@ sub process_command_line {
       check-syntax
       closing-side-comment-interval=6
       closing-side-comment-maximum-text=20
+      closing-side-comment-else-flag=0
       continuation-indentation=2
       delete-old-newlines
       delete-semicolons
@@ -1665,7 +1680,7 @@ sub find_config_file {
     # network def
     push @envs, qw(USERPROFILE HOMESHARE) if $^O =~ /win32/i;
 
-    # Now go through the enviornment looking...
+    # Now go through the enviornment ...
     foreach my $var (@envs) {
         $$rconfig_file_chatter .= "# Examining: \$ENV{$var}";
         if ( defined( $ENV{$var} ) ) {
@@ -1772,7 +1787,7 @@ sub dump_config_file {
     if ($fh) {
         print STDOUT "# Dump of file: '$config_file'\n";
         while ( $_ = $fh->getline() ) { print STDOUT }
-        $fh->close();
+        eval { $fh->close() };
     }
     else {
         print STDOUT "# ...no config file found\n";
@@ -1853,7 +1868,7 @@ EOM
             }
         }
     }
-    $fh->close();
+    eval { $fh->close() };
     return ( \@config_list );
 }
 
@@ -2316,7 +2331,7 @@ package Perl::Tidy::LineSource;
 
 sub new {
 
-    my ( $class, $input_file, $rOpts, $rpending_complaint ) = @_;
+    my ( $class, $input_file, $rOpts, $rpending_logfile_message ) = @_;
     my $input_file_copy = undef;
     my $fh_copy;
 
@@ -2329,21 +2344,20 @@ sub new {
     {
 
         # Turning off syntax check when input output is used.
-        # The reason is that temporary files seem to cause problems on
+        # The reason is that temporary files cause problems on
         # on many systems.
         $rOpts->{'check-syntax'} = 0;
         $input_file_copy = '-';
 
-## FIXME: make pending logfile entry instead
-##        $$rpending_complaint .= <<EOM;
-##Note: --syntax check will be skipped because standard input is used
-##EOM
+        $$rpending_logfile_message .= <<EOM;
+Note: --syntax check will be skipped because standard input is used
+EOM
 
 ##       Save for possible future use:
-##        ( $fh_copy, $input_file_copy ) = Perl::Tidy::make_temporary_filename($rpending_complaint);
+##        ( $fh_copy, $input_file_copy ) = Perl::Tidy::make_temporary_filename($rpending_logfile_message);
 ##        unless ($fh_copy) {
 ##            $rOpts->{'check-syntax'}=0;
-##            $$rpending_complaint .= <<EOM;
+##            $$rpending_logfile_message .= <<EOM;
 ##Problem creating temporary file, last attempt was $input_file_copy
 ##   --syntax check will be skipped, use -nsyn to deactivate
 ##EOM
@@ -2370,8 +2384,8 @@ sub get_input_file_copy_name {
 
 sub close_input_file {
     my $self = shift;
-    $self->{_fh}->close();
-    $self->{_fh_copy}->close() if $self->{_fh_copy};
+    eval { $self->{_fh}->close() };
+    eval { $self->{_fh_copy}->close() } if $self->{_fh_copy};
 }
 
 sub get_line {
@@ -2395,7 +2409,8 @@ package Perl::Tidy::LineSink;
 
 sub new {
 
-    my ( $class, $output_file, $tee_file, $rOpts, $rpending_complaint ) = @_;
+    my ( $class, $output_file, $tee_file, $rOpts, $rpending_logfile_message ) =
+      @_;
     my $fh               = undef;
     my $fh_copy          = undef;
     my $fh_tee           = undef;
@@ -2414,21 +2429,20 @@ sub new {
         if ( $rOpts->{'check-syntax'} ) {
 
             # Turning off syntax check when standard output is used.
-            # The reason is that temporary files seem to cause problems on
+            # The reason is that temporary files cause problems on
             # on many systems.
             $rOpts->{'check-syntax'} = 0;
             $output_file_copy = '-';
-## FIXME: make pending logfile entry instead
-##            $$rpending_complaint .= <<EOM;
-##Note: --syntax check will be skipped because standard output is used
-##EOM
+            $$rpending_logfile_message .= <<EOM;
+Note: --syntax check will be skipped because standard output is used
+EOM
 
 ##       Save for possible future use:
 ##            ( $fh_copy, $output_file_copy ) =
-##              Perl::Tidy::make_temporary_filename($rpending_complaint);
+##              Perl::Tidy::make_temporary_filename($rpending_logfile_message);
 ##            unless ($fh_copy) {
 ##                $rOpts->{'check-syntax'}=0;
-##            $$rpending_complaint .= <<EOM;
+##            $$rpending_logfile_message .= <<EOM;
 ##Problem creating temporary file, last attempt was $output_file_copy
 ##   --syntax check will be skipped, use -nsyn to deactivate
 ##EOM
@@ -2499,8 +2513,8 @@ sub really_open_tee_file {
 
 sub close_output_file {
     my $self = shift;
-    $self->{_fh}->close() if $self->{_output_file_open};
-    close $self->{_fh_copy} if ( $self->{_output_file_copy} );
+    eval { $self->{_fh}->close() }      if $self->{_output_file_open};
+    eval { $self->{_fh_copy}->close() } if ( $self->{_output_file_copy} );
     $self->close_tee_file();
 }
 
@@ -2508,7 +2522,7 @@ sub close_tee_file {
     my $self = shift;
 
     if ( $self->{_tee_file_opened} ) {
-        close $self->{_fh_tee};
+        eval { $self->{_fh_tee}->close() };
         $self->{_tee_file_opened} = 0;
     }
 }
@@ -2579,7 +2593,9 @@ sub new {
     my ( $rOpts, $log_file, $warning_file, $saw_extrude ) = @_;
 
     # remove any old error output file
-    if ( -e $warning_file ) { unlink($warning_file) }
+    unless ( ref($warning_file) ) {
+        if ( -e $warning_file ) { unlink($warning_file) }
+    }
 
     bless {
         _log_file                      => $log_file,
@@ -2608,7 +2624,7 @@ sub close_log_file {
 
     my $self = shift;
     if ( $self->{_fh_warnings} ) {
-        close $self->{_fh_warnings};
+        eval { $self->{_fh_warnings}->close() };
         $self->{_fh_warnings} = undef;
     }
 }
@@ -2855,9 +2871,10 @@ sub warning {
                 $fh_warnings = *STDERR;
             }
             else {
-                $fh_warnings = IO::File->new(">$warning_file")
-                  or death("couldn't open $warning_file: $!\n");
-                print STDERR "## Please see file $warning_file\n";
+                ( $fh_warnings, my $filename ) =
+                  Perl::Tidy::streamhandle( $warning_file, 'w' );
+                $fh_warnings or die ("couldn't open $filename $!\n");
+                print STDERR "## Please see file $filename\n";
             }
             $self->{_fh_warnings} = $fh_warnings;
         }
@@ -2997,7 +3014,7 @@ sub finish {
         if ($fh) {
             my $routput_array = $self->{_output_array};
             foreach ( @{$routput_array} ) { $fh->print($_) }
-            $fh->close();
+            eval { $fh->close() };
         }
     }
 }
@@ -3033,11 +3050,18 @@ sub new {
 
     my $html_file_opened = 0;
     my $html_fh;
-    unless ( $html_fh = IO::File->new("> $html_file") ) {
+    ( $html_fh, my $html_filename ) =
+      Perl::Tidy::streamhandle( $html_file, 'w' );
+    ##unless ( $html_fh = IO::File->new("> $html_file") ) {
+    unless ($html_fh) {
         warn("can't open $html_file: $!\n");
         return undef;
     }
     $html_file_opened = 1;
+
+    if ( !$input_file || $input_file eq '-' || ref($input_file) ) {
+        $input_file = "NONAME";
+    }
 
     unless ( $rOpts->{'html-pre-only'} ) {
         $html_fh->print( <<"HTML_START");
@@ -3342,7 +3366,7 @@ sub write_style_sheet_file {
         die "can't open $css_filename: $!\n";
     }
     write_style_sheet_data($fh);
-    $fh->close;
+    eval { $fh->close };
 }
 
 sub write_style_sheet_data {
@@ -3424,7 +3448,7 @@ PRE_END
 </HTML>
 HTML_END
     }
-    $html_fh->close();
+    eval { $html_fh->close() };
 }
 
 sub markup_tokens {
@@ -3477,7 +3501,7 @@ sub markup_html_element {
         $token =~ s/\"/&quot;/g;
     }
     else {
-        encode_entities($token);
+        HTML::Entities::encode_entities($token);
     }
 
     # get the short abbreviation for this token type
@@ -3746,8 +3770,10 @@ use vars qw{
 
   $rOpts_add_newlines
   $rOpts_add_whitespace
+  $rOpts_block_brace_tightness
   $rOpts_brace_left_and_indent
   $rOpts_break_after_comma_arrows
+  $rOpts_closing_side_comment_else_flag
   $rOpts_closing_side_comment_maximum_text
   $rOpts_continuation_indentation
   $rOpts_cuddled_else
@@ -3758,7 +3784,6 @@ use vars qw{
   $rOpts_maximum_continuation_indentation
   $rOpts_maximum_fields_per_table
   $rOpts_maximum_line_length
-  $rOpts_block_brace_tightness
   $rOpts_short_concatenation_item_length
   $rOpts_swallow_optional_blank_lines
 
@@ -4005,9 +4030,9 @@ sub new {
     %postponed_breakpoint       = ();
 
     # variables for adding side comments
-    %block_leading_text          = ();
-    %block_opening_line_number   = ();
-    $csc_new_statement_ok        = 1;
+    %block_leading_text        = ();
+    %block_opening_line_number = ();
+    $csc_new_statement_ok      = 1;
 
     %saved_opening_indentation = ();
 
@@ -4876,17 +4901,29 @@ sub check_options {
     make_closing_side_comment_prefix();
     make_closing_side_comment_list_pattern();
 
-    # If closing side comments are selected, then we can safely
+    # If closing side comments ARE selected, then we can safely
     # delete old closing side comments unless closing side comment
     # warnings are requested.  This is a good idea because it will
     # eliminate any old csc's which fall below the line count threshold.
     # We cannot do this if warnings are turned on, though, because we
     # might delete some text which has been added.  So that must
     # be handled when comments are created.
-    if ( $rOpts->{'closing-side-comments'}
-        && !$rOpts->{'closing-side-comment-warnings'} )
-    {
-        $rOpts->{'delete-closing-side-comments'} = 1;
+    if ( $rOpts->{'closing-side-comments'} ) {
+        if ( !$rOpts->{'closing-side-comment-warnings'} ) {
+            $rOpts->{'delete-closing-side-comments'} = 1;
+        }
+    }
+
+    # If closing side comments ARE NOT selected, but warnings ARE
+    # selected and we ARE DELETING csc's, then we will pretend to be
+    # adding with a huge interval.  This will force the comments to be
+    # generated for comparison with the old comments, but not added.
+    elsif ( $rOpts->{'closing-side-comment-warnings'} ) {
+        if ( $rOpts->{'delete-closing-side-comments'} ) {
+            $rOpts->{'delete-closing-side-comments'}  = 0;
+            $rOpts->{'closing-side-comments'}         = 1;
+            $rOpts->{'closing-side-comment-interval'} = 100000000;
+        }
     }
 
     # The -lp indentation logic requires that perltidy examine large
@@ -5107,6 +5144,8 @@ EOM
     $rOpts_block_brace_tightness    = $rOpts->{'block-brace-tightness'};
     $rOpts_brace_left_and_indent    = $rOpts->{'brace-left-and-indent'};
     $rOpts_break_after_comma_arrows = $rOpts->{'break-after-comma-arrows'};
+    $rOpts_closing_side_comment_else_flag =
+      $rOpts->{'closing-side-comment-else-flag'};
     $rOpts_closing_side_comment_maximum_text =
       $rOpts->{'closing-side-comment-maximum-text'};
     $rOpts_continuation_indentation = $rOpts->{'continuation-indentation'};
@@ -5302,7 +5341,7 @@ EOM
     }
 }
 
-{ # begin is_essential_whitespace
+{    # begin is_essential_whitespace
 
     my %is_sort_grep_map;
     my %is_for_foreach;
@@ -6027,7 +6066,7 @@ sub set_white_space_flag {
     BEGIN {
 
         # always break after a closing curly of these block types:
-        @_=qw(until while for if elsif else);
+        @_ = qw(until while for if elsif else);
         @is_until_while_for_if_elsif_else{@_} = (1) x scalar(@_);
 
     }
@@ -6241,7 +6280,7 @@ sub set_white_space_flag {
          /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
      Examples:
        *VERSION = \'1.01';
-       ( $VERSION ) = '$Revision: 1.9 $ ' =~ /\$Revision:\s+([^\s]+)/;
+       ( $VERSION ) = '$Revision: 1.10 $ ' =~ /\$Revision:\s+([^\s]+)/;
      We will pass such a line straight through (by changing it
      to a quoted string) unless -npvl is used
     
@@ -6250,7 +6289,7 @@ sub set_white_space_flag {
      block sequence numbers may see a closing sequence number but not
      the corresponding opening sequence number (sidecmt.t).  Example:
 
-    my $VERSION = do { my @r = (q$Revision: 1.9 $ =~ /\d+/g); sprintf
+    my $VERSION = do { my @r = (q$Revision: 1.10 $ =~ /\d+/g); sprintf
     "%d."."%02d" x $#r, @r }; 
 
     Here, the opening brace of 'do {' will not be seen, while the closing
@@ -6712,7 +6751,7 @@ sub set_white_space_flag {
                     #
                     # But make a line break if the curly ends a significant block:
                     #    /^(until|while|for|if|elsif|else)$/
-                    if ($is_until_while_for_if_elsif_else{$block_type}) {
+                    if ( $is_until_while_for_if_elsif_else{$block_type} ) {
                         output_line_to_go() unless ($no_internal_newlines);
                     }
                 }
@@ -6826,8 +6865,7 @@ sub set_white_space_flag {
                         $last_nonblank_token eq '}'
                         && (
                             $is_block_without_semicolon{
-                                $last_nonblank_block_type
-                            }
+                                $last_nonblank_block_type }
                             || $last_nonblank_block_type =~ /^sub\s+\w/
                             || $last_nonblank_block_type =~ /^\w+:$/ )
                     )
@@ -7656,12 +7694,12 @@ sub accumulate_block_text {
     {
 
         my $added_length = length( $tokens_to_go[$i] );
-        $added_length += 1 if $i==0;
+        $added_length += 1 if $i == 0;
         my $new_line_length = $leading_block_text_line_length + $added_length;
 
         # we can add this text if we don't exceed some limits..
         if (
-        
+
             # we must not have already exceeded the text length limit
             length($leading_block_text) <
             $rOpts_closing_side_comment_maximum_text
@@ -7681,7 +7719,7 @@ sub accumulate_block_text {
             #   foreach my $item (@a_rather_long_variable_name_here) {
             #      &whatever;
             #   } ## end foreach my $item (@a_rather_long_variable_name_here...
-            
+
             || (
                 $tokens_to_go[$i] eq ')'
                 && (
@@ -7716,6 +7754,7 @@ sub accumulate_block_text {
 
 {
     my %is_if_elsif_else_unless_while_until_for_foreach;
+
     BEGIN {
 
         # These block types may have text between the keyword and opening
@@ -7731,24 +7770,25 @@ sub accumulate_block_text {
         # the text placed after certain closing block braces.
         # Defines and returns the following for this buffer:
 
-        my $block_leading_text          = ""; # the leading text of the last '}'
-        my $rblock_leading_if_elsif_text; 
-        my $i_block_leading_text        =
+        my $block_leading_text = "";    # the leading text of the last '}'
+        my $rblock_leading_if_elsif_text;
+        my $i_block_leading_text =
           -1;    # index of token owning block_leading_text
-        my $block_line_count = 100;    # how many lines the block spans
-        my $terminal_type    = 'b';    # type of last nonblank token
-        my $i_terminal       = 0;      # index of last nonblank token
-        my $block_type       = "";
+        my $block_line_count    = 100;    # how many lines the block spans
+        my $terminal_type       = 'b';    # type of last nonblank token
+        my $i_terminal          = 0;      # index of last nonblank token
+        my $terminal_block_type = "";
 
         for my $i ( 0 .. $max_index_to_go ) {
-            my $type = $types_to_go[$i];
-            $block_type = $block_type_to_go[$i];
-            my $token = $tokens_to_go[$i];
+            my $type       = $types_to_go[$i];
+            my $block_type = $block_type_to_go[$i];
+            my $token      = $tokens_to_go[$i];
 
             # remember last nonblank token type
             if ( $type ne '#' && $type ne 'b' ) {
-                $terminal_type = $type;
-                $i_terminal    = $i;
+                $terminal_type       = $type;
+                $terminal_block_type = $block_type;
+                $i_terminal          = $i;
             }
 
             my $type_sequence = $type_sequence_to_go[$i];
@@ -7854,9 +7894,10 @@ sub accumulate_block_text {
         # Treat an 'else' block specially by adding preceding 'if' and
         # 'elsif' text.  Otherwise, the 'end else' is not helpful,
         # especially for cuddled-else formatting.
-        if ( $block_type eq 'else' && $rblock_leading_if_elsif_text ) {
-            $block_leading_text = 
-              make_else_csc_text($rblock_leading_if_elsif_text);
+        if ( $terminal_block_type =~ /^els/ && $rblock_leading_if_elsif_text ) {
+            $block_leading_text =
+              make_else_csc_text( $i_terminal, $terminal_block_type,
+                $block_leading_text, $rblock_leading_if_elsif_text );
         }
 
         return ( $terminal_type, $i_terminal, $i_block_leading_text,
@@ -7864,37 +7905,71 @@ sub accumulate_block_text {
     }
 }
 
-
 sub make_else_csc_text {
 
-    # we are at an 'else' statement, and want to make some -csc text.
-    # we have a list of the closing side comments of the 'if' and
-    # all 'elsif's.
-    my ($rif_elsif_text) = @_;
-    my $csc_text = "";
-    my $count    = @{$rif_elsif_text};
+    # create additional -csc text for an 'else' and optionally 'elsif',
+    # depending on the value of switch
+    # $rOpts_closing_side_comment_else_flag: 
+    # 
+    #  = 0 add 'if' text to trailing else
+    #  = 1 same as 0 plus:
+    #      add 'if' to 'elsif's if can fit in line length
+    #      add last 'elsif' to trailing else if can fit in one line
+    #  = 2 same as 1 but do not check if exceed line length
+    #
+    # $rif_elsif_text = a reference to a list of all previous closing
+    # side comments created for this if block
+    #
+    my ( $i_terminal, $block_type, $block_leading_text, $rif_elsif_text ) = @_;
+    my $csc_text = $block_leading_text;
+
+    if ( $block_type eq 'elsif' && $rOpts_closing_side_comment_else_flag == 0 )
+    {
+        return $csc_text;
+    }
+
+    my $count = @{$rif_elsif_text};
     return $csc_text unless ($count);
 
-    # always show the leading 'if' text
-    $csc_text = ' [if' . $rif_elsif_text->[0];
-    return $csc_text unless ( $count > 1 );
+    my $if_text = '[ if' . $rif_elsif_text->[0];
 
-    # indicate if intermediate elseif's are omitted
-    if ( $count > 2 ) { $csc_text .= ' [...'; }
+    # always show the leading 'if' text on 'else'
+    if ( $block_type eq 'else' ) {
+        $csc_text .= $if_text;
+    }
 
-    # tentatively append the last elsif text
-    my $csc_if_text = $csc_text;
-    $csc_text .= ' [elsif' . $rif_elsif_text->[ $count - 1 ];
+    # see if that's all
+    if ( $rOpts_closing_side_comment_else_flag == 0 ) {
+        return $csc_text;
+    }
 
-    # undo it if too long --
-    # both longer than the line length and longer than the allowed
-    # text length
-    my $length = length($csc_text);
-    if ( $length + $leading_block_text_line_length > $rOpts_maximum_line_length
-        && $length > $rOpts_closing_side_comment_maximum_text )
-    {
-        $csc_text = $csc_if_text;
-        if ( $count == 2 ) { $csc_text .= ' [...'; }
+    my $last_elsif_text = "";
+    if ( $count > 1 ) {
+        $last_elsif_text = ' [elsif' . $rif_elsif_text->[ $count - 1 ];
+        if ( $count > 2 ) { $last_elsif_text = ' [...' . $last_elsif_text; }
+    }
+
+    # tentatively append one more item
+    my $saved_text = $csc_text;
+    if ( $block_type eq 'else' ) {
+        $csc_text .= $last_elsif_text;
+    }
+    else {
+        $csc_text .= ' ' . $if_text;
+    }
+
+    # all done if no length checks requested
+    if ( $rOpts_closing_side_comment_else_flag == 2 ) {
+        return $csc_text;
+    }
+
+    # undo it if line length exceeded
+    my $length =
+      length($csc_text) + length($block_type) +
+      length( $rOpts->{'closing-side-comment-prefix'} ) +
+      $levels_to_go[$i_terminal] * $rOpts_indent_columns + 3;
+    if ( $length > $rOpts_maximum_line_length ) {
+        $csc_text = $saved_text;
     }
     return $csc_text;
 }
@@ -7973,14 +8048,35 @@ sub add_closing_side_comment {
             if ( $rOpts->{'closing-side-comment-warnings'} ) {
                 my $old_csc = $tokens_to_go[$max_index_to_go];
                 my $new_csc = $token;
-                $new_csc =~ s/\.\.\.\s*$//;    # trim trailing '...'
+                $new_csc =~ s/(\.\.\.)\s*$//;    # trim trailing '...'
+                my $new_trailing_dots = $1;
                 $old_csc =~ s/\.\.\.\s*$//;
-                $new_csc =~ s/\s+//g;          # trim all whitespace
+                $new_csc =~ s/\s+//g;            # trim all whitespace
                 $old_csc =~ s/\s+//g;
 
-                # no problem if old comment is contained in new comment
+                # Patch to handle multiple closing side comments at
+                # else and elsif's.  These have become too complicated
+                # to check, so if we see an indication of 
+                # '[ if' or '[ # elsif', then assume they were made
+                # by perltidy.
+                if ( $block_type_to_go[$i_terminal] eq 'else' ) {
+                    if ( $old_csc =~ /\[\s*elsif/ ) { $old_csc = $new_csc }
+                }
+                elsif ( $block_type_to_go[$i_terminal] eq 'elsif' ) {
+                    if ( $old_csc =~ /\[\s*if/ ) { $old_csc = $new_csc }
+                }
+
+                # if old comment is contained in new comment,
+                # only compare the common part.
                 if ( length($new_csc) > length($old_csc) ) {
                     $new_csc = substr( $new_csc, 0, length($old_csc) );
+                }
+
+                # if the new comment is shorter and has been limited,
+                # only compare the common part.
+                if ( length($new_csc) < length($old_csc) && $new_trailing_dots )
+                {
+                    $old_csc = substr( $old_csc, 0, length($new_csc) );
                 }
 
                 # any remaining difference?
@@ -8283,8 +8379,7 @@ sub send_lines_to_vertical_aligner {
             my $seqno = $type_sequence_to_go[$_];
             $saved_opening_indentation{$seqno} = [
                 lookup_opening_indentation(
-                    $_,       $ri_first,
-                    $ri_last, $rindentation_list
+                    $_, $ri_first, $ri_last, $rindentation_list
                 )
             ];
         }
@@ -8712,6 +8807,7 @@ sub set_adjusted_indentation {
                 # alignment_type before one of these keywords 
                 # (within a line, since $i>1)
                 elsif ( $type eq 'k' ) {
+
                     #  /^(if|unless|and|or|eq|ne)$/
                     if ( $is_vertical_alignment_keyword{$token} ) {
                         $alignment_type = $token;
@@ -9250,6 +9346,7 @@ sub set_bond_strengths {
             && $next_nonblank_type eq 'i'
             && $last_nonblank_type eq 'k'
             && $is_sort_map_grep{$last_nonblank_token} )
+
           #     /^(sort|map|grep)$/ )
         {
             $bond_str = NO_BREAK;
@@ -9486,14 +9583,14 @@ sub pad_array_to_go {
     );
 
     my (
-        @breakpoint_stack,           @breakpoint_undo_stack,
-        @comma_index,                @container_type,
-        @identifier_count_stack,     @index_before_arrow,
-        @interrupted_list,           @item_count_stack,
-        @last_comma_index,           @last_dot_index,
-        @last_nonblank_type,         @maximum_nesting_depth,
-        @old_breakpoint_count_stack, @opening_structure_index_stack,
-        @rand_or_list,               @rfor_semicolon_list,
+        @breakpoint_stack,              @breakpoint_undo_stack,
+        @comma_index,                   @container_type,
+        @identifier_count_stack,        @index_before_arrow,
+        @interrupted_list,              @item_count_stack,
+        @last_comma_index,              @last_dot_index,
+        @last_nonblank_type,            @old_breakpoint_count_stack,
+        @opening_structure_index_stack, @rand_or_list,
+        @rfor_semicolon_list,
     );
 
     # routine to define essential variables when we go 'up' to
@@ -9512,7 +9609,6 @@ sub pad_array_to_go {
             $interrupted_list[$depth]              = 1;
             $item_count_stack[$depth]              = 0;
             $last_nonblank_type[$depth]            = "";
-            $maximum_nesting_depth[$depth]         = $depth;
             $opening_structure_index_stack[$depth] = -1;
 
             $breakpoint_undo_stack[$depth]      = undef;
@@ -9545,6 +9641,12 @@ sub pad_array_to_go {
         if ( $item_count_stack[$dd] && !$dont_align[$dd] ) {
 
             my $fbc = $forced_breakpoint_count;
+
+            # always open comma lists not preceded by keywords,
+            # barewords, identifiers (that is, anything that doesn't
+            # look like a function call)
+            my $must_break_open = $last_nonblank_type[$dd] !~ /^[kwiU]$/;
+
             set_comma_breakpoints_do(
                 $dd,
                 $opening_structure_index_stack[$dd],
@@ -9555,18 +9657,16 @@ sub pad_array_to_go {
                 $next_nonblank_type,
                 $container_type[$dd],
                 $interrupted_list[$dd],
-                $maximum_nesting_depth[$dd],
                 \$do_not_break_apart,
+                $must_break_open,
             );
-            $bp_count = $forced_breakpoint_count - $fbc;
+            $bp_count           = $forced_breakpoint_count - $fbc;
+            $do_not_break_apart = 0 if $must_break_open;
 
-            # always open comma lists not preceded by keywords,
-            # barewords, identifiers (that is, anything that doesn't
-            # look like a function call)
-            if ($do_not_break_apart) {
-                $do_not_break_apart = 0
-                  if ( $last_nonblank_type[$dd] !~ /^[kwiU]$/ );
-            }
+##            if ($do_not_break_apart) {
+##                $do_not_break_apart = 0
+##                  if ( $last_nonblank_type[$dd] !~ /^[kwiU]$/ );
+##            }
         }
         return ( $bp_count, $do_not_break_apart );
     }
@@ -9602,8 +9702,10 @@ sub pad_array_to_go {
 
     sub is_unbreakable_container {
 
-        # never break one of these types (map1.t)
+        # never break a container of one of these types
+        # because bad things can happen (map1.t)
         my $dd = shift;
+
         #/^(sort|map|grep)$/
         $is_sort_map_grep{ $container_type[$dd] };
     }
@@ -9675,6 +9777,7 @@ sub pad_array_to_go {
                     )
                     || (
                         $next_nonblank_type eq 'k'
+
                         #   /^(if|unless|and|or)$/ 
                         && $is_if_unless_and_or{$next_nonblank_token}
                     )
@@ -9776,8 +9879,9 @@ sub pad_array_to_go {
                     }
                 }
 
-                # set breaks at ?/: if they will get separated (and are not a ?/:
-                # chain), or if the '?' is at the end of the line
+                # set breaks at ?/: if they will get separated (and are
+                # not a ?/: chain), or if the '?' is at the end of the
+                # line
                 elsif ( $token eq '?' ) {
                     my $i_colon = $mate_index_to_go[$i];
                     if (
@@ -9788,10 +9892,11 @@ sub pad_array_to_go {
                       )
                     {
 
-                        # don't break at a '?' if preceded by ':' on this
-                        # line of previous ?/: pair on this line.  This is
-                        # an attempt to preserve a chain of ?/: expressions
-                        # (elsif2.t).  And don't break if this has a side comment.
+                        # don't break at a '?' if preceded by ':' on
+                        # this line of previous ?/: pair on this line.
+                        # This is an attempt to preserve a chain of ?/:
+                        # expressions (elsif2.t).  And don't break if
+                        # this has a side comment.
                         set_forced_breakpoint($i)
                           unless (
                             $type_sequence == (
@@ -9825,7 +9930,6 @@ sub pad_array_to_go {
                 $last_comma_index[$depth]       = undef;
                 $last_dot_index[$depth]         = undef;
                 $last_nonblank_type[$depth]     = $last_nonblank_type;
-                $maximum_nesting_depth[$depth]  = $depth;
                 $old_breakpoint_count_stack[$depth]    = $old_breakpoint_count;
                 $opening_structure_index_stack[$depth] = $i;
                 $rand_or_list[$depth]                  = [];
@@ -9894,14 +9998,6 @@ sub pad_array_to_go {
             elsif ( $depth < $current_depth ) {
 
                 check_for_new_minimum_depth($depth);
-
-                # remember how deep we have been 
-                if ( $maximum_nesting_depth[$depth] <
-                    $maximum_nesting_depth[$current_depth] )
-                {
-                    $maximum_nesting_depth[$depth] =
-                      $maximum_nesting_depth[$current_depth];
-                }
 
                 # Patch to break between ') {' if the paren list is broken.
                 # There is similar logic in set_continuation_breaks for
@@ -10425,16 +10521,14 @@ sub find_token_starting_list {
 
     sub set_comma_breakpoints_do {
 
-        # Given a list with some commas, set breakpoints at some
-        # of the commas to allow nice alignment if possible.  This
-        # list is an example:
+        # Given a list with some commas, set breakpoints at some of the
+        # commas, if necessary, to make it easy to read.  This list is
+        # an example:
         my (
-            $depth,              $i_opening_paren,
-            $i_closing_paren,    $item_count,
-            $identifier_count,   $rcomma_index,
-            $next_nonblank_type, $list_type,
-            $interrupted,        $maximum_nesting_depth,
-            $rdo_not_break_apart,
+            $depth,               $i_opening_paren,  $i_closing_paren,
+            $item_count,          $identifier_count, $rcomma_index,
+            $next_nonblank_type,  $list_type,        $interrupted,
+            $rdo_not_break_apart, $must_break_open,
           )
           = @_;
 
@@ -10528,7 +10622,7 @@ sub find_token_starting_list {
               : $i_prev_plus;
             push @i_term_begin, $i_term_begin;
             push @i_term_end,   $i_term_end;
-            push @i_term_comma,   $i;
+            push @i_term_comma, $i;
 
             # currently adding 2 to all lengths (for comma and space)
             my $length =
@@ -10568,7 +10662,7 @@ sub find_token_starting_list {
             push @item_lengths, $last_item_length;
             push @i_term_begin, $i_b + 1;
             push @i_term_end,   $i_e;
-            push @i_term_comma,  undef;
+            push @i_term_comma, undef;
 
             my $i_odd = $item_count % 2;
 
@@ -10578,6 +10672,7 @@ sub find_token_starting_list {
 
             $item_count++;
             $i_effective_last_comma = $i_e + 1;
+
             if ( $types_to_go[ $i_b + 1 ] =~ /^[iR\]]$/ ) {
                 $identifier_count++;
             }
@@ -10612,6 +10707,24 @@ sub find_token_starting_list {
               && $first_term_length >
               2 * $max_length[1] - 2    # need long first term
         );
+
+        # Set a flag indicating if we must break open to keep -lp items
+        # aligned
+        ##my $lp_must_break = $must_break;
+        my $need_lp_break_open = $must_break_open;
+        if ( $rOpts_line_up_parentheses && !$must_break_open ) {
+            my $columns_if_unbroken = $rOpts_maximum_line_length -
+              total_line_length( $i_opening_minus, $i_opening_paren );
+            $need_lp_break_open = ( $max_length[0] > $columns_if_unbroken )
+              || ( $max_length[1] > $columns_if_unbroken )
+              || ( $first_term_length > $columns_if_unbroken );
+
+##            my $BUBBA =
+##              join ( '',
+##                @tokens_to_go[ $i_opening_minus .. $i_opening_paren ] );
+##            print
+##"must=$lp_must_break i_minus=$i_opening_minus  i_par=$i_opening_paren toks=$BUBBA cols=$columns_if_unbroken, \n";
+        }
 
         # or do we know from the type of list that the first term should
         # be placed alone? 
@@ -10676,9 +10789,11 @@ sub find_token_starting_list {
 
         # Find the best-looking number of fields
         # and make this our second guess if possible
-        my ($number_of_fields_best, $rhas_embedded_blanks) =
-          find_best_table_field_count( \@i_term_begin, \@i_term_end,
-            \@item_lengths, $max_width );
+        my ( $number_of_fields_best, $ri_ragged_break_list,
+            $new_identifier_count )
+          = study_list_complexity( \@i_term_begin, \@i_term_end, \@item_lengths,
+            $max_width );
+
         if ( $number_of_fields_best != 0
             && $number_of_fields_best < $number_of_fields_max )
         {
@@ -10753,8 +10868,7 @@ sub find_token_starting_list {
 
         # How many columns (characters) and lines would this container take 
         # if no additional whitespace were added?
-        my $packed_columns =
-          token_sequence_length( $i_opening_paren + 1,
+        my $packed_columns = token_sequence_length( $i_opening_paren + 1,
             $i_effective_last_comma + 1 );
         if ( $columns <= 0 ) { $columns = 1 }    # avoid divide by zero
         my $packed_lines = 1 + int( $packed_columns / $columns );
@@ -10821,7 +10935,8 @@ sub find_token_starting_list {
                 # or if this is a sublist of a larger list
                 || $in_hierarchical_list
 
-                # or if multiple commas and we dont have a long first or last term
+                # or if multiple commas and we dont have a long first or last
+                # term
                 || ( $comma_count > 1
                     && !( $long_last_term || $long_first_term ) )
               )
@@ -10833,7 +10948,7 @@ sub find_token_starting_list {
             elsif ($long_last_term) {
 
                 set_forced_breakpoint($i_last_comma);
-                $$rdo_not_break_apart = 1;
+                $$rdo_not_break_apart = 1 unless $must_break_open;
             }
             elsif ($long_first_term) {
 
@@ -10877,6 +10992,9 @@ sub find_token_starting_list {
         else {
             $formatted_columns = $max_width * $item_count;
         }
+        if ( $formatted_columns < $packed_columns ) {
+            $formatted_columns = $packed_columns;
+        }
 
         my $unused_columns = $formatted_columns - $packed_columns;
 
@@ -10889,51 +11007,116 @@ sub find_token_starting_list {
           : ( $packed_lines == 2 ) ? 0.4
           : 0.7;
 
-        my $BUBBA_WAS_2=2;
-
-        # Shortcut method 1: for 2 lines, just one comma:
+        # Begin check for shortcut methods, which avoid treating a list
+        # as a table for relatively small parenthesized lists.  These
+        # are usually easier to read if not formatted as tables.
         if (
-            $rOpts_line_up_parentheses    # -lp
-            && $packed_lines <= $BUBBA_WAS_2         # probably can fit in 2 lines
-            && $item_count == 2           # two items, one comma
+            $packed_lines <= 2    # probably can fit in 2 lines
+            && $item_count < 9    # doesn't have too many items
             && $opening_environment eq 'BLOCK'    # not a sub-container
             && $opening_token       eq '('        # is paren list
           )
         {
-            my $i_break = $$rcomma_index[0];
-            set_forced_breakpoint($i_break);
-            $$rdo_not_break_apart = 1;
-            return;
-        }
 
-        # Shortcut method 2: for relatively simple 2 liner function calls
-        # which usually look better without aligning commas and opening 
-        # up the container
-        if (
-            $packed_lines <= $BUBBA_WAS_2    # probably can fit in 2 lines
-            && ( $identifier_count > 0.5 * $item_count )    # isn't all quotes
-            && $sparsity > 0.15    # would be fairly spaced gaps if aligned
-            && $item_count < 9     # doesn't have too many items
-            && $opening_environment eq 'BLOCK'    # not a sub-container
-            && $opening_token       eq '('        # is paren list
+            # Shortcut method 1: for -lp and just one comma:
+            if (
+                $rOpts_line_up_parentheses        # -lp
+                && $item_count == 2               # two items, one comma
+                && !$must_break_open
+              )
+            {
+                my $i_break = $$rcomma_index[0];
+                set_forced_breakpoint($i_break);
+                $$rdo_not_break_apart = 1;
+                return;
+            }
 
-            ## Not helpful:
-            ##&& $maximum_nesting_depth <= $depth   # has no sublist
-          )
-        {
+            # method 2 is for most small ragged lists which might look
+            # best if not displayed as a table.
+            my $shortcut_2_ok = 0;
+            if (
+                ( $new_identifier_count > 0 )    # isn't all quotes
+                && $sparsity > 0.15    # would be fairly spaced gaps if aligned
+              )
+            {
+                $shortcut_2_ok = 1;
+            }
 
-            my $break_count = set_ragged_breakpoints(
-                \@i_term_begin, \@i_term_end,        \@i_term_comma,
-                \@item_lengths, $rhas_embedded_blanks
-            );
-            $$rdo_not_break_apart = 1
-              if ( $break_count <= 1 || $rOpts_line_up_parentheses );
-            return;
-        }
+            # method 3 is for a list which fits on one line except for
+            # the last term.  We may want to break at the last comma in
+            # this case.
+            my $shortcut_3_ok = 0;
+            if ( !$must_break_open ) {
+                my $i_last_comma = $$rcomma_index[ $comma_count - 1 ];
+                if ( excess_line_length( 0, $i_last_comma ) <= 0 ) {
+                    my $max_index = @item_lengths - 1;
+
+                    # avoid needlessly breaking open container
+                    if ( $number_of_fields == 2 && $item_count % 2 == 1 ) {
+                        $shortcut_3_ok = 1;
+                    }
+
+                    # we want the last term shorter than the first for
+                    # good visibility.
+                    elsif ( $sparsity > 0.15
+                        && $item_lengths[0] >= $item_lengths[$max_index] )
+                    {
+                        $shortcut_3_ok = 1;
+
+                        # if method 2 has found just one break, we will
+                        # prefer breaking at the last term.
+                        if ( $shortcut_2_ok && @{$ri_ragged_break_list} == 1 ) {
+                            $shortcut_2_ok = 0;
+                        }
+                    }
+
+                }
+            }
+
+            # Shortcut method 2: for relatively simple 2 line function calls
+            # which usually look better without aligning commas and opening 
+            # up the container
+            if ($shortcut_2_ok) {
+
+                my $break_count =
+                  set_ragged_breakpoints( \@i_term_comma,
+                    $ri_ragged_break_list );
+                ++$break_count if ($use_separate_first_term);
+
+                # NOTE: we should really use the true break count here,
+                # which can be greater if there are large terms and
+                # little space, but usually this will work well enough.
+                unless ($must_break_open) {
+
+                    if ( $break_count <= 1 ) {
+                        $$rdo_not_break_apart = 1;
+                    }
+                    elsif ( $rOpts_line_up_parentheses && !$need_lp_break_open )
+                    {
+                        $$rdo_not_break_apart = 1;
+                    }
+                }
+                return;
+            }
+
+            # Shortcut method 3: break at last comma if it will just strand one
+            # short, simple term.  This is usually easiest to read.
+            if ($shortcut_3_ok) {
+
+                # we don't want to actually set a break at the last
+                # comma, and will let the continuation logic set 
+                # it if really necessary.  Sometimes other breaks
+                # make it unnecessary (example: sprintf may have
+                # already set a break).
+                $$rdo_not_break_apart = 1;
+                return;
+
+            }
+        }    # end shortcut methods
 
         # debug stuff
-        FORMATTER_DEBUG_FLAG_SPARSE && do {
 
+        FORMATTER_DEBUG_FLAG_SPARSE && do {
             print
 "SPARSE:cols=$columns commas=$comma_count items:$item_count ids=$identifier_count pairwidth=$pair_width fields=$number_of_fields lines packed: $packed_lines packed_cols=$packed_columns fmtd:$formatted_lines cols /line:$columns_per_line  unused:$unused_columns fmtd:$formatted_columns sparsity=$sparsity allow=$max_allowed_sparsity\n";
 
@@ -10979,11 +11162,11 @@ sub find_token_starting_list {
         # Always break lists contained in '[' and '{' if too long for 1 line,
         # and always break lists which are too long and part of a more complex
         # structure.
+        my $must_break_open_container = $must_break_open
+          || ( $too_long
+            && ( $in_hierarchical_list || $opening_token ne '(' ) );
 
-        my $must_format =
-          ( $too_long && ( $in_hierarchical_list || $opening_token ne '(' ) );
-
-        #print "LISTX: next=$next_nonblank_type  avail cols=$columns packed=$packed_columns must format = $must_format too-long=$too_long  opening=$opening_token list_type=$list_type formatted_lines=$formatted_lines  packed=$packed_lines max_sparsity= $max_allowed_sparsity sparsity=$sparsity \n";
+        #print "LISTX: next=$next_nonblank_type  avail cols=$columns packed=$packed_columns must format = $must_break_open_container too-long=$too_long  opening=$opening_token list_type=$list_type formatted_lines=$formatted_lines  packed=$packed_lines max_sparsity= $max_allowed_sparsity sparsity=$sparsity \n";
 
         #---------------------------------------------------------------
         # The main decision:
@@ -10994,8 +11177,8 @@ sub find_token_starting_list {
         #---------------------------------------------------------------
 
         if (
-            !$must_format
-            && (
+            ##BUBBA: !$must_break_open_container && 
+            (
                 ( $formatted_lines < 3 && $packed_lines < $formatted_lines )
                 || ( $formatted_lines < 2 )
                 || ( $unused_columns >
@@ -11008,10 +11191,10 @@ sub find_token_starting_list {
             # too sparse: would look ugly if aligned in a table;
             #---------------------------------------------------------------
 
-            # use old breakpoints if this is more than 2 lines
-            # BUBBA: FIXME: we may be able to increase the '2' here:
-            my $BUBBA_LIMIT_WAS_2 = 2;
-            if ( $packed_lines > $BUBBA_LIMIT_WAS_2 ) {
+            # use old breakpoints if this is a 'big' list
+            # FIXME: goal is to improve set_ragged_breakpoints so that
+            # this is not necessary.
+            if ( $packed_lines > 2 && $item_count > 10 ) {
                 write_logfile_entry("List sparse: using old breakpoints\n");
                 copy_old_breakpoints( $i_first_comma, $i_last_comma );
             }
@@ -11019,20 +11202,26 @@ sub find_token_starting_list {
             # let the continuation logic handle it if 2 lines
             else {
 
-                my $break_count = set_ragged_breakpoints(
-                    \@i_term_begin, \@i_term_end,
-                    \@i_term_comma, \@item_lengths,
-                    $rhas_embedded_blanks
-                );
-                #$$rdo_not_break_apart = 1;
-                $$rdo_not_break_apart = 1
-                  if ( $break_count <= 1 || $rOpts_line_up_parentheses );
+                my $break_count =
+                  set_ragged_breakpoints( \@i_term_comma,
+                    $ri_ragged_break_list );
+                ++$break_count if ($use_separate_first_term);
+
+                unless ($must_break_open_container) {
+                    if ( $break_count <= 1 ) {
+                        $$rdo_not_break_apart = 1;
+                    }
+                    elsif ( $rOpts_line_up_parentheses && !$need_lp_break_open )
+                    {
+                        $$rdo_not_break_apart = 1;
+                    }
+                }
             }
             return;
         }
 
         #---------------------------------------------------------------
-        # looks ok, so go ahead and format the table
+        # go ahead and format as a table
         #---------------------------------------------------------------
         write_logfile_entry(
             "List: auto formatting with $number_of_fields fields/row\n");
@@ -11049,42 +11238,58 @@ sub find_token_starting_list {
             my $i = $$rcomma_index[$j];
             set_forced_breakpoint($i);
         }
-
-        # Save list diagnostics during development
-        FORMATTER_DEBUG_FLAG_LIST && do {
-            my $pkl = sprintf( "%.1f", $packed_lines );
-            my $fml = sprintf( "%.1f", $formatted_lines );
-            write_diagnostics(<<"EOM");
-List:items=$item_count commas=$comma_count ids=$identifier_count cols=$columns fmt_lines=$fml pkd_lines=$pkl brks=$forced_breakpoint_count
-  fmt_cols=$formatted_columns pk_cols=$packed_columns unusd=$unused_columns 
-EOM
-        };
-
         return;
     }
 }
 
-sub find_best_table_field_count {
+sub study_list_complexity {
 
     # Look for complex tables which should be formatted with one term per line.
-    # Returns 0 if any number may be used.
+    # Returns the following:
+    #
+    #  \@i_ragged_break_list = list of good breakpoints to avoid lines
+    #    which are hard to read
+    #  $number_of_fields_best = suggested number of fields based on
+    #    complexity; = 0 if any number may be used.
+    #
     my ( $ri_term_begin, $ri_term_end, $ritem_lengths, $max_width ) = @_;
     my $item_count            = @{$ri_term_begin};
     my $complex_item_count    = 0;
     my $number_of_fields_best = $rOpts_maximum_fields_per_table;
-    my @has_embedded_blanks;
-    foreach ( 0 .. $item_count - 1 ) {
-        my $ib = $ri_term_begin->[$_];
-        my $ie = $ri_term_end->[$_];
-        my $has_blank=0;
+    my $i_max                 = @{$ritem_lengths} - 1;
+    ##my @item_complexity;
+
+    my $i_last_last_break = -3;
+    my $i_last_break      = -2;
+    my @i_ragged_break_list;
+
+    my $definitely_complex = 30;
+    my $definitely_simple  = 12;
+    my $quote_count        = 0;
+
+    for my $i ( 0 .. $i_max ) {
+        my $ib = $ri_term_begin->[$i];
+        my $ie = $ri_term_end->[$i];
+
+        # define complexity: start with the actual term length 
+        my $weighted_length = ( $ritem_lengths->[$i] - 2 );
 
         ##TBD: join types here and check for variations
         ##my $str=join "", @tokens_to_go[$ib..$ie];
 
+        my $is_quote = 0;
+        if ( $types_to_go[$ib] =~ /^[qQ]$/ ) {
+            $is_quote = 1;
+            $quote_count++;
+        }
+        elsif ( $types_to_go[$ib] =~ /^[w\-]$/ ) {
+            $quote_count++;
+        }
+
         if ( $ib eq $ie ) {
-            if ( $types_to_go[$ib] =~ /^[qQ]$/ && $tokens_to_go[$ib] =~ /\s/ ) {
+            if ( $is_quote && $tokens_to_go[$ib] =~ /\s/ ) {
                 $complex_item_count++;
-                $has_blank=1;
+                $weighted_length *= 2;
             }
             else {
             }
@@ -11092,11 +11297,57 @@ sub find_best_table_field_count {
         else {
             if ( grep { $_ eq 'b' } @types_to_go[ $ib .. $ie ] ) {
                 $complex_item_count++;
-                $has_blank=1;
+                $weighted_length *= 2;
+            }
+            if ( grep { $_ eq '..' } @types_to_go[ $ib .. $ie ] ) {
+                $weighted_length += 4;
             }
         }
-        push @has_embedded_blanks, $has_blank;
+
+        # add weight for extra tokens.
+        $weighted_length += 2 * ( $ie - $ib );
+
+##        my $BUBBA = join '', @tokens_to_go[$ib..$ie];
+##        print "# COMPLEXITY:$weighted_length   $BUBBA\n";
+
+##push @item_complexity, $weighted_length;
+
+        # now mark a ragged break after this item it if it is 'long and
+        # complex':
+        ##if ( $item_complexity[$i] >= $definitely_complex ) {
+        if ( $weighted_length >= $definitely_complex ) {
+
+            # if we broke after the previous term
+            # then break before it too
+            if ( $i_last_break == $i - 1
+                && $i > 1
+                && $i_last_last_break != $i - 2 )
+            {
+
+                ## FIXME: don't strand a small term
+                pop @i_ragged_break_list;
+                push @i_ragged_break_list, $i - 2;
+                push @i_ragged_break_list, $i - 1;
+            }
+
+            push @i_ragged_break_list, $i;
+            ##print "BUBBA: (@i_ragged_break_list)\n";
+            $i_last_last_break = $i_last_break;
+            $i_last_break      = $i;
+        }
+
+        # don't break before a small last term -- it will
+        # not look good on a line by itself.
+        elsif ( $i == $i_max
+            && $i_last_break == $i - 1
+            && $weighted_length <= $definitely_simple )
+          ##&& $item_complexity[$i] <= $definitely_simple )
+        {
+            pop @i_ragged_break_list;
+        }
     }
+
+    my $identifier_count = $i_max + 1 - $quote_count;
 
     # Need more tuning here..
     if ( $max_width > 12
@@ -11105,7 +11356,8 @@ sub find_best_table_field_count {
     {
         $number_of_fields_best = 1;
     }
-    return ($number_of_fields_best, \@has_embedded_blanks);
+
+    return ( $number_of_fields_best, \@i_ragged_break_list, $identifier_count );
 }
 
 sub get_maximum_fields_wanted {
@@ -11220,52 +11472,18 @@ sub compactify_table {
 
 sub set_ragged_breakpoints {
 
-    # Set breakpoints in a list that cannot be formatted nicely as a table.
-    # Current Method: we will break after every long, complex term.  
-    # This seems to work reasonably well, but can be improved.
-    my (
-        $ri_term_begin, $ri_term_end,        $ri_term_comma,
-        $ritem_lengths, $rhas_embedded_blanks
-      )
-      = @_;
-    my $i_max = @{$ritem_lengths}-1;
-    my $i_last_break=-2;
-    my @i_break_list;
-    for my $i ( 0 .. $i_max) {
+    # Set breakpoints in a list that cannot be formatted nicely as a
+    # table.  
+    my ( $ri_term_comma, $ri_ragged_break_list ) = @_;
 
-        # start with the actual term length..
-        my $weighted_length = $ritem_lengths->[$i];
-
-        # double its length if there are embedded spaces
-        # because they make parsing by eye very hard
-        if ($rhas_embedded_blanks->[$i]) { $weighted_length *= 2 }
-
-        # add extra spaces for each token beyond 1
-        my $extra_token_count=$ri_term_end->[$i] - $ri_term_begin->[$i];
-        $weighted_length += 2*$extra_token_count;
-
-        # now mark a break after it if it is 'long and complex':
-        if ( $weighted_length > 32 ) {
-
-                # if we broke after the previous term
-                # then break before it too
-                if ($i_last_break == $i-1 && $i>1) {
-                    push @i_break_list, $i-2;
-                }
-                push @i_break_list, $i;
-                $i_last_break=$i;
-        }
-    }
-
-    my $break_count=0;
-    foreach (@i_break_list) {
+    my $break_count = 0;
+    foreach (@$ri_ragged_break_list) {
         my $j = $ri_term_comma->[$_];
         if ($j) {
             set_forced_breakpoint($j);
-             $break_count++;
-         }
+            $break_count++;
+        }
     }
-
     return $break_count;
 }
 
@@ -11395,7 +11613,7 @@ sub undo_forced_breakpoint_stack {
     }
 }
 
-{  # begin recombine_breakpoints
+{    # begin recombine_breakpoints
     my %is_last_next_redo_return;
     my %is_if_unless;
     my %is_and_or;
@@ -11574,6 +11792,7 @@ sub undo_forced_breakpoint_stack {
                     # (recombine.t)
                     next
                       if (
+
                         #/^(last|next|redo|return)$/
                         $is_last_next_redo_return{ $tokens_to_go[$imid] }
                       );
@@ -11673,7 +11892,7 @@ sub undo_forced_breakpoint_stack {
 
                     # handle leading "and" and "or" 
                     #     /^(and|or)$/ 
-                    if ( $is_and_or{$tokens_to_go[$imidr]} ) {
+                    if ( $is_and_or{ $tokens_to_go[$imidr] } ) {
 
                         # Decide if we will combine a single terminal 'and' and
                         # 'or' after an 'if' or 'unless'.  We should consider the
@@ -11704,7 +11923,7 @@ sub undo_forced_breakpoint_stack {
                             $n == $nmax    # if this is the last line
                             && $types_to_go[$il] eq ';' # ending in ';'
                             && $types_to_go[$if] eq 'k' # after 'if' or 'unless'
-                            #   /^(if|unless)$/
+                                                        #   /^(if|unless)$/
                             && $is_if_unless{ $tokens_to_go[$if] }
 
                             # and if this doesn't make a long last line
@@ -11725,7 +11944,8 @@ sub undo_forced_breakpoint_stack {
                           unless (
                             $n == $nmax    # if this is the last line
                             && $types_to_go[$il] eq ';'    # ending in ';'
-                            && $types_to_go[$if] eq 'k'    
+                            && $types_to_go[$if] eq 'k'
+
                             #   /^(and|or)$/
                             && $is_and_or{ $tokens_to_go[$if] }
 
@@ -11763,7 +11983,7 @@ sub undo_forced_breakpoint_stack {
                         $n == $nmax    # if this is the last line
                         && $types_to_go[$il] eq ';'  # ending in ';'
                         && $types_to_go[$if] eq 'k'  # after an 'if' or 'unless'
-                        #   /^(if|unless)$/
+                                                     #   /^(if|unless)$/
                         && $is_if_unless{ $tokens_to_go[$if] }
 
                         # and if this doesn't make a long last line
@@ -14525,7 +14745,7 @@ sub close_debug_file {
     my $fh   = $self->{_fh};
     if ( $self->{_debug_file_opened} ) {
 
-        close $self->{_fh};
+        eval { $self->{_fh}->close() };
     }
 }
 

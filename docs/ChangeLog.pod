@@ -5,6 +5,7 @@
  suggested improvement, please send a note to perltidy at
  users.sourceforge.net.  
 
+
  -Lists which do not format well in uniform columns are now better
   identified and formated.
 
@@ -21,6 +22,19 @@
         $x - $ruler_info{'size'},
         $y + $ruler_info{'size'}
     );
+
+    OLD:
+      radlablist($f1, pad('Initial', $p), $b->{Init}->get_panel_ref, 'None ',
+                 'None', 'Default', 'Default', 'Simple', 'Simple');
+    NEW:
+      radlablist($f1,
+                 pad('Initial', $p),
+                 $b->{Init}->get_panel_ref,
+                 'None ', 'None', 'Default', 'Default', 'Simple', 'Simple');
+
+ -Corrected problem where an incorrect html filename was generated for 
+  external calls to Tidy.pm module.  Fixed incorrect html title when
+  Tidy.pm is called with IO::Scalar or IO::Array source.
 
  -Output file permissons are now set as follows.  An output script file
   gets the same permission as the input file, except that owner
@@ -44,6 +58,10 @@
   removed:
 
      BEGIN { plan tests => 1 };
+
+ -New parameter -csce (--closing-side-comment-else-flag) can be used
+  to control what text is appended to 'else' and 'elsif' blocks.
+  Default is to just add leading 'if' text to an 'else'.  See manual.
 
  -The -csc option now labels 'else' blocks with additinal information
   from the opening if statement and elsif statements, if space.

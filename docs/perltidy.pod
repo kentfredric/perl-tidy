@@ -859,6 +859,20 @@ this).  To illustrate, in the above example, the appended text of the
 first block is C< ( !defined( $_[0] )...>.  The existing limit of
 C<n=20> caused this text to be truncated, as indicated by the C<...>.
 
+=item B<-csce=n>, or B<-closing-side-comment-else-flag=n> 
+
+The text after an C<else> block will be given the text of the
+C<if> block which introduces it.  Additional text can be appended to
+C<else> and C<elsif> closing side comments, as follows:
+ 
+ n=0: else blocks get leading if block text (default)
+ n=1: same as 0 plus, provided line length limit is not exceeded,
+        - elsif blocks also get leading if block text, and
+        - else block gets terminal elsif block text if any.
+ n=2: same as 1 but not line length limit checks.
+        
+The latter options may be helpful when the cuddled-else style is used.
+
 =item B<-cscw>, or B<-closing-side-comment-warnings> 
 
 This parameter is intended to help make the initial transition to the use of
