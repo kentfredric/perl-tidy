@@ -12,8 +12,17 @@ push @allowed, $_
 
 # an if block a bit too long for one line
 {
+    # Two lines to get logical padding
+    if (   $q->user_agent('Nokia6210')
+           || $q->user_agent('Nokia6250'))
+    {
+        $bla;
+    }
+
     foreach (@extn_hints) { print "$_ "; }
     if ($text) { write_text_block( $text, $is_head ); $text = (); $is_head = 0; }
+
+    
 
     TRY: {
         if ( $startname ne '' && $zielname ne '' ) {

@@ -5,6 +5,35 @@
  suggested improvement, please send a note to perltidy at
  users.sourceforge.net.  
 
+=head2 2002 xx xx 
+ 
+ -Implemented XHTML patch submitted by Ville Skyttä.
+
+ -Fixed bug where whitespace was being removed between 'Bar' and '()' 
+  in a use statement like:
+
+       use Foo::Bar ();
+
+  Thanks to Ville Skyttä for reporting this.
+
+ -Corrected a bug in which some closing side comments (-csc) could be
+  incorrect.  The comments will be correct the next time perltidy is run 
+  with -csc.
+
+ -Whenever possible, if a logical expression is broken with leading
+  '&&', '||', 'and', or 'or', then the leading line will be padded
+  with additional space to produce alignment.  This has been on the
+  todo list for a long time; thanks to Frank Steinhauer for reminding
+  me to do it.
+
+    OLD:
+    if ( $q->user_agent('Nokia6210')
+        || $q->user_agent('Nokia6250') )
+
+    NEW:
+    if (   $q->user_agent('Nokia6210')
+        || $q->user_agent('Nokia6250') )
+
 =head2 2002 04 16
 
  -Corrected a mistokenization of variables for a package with a name

@@ -61,7 +61,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.19 2002/04/23 13:15:58 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.20 2002/04/25 15:19:00 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 # Preloaded methods go here.
@@ -3130,24 +3130,22 @@ sub new {
         $input_file = "NONAME";
     }
 
-# XHTML doctype:
-# <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-#     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-# <html xmlns="http://www.w3.org/1999/xhtml">
-
     unless ( $rOpts->{'html-pre-only'} ) {
+        my $title = escape_html($input_file);
         $html_fh->print( <<"HTML_START");
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
 <head>
+<title>$title</title>
 HTML_START
 
         # use css linked to another file
         if ( $rOpts->{'html-linked-style-sheet'} ) {
             $html_fh->print(
-                qq(<link rel=stylesheet href="$css_linkname" type="text/css">));
+qq(<link rel="stylesheet" href="$css_linkname" type="text/css" />)
+            );
             $html_fh->print( <<"ENDCSS");
-<title>$input_file</title>
 </head>
 <body>
 ENDCSS
@@ -3163,9 +3161,8 @@ ENDCSS
             $html_fh->print( <<"ENDCSS");
 -->
 </style>
-<title>$input_file</title>
 </head>
-<body> 
+<body>
 ENDCSS
         }
 
@@ -3173,15 +3170,16 @@ ENDCSS
         else {
 
             $html_fh->print( <<"HTML_START");
-<title>$input_file</title>
 </head>
 <body bgcolor=\"$rOpts->{'html-color-background'}\" text=\"$rOpts->{'html-color-punctuation'}\">
 HTML_START
         }
     }
 
+    my $fname_comment = $input_file;
+    $fname_comment =~ s/--+/-/g;    # protect HTML comment tags
     $html_fh->print( <<"END_PRE");
-<!-- filename: $input_file -->
+<!-- filename: $fname_comment -->
 <pre>
 END_PRE
 
@@ -3565,21 +3563,12 @@ sub markup_html_element {
 
     return $token if ( $type eq 'b' );    # skip a blank
     return $token if ( $token =~ /^\s*$/ );
-
-    if ($missing_html_entities) {
-        $token =~ s/\&/&amp;/g;
-        $token =~ s/\</&lt;/g;
-        $token =~ s/\>/&gt;/g;
-        $token =~ s/\"/&quot;/g;
-    }
-    else {
-        HTML::Entities::encode_entities($token);
-    }
+    $token = escape_html($token);
 
     # get the short abbreviation for this token type
     my $short_name = $token_short_names{$type};
     if ( !defined($short_name) ) {
-        $short_name = "pu";    # punctuation is default
+        $short_name = "pu";               # punctuation is default
     }
 
     # handle style sheets..
@@ -3596,8 +3585,23 @@ sub markup_html_element {
         if ( $color && ( $color ne $rOpts->{'html-color-punctuation'} ) ) {
             $token = qq(<font color="$color">) . $token . "</font>";
         }
-        if ( $html_italic{$short_name} ) { $token = "<I>$token</I>" }
-        if ( $html_bold{$short_name} )   { $token = "<B>$token</B>" }
+        if ( $html_italic{$short_name} ) { $token = "<i>$token</i>" }
+        if ( $html_bold{$short_name} )   { $token = "<b>$token</b>" }
+    }
+    return $token;
+}
+
+sub escape_html {
+
+    my $token = shift;
+    if ($missing_html_entities) {
+        $token =~ s/\&/&amp;/g;
+        $token =~ s/\</&lt;/g;
+        $token =~ s/\>/&gt;/g;
+        $token =~ s/\"/&quot;/g;
+    }
+    else {
+        HTML::Entities::encode_entities($token);
     }
     return $token;
 }
@@ -4561,7 +4565,6 @@ sub set_leading_whitespace {
             my $min_gnu_indentation =
               $gnu_stack[$max_gnu_stack_index]->get_SPACES();
 
-            ##TESTING: This may need some tune-up
             $available_space = $space_count - $min_gnu_indentation;
             if ( $available_space >= $standard_increment ) {
                 $min_gnu_indentation += $standard_increment;
@@ -5606,6 +5609,12 @@ EOM
           # (testfiles prnterr1.t with --extrude and mangle.t with --mangle)
           || ( $typel eq 'Z' || $typell eq 'Z' )
 
+          # keep paren separate in 'use Foo::Bar ()'
+          || ( $tokenr eq '('
+            && $typel   eq 'w'
+            && $typell  eq 'k'
+            && $tokenll eq 'use' )
+
           # keep any space between filehandle and paren:
           # file mangle.t with --mangle:
           || ( $typel eq 'Y' && $tokenr eq '(' )
@@ -6468,7 +6477,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.19 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.20 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -7033,8 +7042,7 @@ sub set_white_space_flag {
                         $last_nonblank_token eq '}'
                         && (
                             $is_block_without_semicolon{
-                                $last_nonblank_block_type
-                            }
+                                $last_nonblank_block_type }
                             || $last_nonblank_block_type =~ /^sub\s+\w/
                             || $last_nonblank_block_type =~ /^\w+:$/ )
                     )
@@ -8164,11 +8172,14 @@ sub accumulate_block_text {
 
                 if ( $token eq '}' ) {
 
+                    # restore any leading text saved when we entered this block
                     if ( defined( $block_leading_text{$type_sequence} ) ) {
                         ( $block_leading_text, $rblock_leading_if_elsif_text ) =
                           @{ $block_leading_text{$type_sequence} };
                         $i_block_leading_text = $i;
                         delete $block_leading_text{$type_sequence};
+                        $rleading_block_if_elsif_text =
+                          $rblock_leading_if_elsif_text;
                     }
 
                     # if we run into a '}' then we probably started accumulating
@@ -8205,8 +8216,10 @@ sub accumulate_block_text {
                     if (   $accumulating_text_for_block
                         && $levels_to_go[$i] == $leading_block_text_level )
                     {
+
                         if ( $accumulating_text_for_block eq $block_type ) {
 
+                            # save any leading text before we enter this block
                             $block_leading_text{$type_sequence} = [
                                 $leading_block_text,
                                 $rleading_block_if_elsif_text
@@ -14064,7 +14077,6 @@ sub append_line {
         $zero_count++;
 
         ## TESTING: if ( $maximum_line_index >= 0 ) {
-        ##if ( $maximum_line_index >= 0 && !get_RECOVERABLE_SPACES($indentation) ){
         if ( $maximum_line_index >= 0
             && !get_RECOVERABLE_SPACES( $group_lines[0]->get_indentation() ) )
         {
@@ -21962,6 +21974,7 @@ __END__
 
 
 
+
 =head1 NAME
 
 Perl::Tidy - main module for the perltidy utility
@@ -22100,5 +22113,6 @@ The perltidy(1) man page describes all of the features of perltidy.  It
 can be found at http://perltidy.sourceforge.net.
 
 =cut
+
 
 
