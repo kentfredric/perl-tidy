@@ -14,7 +14,7 @@
 	<LI><A HREF="#perltidy change log">Perltidy Change Log</A></LI>
 	<UL>
 
-		<LI><A HREF="#2001 xx xx">2001 xx xx  </A></LI>
+		<LI><A HREF="#2001 06 17">2001 06 17</A></LI>
 		<LI><A HREF="#2001 06 08">2001 06 08</A></LI>
 		<LI><A HREF="#2001 04 06">2001 04 06 </A></LI>
 		<LI><A HREF="#2001 03 28:">2001 03 28:</A></LI>
@@ -30,29 +30,71 @@
 <P>
 <H1><A NAME="perltidy change log">Perltidy Change Log</A></H1>
 <PRE>
- You can help perltidy evolve into a better program.  If you think you
- have hit a bug or unusual behavior, or have a suggested improvement,
- please send a note to perltidy at users.sourceforge.net.</PRE>
+ You can help perltidy evolve into a better program.  If you 
+ have hit a bug, unusual behavior, annoyance, or have a suggested
+ improvement, please send a note to perltidy at users.sourceforge.net.</PRE>
 <P>
-<H2><A NAME="2001 xx xx">2001 xx xx</A></H2>
+<H2><A NAME="2001 06 17">2001 06 17</A></H2>
+<PRE>
+ -Added -bli flag to give continuation indentation to braces, like this</PRE>
+<PRE>
+        if ($bli_flag)
+          {
+            extra_indentation();
+          }</PRE>
+<PRE>
+ -Corrected an error with the tab (-t) option which caused the last line
+ of a multi-line quote to receive a leading tab.  This error was in
+ version 2001 06 08  but not 2001 04 06.  If you formatted a script
+ with -t with this version, please check it by running once with the
+ -chk flag and perltidy will scan for this possible error.</PRE>
+<PRE>
+ -Corrected an invalid pattern (\R should have been just R), changed
+ $^W =1 to BEGIN {$^W=1} to use warnings in compile phase, and corrected
+ several unnecessary 'my' declarations. Many thanks to Wolfgang Weisselberg,
+ 2001-06-12, for catching these errors.
+</PRE>
 <PRE>
 
- -A '-gnu' flag has been added which causes lists to be indented
- with extra indentation in the manner sometimes associated with
- emacs or the GNU suggestions.  (Suggested by Ian Stuart).</PRE>
+ -A '-bar' flag has been added to require braces to always be on the
+ right, even for multi-line if and foreach statements.  For example,
+ the default formatting of a long if statement would be:</PRE>
+<PRE>
+        if ($bigwasteofspace1 &amp;&amp; $bigwasteofspace2
+          || $bigwasteofspace3 &amp;&amp; $bigwasteofspace4)
+        {
+            bigwastoftime();
+        }</PRE>
+<PRE>
+ With -bar, the formatting is:</PRE>
+<PRE>
+        if ($bigwasteofspace1 &amp;&amp; $bigwasteofspace2
+          || $bigwasteofspace3 &amp;&amp; $bigwasteofspace4) {
+            bigwastoftime();
+        }
+ Suggested by Eli Fidler 2001-06-11.</PRE>
+<PRE>
+ -Uploaded perltidy to sourceforge cvs 2001-06-10.</PRE>
+<PRE>
+ -An '-lp' flag (--line-up-parentheses) has been added which causes lists
+ to be indented with extra indentation in the manner sometimes
+ associated with emacs or the GNU suggestions.  Thanks to Ian Stuart for
+ this suggestion and for extensive help in testing it.</PRE>
 <PRE>
  -Subroutine call parameter lists are now formatted as other lists.
- This will improve formatting of tables being passed via subroutine
- calls.  This will also cause full indentation ('-i=n) of continued
- parameter list lines.  
+ This should improve formatting of tables being passed via subroutine
+ calls.  This will also cause full indentation ('-i=n, default n= 4) of
+ continued parameter list lines rather than just the number of spaces
+ given with -ci=n, default n=2.
 </PRE>
 <PRE>
 
  -Added support for hanging side comments.  Perltidy identifies a hanging
  side comment as a comment immediately following a line with a side
  comment or another hanging side comment.  This should work in most
- cases.  It can be deactivated with --no-hanging-side-comments.
- (Suggested by Brad Eisenberg).</PRE>
+ cases.  It can be deactivated with --no-hanging-side-comments (-nhsc).
+ The manual has been updated to discuss this.  Suggested by Brad
+ Eisenberg some time ago, and finally implemented.</PRE>
 <P>
 <H2><A NAME="2001 06 08">2001 06 08</A></H2>
 <PRE>

@@ -1,8 +1,6 @@
 =head1 Welcome to perltidy!
 
-Perltidy is a tool to indent and reformat perl scripts.  It is
-considered by its author to be stable, although there will always be
-formatting improvements to be made, and suggestions are welcome.
+Perltidy is a tool to indent and reformat perl scripts.  
 
 Perltidy is free software released under the GNU General Public
 License -- please see the included file "LICENSE" for details.
@@ -11,6 +9,8 @@ There are two source distribution files, a F<.tgz> "tarball" for unix
 systems and a zip file, F<.zip> for Windows.  The only differences is
 that the line endings have been changed to <cr><lf> for the Windows
 version.
+
+Please see the ChangeLog for notices of any recent updates.
 
 =head2 Installation - Unix
 
@@ -26,7 +26,7 @@ has added indentation, whitespace, and line breaks.  This simple example
 illustrates what perltidy does.
 
 Perltidy does not require any special modules.  We just have to get the
-script in your path and, optionally, install a man page.
+script in your path and, optionally, install two man pages.
 
 1. If the script is not executable, use 
 
@@ -50,7 +50,7 @@ somewhere in your home directory.  Then issue the command
 
  make install
 
-This installs perltidy and the man page perltidy.1.
+This installs perltidy and the man pages perltidy.1 and perl2web.1.
 
 5. Test the installation using
 
@@ -63,7 +63,7 @@ You should see the usage screen.  Then try
 which should bring up the manual page if you installed it.
 
 If you ever want to remove perltidy, you can remove perltidy and its man
-page by hand or use
+pages by hand or use
 
  make uninstall
 
@@ -139,6 +139,11 @@ Information on running perl under VMS can be found at:
 Please see the ChangeLog for details.  The most serious bugs that have
 been reported are as follows:
 
+Release 20010608 had a bug with the -t option in which a -t
+would be added before the last line of a multiline quote or pattern.
+Scripts formatted with -t on this version should be run once with
+the -chk option to see if this might have happened.
+
 Prior to release 20010608, there was a bug which perltidy removed trailing 
 white space from multiline quotes.  
 
@@ -166,9 +171,8 @@ look for this situation and issue a warning.
 
 =head1 WHAT NEXT
 
-The documentation has been supplied in three formats: as the man page, as an
-html file, and as a text file.  These were produced from perltidy.pod
-and perl2web.pod. 
+The documentation has been supplied as man pages, as 
+html files, and as text files.
 
 Reading the brief tutorial should help you use perltidy effectively.  
 
@@ -184,16 +188,13 @@ If you see ways to improve this document for the particular system on
 which you install perltidy, please let the author know so that it can be
 updated.
 
-Comments and suggestions are welcome.  If you feel that you have
-encountered a bug, please send an email with a brief description of the
-problem to:
+Bug reports, comments and suggestions are welcome.  Attach the smallest
+piece of code which demonstrates the bug or issue, plus a .LOG file from
+a perltidy run, if appropriate.  Your efforts are greatly appreciated.
+
+Thank You
 
  Steve Hancock
  perltidy at users.sourceforge.net
  http://perltidy.sourceforge.net
 
-Attach the smallest piece of code which demonstrates the bug, plus a
-.LOG file from a perltidy run, if appropriate.  Your efforts are
-greatly appreciated.
-
-Thank You

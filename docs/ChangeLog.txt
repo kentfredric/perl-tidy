@@ -1,9 +1,22 @@
 Perltidy Change Log
-     You can help perltidy evolve into a better program.  If you think you
-     have hit a bug or unusual behavior, or have a suggested improvement,
-     please send a note to perltidy at users.sourceforge.net.  
+     You can help perltidy evolve into a better program.  If you 
+     have hit a bug, unusual behavior, annoyance, or have a suggested
+     improvement, please send a note to perltidy at users.sourceforge.net.  
 
-  2001 xx xx
+  2001 06 17
+
+     -Added -bli flag to give continuation indentation to braces, like this
+
+            if ($bli_flag)
+              {
+                extra_indentation();
+              }
+
+     -Corrected an error with the tab (-t) option which caused the last line
+     of a multi-line quote to receive a leading tab.  This error was in
+     version 2001 06 08  but not 2001 04 06.  If you formatted a script
+     with -t with this version, please check it by running once with the
+     -chk flag and perltidy will scan for this possible error.
 
      -Corrected an invalid pattern (\R should have been just R), changed
      $^W =1 to BEGIN {$^W=1} to use warnings in compile phase, and corrected
@@ -30,12 +43,10 @@ Perltidy Change Log
 
      -Uploaded perltidy to sourceforge cvs 2001-06-10.
 
-     -A '-gnu' flag has been added which causes lists to be indented with
-     extra indentation in the manner sometimes associated with emacs or the
-     GNU suggestions.  It's not perfect yet but it is now quite useful and
-     should improve over time.  Many thanks to Ian Stuart for this
-     suggestion and for much help in testing it. The manual has been updated
-     to discuss this.
+     -An '-lp' flag (--line-up-parentheses) has been added which causes lists
+     to be indented with extra indentation in the manner sometimes
+     associated with emacs or the GNU suggestions.  Thanks to Ian Stuart for
+     this suggestion and for extensive help in testing it. 
 
      -Subroutine call parameter lists are now formatted as other lists.
      This should improve formatting of tables being passed via subroutine

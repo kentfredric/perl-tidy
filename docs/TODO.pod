@@ -2,38 +2,22 @@
 
 This is a "wish-list" of features to add and things to do.
 
-=head2 Hanging comments
+=head2 Clean up a few -lp issues
 
-We would like to be able to recognize and format hanging side comments 
-as shown below, rather than format them as full-line block comments.
+The new -lp feature seems to be working well, but there are a few
+situations where it might be improved.  In particular, it needs
+to be updated to handle lists following certain perl keywords. 
 
-  my $IGNORE = 0;    # number of initial packets to ignore
-                     # Not resending old packets on startup.
-                     # Get old packets from the database.
+=head2 Add more formatting options
 
-This update is planned for the near future.
+Although there are many options already, there is still a need for
+more options to help programmers match particular styles.  An example
+would be the manner in which terminal parens of lists are handled.
 
-=head2 Gnu/emacs style indentation
+=head2 Automated testing
 
-We would like to be able to indent tables and function calls in the
-manner sometimes associated with emacs or GNU:
-
-    %TV = (
-            flintstones => {
-                             series  => "flintstones",
-                             nights  => [qw(monday thursday friday)],
-                             members => [
-                                          {
-                                              name => "fred",
-                                              role => "lead",
-                                              age  => 36,
-                                          },
-   (...)
-
-Programming for this is underway.  An experimental implementation, which
-is selected with the '-gnu' flag, is being tested.  It formats
-lists, without side comments, at the present time.  It does not format
-sub call lists.
+An automated method for testing many combinations of parameter options 
+on a variety of test files would be very helpful.
 
 =head2 Documentation
 

@@ -4,7 +4,7 @@
  have hit a bug, unusual behavior, annoyance, or have a suggested
  improvement, please send a note to perltidy at users.sourceforge.net.  
 
-=head2 2001 xx xx  
+=head2 2001 06 17  
 
  -Added -bli flag to give continuation indentation to braces, like this
 

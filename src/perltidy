@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.5 2001/06/16 01:15:27 perltidy Exp $
+    $Id: perltidy,v 1.6 2001/06/17 05:46:57 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -479,7 +479,7 @@ sub process_command_line {
       trim-qw
       hanging-side-comments
       nobrace-left-and-indent
-      maximum-continuation-indentation=0
+      maximum-continuation-indentation=40
     );
 
     #---------------------------------------------------------------
@@ -616,7 +616,7 @@ sub process_command_line {
         'wba'                => [qw(want-break-after)],
         'wbb'                => [qw(want-break-before)],
         'gnu'                => [qw(gnu-style)],
-        'ngnu'               => [qw(noline-up-parentheses)],
+        'nlp'                => [qw(noline-up-parentheses)],
         'lp'                 => [qw(line-up-parentheses)],
         'tqw'                => [qw(trim-qw)],
         'mci'                => [qw(maximum-continuation-indentation)],
@@ -683,10 +683,14 @@ sub process_command_line {
             )
         ],
 
+        # This is an undocumented placeholder for a possible style which
+        # tries to follow the GNU Coding Standards (which do not really
+        # apply to perl but which are followed by many perl
+        # programmers).  This will change; I haven't used -bli yet
+        # because it doesn't seem to be used as often as simply -bl; 
         'gnu-style' => [
             qw(
-            line-up-parentheses
-            brace-left-and-indent
+            lp bl
             )
         ],
 
@@ -1223,8 +1227,7 @@ Send selected text to a '.TEE' file
  -tsc    tee side comments       
  -tp     tee pod           
 
-Styles (Combinations of other parameter) 
- -gnu     approximate the Gnu Coding Standards (for C)
+Combinations of other parameters
  -mangle  remove as many newlines as possible (but keep comments and pods)
  -extrude  insert as many newlines as possible
 
@@ -2643,7 +2646,7 @@ sub new {
     $gnu_position_predictor = 0;    # where the current token is predicted to be
     $max_gnu_stack_index    = 0;
     $max_gnu_item_index     = -1;
-    $gnu_stack[0] = new_gnu_indentation_item( 0, -1, -1, 0, 0 );
+    $gnu_stack[0] = new_lp_indentation_item( 0, -1, -1, 0, 0 );
     @gnu_item_list           = ();
     $gnu_sequence_number     = 0;    # this will count the output batches
     $last_output_indentation = 0;
@@ -2815,17 +2818,20 @@ sub get_AVAILABLE_SPACES_to_go {
     return ref($item) ? $item->get_AVAILABLE_SPACES() : 0;
 }
 
-sub new_gnu_indentation_item {
+sub new_lp_indentation_item {
 
-    # this is a temporary interface to the IndentationItem class
+    # this is an interface to the IndentationItem class
     my ( $spaces, $level, $ci_level, $available_spaces, $align_paren ) = @_;
-    my $index = 0;
-    if ( $level >= 0 ) { $index = ++$max_gnu_item_index; }
-    my $item =
-      Perltidy::IndentationItem->new( $spaces, $level, $ci_level,
-        $available_spaces, $index, $gnu_sequence_number, $align_paren );
 
     # A negative level implies not to store the item in the item_list
+    my $index = 0;
+    if ( $level >= 0 ) { $index = ++$max_gnu_item_index; }
+
+    my $item =
+      Perltidy::IndentationItem->new( $spaces, $level, $ci_level,
+        $available_spaces, $index, $gnu_sequence_number, $align_paren,
+        $max_gnu_stack_index);
+
     if ( $level >= 0 ) {
         $gnu_item_list[$max_gnu_item_index] = $item;
     }
@@ -2875,9 +2881,7 @@ sub set_leading_whitespace {
     }
 
     #-------------------------------------------------------------
-    # handle case of gnu-style indentation..
-    # NOTE: this method is under development and does not always work
-    # too well.  But it is usable and getting better.
+    # handle case of -lp indentation..
     #-------------------------------------------------------------
 
     # The continued_quote flag means that this is the first token of a
@@ -2891,7 +2895,7 @@ sub set_leading_whitespace {
         $level = -1;    # flag to prevent storing in item_list
         $leading_spaces_to_go[$max_index_to_go] =
           $reduced_spaces_to_go[$max_index_to_go] =
-          new_gnu_indentation_item( $space_count, $level, $ci_level,
+          new_lp_indentation_item( $space_count, $level, $ci_level,
           $available_space, 0 );
         return;
     }
@@ -2963,7 +2967,7 @@ sub set_leading_whitespace {
                       || $i > $max_gnu_item_index )
                     {
                         warning(
-"Program bug with -gnu.  seqno=$seqno should be $gnu_sequence_number and i=$i should be less than max=$max_gnu_item_index\n"
+"Program bug with -lp.  seqno=$seqno should be $gnu_sequence_number and i=$i should be less than max=$max_gnu_item_index\n"
                         );
                         report_definite_bug();
                     }
@@ -2971,10 +2975,11 @@ sub set_leading_whitespace {
                     else {
 
                         $gnu_item_list[$i]
-                          ->decrease_AVAILABLE_SPACES($available_spaces);
+                          ->permanently_decrease_AVAILABLE_SPACES(
+                            $available_spaces);
 
                         my $j;
-                        for ( $j = $i ; $j <= $max_gnu_item_index ; $j++ ) {
+                        for ( $j = $i+1 ; $j <= $max_gnu_item_index ; $j++ ) {
                             $gnu_item_list[$j]
                               ->decrease_SPACES($available_spaces);
                         }
@@ -3001,7 +3006,7 @@ sub set_leading_whitespace {
             # to be positive above.
             else {
                 warning(
-"program bug with -gnu: stack_error. level=$level; lev=$lev; ci_level=$ci_level; ci_lev=$ci_lev; rerun with -ngnu\n"
+"program bug with -lp: stack_error. level=$level; lev=$lev; ci_level=$ci_level; ci_lev=$ci_lev; rerun with -nlp\n"
                 );
                 report_definite_bug();
                 last;
@@ -3058,8 +3063,9 @@ sub set_leading_whitespace {
 
             $gnu_stack[$max_gnu_stack_index]->set_HAVE_CHILD(1);
 
-            $gnu_stack[ ++$max_gnu_stack_index ] =
-              new_gnu_indentation_item( $space_count, $level, $ci_level,
+            ++$max_gnu_stack_index; 
+            $gnu_stack[ $max_gnu_stack_index ] =
+              new_lp_indentation_item( $space_count, $level, $ci_level,
               $available_space, $align_paren );
         }
     }
@@ -3084,7 +3090,7 @@ sub set_leading_whitespace {
         }
     }
 
-    # remember the position of this token on the hypothetical line
+    # remember the predicted position of this token on the output line
     if ( $max_index_to_go > $line_start_index_to_go ) {
         $gnu_position_predictor =
           total_line_length( $line_start_index_to_go, $max_index_to_go );
@@ -3094,7 +3100,7 @@ sub set_leading_whitespace {
           token_sequence_length( $max_index_to_go, $max_index_to_go );
     }
 
-    # store a reference to the whitespace item for this token
+    # store the indentation object for this token
     # this allows us to manipulate the leading whitespace 
     # (in case we have to reduce indentation to fit a line) without 
     # having to change any token values
@@ -3225,7 +3231,7 @@ sub check_for_long_gnu_style_lines {
                 my $old_level    = $gnu_item_list[$i]->get_LEVEL();
                 my $old_ci_level = $gnu_item_list[$i]->get_CI_LEVEL();
                 warning(
-"program bug with -gnu: want to delete $deleted_spaces from item $i, but old=$old_spaces deleter: lev=$level ci=$ci_level  deleted: level=$old_level ci=$ci_level\n"
+"program bug with -lp: want to delete $deleted_spaces from item $i, but old=$old_spaces deleter: lev=$level ci=$ci_level  deleted: level=$old_level ci=$ci_level\n"
                 );
                 report_definite_bug();
             }
@@ -3236,27 +3242,21 @@ sub check_for_long_gnu_style_lines {
     }
 }
 
-sub finish_gnu_batch {
+sub finish_lp_batch {
 
     # This routine is called once after each each output stream batch is
-    # finished to undo indentation for all incomplete gnu-style
+    # finished to undo indentation for all incomplete -lp
     # indentation levels.  It is too risky to leave a level open,
     # because then we can't backtrack in case of a long line to follow.
     # This means that comments and blank lines will disrupt this
-    # indentation style.  It may be possible to recover this style for
-    # the case of only side comments with a patch in the vertical
-    # aligner, though.
+    # indentation style.  But the vertical aligner may be able to
+    # get the space back if there are side comments.
 
-    # this is only for the 'gnu' style
+    # this is only for the 'lp' style
     return unless ( $rOpts->{'line-up-parentheses'} );
 
     # nothing can be done if no stack items defined for this line
     return if ( $max_gnu_item_index == UNDEFINED_INDEX );
-
-    # For a riskier method, we could leave the indentation items open
-    # with the following code:
-    # check_for_long_gnu_style_lines();
-    # return;
 
     # loop over all whitespace items created for the current batch
     my $i;
@@ -3266,28 +3266,27 @@ sub finish_gnu_batch {
         # only look for open items
         next if ( $item->get_CLOSED() );
 
-        my $deleted_spaces = $item->get_AVAILABLE_SPACES();
+        # Tentatively remove all of the available space
+        # (The vertical aligner will try to get it back later)
+        my $available_spaces = $item->get_AVAILABLE_SPACES();
+        if ( $available_spaces > 0 ) {
 
-        if ( $deleted_spaces > 0 ) {
+            # delete incremental space for this item
+            $gnu_item_list[$i]
+              ->tentatively_decrease_AVAILABLE_SPACES($available_spaces);
 
-            # remove the available space from this item
-            $gnu_item_list[$i]->decrease_AVAILABLE_SPACES($deleted_spaces);
-
-            # but remember how many, because we might be able to recover
-            # them later
-            $gnu_item_list[$i]->increase_RECOVERABLE_SPACES($deleted_spaces);
-
-            # now remove total space from this and any that follow
-            my $j;
-            for ( $j = $i ; $j <= $max_gnu_item_index ; $j++ ) {
-                $gnu_item_list[$j]->decrease_SPACES($deleted_spaces);
+            # Reduce the total indentation space of any nodes that follow
+            # Note that any such nodes must necessarily be dependents
+            # of this node.
+            foreach my $j ( $i+1 .. $max_gnu_item_index) { 
+                $gnu_item_list[$j]->decrease_SPACES($available_spaces);
             }
         }
     }
     return;
 }
 
-sub undo_gnu_indentation {
+sub reduce_lp_indentation {
 
     # reduce the leading whitespace at token $i if possible by $spaces_needed
     # (a large value of $spaces_needed will remove all excess space)
@@ -3295,29 +3294,21 @@ sub undo_gnu_indentation {
     # contained between opening and closing parens/braces/brackets
 
     my ( $i, $spaces_needed ) = @_;
-
     my $deleted_spaces = 0;
 
-    return $deleted_spaces if ( $spaces_needed < 0 );
+    # this is only for the -lp style
+    if ( $rOpts->{'line-up-parentheses'} ) {
 
-    # this is only for the 'gnu' style
-    return $deleted_spaces unless ( $rOpts->{'line-up-parentheses'} );
+        # it is only safe to undo indentation if there are no children.  
+        my $item = $leading_spaces_to_go[$i];
+        if ( !$item->get_HAVE_CHILD() ) {
 
-    # it is only safe to undo indentation if there are no children.  
-    my $item = $leading_spaces_to_go[$i];
-    if ( $item->get_HAVE_CHILD() ) {
-        return $deleted_spaces;
+            # we'll remove these spaces, but mark them as recoverable
+            $deleted_spaces = 
+              $item->tentatively_decrease_AVAILABLE_SPACES($spaces_needed);
+        }
     }
 
-    my $available_spaces = $item->get_AVAILABLE_SPACES();
-    $deleted_spaces =
-      ( $available_spaces > $spaces_needed ) ? $spaces_needed :
-      $available_spaces;
-
-    # we'll remove these spaces, but mark them as recoverable
-    $item->decrease_AVAILABLE_SPACES($deleted_spaces);
-    $item->decrease_SPACES($deleted_spaces);
-    $item->increase_RECOVERABLE_SPACES($deleted_spaces);
     return $deleted_spaces;
 }
 
@@ -3437,10 +3428,10 @@ sub check_options {
     ($rOpts) = @_;
     my ( $tabbing_string, $tab_msg );
 
-    # The gnu indentation logic requires that perltidy examine large
+    # The -lp indentation logic requires that perltidy examine large
     # blocks of code between flushing.  When the user takes control
     # of line breaks, perltidy never sees large enough buffers to
-    # use the -gnu style.  There's no way around this.  "It's my way
+    # use the -lp style.  There's no way around this.  "It's my way
     # or the highway".
     if ( $rOpts->{'line-up-parentheses'} ) {
 
@@ -3448,7 +3439,7 @@ sub check_options {
           || !$rOpts->{'delete-old-newlines'} )
         {
             print STDERR <<EOM;
-Conflict: -gnu  conflicts with -io, -fnl, -nanl, or -ndnl; ignoring -gnu
+Conflict: -lp  conflicts with -io, -fnl, -nanl, or -ndnl; ignoring -lp
 EOM
             $rOpts->{'line-up-parentheses'} = 0;
         }
@@ -3459,7 +3450,7 @@ EOM
     # just prior to writing the line, if desired).
     if ( $rOpts->{'line-up-parentheses'} && $rOpts->{'tabs'} ) {
         print STDERR <<EOM;
-Conflict: -t (tabs) cannot be used with the -gnu  option; ignoring -t.
+Conflict: -t (tabs) cannot be used with the -lp  option; ignoring -t.
 EOM
         $rOpts->{'tabs'} = 0;
     }
@@ -5018,54 +5009,46 @@ sub write_unindented_line {
     $file_writer_object->write_line( $_[0] );
 }
 
-sub correct_gnu_indentation {
+sub correct_lp_indentation {
 
-    # make a last pass through each line to correct the indentation
-    # positions in case they differ from the predictions
+    # When the -lp option is used, we need to make a last pass through
+    # each line to correct the indentation positions in case they differ
+    # from the predictions.  This is necessary because perltidy uses a
+    # predictor/corrector method for aligning with opening parens.  The
+    # predictor is usually good, but sometimes stumbles.  The corrector
+    # tries to patch things up once the actual opening paren locations
+    # are known.
     my ( $ibeg, $iend ) = @_;
+
+    # looking at each token in this output line..
     my $i;
     foreach $i ( $ibeg .. $iend ) {
 
-        # look for next unvisited indentation item
+        # looking for next unvisited indentation item
         my $indentation = $leading_spaces_to_go[$i];
         if ( !$indentation->get_MARKED() ) {
             $indentation->set_MARKED(1);
 
-            # this is only for indentation where we align with 'parens'
+            # looking for indentation item for which we are aligning 
+            # with parens, braces, and brackets 
             next unless ( $indentation->get_ALIGN_PAREN() );
 
+            # Ok, let's see what the error is and try to fix it
             my $actual_pos = total_line_length( $ibeg, $i - 1 );
             my $predicted_pos = $indentation->get_SPACES();
             my $move_left     = $predicted_pos - $actual_pos;
 
-            # It's ok to shift left if there are no dependents.
-            # in use.
-
-            #--------------------------------------------------------
-            # FIXME: NOTE for future development: if there are dependents,
-            # we might be able to look ahead to see if any of them are 
-            # actually in use.  Or at least look one line ahead,
-            # which is a common case of interest. 
-            #--------------------------------------------------------
-
-            if ( $move_left > 0 ) {
-                if ( !$indentation->get_HAVE_CHILD() ) {
-                    $indentation->decrease_AVAILABLE_SPACES($move_left);
-                    $indentation->decrease_SPACES($move_left);
-                    my $recoverable = $indentation->get_RECOVERABLE_SPACES();
-                    my $got         =
-                      $indentation->increase_RECOVERABLE_SPACES(
-                        -$recoverable );
-                }
+            # It's ok to shift left if there are no dependents. 
+            if ( $move_left > 0 && !$indentation->get_HAVE_CHILD() ) {
+                $indentation->permanently_decrease_AVAILABLE_SPACES($move_left);
             }
 
-            # But moving right is a problem because some
-            # long lines might already depend on this indentation.
-            # So we hope the aligner gets to fix it.
-            elsif ( $move_left < 0 ) {
-                my $recoverable = $indentation->get_RECOVERABLE_SPACES();
-                my $want        = -$move_left - $recoverable;
-                my $got = $indentation->increase_RECOVERABLE_SPACES($want);
+            # But moving right, or left with dependent indentation, is not
+            # possible yet because some later lines might depend on this
+            # indentation.  So we record what we want and the vertical
+            # aligner will try to recover it.
+            elsif ( $move_left != 0 ) {
+                $indentation->set_RECOVERABLE_SPACES(-$move_left);
             }
         }
     }
@@ -5104,9 +5087,9 @@ sub output_line_to_go {
         return;
     }
 
-    # tell the -gnu option we are outputting a batch so it can close
+    # tell the -lp option we are outputting a batch so it can close
     # any unfinished items in its stack
-    finish_gnu_batch();
+    finish_lp_batch();
 
     my $imin = 0;
     my $imax = $max_index_to_go;
@@ -5213,7 +5196,7 @@ sub output_line_to_go {
             my $iend = $$ri_last[$n];
 
             if ( $rOpts->{'line-up-parentheses'} ) {
-                correct_gnu_indentation( $ibeg, $iend );
+                correct_lp_indentation( $ibeg, $iend );
             }
 
             my @patterns = ();
@@ -5294,17 +5277,12 @@ sub output_line_to_go {
                   # outdent closing lines of the form:   ");  };  ];  )->xxx;" 
                   && $is_terminal_statement
 
-                  #&& ( $terminal_type eq ';'
-                  #&& ( $nesting_depth_to_go[$iend] ) <
-                  #$nesting_depth_to_go[$ibeg] )
-
                   # outdent 'cuddled parens' of the form:   ")->pack("  
                   || ( $terminal_type eq '(' && $types_to_go[$ibeg] eq ')'
                   && ( $nesting_depth_to_go[$iend] + 1 ==
                   $nesting_depth_to_go[$ibeg] ) ) )
                 {
                     $use_terminal_indentation = 1;
-
                 }
 
                 # and at ');', '};', '>;', and '];' of a terminal qw quote
@@ -6106,7 +6084,7 @@ sub scan_list {
                 }
 
                 # break at any comma before the opening structure Added
-                # for -gnu, but seems to be good in general.  It isn't
+                # for -lp, but seems to be good in general.  It isn't
                 # obvious how far back to look; the '5' below seems to
                 # work well and will catch the comma in something like
                 #  push @list, myfunc( $param, $param, ..
@@ -6145,10 +6123,6 @@ sub scan_list {
         {
             $dont_align[$depth]       = 1;
             $want_comma_break[$depth] = 0;
-
-            # EXPERIMENTAL .. revert to standard indentation if we are not
-            # going to format this list.  This is no longer needed.
-            # my $deleted = undo_gnu_indentation($i, 100000);
         }
 
         # any side comment in a list forces use of old breakpoints
@@ -6383,7 +6357,7 @@ sub set_list_breakpoints {
       $$rmax_length[1];
 
     # ----------------------------------------------------------------------
-    # If we are crowded and the -gnu option is being used, try to
+    # If we are crowded and the -lp option is being used, try to
     # undo some indentation 
     # ----------------------------------------------------------------------
 
@@ -6401,7 +6375,7 @@ sub set_list_breakpoints {
 
             # ask for space if needed
             if ( $spaces_wanted > 0 ) {
-                undo_gnu_indentation( $i_first_comma, $spaces_wanted );
+                reduce_lp_indentation( $i_first_comma, $spaces_wanted );
 
                 # redo the math
                 my $columns =
@@ -6540,10 +6514,6 @@ sub set_list_breakpoints {
       || ( $formatted_lines < 2 )
       || ( $unused_columns > $max_allowed_sparsity * $formatted_columns ) ) )
     {
-
-        # revert to standard indentation if we are not
-        # going to format this list..EXPERIMENTAL..deactivated
-        #my $deleted = undo_gnu_indentation( $i_first_comma, 100000 );
 
         # use old breakpoints if this is more than 2 lines
         # (otherwise, the list breakup will be at the mercy of the
@@ -7073,15 +7043,20 @@ package Perltidy::IndentationItem;
 use constant GNU_ITEM_SPACES             => 0;  # total leading white spaces
 use constant GNU_ITEM_LEVEL              => 1;  # the indentation 'level'
 use constant GNU_ITEM_CI_LEVEL           => 2;  # the 'continuation level'
-use constant GNU_ITEM_AVAILABLE_SPACES   => 3;  # how many spaces we could free
+use constant GNU_ITEM_AVAILABLE_SPACES   => 3;  # how many left spaces available
+                                                # for this level
 use constant GNU_ITEM_CLOSED             => 4;  # tells if we saw a closing '}'
 use constant GNU_ITEM_COMMA_COUNT        => 5;  # how many commas at this level?
 use constant GNU_ITEM_SEQUENCE_NUMBER    => 6;  # output batch number
 use constant GNU_ITEM_INDEX              => 7;  # index in output batch list
 use constant GNU_ITEM_HAVE_CHILD         => 8;  # any dependents?
-use constant GNU_ITEM_RECOVERABLE_SPACES => 9;  # desired extra rhs indentation
-use constant GNU_ITEM_ALIGN_PAREN        => 10; # align with opening structure?
-use constant GNU_ITEM_MARKED             => 11; # marked by corrector logic
+use constant GNU_ITEM_RECOVERABLE_SPACES => 9;  # how many spaces to the right
+                                                # we would like to move to get
+                                                # alignment (negative if left)
+use constant GNU_ITEM_ALIGN_PAREN        => 10; # do we want to try to align
+                                                # with an opening structure?
+use constant GNU_ITEM_MARKED             => 11; # if visited by corrector logic
+use constant GNU_ITEM_STACK_DEPTH        => 12; # indentation nesting depth
 
 sub new {
 
@@ -7090,7 +7065,7 @@ sub new {
     # a reference to an anonymous array of associated variables.
     # See constants GNU_ITEM_xxx for storage scheme.
     my ( $class, $spaces, $level, $ci_level, $available_spaces, $index,
-      $gnu_sequence_number, $align_paren ) = @_;
+      $gnu_sequence_number, $align_paren, $stack_depth ) = @_;
     my $closed            = 0;
     my $comma_count       = 0;
     my $have_child        = 0;
@@ -7103,7 +7078,41 @@ sub new {
         $gnu_sequence_number, $index,
         $have_child,          $want_right_spaces,
         $align_paren,         $marked,
+        $stack_depth
     ], $class;
+}
+
+sub permanently_decrease_AVAILABLE_SPACES {
+
+    # make a permanent reduction in the available indentation spaces
+    # at one indentation item.  NOTE: if there are child nodes, their
+    # total SPACES must be reduced by the caller.
+    my ($item, $spaces) = @_;
+    $item->decrease_AVAILABLE_SPACES($spaces);
+    $item->decrease_SPACES($spaces);
+    $item->set_RECOVERABLE_SPACES(0);
+}
+
+sub tentatively_decrease_AVAILABLE_SPACES{
+
+    # We are asked to tentatively delete $spaces_needed of indentation
+    # for a indentation item.  We may want to undo this later.  NOTE: if
+    # there are child nodes, their total SPACES must be reduced by the
+    # caller.
+    my ($item,$spaces_needed) = @_;
+    my $available_spaces = $item->get_AVAILABLE_SPACES();
+    my $deleted_spaces =
+      ( $available_spaces > $spaces_needed ) ? $spaces_needed :
+      $available_spaces;
+    $item->decrease_AVAILABLE_SPACES($deleted_spaces);
+    $item->decrease_SPACES($deleted_spaces);
+    $item->increase_RECOVERABLE_SPACES($deleted_spaces);
+    return $deleted_spaces;
+}
+
+sub get_STACK_DEPTH {
+    my ($self) = @_;
+    return $self->[GNU_ITEM_STACK_DEPTH];
 }
 
 sub get_SPACES {
@@ -7152,6 +7161,14 @@ sub get_ALIGN_PAREN {
 
 sub get_RECOVERABLE_SPACES {
     my ($self) = @_;
+    return $self->[GNU_ITEM_RECOVERABLE_SPACES];
+}
+
+sub set_RECOVERABLE_SPACES {
+    my ( $self, $value ) = @_;
+    if ( defined($value) ) {
+        $self->[GNU_ITEM_RECOVERABLE_SPACES] = $value;
+    }
     return $self->[GNU_ITEM_RECOVERABLE_SPACES];
 }
 
@@ -7347,10 +7364,17 @@ sub get_SPACES {
 
 sub get_RECOVERABLE_SPACES {
 
-    # return the number of spaces to the right that we might be able
-    # shift a group of lines with the same indentation
+    # return the number of spaces (+ means shift right, - means shift left)
+    # that we would like to shift a group of lines with the same indentation
+    # to get them to line up with their opening parens
     my ($indentation) = @_;
     return ref($indentation) ? $indentation->get_RECOVERABLE_SPACES() : 0;
+}
+
+sub get_STACK_DEPTH {
+
+    my ($indentation) = @_;
+    return ref($indentation) ? $indentation->get_STACK_DEPTH() : 0;
 }
 
 sub append_line {
@@ -7447,7 +7471,7 @@ The log file warns the user if there are any such tabs.
         # If we know that this line will get flushed out by itself because
         # of level changes, we can leave the extra_indent_ok flag set.
         # That way, if we get an external flush call, we will still be
-        # able to do some -gnu alignment if necessary.
+        # able to do some -lp alignment if necessary.
         $extra_indent_ok = ( $is_terminal_statement && $level > $group_level );
 
         $last_comment_column = 0;
@@ -7480,7 +7504,9 @@ The log file warns the user if there are any such tabs.
             if ( $extra_indent_ok && ref($indentation) ) {
                 my $extra_indentation_spaces_wanted =
                   get_RECOVERABLE_SPACES($indentation);
-                if ( $extra_indentation_spaces_wanted > 0 ) {
+                #if ( $extra_indentation_spaces_wanted > 0 ) {
+                # EXPERIMENTAL
+                if ( $extra_indentation_spaces_wanted ) {
                     my $avail =
                       $rOpts->{'maximum-line-length'} -
                       ( length( $$rfields[0] ) + $leading_space_count );
@@ -8087,7 +8113,7 @@ This old coding is no longer necessary:
 
 =cut
     #----------------------------------------------------------
-    # Define any extra indentation space (for the -gnu option).  
+    # Define any extra indentation space (for the -lp option).  
     # Here is why:
     # If a list has side comments, sub scan_list must dump the
     # list before it sees everything.  When this happens, it sets

@@ -342,8 +342,7 @@ When the B<-lp> method is used for list indentation, excessive space
 could cause an undesirable compression of a table against the right
 margin, even if there is enough space to fit.  To prevent this, an upper
 limit can be placed on the allowable increment of indentation spaces
-with the parameter B<-mci=n>.  This parameter should seldom be required,
-and the default is for unlimited indentation.
+with the parameter B<-mci=n>.  The default is B<n=40>.
 
 =item B<-ibc>,  B<--indent-block-comments>
 
@@ -1004,7 +1003,7 @@ perl2web(1), perlstyle(1)
 
 =head1 VERSION
 
-This man page documents perltidy version 20010612.
+This man page documents perltidy version 20010617.
 
 =head1 AUTHOR
 

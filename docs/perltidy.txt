@@ -276,7 +276,7 @@ OPTIONS
          my $level =   # -ci=0    
          ( $max_index_to_go >= 0 ) ? $levels_to_go[0] : $last_output_level;
 
-    List indentation using -gnu, --gnu-style-indentation
+    List indentation using -lp, --line-up-parentheses
         By default, perltidy indents lists with 4 spaces, or whatever value
         is specified with -i=n. Here is a small list formatted in this way:
 
@@ -285,30 +285,38 @@ OPTIONS
                 'Nov', 'Dec'
             );
 
-        Use the -gnu flag to add extra indentation to cause the data to
-        begin past the opening paren (or square bracket or curly brace).
-        With this option set, the above list would become:
+        Use the -lp flag to add extra indentation to cause the data to begin
+        past the opening parentheses of a sub call or list, or opening
+        square bracket of an anonymous array, or opening curly brace of an
+        anonymous hash. With this option set, the above list would become:
 
             @month_of_year = (
                                'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug',
                                'Sep', 'Oct', 'Nov', 'Dec'
             );
 
-        If the available line length of 80 columns ( or whatever is
-        specified with -l=n ) does not permit this much space, perltidy will
-        use less.
+        If the available line length (see -l=n ) does not permit this much
+        space, perltidy will use less.
 
-        This option has no effect on code BLOCKS, which always use whatever
-        is specified with -i=n. Also, the existance of line breaks and/or
-        comments between the opening and closing parens may cause perltidy
-        to revert to its default method.
+        This option has no effect on code BLOCKS, such as if/then/else
+        blocks, which always use whatever is specified with -i=n. Also, the
+        existance of line breaks and/or block comments between the opening
+        and closing parens may cause perltidy to temporarily revert to its
+        default method.
+
+        Note: The -lp option may not be used together with the -t tabs
+        option. If -t is specified, it will be ignored.
+
+        In addition, any parameter which restricts the ability of perltidy
+        to choose newlines will all conflict with -lp and will cause -lp to
+        be deactivated. These include -io, -fnl, -nanl, and -ndnl.
 
     -mci=n, --maximum-continuation-indentation=n
-        When the -gnu method is used for list indentation, excessive space
-        may cause an undesirable compression of a table against the right
+        When the -lp method is used for list indentation, excessive space
+        could cause an undesirable compression of a table against the right
         margin, even if there is enough space to fit. To prevent this, an
         upper limit can be placed on the allowable increment of indentation
-        spaces with the parameter -mci=n. The default value of n is 40.
+        spaces with the parameter -mci=n. The default is n=40.
 
     -ibc, --indent-block-comments
         Block comments, meaning full-line comments, normally look best when
@@ -519,8 +527,10 @@ OPTIONS
     -bl, --opening-brace-on-new-line
         Use the flag -bl to place the opening brace on a new line:
 
-          if ( $input_file eq '-' ) 
-          {                             # -bl
+          if ( $input_file eq '-' )    # -bl 
+          {                          
+              important_function();
+          }
 
         This flag applies to all structural blocks, including sub's.
 
@@ -529,10 +539,23 @@ OPTIONS
 
           if ( $input_file eq '-' ) {   # -nbl (default)
 
+    -bli, --brace-left-and-indent
+        The flag -bli is the same as -bl but in addition it causes one unit
+        of continuation indentation ( see -ci ) to be placed before an
+        opening and closing brace associated with the keywords if, elsif,
+        else, unless, for, foreach, sub, while, until, and also with a
+        preceding label.
+
+        For example,
+
+                if ( $input_file eq '-' )    # -bli
+                  {
+                    important_function();
+                  }
+
     -bar, --opening-brace-always-on-right
-        However, the default style, -nbl places the opening brace on a new
-        line if it does not fit on the same line as the opening keyword,
-        like this:
+        The default style, -nbl places the opening brace on a new line if it
+        does not fit on the same line as the opening keyword, like this:
 
                 if ( $bigwasteofspace1 && $bigwasteofspace2
                   || $bigwasteofspace3 && $bigwasteofspace4 )
@@ -548,8 +571,7 @@ OPTIONS
                     big_waste_of_time();
                 }
 
-        A conflict occurs if both -bl and -bar are specified, so don't do
-        it.
+        A conflict occurs if both -bl and -bar are specified.
 
     -dnl, --delete-old-newlines
         By default, perltidy first deletes all old line break locations, and
@@ -899,7 +921,7 @@ SEE ALSO
     perl2web(1), perlstyle(1)
 
 VERSION
-    This man page documents perltidy version 20010612.
+    This man page documents perltidy version 20010617.
 
 AUTHOR
       Steven L. Hancock

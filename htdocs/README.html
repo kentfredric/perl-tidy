@@ -29,15 +29,14 @@
 <HR>
 <P>
 <H1><A NAME="welcome to perltidy!">Welcome to perltidy!</A></H1>
-<P>Perltidy is a tool to indent and reformat perl scripts.  It is
-considered by its author to be stable, although there will always be
-formatting improvements to be made, and suggestions are welcome.</P>
+<P>Perltidy is a tool to indent and reformat perl scripts.</P>
 <P>Perltidy is free software released under the GNU General Public
 License -- please see the included file ``LICENSE'' for details.</P>
 <P>There are two source distribution files, a <EM>.tgz</EM> ``tarball'' for unix
 systems and a zip file, <EM>.zip</EM> for Windows.  The only differences is
 that the line endings have been changed to &lt;cr&gt;&lt;lf&gt; for the Windows
 version.</P>
+<P>Please see the ChangeLog for notices of any recent updates.</P>
 <P>
 <H2><A NAME="installation  unix">Installation - Unix</A></H2>
 <P>Try this quick test. Look at <EM>lextest.pl</EM> with your editor - it's a mess.</P>
@@ -49,7 +48,7 @@ should see a nicely formatted version of the program, in which perltidy
 has added indentation, whitespace, and line breaks.  This simple example
 illustrates what perltidy does.</P>
 <P>Perltidy does not require any special modules.  We just have to get the
-script in your path and, optionally, install a man page.</P>
+script in your path and, optionally, install two man pages.</P>
 <P>1. If the script is not executable, use</P>
 <PRE>
  chmod +x perltidy</PRE>
@@ -67,7 +66,7 @@ system, you might find the path to perl with the command 'which perl'.</P>
 somewhere in your home directory.  Then issue the command</P>
 <PRE>
  make install</PRE>
-<P>This installs perltidy and the man page perltidy.1.</P>
+<P>This installs perltidy and the man pages perltidy.1 and perl2web.1.</P>
 <P>5. Test the installation using</P>
 <PRE>
  perltidy -h</PRE>
@@ -76,7 +75,7 @@ somewhere in your home directory.  Then issue the command</P>
  man perltidy</PRE>
 <P>which should bring up the manual page if you installed it.</P>
 <P>If you ever want to remove perltidy, you can remove perltidy and its man
-page by hand or use</P>
+pages by hand or use</P>
 <PRE>
  make uninstall</PRE>
 <P>
@@ -140,6 +139,10 @@ will use an underscore character instead of a dot, so</P>
 <H2><A NAME="bug notices for current users">Bug Notices for Current Users</A></H2>
 <P>Please see the ChangeLog for details.  The most serious bugs that have
 been reported are as follows:</P>
+<P>Release 20010608 had a bug with the -t option in which a -t
+would be added before the last line of a multiline quote or pattern.
+Scripts formatted with -t on this version should be run once with
+the -chk option to see if this might have happened.</P>
 <P>Prior to release 20010608, there was a bug which perltidy removed trailing 
 white space from multiline quotes.</P>
 <P>Prior to release 20010406, there was a bug which perltidy accidentally
@@ -162,9 +165,8 @@ look for this situation and issue a warning.</P>
 <P>
 <HR>
 <H1><A NAME="what next">WHAT NEXT</A></H1>
-<P>The documentation has been supplied in three formats: as the man page, as an
-html file, and as a text file.  These were produced from perltidy.pod
-and perl2web.pod.</P>
+<P>The documentation has been supplied as man pages, as 
+html files, and as text files.</P>
 <P>Reading the brief tutorial should help you use perltidy effectively.</P>
 <P>These documents can also be found at <A HREF="http://perltidy.sourceforge.net">http://perltidy.sourceforge.net</A></P>
 <P>Perltidy is still being developed, so please check sourceforge occasionally
@@ -176,17 +178,14 @@ on freshmeat.net.</P>
 <P>If you see ways to improve this document for the particular system on
 which you install perltidy, please let the author know so that it can be
 updated.</P>
-<P>Comments and suggestions are welcome.  If you feel that you have
-encountered a bug, please send an email with a brief description of the
-problem to:</P>
+<P>Bug reports, comments and suggestions are welcome.  Attach the smallest
+piece of code which demonstrates the bug or issue, plus a .LOG file from
+a perltidy run, if appropriate.  Your efforts are greatly appreciated.</P>
+<P>Thank You</P>
 <PRE>
  Steve Hancock
  perltidy at users.sourceforge.net
  <A HREF="http://perltidy.sourceforge.net">http://perltidy.sourceforge.net</A></PRE>
-<P>Attach the smallest piece of code which demonstrates the bug, plus a
-.LOG file from a perltidy run, if appropriate.  Your efforts are
-greatly appreciated.</P>
-<P>Thank You</P>
 
 </BODY>
 

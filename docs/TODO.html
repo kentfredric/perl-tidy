@@ -14,8 +14,9 @@
 	<LI><A HREF="#perltidy todo list">Perltidy TODO List</A></LI>
 	<UL>
 
-		<LI><A HREF="#hanging comments">Hanging comments</A></LI>
-		<LI><A HREF="#gnu/emacs style indentation">Gnu/emacs style indentation</A></LI>
+		<LI><A HREF="#clean up a few lp issues">Clean up a few -lp issues</A></LI>
+		<LI><A HREF="#add more formatting options">Add more formatting options</A></LI>
+		<LI><A HREF="#automated testing">Automated testing</A></LI>
 		<LI><A HREF="#documentation">Documentation</A></LI>
 		<LI><A HREF="#bugs">BUGS</A></LI>
 		<LI><A HREF="#tokenization issues">Tokenization issues</A></LI>
@@ -30,34 +31,19 @@
 <H1><A NAME="perltidy todo list">Perltidy TODO List</A></H1>
 <P>This is a ``wish-list'' of features to add and things to do.</P>
 <P>
-<H2><A NAME="hanging comments">Hanging comments</A></H2>
-<P>We would like to be able to recognize and format hanging side comments 
-as shown below, rather than format them as full-line block comments.</P>
-<PRE>
-  my $IGNORE = 0;    # number of initial packets to ignore
-                     # Not resending old packets on startup.
-                     # Get old packets from the database.</PRE>
-<P>This update is planned for the near future.</P>
+<H2><A NAME="clean up a few lp issues">Clean up a few -lp issues</A></H2>
+<P>The new -lp feature seems to be working well, but there are a few
+situations where it might be improved.  In particular, it needs
+to be updated to handle lists following certain perl keywords.</P>
 <P>
-<H2><A NAME="gnu/emacs style indentation">Gnu/emacs style indentation</A></H2>
-<P>We would like to be able to indent tables and function calls in the
-manner sometimes associated with emacs or GNU:</P>
-<PRE>
-    %TV = (
-            flintstones =&gt; {
-                             series  =&gt; &quot;flintstones&quot;,
-                             nights  =&gt; [qw(monday thursday friday)],
-                             members =&gt; [
-                                          {
-                                              name =&gt; &quot;fred&quot;,
-                                              role =&gt; &quot;lead&quot;,
-                                              age  =&gt; 36,
-                                          },
-   (...)</PRE>
-<P>Programming for this is underway.  An experimental implementation, which
-is selected with the '-gnu' flag, is being tested.  It formats
-lists, without side comments, at the present time.  It does not format
-sub call lists.</P>
+<H2><A NAME="add more formatting options">Add more formatting options</A></H2>
+<P>Although there are many options already, there is still a need for
+more options to help programmers match particular styles.  An example
+would be the manner in which terminal parens of lists are handled.</P>
+<P>
+<H2><A NAME="automated testing">Automated testing</A></H2>
+<P>An automated method for testing many combinations of parameter options 
+on a variety of test files would be very helpful.</P>
 <P>
 <H2><A NAME="documentation">Documentation</A></H2>
 <P>A FAQ or maybe COOKBOOK needs to be written, to explain some of the

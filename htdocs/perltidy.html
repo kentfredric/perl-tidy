@@ -302,7 +302,7 @@ a long line is broken.  The default is n=2, illustrated here:
  my $level =   # -ci=0    
  ( $max_index_to_go &gt;= 0 ) ? $levels_to_go[0] : $last_output_level;</PRE>
 <P></P>
-<DT><STRONG><A NAME="item_List_indentation_using_%2Dgnu%2C_%2D%2Dgnu%2Dstyle">List indentation using <STRONG>-gnu</STRONG>, <STRONG>--gnu-style-indentation</STRONG></A></STRONG><BR>
+<DT><STRONG><A NAME="item_List_indentation_using_%2Dlp%2C_%2D%2Dline%2Dup%2D">List indentation using <STRONG>-lp</STRONG>, <STRONG>--line-up-parentheses</STRONG></A></STRONG><BR>
 <DD>
 By default, perltidy indents lists with 4 spaces, or whatever value
 is specified with <STRONG>-i=n</STRONG>.  Here is a small list formatted in this way:
@@ -311,28 +311,36 @@ is specified with <STRONG>-i=n</STRONG>.  Here is a small list formatted in this
         'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct',
         'Nov', 'Dec'
     );</PRE>
-<P>Use the <STRONG>-gnu</STRONG> flag to add extra indentation to cause the data to begin
-past the opening paren (or square bracket or curly brace).  With this
-option set, the above list would become:</P>
+<P>Use the <STRONG>-lp</STRONG> flag to add extra indentation to cause the data to begin
+past the opening parentheses of a sub call or list, or opening square
+bracket of an anonymous array, or opening curly brace of an anonymous
+hash.  With this option set, the above list would become:</P>
 <PRE>
     @month_of_year = (
                        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug',
                        'Sep', 'Oct', 'Nov', 'Dec'
     );</PRE>
-<P>If the available line length of 80 columns ( or whatever is specified with
-<STRONG>-l=n</STRONG> ) does not permit this much space, perltidy will use less.</P>
-<P>This option has no effect on code BLOCKS, which always use whatever is
-specified with <STRONG>-i=n</STRONG>.  Also, the existance of line breaks and/or
-comments between the opening and closing parens may cause perltidy to
-revert to its default method.</P>
+<P>If the available line length (see <STRONG>-l=n</STRONG> ) does not permit this much 
+space, perltidy will use less.</P>
+<P>This option has no effect on code BLOCKS, such as if/then/else blocks,
+which always use whatever is specified with <STRONG>-i=n</STRONG>.  Also, the
+existance of line breaks and/or block comments between the opening and
+closing parens may cause perltidy to temporarily revert to its default
+method.</P>
+<P>Note: The <STRONG>-lp</STRONG> option may not be used together with the <STRONG>-t</STRONG> tabs option.
+If <STRONG>-t</STRONG> is specified, it will be ignored.</P>
+<P>In addition, any parameter which restricts the ability of perltidy to
+choose newlines will all conflict with <STRONG>-lp</STRONG> and will cause <STRONG>-lp</STRONG> to
+be deactivated.  These include 
+<STRONG>-io</STRONG>, <STRONG>-fnl</STRONG>, <STRONG>-nanl</STRONG>, and <STRONG>-ndnl</STRONG>.</P>
 <P></P>
 <DT><STRONG><A NAME="item_%2Dmci%3Dn%2C_%2D%2Dmaximum%2Dcontinuation%2Dinden"><STRONG>-mci=n</STRONG>, <STRONG>--maximum-continuation-indentation=n</STRONG></A></STRONG><BR>
 <DD>
-When the <STRONG>-gnu</STRONG> method is used for list indentation, excessive space
-may cause an undesirable compression of a table against the right
+When the <STRONG>-lp</STRONG> method is used for list indentation, excessive space
+could cause an undesirable compression of a table against the right
 margin, even if there is enough space to fit.  To prevent this, an upper
 limit can be placed on the allowable increment of indentation spaces
-with the parameter <STRONG>-mci=n</STRONG>.  The default value of <STRONG>n</STRONG> is 40.
+with the parameter <STRONG>-mci=n</STRONG>.  The default is <STRONG>n=40</STRONG>.
 <P></P>
 <DT><STRONG><A NAME="item_%2Dibc%2C_%2D%2Dindent%2Dblock%2Dcomments"><STRONG>-ibc</STRONG>,  <STRONG>--indent-block-comments</STRONG></A></STRONG><BR>
 <DD>
@@ -548,13 +556,49 @@ alternatives:
 <DD>
 Use the flag <STRONG>-bl</STRONG> to place the opening brace on a new line:
 <PRE>
-  if ( $input_file eq '-' ) 
-  {                             # -bl</PRE>
+  if ( $input_file eq '-' )    # -bl 
+  {                          
+      important_function();
+  }</PRE>
 <P>This flag applies to all structural blocks, including sub's.</P>
 <P>The default style, <STRONG>-nbl</STRONG>, places an opening brace on the same line as
 the keyword introducing it.  For example,</P>
 <PRE>
   if ( $input_file eq '-' ) {   # -nbl (default)</PRE>
+<P></P>
+<DT><STRONG><A NAME="item_%2Dbli%2C_%2D%2Dbrace%2Dleft%2Dand%2Dindent"><STRONG>-bli</STRONG>,    <STRONG>--brace-left-and-indent</STRONG></A></STRONG><BR>
+<DD>
+The flag <STRONG>-bli</STRONG> is the same as <STRONG>-bl</STRONG> but in addition it causes one 
+unit of continuation indentation ( see <STRONG>-ci</STRONG> ) to be placed before 
+an opening and closing brace associated with the keywords 
+<STRONG>if</STRONG>, <STRONG>elsif</STRONG>, <STRONG>else</STRONG>, <STRONG>unless</STRONG>, <STRONG>for</STRONG>, <STRONG>foreach</STRONG>, <STRONG>sub</STRONG>, 
+<STRONG>while</STRONG>, <STRONG>until</STRONG>, and also with a preceding label.
+<P>For example,</P>
+<PRE>
+        if ( $input_file eq '-' )    # -bli
+          {
+            important_function();
+          }</PRE>
+<P></P>
+<DT><STRONG><A NAME="item_%2Dbar%2C_%2D%2Dopening%2Dbrace%2Dalways%2Don%2Dri"><STRONG>-bar</STRONG>,    <STRONG>--opening-brace-always-on-right</STRONG></A></STRONG><BR>
+<DD>
+The default style, <STRONG>-nbl</STRONG> places the opening brace on a new
+line if it does not fit on the same line as the opening keyword, like
+this:
+<PRE>
+        if ( $bigwasteofspace1 &amp;&amp; $bigwasteofspace2
+          || $bigwasteofspace3 &amp;&amp; $bigwasteofspace4 )
+        {
+            big_waste_of_time();
+        }</PRE>
+<P>To force the opening brace to always be on the right, use the <STRONG>-bar</STRONG>
+flag.  In this case, the above example becomes</P>
+<PRE>
+        if ( $bigwasteofspace1 &amp;&amp; $bigwasteofspace2
+          || $bigwasteofspace3 &amp;&amp; $bigwasteofspace4 ) {
+            big_waste_of_time();
+        }</PRE>
+<P>A conflict occurs if both <STRONG>-bl</STRONG> and <STRONG>-bar</STRONG> are specified.</P>
 <P></P>
 <DT><STRONG><A NAME="item_%2Ddnl%2C_%2D%2Ddelete%2Dold%2Dnewlines"><STRONG>-dnl</STRONG>,  <STRONG>--delete-old-newlines</STRONG></A></STRONG><BR>
 <DD>
@@ -887,7 +931,7 @@ confusing filenames such as <EM>somefile.tdy.tdy.tdy</EM>.
 <P>
 <HR>
 <H1><A NAME="version">VERSION</A></H1>
-<P>This man page documents perltidy version 20010610.</P>
+<P>This man page documents perltidy version 20010617.</P>
 <P>
 <HR>
 <H1><A NAME="author">AUTHOR</A></H1>

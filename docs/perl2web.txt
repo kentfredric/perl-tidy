@@ -213,7 +213,7 @@ SEE ALSO
     perltidy(1)
 
 VERSION
-    This man page documents perltidy version 20010610.
+    This man page documents perltidy version 20010617.
 
 AUTHOR
       Steven L. Hancock

@@ -38,9 +38,10 @@ uninstall:
 
 ###############################################################
 # The rest of this is just to build the distribution file
+# I've removed pods because they waste space and can be obtained from CVS
 ###############################################################
 
-VERSION=20010612
+VERSION=20010617
 PROG=$(PROGRAM)-$(VERSION)
 TMPDIR=/tmp/$(PROG)
 dist:
@@ -58,9 +59,9 @@ dist:
 	cp ../docs/perl2web.1 $(TMPDIR)
 	cp ../docs/perltidy.1 $(TMPDIR)
 	cp ../test/*.t $(TMPDIR)/test
-	cp ../docs/perltidy.pod $(TMPDIR)/docs
-	cp ../docs/perl2web.pod $(TMPDIR)/docs
-	cp ../docs/tutorial.pod $(TMPDIR)/docs
+	#cp ../docs/perltidy.pod $(TMPDIR)/docs
+	#cp ../docs/perl2web.pod $(TMPDIR)/docs
+	#cp ../docs/tutorial.pod $(TMPDIR)/docs
 	cp ../docs/testfile.pl $(TMPDIR)/docs
 #	cp ../docs/ChangeLog.pod $(TMPDIR)/docs
 #	cp ../docs/BUGS.pod $(TMPDIR)/docs
