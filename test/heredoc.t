@@ -152,3 +152,8 @@ my $a = << "gobble'de'gook\"weird";
 #9 OK
 gobble'de'gook"weird
 print "a=$a";
+
+# Do not break this long line after here target
+pp_addhdr(<<"EOD") if defined $Config{'o_nonblock'} && $Config{'o_nonblock'} ne 'O_NONBLOCK';
+#define O_NONBLOCK $Config{'o_nonblock'}
+EOD

@@ -6,6 +6,27 @@
 
 =head2 2002 xx xx 
 
+ -List formatting improved for certain lists with long initial terms, such
+ as often occur with 'printf' and 'sprintf'.  A long initial term is now
+ placed on a line by itself:
+
+    OLD:
+    printf(
+        "%-5s %-20s %-7s %-9s %-3s %-5s %-7s %-7s %-7s %-4s %s\n", '----',
+        '-------', '----',
+        '-------', '--',
+        '----',    '-----',
+        '-----',   '-----',
+        '----',    '----'
+    );
+
+    NEW:
+    printf(
+        "%-5s %-20s %-7s %-9s %-3s %-5s %-7s %-7s %-7s %-4s %s\n",
+        '----',  '-------', '----',  '-------', '--', '----',
+        '-----', '-----',   '-----', '----',    '----'
+    );
+
  -Merged VMS filename handling patch sent by Michael Cartmell.  (Invalid
   output filenames were being created in some cases). 
 

@@ -55,13 +55,13 @@ use vars qw{
 
 @EXPORT = qw( &perltidy );
 
-eval "use diagnostics";
+## eval "use diagnostics";
 { eval "use IO::Scalar";      $missing_io_scalar      = $@; }
 { eval "use IO::ScalarArray"; $missing_io_scalararray = $@; }
 use IO::File;
 
 BEGIN {
-    ($VERSION=q($Id: perltidy,v 1.83 2002/01/12 02:57:40 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ($VERSION=q($Id: perltidy,v 1.84 2002/01/15 05:54:26 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 # Preloaded methods go here.
@@ -136,307 +136,326 @@ basic perltidy distribution.
 
 =cut
 
-sub perltidy {
+{
+    my $source_object;
+    my $sink_object;
 
-    my %defaults = (
-        source      => undef,
-        destination => undef,
+    sub cleanup {
 
-        # .. more to be added
-    );
-
-    my %input_hash = @_;
-    if ( my @bad_keys = grep { !exists $defaults{$_} } keys %input_hash ) {
-        local $" = ')(';
-        confess
-          "unknown parameters in call to PerlTidy::perltidy: (@bad_keys)\n";
+        # remove any temporary files 
+        # may be called if interrupted
+        $sink_object->unlink_copy()   if $sink_object;
+        $source_object->unlink_copy() if $source_object;
     }
 
-    %input_hash = ( %defaults, %input_hash );
-    my $source_array      = $input_hash{'source'};
-    my $destination_array = $input_hash{'destination'};
+    sub perltidy {
 
-    # VMS file names are restricted to a 40.40 format, so we append _tdy
-    # instead of .tdy, etc. (but see also sub check_vms_filename)
-    my $dot;
-    my $dot_pattern;
-    if ( $^O eq 'VMS' ) {
-        $dot         = '_';
-        $dot_pattern = '_';
-    }
-    else {
-        $dot         = '.';
-        $dot_pattern = '\.';    # must escape for use in regex
-    }
+        my %defaults = (
+            source      => undef,
+            destination => undef,
 
-    # handle command line options
-    my ( $rOpts, $config_file, $rraw_options, $pending_complaint, $saw_extrude )
-      = process_command_line();
-    PerlTidy::Formatter::check_options($rOpts);
-    if ( $rOpts->{'html'} ) {
-        PerlTidy::HtmlWriter->check_options($rOpts);
-    }
-
-    # create a diagnostics object if requested
-    my $diagnostics_object = undef;
-    if ( $rOpts->{'DIAGNOSTICS'} ) {
-        $diagnostics_object = PerlTidy::Diagnostics->new();
-    }
-
-    # no filenames should be given if input is from an array
-    if ($source_array) {
-        if ( @ARGV > 0 ) {
-            die
-"You may not specify any filenames when a source array is given\n";
-        }
-
-        # we'll stuff the source array into ARGV 
-        unshift ( @ARGV, $source_array );
-    }
-
-    # use stdin by default if no source array and no args
-    else {
-        unshift ( @ARGV, '-' ) unless @ARGV;
-    }
-
-    # loop to process all files in argument list
-    my $number_of_files = @ARGV;
-    my $input_file;
-    my $formatter = undef;
-    my $tokenizer = undef;
-
-    # Set a flag here for any system which does not have a shell to
-    # expand wildcard filenames like '*.pl'.  In theory it should also
-    # be ok to set the flag for any system, but I prefer not to do so
-    # out of robustness concerns.
-    my $use_glob = ( $^O =~ /^(MSWin32|msdos|dos|win32)$/ );
-
-    while ( $input_file = shift @ARGV ) {
-        my $fileroot;
-
-        #---------------------------------------------------------------
-        # determine the input file name
-        #---------------------------------------------------------------
-        if ( $input_file eq '-' ) {    # '-' indicates input from STDIN
-            $fileroot = "perltidy";    # root name to use for .ERR, .LOG, etc
-        }
-        elsif ($source_array) {
-            $fileroot = "perltidy";
-        }
-        else {
-            $fileroot = $input_file;
-
-            unless ( -e $input_file ) {
-
-                # file doesn't exist, maybe we have a wildcard
-                if ($use_glob) {
-
-                    # be sure files exist, because glob('p.q') always
-                    # returns 'p.q' even if 'p.q' doesn't exist.
-                    my @files = grep { -e $_ } glob($input_file);
-                    if (@files) {
-                        unshift @ARGV, @files;
-                        next;
-                    }
-                }
-
-                print "skipping file: $input_file: does not exist\n";
-                next;
-            }
-
-            unless ( -f $input_file ) {
-                print "skipping: $input_file: not a regular file\n";
-                next;
-            }
-
-            unless ( ( -T $input_file ) || $rOpts->{'force-read-binary'} ) {
-                print
-                  "skipping file: $input_file: Non-text (override with -f)\n";
-                next;
-            }
-
-            # we should have a valid filename now
-            if ( $^O eq 'VMS' ) {
-                ( $fileroot, $dot ) = check_vms_filename($input_file);
-            }
-        }
-
-        # Skip files with same extension as the output files
-        # because this can lead to a messy situation
-        # with files like script.tdy.tdy.tdy ... when you rerun
-        # perltidy over and over with wildcard input
-        my $output_extension = $rOpts->{'html'} ? "html" : "tdy";
-        if ( defined( $rOpts->{'output-file-extension'} ) ) {
-            $output_extension = $rOpts->{'output-file-extension'};
-        }
-
-        if (
-            !$source_array
-            && ( $input_file =~
-                /($dot_pattern)($output_extension|LOG|DEBUG|ERR|TEE)$/ )
-            || ( $input_file eq 'DIAGNOSTICS' )
-          )
-        {
-            print "skipping file: $input_file: wrong extension\n";
-            next;
-        }
-
-        # the 'source_object' supplies a method to read the input file
-        my $source_object = PerlTidy::LineSource->new( $input_file, $rOpts );
-        next unless ($source_object);
-
-        # register this file name with the Diagnostics package
-        $diagnostics_object->set_input_file($input_file) if $diagnostics_object;
-
-        #---------------------------------------------------------------
-        # determine the output file name
-        #---------------------------------------------------------------
-        my $output_file = undef;
-
-        if ( $rOpts->{'outfile'} ) {
-
-            if ( $number_of_files <= 1 ) {
-
-                if ( $rOpts->{'standard-output'} ) {
-                    die "You may not use -o and -st together\n";
-                }
-                elsif ($destination_array) {
-                    die
-"You may not specify a destination array and -o together\n";
-                }
-                $output_file = $rOpts->{outfile};
-
-                # make sure user gives a file name after -o
-                if ( $output_file =~ /^-/ ) {
-                    die "You must specify a valid filename after -o\n";
-                }
-            }
-            else {
-                die "You may not use -o with more than one input file\n";
-            }
-        }
-        elsif ( $rOpts->{'standard-output'} ) {
-            if ($destination_array) {
-                die
-                  "You may not specify a destination array and -st together\n";
-            }
-            $output_file = '-';
-
-            if ( $number_of_files <= 1 ) {
-            }
-            else {
-                die "You may not use -st with more than one input file\n";
-            }
-        }
-        elsif ($destination_array) {
-            $output_file = $destination_array;
-        }
-        elsif ($source_array) {    # source but no destination goes to stdout
-            $output_file = '-';
-        }
-        elsif ( $input_file eq '-' ) {
-            $output_file = $input_file;
-        }
-        else {
-            $output_file = $fileroot . $dot . $output_extension;
-        }
-
-        # the 'sink_object' knows how to write the output file
-        my $tee_file    = $fileroot . $dot . "TEE";
-        my $sink_object =
-          PerlTidy::LineSink->new( $output_file, $tee_file, $rOpts );
-
-        #---------------------------------------------------------------
-        # initialize the error logger
-        #---------------------------------------------------------------
-        my $warning_file = $fileroot . $dot . "ERR";
-        my $log_file     = $fileroot . $dot . "LOG";
-
-        my $logger_object =
-          PerlTidy::Logger->new( $rOpts, $log_file, $warning_file,
-            $saw_extrude );
-        write_logfile_header( $rOpts, $logger_object, $config_file,
-            $rraw_options );
-        if ($pending_complaint) {
-            $logger_object->complain($pending_complaint);
-        }
-
-        #---------------------------------------------------------------
-        # initialize the debug object, if any
-        #---------------------------------------------------------------
-        my $debugger_object = undef;
-        if ( $rOpts->{DEBUG} ) {
-            $debugger_object =
-              PerlTidy::Debugger->new( $fileroot . $dot . "DEBUG" );
-        }
-
-        # we have to delete any old formatter because, for safety, 
-        # formatter will check to see that there is only one.
-        $formatter = undef;
-
-        #---------------------------------------------------------------
-        # create a formatter for this file : html writer or pretty printer
-        #---------------------------------------------------------------
-        if ( $rOpts->{'html'} ) {
-            $formatter = PerlTidy::HtmlWriter->new( $fileroot, $output_file );
-        }
-
-        else {
-            $formatter = PerlTidy::Formatter->new(
-                logger_object      => $logger_object,
-                diagnostics_object => $diagnostics_object,
-                sink_object        => $sink_object,
-            );
-        }
-
-        #---------------------------------------------------------------
-        # create the tokenizer for this file
-        #---------------------------------------------------------------
-        $tokenizer = undef;
-        $tokenizer = PerlTidy::Tokenizer->new(
-            source_object       => $source_object,
-            logger_object       => $logger_object,
-            debugger_object     => $debugger_object,
-            diagnostics_object  => $diagnostics_object,
-            starting_level      => $rOpts->{'starting-indentation-level'},
-            tabs                => $rOpts->{'tabs'},
-            indent_columns      => $rOpts->{'indent-columns'},
-            look_for_hash_bang  => $rOpts->{'look-for-hash-bang'},
-            look_for_autoloader => $rOpts->{'look-for-autoloader'},
-            look_for_selfloader => $rOpts->{'look-for-selfloader'},
-            trim_qw             => $rOpts->{'trim-qw'},
+            # .. more to be added
         );
 
-        #---------------------------------------------------------------
-        # now we can do it
-        #---------------------------------------------------------------
-        process_this_file( $tokenizer, $formatter );
-
-        #---------------------------------------------------------------
-        # clean up and report errors
-        #---------------------------------------------------------------
-        $source_object->close_input_file();
-        $sink_object->close_output_file()    if $sink_object;
-        $debugger_object->close_debug_file() if $debugger_object;
-
-        my $infile_syntax_ok = 0;    # -1 no  0=don't know   1 yes
-        if ($output_file) {
-            chmod 0755, $output_file;
-            if ( $logger_object && $rOpts->{'check-syntax'} ) {
-                my $ifname = $source_object->get_input_file_copy_name();
-                my $ofname = $sink_object->get_output_file_copy();
-                $infile_syntax_ok =
-                  check_syntax( $ifname, $ofname, $logger_object, $rOpts );
-            }
+        my %input_hash = @_;
+        if ( my @bad_keys = grep { !exists $defaults{$_} } keys %input_hash ) {
+            local $" = ')(';
+            confess
+              "unknown parameters in call to PerlTidy::perltidy: (@bad_keys)\n";
         }
-        $source_object->unlink_copy();
-        $sink_object->unlink_copy();
-        $logger_object->finish( $infile_syntax_ok, $formatter )
-          if $logger_object;
 
-    }    # end of loop to process all files
+        %input_hash = ( %defaults, %input_hash );
+        my $source_array      = $input_hash{'source'};
+        my $destination_array = $input_hash{'destination'};
 
-}    # end of main program
+        # VMS file names are restricted to a 40.40 format, so we append _tdy
+        # instead of .tdy, etc. (but see also sub check_vms_filename)
+        my $dot;
+        my $dot_pattern;
+        if ( $^O eq 'VMS' ) {
+            $dot         = '_';
+            $dot_pattern = '_';
+        }
+        else {
+            $dot         = '.';
+            $dot_pattern = '\.';    # must escape for use in regex
+        }
+
+        # handle command line options
+        my ( $rOpts, $config_file, $rraw_options, $pending_complaint,
+            $saw_extrude )
+          = process_command_line();
+        PerlTidy::Formatter::check_options($rOpts);
+        if ( $rOpts->{'html'} ) {
+            PerlTidy::HtmlWriter->check_options($rOpts);
+        }
+
+        # create a diagnostics object if requested
+        my $diagnostics_object = undef;
+        if ( $rOpts->{'DIAGNOSTICS'} ) {
+            $diagnostics_object = PerlTidy::Diagnostics->new();
+        }
+
+        # no filenames should be given if input is from an array
+        if ($source_array) {
+            if ( @ARGV > 0 ) {
+                die
+"You may not specify any filenames when a source array is given\n";
+            }
+
+            # we'll stuff the source array into ARGV 
+            unshift ( @ARGV, $source_array );
+        }
+
+        # use stdin by default if no source array and no args
+        else {
+            unshift ( @ARGV, '-' ) unless @ARGV;
+        }
+
+        # loop to process all files in argument list
+        my $number_of_files = @ARGV;
+        my $input_file;
+        my $formatter = undef;
+        my $tokenizer = undef;
+
+        # Set a flag here for any system which does not have a shell to
+        # expand wildcard filenames like '*.pl'.  In theory it should also
+        # be ok to set the flag for any system, but I prefer not to do so
+        # out of robustness concerns.
+        my $use_glob = ( $^O =~ /^(MSWin32|msdos|dos|win32)$/ );
+
+        while ( $input_file = shift @ARGV ) {
+            my $fileroot;
+
+            #---------------------------------------------------------------
+            # determine the input file name
+            #---------------------------------------------------------------
+            if ( $input_file eq '-' ) {    # '-' indicates input from STDIN
+                $fileroot = "perltidy";   # root name to use for .ERR, .LOG, etc
+            }
+            elsif ($source_array) {
+                $fileroot = "perltidy";
+            }
+            else {
+                $fileroot = $input_file;
+
+                unless ( -e $input_file ) {
+
+                    # file doesn't exist, maybe we have a wildcard
+                    if ($use_glob) {
+
+                        # be sure files exist, because glob('p.q') always
+                        # returns 'p.q' even if 'p.q' doesn't exist.
+                        my @files = grep { -e $_ } glob($input_file);
+                        if (@files) {
+                            unshift @ARGV, @files;
+                            next;
+                        }
+                    }
+
+                    print "skipping file: $input_file: does not exist\n";
+                    next;
+                }
+
+                unless ( -f $input_file ) {
+                    print "skipping: $input_file: not a regular file\n";
+                    next;
+                }
+
+                unless ( ( -T $input_file ) || $rOpts->{'force-read-binary'} ) {
+                    print
+"skipping file: $input_file: Non-text (override with -f)\n";
+                    next;
+                }
+
+                # we should have a valid filename now
+                if ( $^O eq 'VMS' ) {
+                    ( $fileroot, $dot ) = check_vms_filename($input_file);
+                }
+            }
+
+            # Skip files with same extension as the output files
+            # because this can lead to a messy situation
+            # with files like script.tdy.tdy.tdy ... when you rerun
+            # perltidy over and over with wildcard input
+            my $output_extension = $rOpts->{'html'} ? "html" : "tdy";
+            if ( defined( $rOpts->{'output-file-extension'} ) ) {
+                $output_extension = $rOpts->{'output-file-extension'};
+            }
+
+            if (
+                !$source_array
+                && ( $input_file =~
+                    /($dot_pattern)($output_extension|LOG|DEBUG|ERR|TEE)$/ )
+                || ( $input_file eq 'DIAGNOSTICS' )
+              )
+            {
+                print "skipping file: $input_file: wrong extension\n";
+                next;
+            }
+
+            # the 'source_object' supplies a method to read the input file
+            $source_object = PerlTidy::LineSource->new( $input_file, $rOpts );
+            next unless ($source_object);
+
+            # register this file name with the Diagnostics package
+            $diagnostics_object->set_input_file($input_file)
+              if $diagnostics_object;
+
+            #---------------------------------------------------------------
+            # determine the output file name
+            #---------------------------------------------------------------
+            my $output_file = undef;
+
+            if ( $rOpts->{'outfile'} ) {
+
+                if ( $number_of_files <= 1 ) {
+
+                    if ( $rOpts->{'standard-output'} ) {
+                        die "You may not use -o and -st together\n";
+                    }
+                    elsif ($destination_array) {
+                        die
+"You may not specify a destination array and -o together\n";
+                    }
+                    $output_file = $rOpts->{outfile};
+
+                    # make sure user gives a file name after -o
+                    if ( $output_file =~ /^-/ ) {
+                        die "You must specify a valid filename after -o\n";
+                    }
+                }
+                else {
+                    die "You may not use -o with more than one input file\n";
+                }
+            }
+            elsif ( $rOpts->{'standard-output'} ) {
+                if ($destination_array) {
+                    die
+"You may not specify a destination array and -st together\n";
+                }
+                $output_file = '-';
+
+                if ( $number_of_files <= 1 ) {
+                }
+                else {
+                    die "You may not use -st with more than one input file\n";
+                }
+            }
+            elsif ($destination_array) {
+                $output_file = $destination_array;
+            }
+            elsif ($source_array) {   # source but no destination goes to stdout
+                $output_file = '-';
+            }
+            elsif ( $input_file eq '-' ) {
+                $output_file = $input_file;
+            }
+            else {
+                $output_file = $fileroot . $dot . $output_extension;
+            }
+
+            # the 'sink_object' knows how to write the output file
+            my $tee_file = $fileroot . $dot . "TEE";
+            $sink_object =
+              PerlTidy::LineSink->new( $output_file, $tee_file, $rOpts );
+
+            #---------------------------------------------------------------
+            # initialize the error logger
+            #---------------------------------------------------------------
+            my $warning_file = $fileroot . $dot . "ERR";
+            my $log_file     = $fileroot . $dot . "LOG";
+
+            my $logger_object =
+              PerlTidy::Logger->new( $rOpts, $log_file, $warning_file,
+                $saw_extrude );
+            write_logfile_header( $rOpts, $logger_object, $config_file,
+                $rraw_options );
+            if ($pending_complaint) {
+                $logger_object->complain($pending_complaint);
+            }
+
+            #---------------------------------------------------------------
+            # initialize the debug object, if any
+            #---------------------------------------------------------------
+            my $debugger_object = undef;
+            if ( $rOpts->{DEBUG} ) {
+                $debugger_object =
+                  PerlTidy::Debugger->new( $fileroot . $dot . "DEBUG" );
+            }
+
+            # we have to delete any old formatter because, for safety, 
+            # formatter will check to see that there is only one.
+            $formatter = undef;
+
+            #---------------------------------------------------------------
+            # create a formatter for this file : html writer or pretty printer
+            #---------------------------------------------------------------
+            if ( $rOpts->{'html'} ) {
+                $formatter =
+                  PerlTidy::HtmlWriter->new( $fileroot, $output_file );
+            }
+
+            else {
+                $formatter = PerlTidy::Formatter->new(
+                    logger_object      => $logger_object,
+                    diagnostics_object => $diagnostics_object,
+                    sink_object        => $sink_object,
+                );
+            }
+
+            #---------------------------------------------------------------
+            # create the tokenizer for this file
+            #---------------------------------------------------------------
+            $tokenizer = undef;
+            $tokenizer = PerlTidy::Tokenizer->new(
+                source_object       => $source_object,
+                logger_object       => $logger_object,
+                debugger_object     => $debugger_object,
+                diagnostics_object  => $diagnostics_object,
+                starting_level      => $rOpts->{'starting-indentation-level'},
+                tabs                => $rOpts->{'tabs'},
+                indent_columns      => $rOpts->{'indent-columns'},
+                look_for_hash_bang  => $rOpts->{'look-for-hash-bang'},
+                look_for_autoloader => $rOpts->{'look-for-autoloader'},
+                look_for_selfloader => $rOpts->{'look-for-selfloader'},
+                trim_qw             => $rOpts->{'trim-qw'},
+            );
+
+            #---------------------------------------------------------------
+            # now we can do it
+            #---------------------------------------------------------------
+            process_this_file( $tokenizer, $formatter );
+
+            #---------------------------------------------------------------
+            # clean up and report errors
+            #---------------------------------------------------------------
+            $source_object->close_input_file();
+            $sink_object->close_output_file()    if $sink_object;
+            $debugger_object->close_debug_file() if $debugger_object;
+
+            my $infile_syntax_ok = 0;    # -1 no  0=don't know   1 yes
+            if ($output_file) {
+                chmod 0755, $output_file;
+                if ( $logger_object && $rOpts->{'check-syntax'} ) {
+                    my $ifname = $source_object->get_input_file_copy_name();
+                    my $ofname = $sink_object->get_output_file_copy();
+                    $infile_syntax_ok =
+                      check_syntax( $ifname, $ofname, $logger_object, $rOpts );
+                }
+            }
+
+            cleanup();
+##        $source_object->unlink_copy();
+##        $sink_object->unlink_copy() if $sink_object;
+
+            $logger_object->finish( $infile_syntax_ok, $formatter )
+              if $logger_object;
+
+        }    # end of loop to process all files
+
+    }    # end of main program
+}
 
 sub check_vms_filename {
 
@@ -1093,6 +1112,10 @@ EOM
     unless ( $Opts{'maximum-consecutive-blank-lines'} ) {
         $Opts{'swallow-optional-blank-lines'} = 1;
     }
+
+    # BUBBA: TESTING: deactivate this undocumented parameter
+    $Opts{'big-space-jump'} = $Opts{'maximum-line-length'};
+
     return ( \%Opts, $config_file, \@raw_options, $pending_complaint,
         $saw_extrude );
 
@@ -1484,7 +1507,7 @@ sub show_version {
     print <<"EOM";
 This is perltidy, v$VERSION 
 
-Copyright 2000-2001, Steven L. Hancock
+Copyright 2000-2002, Steven L. Hancock
 
 PerlTidy is free software and may be copied under the terms of the GNU
 General Public License, which is included in the distribution files.
@@ -1818,6 +1841,7 @@ sub make_temporary_filename {
 sub unlink_copy {
     my $self = shift;
     unlink $self->{_input_file_copy} if $self->{_input_file_copy};
+    $self->{_output_file_copy} = "";
 }
 
 sub get_line {
@@ -1962,6 +1986,7 @@ sub make_temporary_filename {
 sub unlink_copy {
     my $self = shift;
     unlink( $self->{_output_file_copy} ) if $self->{_output_file_copy};
+    $self->{_output_file_copy} = "";
 }
 
 #####################################################################
@@ -3484,7 +3509,7 @@ sub prepare_for_new_input_lines {
     $last_last_nonblank_token_to_go = '';
     $forced_breakpoint_count        = 0;
     $forced_breakpoint_undo_count   = 0;
-    $rbrace_follower = undef;
+    $rbrace_follower                = undef;
     $lengths_to_go[0] = 0;
     $old_line_count_in_batch = 1;
 
@@ -3682,7 +3707,7 @@ sub set_leading_whitespace {
 
         # if we have an '=' after the previous assumed breakpoint
         my $last_equals = $gnu_stack[$max_gnu_stack_index]->get_LAST_EQUALS();
-        if ( $last_equals > $line_start_index_to_go) {
+        if ( $last_equals > $line_start_index_to_go ) {
 
             # find the position if we break at the '='
             my $i_test = $last_equals;
@@ -5594,7 +5619,7 @@ sub set_white_space_flag {
          /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
      Examples:
        *VERSION = \'1.01';
-       ( $VERSION ) = '$Revision: 1.83 $ ' =~ /\$Revision:\s+([^\s]+)/;
+       ( $VERSION ) = '$Revision: 1.84 $ ' =~ /\$Revision:\s+([^\s]+)/;
      We will pass such a line straight through (by changing it
      to a quoted string) unless -npvl is used
     
@@ -5603,7 +5628,7 @@ sub set_white_space_flag {
      block sequence numbers may see a closing sequence number but not
      the corresponding opening sequence number (sidecmt.t).  Example:
 
-    my $VERSION = do { my @r = (q$Revision: 1.83 $ =~ /\d+/g); sprintf
+    my $VERSION = do { my @r = (q$Revision: 1.84 $ =~ /\d+/g); sprintf
     "%d."."%02d" x $#r, @r }; 
 
     Here, the opening brace of 'do {' will not be seen, while the closing
@@ -6055,12 +6080,10 @@ sub set_white_space_flag {
                 elsif ( $block_type =~ /^sub\W*$/ ) {
 
                     if ($is_one_line_block) {
-                        $rbrace_follower =
-                          \%is_anon_sub_1_brace_follower;
+                        $rbrace_follower = \%is_anon_sub_1_brace_follower;
                     }
                     else {
-                        $rbrace_follower =
-                          \%is_anon_sub_brace_follower;
+                        $rbrace_follower = \%is_anon_sub_brace_follower;
                     }
                 }
 
@@ -7771,8 +7794,8 @@ sub set_vertical_alignment_markers {
         $alignment_type );
     my ( $ibeg, $iend, $line );
     foreach $line ( 0 .. $max_line ) {
-        $ibeg = $$ri_first[$line];
-        $iend = $$ri_last[$line];
+        $ibeg                                 = $$ri_first[$line];
+        $iend                                 = $$ri_last[$line];
         $last_vertical_alignment_before_index = -1;
         $vert_last_nonblank_type              = '';
         $vert_last_nonblank_block_type        = '';
@@ -8606,15 +8629,15 @@ sub pad_array_to_go {
     );
 
     my (
-        @breakpoint_stack,              @breakpoint_undo_stack,
-        @comma_index,                   @container_type,
-        @identifier_count_stack,        @index_before_arrow,
-        @interrupted_list,              @item_count_stack,
-        @last_comma_index,              @last_nonblank_type,
-        @longest_term,                  @max_length,
-        @maximum_nesting_depth,         @old_breakpoint_count_stack,
-        @opening_structure_index_stack, @rand_or_list,
-        @rfor_semicolon_list,
+        @breakpoint_stack,           @breakpoint_undo_stack,
+        @comma_index,                @container_type,
+        @identifier_count_stack,     @index_before_arrow,
+        @interrupted_list,           @item_count_stack,
+        @last_comma_index,           @last_dot_index,
+        @last_nonblank_type,         ##@longest_term,
+        @max_length,                 @maximum_nesting_depth,
+        @old_breakpoint_count_stack, @opening_structure_index_stack,
+        @rand_or_list,               @rfor_semicolon_list,
     );
 
     # routine to define essential variables when we go 'up' to
@@ -8633,13 +8656,14 @@ sub pad_array_to_go {
             $interrupted_list[$depth]              = 1;
             $item_count_stack[$depth]              = 0;
             $last_nonblank_type[$depth]            = "";
-            $longest_term[$depth]                  = 0;
+            ##$longest_term[$depth]                  = 0;
             $maximum_nesting_depth[$depth]         = $depth;
             $opening_structure_index_stack[$depth] = -1;
 
             $breakpoint_undo_stack[$depth]      = undef;
             $comma_index[$depth]                = undef;
             $last_comma_index[$depth]           = undef;
+            $last_dot_index[$depth]             = undef;
             $max_length[$depth]                 = undef;
             $old_breakpoint_count_stack[$depth] = undef;
             $rand_or_list[$depth]               = [];
@@ -8723,24 +8747,24 @@ sub pad_array_to_go {
         }
     }
 
-    sub update_longest_term {
-        my $ii      = shift;
-        my $depth   = shift;
-        my $i_comma = $last_comma_index[$depth];
-        if ( defined($i_comma) ) {
-            my $length = token_sequence_length( $i_comma + 1, $ii );
-            if ( $length > $longest_term[$depth] ) {
-                $longest_term[$depth] = $length;
-            }
-        }
-        else {
-            my $i_opening = $opening_structure_index_stack[$depth];
-            if ( $i_opening >= 0 ) {
-                my $length = token_sequence_length( $i_opening + 1, $ii );
-                $longest_term[$depth] = $length;
-            }
-        }
-    }
+##    sub update_longest_term {
+##        my $ii      = shift;
+##        my $depth   = shift;
+##        my $i_comma = $last_comma_index[$depth];
+##        if ( defined($i_comma) ) {
+##            my $length = token_sequence_length( $i_comma + 1, $ii );
+##            if ( $length > $longest_term[$depth] ) {
+##                $longest_term[$depth] = $length;
+##            }
+##        }
+##        else {
+##            my $i_opening = $opening_structure_index_stack[$depth];
+##            if ( $i_opening >= 0 ) {
+##                my $length = token_sequence_length( $i_opening + 1, $ii );
+##                $longest_term[$depth] = $length;
+##            }
+##        }
+##    }
 
     sub is_unbreakable_container {
 
@@ -8961,8 +8985,9 @@ sub pad_array_to_go {
                 $interrupted_list[$depth]       = 0;
                 $item_count_stack[$depth]       = 0;
                 $last_comma_index[$depth]       = undef;
+                $last_dot_index[$depth]         = undef;
                 $last_nonblank_type[$depth]     = $last_nonblank_type;
-                $longest_term[$depth]           = 0;
+                ##$longest_term[$depth]           = 0;
                 $maximum_nesting_depth[$depth]  = $depth;
                 $old_breakpoint_count_stack[$depth]    = $old_breakpoint_count;
                 $opening_structure_index_stack[$depth] = $i;
@@ -9044,7 +9069,7 @@ sub pad_array_to_go {
                 }
 
                 # get final term length if necessary
-                update_longest_term( $i - 1, $current_depth );
+                ##update_longest_term( $i - 1, $current_depth );
 
                 # Patch to break between ') {' if the paren list is broken.
                 # There is similar logic in set_continuation_breaks for
@@ -9306,6 +9331,11 @@ will be a forced break at its 'and'.
                           unless ( $do_not_break_apart
                             || is_unbreakable_container($current_depth) );
 
+                        # break at '.' of lower depth level before opening token
+                        if ( $last_dot_index[$depth] ) {
+                            set_forced_breakpoint( $last_dot_index[$depth] );
+                        }
+
                         # break before opening structure if preeced by another
                         # closing structure and a comma.  This is normally
                         # done by the previous closing brace, but not
@@ -9387,14 +9417,17 @@ will be a forced break at its 'and'.
                 next;
             }
 
+            elsif ( $type eq '.' ) {
+                $last_dot_index[$depth] = $i;
+            }
+
             # Turn off alignment if we are sure that this is not a list
             # environment.  To be safe, we will do this if we see certain
             # non-list tokens, such as ';', and also the environment is
             # not a list.  Note that '=' could be in any of the = operators
             # (lextest.t). We can't just use the reported environment
             # because it can be incorrect in some cases.
-
-            if ( $type =~ /(^[\;\<\>\~]$)|[=]/
+            elsif ( $type =~ /(^[\;\<\>\~]$)|[=]/
                 && $container_environment_to_go[$i] ne 'LIST' )
             {
                 $dont_align[$depth]         = 1;
@@ -9406,8 +9439,9 @@ will be a forced break at its 'and'.
             next unless ( $type eq ',' );
 
             # keep track of longest item between commas
-            update_longest_term( $i, $depth );
+            ##update_longest_term( $i, $depth );
 
+            $last_dot_index[$depth]   = undef;
             $last_comma_index[$depth] = $i;
 
             # break here if this comma follows a '=>'
@@ -9466,6 +9500,7 @@ will be a forced break at its 'and'.
 
                 $max_length[$depth][0] = 0;
                 $max_length[$depth][1] = 0;
+                $max_length[$depth][2] = 0;
             }
 
             # save max length of list items to calculate page layout
@@ -9477,8 +9512,16 @@ will be a forced break at its 'and'.
             if ( !defined($i_prev) ) { $i_prev = -1 }
             my $length = token_sequence_length( $i_prev + 1, $i );
 
-            if ( $length > $max_length[$depth][ $item_count % 2 ] ) {
-                $max_length[$depth][ $item_count % 2 ] = $length;
+            # remember first item length alone
+            if ($item_count == 0 ) {
+                    $max_length[$depth][2]=$length;
+            }
+
+            # keep track of remaining maximum lengths
+            else {
+                if ( $length > $max_length[$depth][ $item_count % 2 ] ) {
+                    $max_length[$depth][ $item_count % 2 ] = $length;
+                }
             }
 
             $comma_index[$depth][$item_count] = $i;
@@ -9658,6 +9701,7 @@ sub set_comma_breakpoints_do {
 
         # add 2 to length because other lengths include a comma and a blank
         $last_item_length += 2;
+
         my $i_odd = $item_count % 2;
         if ( $last_item_length > $$rmax_length[$i_odd] ) {
             $$rmax_length[$i_odd] = $last_item_length;
@@ -9672,22 +9716,73 @@ sub set_comma_breakpoints_do {
         $i_effective_last_comma = $max_index_to_go - 1;
     }
 
-    # Field width parameters
-    my $pair_width = ( $$rmax_length[0] + $$rmax_length[1] );
-    my $max_width  =
-      ( $$rmax_length[0] > $$rmax_length[1] ) 
-      ? $$rmax_length[0]
-      : $$rmax_length[1];
-
     # Specify if the list must have an even number of fields or not.  It
     # is generally safest in perl to assume an even number, because the
     # list items might be a hash list.  But if we can be sure that it is
     # not a hash, then we can allow an odd number for more flexibility.
     my $odd_or_even = 2;    # 1 = odd field count ok, 2 = want even count
-    if ( $list_type =~ /^(my|local|our)$/ || $next_nonblank_type eq '=' ) {
+    if ( $list_type =~ /^(my|local|our|printf|sprintf|push)$/ || $next_nonblank_type eq '=' ) {
         $odd_or_even = 1;
     }
     if ( $identifier_count == $comma_count ) { $odd_or_even = 1 }   # seems safe
+
+##    #-----------------------------------------------------------------
+##    # TESTING: BUBBA:
+##    if ($odd_or_even == 1) {
+##    my $first_term_length = token_sequence_length($i_opening_paren+1,$i_first_comma-1);
+##    my $therest = token_sequence_length($i_first_comma+1,$i_effective_last_comma-1)-($item_count-1)*2;
+##    my $average_remaining_length = ($therest)/($item_count-1);
+##    if ($first_term_length > $average_remaining_length) {
+##    print "BUBBA: first token length is $first_term_length therest=$therest avg=$average_remaining_length ifirst=$i_first_comma  ieff=$i_effective_last_comma items=$item_count\n";
+##    }
+##    }
+##    #-----------------------------------------------------------------
+
+    my $max_length_0 = $$rmax_length[0];  # max length of terms 3,5,7,...
+    my $max_length_1 = $$rmax_length[1];  # max length of terms 2,4,6,...
+    my $max_length_2 = $$rmax_length[2];  # max length of term 1
+
+    # BUBBA:
+    # include item 0 length in max values since it was stored
+    # separately
+    my $use_separate_first_term = 0;
+    if ( $max_length_2 > $max_length_0 ) {
+
+        # do we have a long first term which should be
+        # left on a line by itself?
+
+        if (
+            $odd_or_even == 1     # only if we can use 1 field/line
+            && $item_count > 3    # need several items
+            && $max_length_2 > 2 * $max_length_0    # long first term
+            && $max_length_2 > 2 * $max_length_1    # long first term
+          )
+        {
+
+            # yes..set a break and update starting values
+            $use_separate_first_term = 1;
+            set_forced_breakpoint($i_first_comma);
+            $i_opening_paren = $i_first_comma;
+            $i_first_comma   = $$rcomma_index[1];
+            $item_count--;
+        }
+
+        # if not, update the max length to include the first term
+        else {
+            $max_length_0 = $max_length_2;
+        }
+    }
+
+    # Field width parameters
+    ##my $pair_width = ( $$rmax_length[0] + $$rmax_length[1] );
+    my $pair_width = ( $max_length_0 + $max_length_1 );
+    my $max_width  =
+      ( $max_length_0 > $max_length_1 ) 
+      ? $max_length_0
+      : $max_length_1;
+##      ( $$rmax_length[0] > $$rmax_length[1] ) 
+##      ? $$rmax_length[0]
+##      : $$rmax_length[1];
 
     # Number of free columns across the page width for laying out tables
     my $columns = table_columns_available($i_first_comma);
@@ -10023,8 +10118,12 @@ sub set_comma_breakpoints_do {
         "List: auto formatting with $number_of_fields fields/row\n");
     my $j;
 
+    my $j_first_break =
+      $use_separate_first_term ? $number_of_fields : $number_of_fields - 1;
+
     for (
-        $j = $number_of_fields - 1 ;
+        ##$j = $number_of_fields - 1 ;
+        $j = $j_first_break;
         $j < $comma_count ;
         $j += $number_of_fields
       )
@@ -10141,11 +10240,13 @@ sub set_fake_breakpoint {
 
 sub set_forced_breakpoint {
     my $i = shift;
+    ## BUBBA:
+    return unless defined $i && $i >= 0;
 
     # when called with certain tokens, use bond strengths to decide
     # if we break before or after it
     my $token = $tokens_to_go[$i];
-    if ( $token =~ /^([\,\:\?]|&&|\|\|)$/ ) {
+    if ( $token =~ /^([\.\,\:\?]|&&|\|\|)$/ ) {
         if ( $want_break_before{$token} && $i >= 0 ) { $i-- }
     }
 
@@ -10474,12 +10575,14 @@ sub recombine_breakpoints {
 
                     || (
                         (
-                            (
-                                $n == $nmax
-                                && token_sequence_length( $i_next_nonblank,
-                                    $il ) <
-                                $rOpts->{'short-concatenation-item-length'} + 1
-                            ) || $types_to_go[$i_next_nonblank] eq 'Q'
+##                            (
+##                                $n == $nmax
+##                                && token_sequence_length( $i_next_nonblank,
+##                                    $il ) <
+##                                $rOpts->{'short-concatenation-item-length'} + 1
+##                            ) 
+##                            || 
+                            $types_to_go[$i_next_nonblank] eq 'Q'
                         )
                         && $i_next_nonblank <= $il
                         && length( $tokens_to_go[$i_next_nonblank] ) <
@@ -10721,6 +10824,22 @@ sub set_continuation_breaks {
             my $strength                 = $bond_strength_to_go[$i_test];
             my $must_break               = 0;
 
+            # BUBBA: TESTING: What if want break after these??
+            # force an immediate break at certain operators 
+            # with lower level than the start of the line
+            if (
+                (
+                    $next_nonblank_type =~ /^(\.|\&\&|\|\|)$/
+                    || ( $next_nonblank_type eq 'k'
+                        && $next_nonblank_token =~ /^(and|or)$/ )
+                )
+                && ( $nesting_depth_to_go[$i_begin] >
+                    $nesting_depth_to_go[$i_next_nonblank] )
+              )
+            {
+                set_forced_breakpoint($i_next_nonblank);
+            }
+
             if (
 
                 # Try to put a break where requested by scan_list
@@ -10742,11 +10861,12 @@ sub set_continuation_breaks {
               )
             {
 
-                # Forced breakpoints must sometimes be overridden because of a
-                # side comment causing a NO_BREAK.  It is easier to catch this
-                # here than when they are set.
+                # Forced breakpoints must sometimes be overridden, for example
+                # because of a side comment causing a NO_BREAK.  It is easier
+                # to catch this here than when they are set.
                 if ( $strength < NO_BREAK ) {
-                    $strength   = $lowest_strength / 2;
+                    ##$strength   = $lowest_strength / 2;
+                    $strength   = $lowest_strength - $max_bias / 10;
                     $must_break = 1;
                 }
             }
@@ -10798,8 +10918,10 @@ sub set_continuation_breaks {
                 # a leading alignment of certain common tokens, and it
                 # is different from the latest candidate break
                 last
-                  if ( $leading_alignment_type);
+                  if ($leading_alignment_type);
 
+                #print "BUBBA: next type=$next_nonblank_type  next tok= $next_nonblank_token starting depth=$nesting_depth_to_go[$i_begin] next depth= $nesting_depth_to_go[$i_next_nonblank]\n"; 
+                ##last
                 # Force at least one breakpoint if old code had good break
                 # It is only called if a breakpoint is required or desired.
                 #print "at tok=$token next=$next_nonblank_token str=$strength i=$i_test i-last=$i_last_break i_low= $i_lowest str= $lowest_strength\n"; 
@@ -14356,7 +14478,7 @@ sub find_starting_indentation_level {
     # otherwise figure it out from the input file
     else {
         my $line;
-        my $i = 0;
+        my $i                            = 0;
         my $structural_indentation_level = -1; # flag for find_indentation_level
 
         my $msg = "";
@@ -15722,6 +15844,7 @@ EOM
                         complain("Should 'ne' be '!=' here ?\n");
                     }
                 }
+
                 $last_last_nonblank_token          = $last_nonblank_token;
                 $last_last_nonblank_type           = $last_nonblank_type;
                 $last_last_nonblank_block_type     = $last_nonblank_block_type;
@@ -15763,7 +15886,7 @@ EOM
             if ( $id_scan_state && $pre_type !~ /[b#]/ ) {
 
                 ## BUBBA: FIXME : need ^ or $ here?
-                if ( $id_scan_state =~ /(sub|package)/ ) {
+                if ( $id_scan_state =~ /^(sub|package)/ ) {
                     scan_id();
                 }
                 else {
@@ -18632,7 +18755,7 @@ sub scan_identifier_do {
 
 =pod
 
-NOTE: This develomental scanner WILL BE REPLACED by the newer version
+NOTE: This develomental scanner will be replaced by the newer version
 "scan_id".  The reason is that scan_id will be regex based, which makes
 maintainence much easier, and probably improves the speed.
 
@@ -19721,4 +19844,11 @@ BEGIN {
 1;
 
 package main;
+
+# remove any temporary files if interrupted
+$SIG{INT} = sub {
+    print STDERR "perltidy interrupted\n";
+    PerlTidy::cleanup();
+    exit -1;
+};
 PerlTidy::perltidy();
