@@ -3,24 +3,37 @@ Perltidy Change Log
      have hit a bug, unusual behavior, annoyance, or have a suggested
      improvement, please send a note to perltidy at users.sourceforge.net.  
 
-  2002 xx xx
+  2002 02 14
      -This version uses modules for the first time, and a standard perl
       Makefile.PL has been supplied.  However, perltidy may still be
-      installed as a single script, without modules.  See INSTALL for
+      installed as a single script, without modules.  Please see INSTALL for
       details.
+
+     -The man page 'perl2web' has been merged back into the main 'perltidy'
+      man page to simplify installation.  So you may remove that man page
+      if you have an older installation.
+
+     -Corrected bug with '-bar' which was introduced in the previous
+      version.  A closing block brace was being indented.  Thanks to
+      Alexandros M Manoussakis for reporting this.
 
      -New parameter '--entab-leading-whitespace=n', or '-et=n', has been
       added for those who prefer tabs.  This behaves different from the
       existing '-t' parameter; see updated man page.  Suggested by Mark
       Olesen.
 
+     -New parameter '--perl-syntax-check-flags=s'  or '-pcsf=s' can be
+      used to change the flags passed to perltidy in a syntax check.
+      See updated man page.  Suggested by Mark Olesen. 
+
      -New parameter '--output-path=s'  or '-opath=s' will cause output
       files to be placed in directory s.  See updated man page.  Thanks for
       Mark Olesen for suggesting this.
 
      -New parameter --dump-profile (or -dpro) will dump to standard output
-      information about the search for a configuration file, the name of whatever
-      configuration file is selected, and its contents.
+      information about the search for a configuration file, the name of
+      whatever configuration file is selected, and its contents.  This should
+      help debugging config files, especially on different Windows systems.
 
      -Corrections added for a leading ':' and for leaving a leading 'tcsh'
       line untouched.  Mark Olesen reported that lines of this form were
@@ -77,25 +90,18 @@ Perltidy Change Log
      -Lists of complex items, such as matricies, are now detected and displayed
       with just one item per row:
 
-        OLD (two per row):
-        for (
-            [ 'Shine', 40 ], [ 'Specular', [ 1, 1, 0.3, 0 ] ],
-            [ 'Ambient', [ 0.3, 1, 1, 0 ] ], [ 'Diffuse', [ 1, 0.3, 1, 0 ] ],
-            [ 'Emissive', [ 0, 0, 0 ] ]
-          )
-        {
-        }
+        OLD:
+        $this->{'CURRENT'}{'gfx'}{'MatrixSkew'} = Text::PDF::API::Matrix->new(
+            [ 1, tan( deg2rad($a) ), 0 ], [ tan( deg2rad($b) ), 1, 0 ],
+            [ 0, 0, 1 ]
+        );
 
-        NEW (one per row):
-        for (
-            [ 'Shine', 40 ],
-            [ 'Specular', [ 1,   1,   0.3, 0 ] ],
-            [ 'Ambient',  [ 0.3, 1,   1,   0 ] ],
-            [ 'Diffuse',  [ 1,   0.3, 1,   0 ] ],
-            [ 'Emissive', [ 0,   0,   0 ] ]
-          )
-        {
-        }
+        NEW:
+        $this->{'CURRENT'}{'gfx'}{'MatrixSkew'} = Text::PDF::API::Matrix->new(
+            [ 1,                  tan( deg2rad($a) ), 0 ],
+            [ tan( deg2rad($b) ), 1,                  0 ],
+            [ 0,                  0,                  1 ]
+        );
 
      -An interrupt handler has been added to delete temporary files if
       perltidy is interrupted.
@@ -114,8 +120,8 @@ Perltidy Change Log
                 print "Set $key\n";
             }
 
-      But this is probably not a very good programming practice.  Perl will 
-      give a syntax error without the $ variable; ie this will not work:
+      But Perl will give a syntax error without the $ variable; ie this will
+      not work:
 
             foreach qw\Uno Due Tres Quadro\ {
                 print "Set $_\n";

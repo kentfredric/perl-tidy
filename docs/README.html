@@ -12,6 +12,7 @@
 <UL>
 
 	<LI><A HREF="#welcome to perltidy!">Welcome to Perltidy!</A></LI>
+	<LI><A HREF="#prerequisites">PREREQUISITES</A></LI>
 	<LI><A HREF="#installation">INSTALLATION</A></LI>
 	<LI><A HREF="#what next">WHAT NEXT</A></LI>
 	<LI><A HREF="#feedback / bug reports">FEEDBACK / BUG REPORTS</A></LI>
@@ -30,12 +31,29 @@ that the line endings have been changed to &lt;cr&gt;&lt;lf&gt; for the Windows
 version.</P>
 <P>
 <HR>
+<H1><A NAME="prerequisites">PREREQUISITES</A></H1>
+<P>There are very few.  Perltidy has been tested on perl versions 5.004 and
+later.  It will not work with earlier versions because of the way it
+uses IO::File.  It is known to work under Unix systems, Windows 95 and
+later, and VMS.  It does not require any non-standard modules to work,
+but it may use certain modules if detected, as follows:</P>
+<PRE>
+  POSIX    will be used to make temporary file names with tmpnam() 
+  Win32    will be used to help identify a Windows system if detected
+  HTML::Entities  will be used to encode HTML entities if detected</PRE>
+<P>The following modules are not required, but you may use them in your
+own programs to make calls to the perltidy main module:</P>
+<PRE>
+  IO::Scalar
+  IO::ScalarArray</PRE>
+<P>
+<HR>
 <H1><A NAME="installation">INSTALLATION</A></H1>
 <P>Please see the file INSTALL for installation information.</P>
 <P>
 <HR>
 <H1><A NAME="what next">WHAT NEXT</A></H1>
-<P>Please see the ChangeLog file for notices of any recent updates.</P>
+<P>Please see the CHANGES file for notices of any recent updates.</P>
 <P>Please see the BUGS file for a list of all known open bugs.</P>
 <P>Documentation can be found in the <EM>docs</EM> directory, and it can also be 
 found at <A HREF="http://perltidy.sourceforge.net">http://perltidy.sourceforge.net</A></P>

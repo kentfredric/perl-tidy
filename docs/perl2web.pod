@@ -1,4 +1,8 @@
 
+=head1 NAME
+
+perl2web - documentation for perltidy -html
+
 =head1 PERLTIDY HTML DOCUMENTATION
 
 This document explains perltidy options available for outputting perl
@@ -236,7 +240,7 @@ perltidy(1)
 
 =head1 VERSION
 
-This man page documents perltidy version 20011231.
+This man page documents perltidy version 20020214.
 
 =head1 AUTHOR
 
@@ -248,7 +252,7 @@ Bug reports and suggestions for new features are always welcome.
 
 =head1 COPYRIGHT
 
-Copyright (c) 2000, 2001 by Steven L. Hancock
+Copyright (c) 2000-2002 by Steven L. Hancock
 
 =head1 LICENSE
 

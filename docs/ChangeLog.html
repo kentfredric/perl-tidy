@@ -14,7 +14,7 @@
 	<LI><A HREF="#perltidy change log">Perltidy Change Log</A></LI>
 	<UL>
 
-		<LI><A HREF="#2002 xx xx">2002 xx xx</A></LI>
+		<LI><A HREF="#2002 02 14">2002 02 14</A></LI>
 		<LI><A HREF="#2001 12 31">2001 12 31</A></LI>
 		<LI><A HREF="#2001 11 28">2001 11 28</A></LI>
 		<LI><A HREF="#2001 10 20">2001 10 20</A></LI>
@@ -44,25 +44,38 @@
  have hit a bug, unusual behavior, annoyance, or have a suggested
  improvement, please send a note to perltidy at users.sourceforge.net.</PRE>
 <P>
-<H2><A NAME="2002 xx xx">2002 xx xx</A></H2>
+<H2><A NAME="2002 02 14">2002 02 14</A></H2>
 <PRE>
  -This version uses modules for the first time, and a standard perl
   Makefile.PL has been supplied.  However, perltidy may still be
-  installed as a single script, without modules.  See INSTALL for
+  installed as a single script, without modules.  Please see INSTALL for
   details.</PRE>
+<PRE>
+ -The man page 'perl2web' has been merged back into the main 'perltidy'
+  man page to simplify installation.  So you may remove that man page
+  if you have an older installation.</PRE>
+<PRE>
+ -Corrected bug with '-bar' which was introduced in the previous
+  version.  A closing block brace was being indented.  Thanks to
+  Alexandros M Manoussakis for reporting this.</PRE>
 <PRE>
  -New parameter '--entab-leading-whitespace=n', or '-et=n', has been
   added for those who prefer tabs.  This behaves different from the
   existing '-t' parameter; see updated man page.  Suggested by Mark
   Olesen.</PRE>
 <PRE>
+ -New parameter '--perl-syntax-check-flags=s'  or '-pcsf=s' can be
+  used to change the flags passed to perltidy in a syntax check.
+  See updated man page.  Suggested by Mark Olesen.</PRE>
+<PRE>
  -New parameter '--output-path=s'  or '-opath=s' will cause output
   files to be placed in directory s.  See updated man page.  Thanks for
   Mark Olesen for suggesting this.</PRE>
 <PRE>
  -New parameter --dump-profile (or -dpro) will dump to standard output
-  information about the search for a configuration file, the name of whatever
-  configuration file is selected, and its contents.</PRE>
+  information about the search for a configuration file, the name of
+  whatever configuration file is selected, and its contents.  This should
+  help debugging config files, especially on different Windows systems.</PRE>
 <PRE>
  -Corrections added for a leading ':' and for leaving a leading 'tcsh'
   line untouched.  Mark Olesen reported that lines of this form were
@@ -121,25 +134,18 @@
  -Lists of complex items, such as matricies, are now detected and displayed
   with just one item per row:</PRE>
 <PRE>
-    OLD (two per row):
-    for (
-        [ 'Shine', 40 ], [ 'Specular', [ 1, 1, 0.3, 0 ] ],
-        [ 'Ambient', [ 0.3, 1, 1, 0 ] ], [ 'Diffuse', [ 1, 0.3, 1, 0 ] ],
-        [ 'Emissive', [ 0, 0, 0 ] ]
-      )
-    {
-    }</PRE>
+    OLD:
+    $this-&gt;{'CURRENT'}{'gfx'}{'MatrixSkew'} = Text::PDF::API::Matrix-&gt;new(
+        [ 1, tan( deg2rad($a) ), 0 ], [ tan( deg2rad($b) ), 1, 0 ],
+        [ 0, 0, 1 ]
+    );</PRE>
 <PRE>
-    NEW (one per row):
-    for (
-        [ 'Shine', 40 ],
-        [ 'Specular', [ 1,   1,   0.3, 0 ] ],
-        [ 'Ambient',  [ 0.3, 1,   1,   0 ] ],
-        [ 'Diffuse',  [ 1,   0.3, 1,   0 ] ],
-        [ 'Emissive', [ 0,   0,   0 ] ]
-      )
-    {
-    }</PRE>
+    NEW:
+    $this-&gt;{'CURRENT'}{'gfx'}{'MatrixSkew'} = Text::PDF::API::Matrix-&gt;new(
+        [ 1,                  tan( deg2rad($a) ), 0 ],
+        [ tan( deg2rad($b) ), 1,                  0 ],
+        [ 0,                  0,                  1 ]
+    );</PRE>
 <PRE>
  -An interrupt handler has been added to delete temporary files if
   perltidy is interrupted.</PRE>
@@ -158,8 +164,8 @@
             print &quot;Set $key\n&quot;;
         }</PRE>
 <PRE>
-  But this is probably not a very good programming practice.  Perl will 
-  give a syntax error without the $ variable; ie this will not work:</PRE>
+  But Perl will give a syntax error without the $ variable; ie this will
+  not work:</PRE>
 <PRE>
         foreach qw\Uno Due Tres Quadro\ {
             print &quot;Set $_\n&quot;;

@@ -1,3 +1,6 @@
+NAME
+    perl2web - documentation for perltidy -html
+
 PERLTIDY HTML DOCUMENTATION
     This document explains perltidy options available for outputting perl
     scripts in html format. For other perltidy options, see the perltidy man
@@ -222,7 +225,7 @@ SEE ALSO
     perltidy(1)
 
 VERSION
-    This man page documents perltidy version 20011231.
+    This man page documents perltidy version 20020214.
 
 AUTHOR
       Steven L. Hancock
@@ -232,7 +235,7 @@ AUTHOR
     Bug reports and suggestions for new features are always welcome.
 
 COPYRIGHT
-    Copyright (c) 2000, 2001 by Steven L. Hancock
+    Copyright (c) 2000-2002 by Steven L. Hancock
 
 LICENSE
     This package is free software; you can redistribute it and/or modify it
