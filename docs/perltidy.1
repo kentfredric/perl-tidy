@@ -130,7 +130,7 @@
 .\" ========================================================================
 .\"
 .IX Title "PERLTIDY 1"
-.TH PERLTIDY 1 "2002-02-15" "perl v5.6.1" "User Contributed Perl Documentation"
+.TH PERLTIDY 1 "2002-02-19" "perl v5.6.1" "User Contributed Perl Documentation"
 .UC
 .SH "NAME"
 perltidy \- a perl script indenter and reformatter
@@ -458,7 +458,11 @@ To skip syntax checking, use \fB\-nsyn\fR or \fB\-\-nocheck\-syntax\fR.  Syntax
 checking is also deactivated by the \fB\-\-quiet\fR flag, discussed above.
 .Sp
 The default is to do a syntax check on most operating systems.  An
-exception is Windows 9x/Me systems, which have robustness problems.
+exception is Windows 9x/Me systems, which do not handle this well.
+Another exception is when the input or output streams are not connected
+to identifiable filenames.  In the past, copies of these streams were
+saved in temporary files, but this has caused too many portability
+problems.
 .Sp
 \&\fBPlease note:\fR Even if this type of syntax checking is deactivated,
 perltidy will still do extensive syntax checking on its own.

@@ -1,9 +1,9 @@
 A Brief Perltidy Tutorial
     Perltidy can save you a lot of tedious editing if you spend a few
-    minutes learning to use it effectively. There are a large number of
-    options available for customizing it, but for many programmers the
-    default parameter set will be satisfactory, with perhaps a few
-    additional parameters to account for style preferences.
+    minutes learning to use it effectively. Perltidy is highly configurable,
+    but for many programmers the default parameter set will be satisfactory,
+    with perhaps a few additional parameters to account for style
+    preferences.
 
     This tutorial assumes that perltidy has been installed on your system.
     Installation instructions accompany the package. To follow along with
@@ -66,9 +66,10 @@ A Brief Perltidy Tutorial
     of these are discussed below.
 
   Indentation
-    Another difference between the original file and the reformatted file is
-    that the indentation has been changed from 2 spaces in the input file to
-    4 spaces. You may change this to be a different number with -i=n.
+    Another noticable difference between the original and the reformatted
+    file is that the indentation has been changed from 2 spaces to 4 spaces.
+    That's because 4 spaces is the default. You may change this to be a
+    different number with -i=n.
 
     To get some practice, try these examples, and examine the resulting
     testfile.pl.tdy file:
@@ -82,6 +83,7 @@ A Brief Perltidy Tutorial
 
     There will be no indentation at all in this case.
 
+  Input Flags
     This is a good place to mention a few points regarding the input flags.
     First, for each option, there are two forms, a long form and a short
     form, and either may be used.
@@ -99,24 +101,58 @@ A Brief Perltidy Tutorial
     adjacent to the flag, like this -i3 B(WRONG). Also, flags must be input
     separately, never bundled together.
 
+  Line Length and Continuation Indentation.
+    If you change the indentation spaces you will probably also need to
+    change the continuation indentation spaces with the parameter -ci=n. The
+    continuation indentation is the extra indentation -- 2 spaces by default
+    -- given to that portion of a long line which has been placed below the
+    start of a statement. For example:
+
+        croak "Couldn't pop genome file"
+          unless sysread($impl->{file}, $element, $impl->{group})
+          and truncate($impl->{file}, $new_end);
+
+    There is no fixed rule for setting the value for -ci=n, but it should
+    probably not exceed one-half of the number of spaces of a full
+    indentation level.
+
+    In the above snippet, the statement was broken into three lines. The
+    actual number is governed by a parameter, the maximum line length, as
+    well as by what perltidy considers to be good break points. The maximum
+    line length is 80 characters by default. You can change this to be any
+    number n with the -l=n flag. Perltidy tries to produce lines which do
+    not exceed this length, and it does this by finding good break points.
+    For example, the above snippet would look like this with -l=40:
+
+        croak "Couldn't pop genome file"
+          unless sysread(
+            $impl->{file}, $element,
+            $impl->{group}
+          )
+          and truncate( $impl->{file},
+            $new_end );
+
   Tabs or Spaces?
     With indentation, there is always a tab issue to resolve. By default,
     perltidy will use leading ascii space characters instead of tabs. The
     reason is that this will be displayed correctly by virtually all
-    editors, and in the long run, will avoid maintenance problems. However,
-    if you prefer, you may have perltidy entab the leading whitespace of a
-    line with the command -et=n, where n is the number of spaces which will
-    be represented by one tab.
+    editors, and in the long run, will avoid maintenance problems. (It may
+    be hard to appreciate this unless you have had to remove tabs from
+    someone else's program, and guarantee that the program still functions
+    exactly as before).
 
-  Line Length and Continuation Indentation.
-    TBD: -l, -ci
+    However, if you prefer, you may have perltidy entab the leading
+    whitespace of a line with the command -et=n, where n is the number of
+    spaces which will be represented by one tab.
 
   Input/Output Control
-    For safety, perltidy never changes the input file, and instead always
-    writes its output to a new file. Its default behavior is to just create
-    an output filename by appending an extension, .tdy, to whatever filename
-    it is given. On most systems, you may use wildcards to reformat a whole
-    batch of files at once, like this for example:
+    In the first example, we saw that if we pass perltidy the name of a file
+    on the command line, it reformats it and creates a new filename by
+    appending an extension, .tdy. This is the default behavior, but there
+    are several other options.
+
+    On most systems, you may use wildcards to reformat a whole batch of
+    files at once, like this for example:
 
      perltidy *.pl
 
@@ -125,9 +161,15 @@ A Brief Perltidy Tutorial
 
     If there is no input filename specified on the command line, then input
     is assumed to come from standard input and output will go to standard
-    output. So you can use perltidy as a filter, like this:
+    output. On systems with a Unix-like interface, you can use perltidy as a
+    filter, like this:
 
      perltidy <somefile.pl >newfile.pl
+
+    What happens in this case is that the shell takes care of the redirected
+    input files, '<somefile.pl', and so perltidy never sees the filename.
+    Therefore, it knows to use the standard input and standard output
+    channels.
 
     If you are executing perltidy on a file and want to force the output to
     standard output, rather than create a .tdy file, you can indicate this
@@ -140,8 +182,11 @@ A Brief Perltidy Tutorial
 
      perltidy testfile.pl -o=testfile.new.pl
 
+    One thing that you cannot do with perltidy is to reformat a script and
+    overwrite the original version. This is a safety precaution.
+
   Making Backups
-    In an actual project, at this point you could make a backup copy of the
+    In an actual project, you will need to make a backup copy of the
     original script and then rename testfile.pl.tdy to be testfile.pl. While
     Perltidy is a very reliable program, it is very important to have a
     standard procedure for backing up your script in case something goes
@@ -162,6 +207,14 @@ A Brief Perltidy Tutorial
     RCS directory, and a current separate backup as testfile.pl.bak. Of
     course, you should make regular additional backups to other media as
     well.
+
+    Please do not fall into this trap: Let's say you are working on a
+    complex script, and run it through perltidy. You open the reformatted
+    script with your editor, and are so pleased to see it cleaned up that
+    you immediately continue editing it. If you forget that you are editing
+    a .tdy file, your work will be lost if you inadvertently run perltidy
+    again on the original script. To avoid this, you need to rename your
+    files before starting to work again.
 
   Style Variations
     Perltidy has to make some kind of default selection of formatting
@@ -223,7 +276,19 @@ A Brief Perltidy Tutorial
         which is probably easier to read.
 
     -bt,-pt,-sbt: Container tightness
-        (TBD)
+        These are parameters for controlling the amount of space within
+        containing parentheses, braces, and square brackets. The example
+        below shows the effect of the three possible values, 0, 1, and 2,
+        for the case of parentheses:
+
+         if ( ( my $len_tab = length( $tabstr ) ) > 0 ) {  # -pt=0
+         if ( ( my $len_tab = length($tabstr) ) > 0 ) {    # -pt=1 (default)
+         if ((my $len_tab = length($tabstr)) > 0) {        # -pt=2
+
+        A value of 0 causes all parens to be padded on the inside with a
+        space, and a value of 2 causes this never to happen. With a value of
+        1, spaces will be introduced if the item within is more than a
+        single token.
 
   Configuration Files
     While style preferences vary, most people would agree that it is
@@ -277,10 +342,10 @@ A Brief Perltidy Tutorial
     -npro flag on the command line.
 
   Error Reporting
-    To see how perltidy reports errors , try introducing an extra opening
-    brace somewhere in a test file. For example, introducing an extra brace
-    in the file listed above produces the following message on the terminal
-    (or standard error output):
+    Let's perform a fire drill to see how perltidy reports errors. Try
+    introducing an extra opening brace somewhere in a test file. For
+    example, introducing an extra brace in the file listed above produces
+    the following message on the terminal (or standard error output):
 
      Please see file testfile.pl.ERR!
 
@@ -320,22 +385,31 @@ A Brief Perltidy Tutorial
     unlikely, but worth checking.
 
     If the input file has an error according to the "perl -c" check, then
-    the output file will not be checked. In this event, the error message
-    returned by the "perl -c" check will be discarded by default, but it
-    will be included in the error output file if the -w flag is given. The
-    reason for discarding the message by default is that "perl -c" can
-    produce annoying messages when Perltidy is formatting snippets of code
-    rather than complete scripts.
+    the output file will not be checked, and any error messages returned by
+    the "perl -c" check will be discarded (because they usually turn out to
+    be more annoying than helpful). If you want to see them, though, you can
+    use the -w flag. This might be useful if you are debugging a script.
 
-    This syntax check has been deactivated for Windows 9x/Me because of
-    robustness problems with these systems. Perltidy will, of course, still
-    report any syntax errors that it detects by itself on these systems.
+    Here's a diagram showing how this works:
+
+                              OK                            OK
+         check input file ---------->  check output file ---------> ok
+                 |                            |
+                 | Fail                       | Fail
+                 |                            |
+           -w shows errors             perltidy made error
+
+    This syntax check will be deactivated for Windows 9x/Me and also when
+    input or output are not from identifiable filenames. Perltidy will, of
+    course, still report any syntax errors that it detects by itself in
+    these cases.
 
   The Log File
     One last topic that needs to be touched upon concerns the .LOG file.
-    This is where perltidy writes messages that are not normally of any
+    This is where perltidy records messages that are not normally of any
     interest, but which just might occasionally be useful. This file is not
-    saved, though, unless there is an error or you ask for it to be saved.
+    saved, though, unless perltidy detects that it has made a mistake or you
+    ask for it to be saved.
 
     There are a couple of ways to ask perltidy to save a log file. To create
     a relatively sparce log file, use
@@ -366,11 +440,13 @@ A Brief Perltidy Tutorial
     Most programmer's editors allow a selected group of lines to be passed
     through an external filter. Perltidy has been designed to work well as a
     filter, and it is well worthwhile learning the appropriate commands to
-    do this with your editor. You may want to supply the -q flag to prevent
-    error messages regarding incorrect syntax, since errors may be obvious
-    in the indentation of the reformatted text. If you do not use the -q
-    flag, you will need to use the undo keys in case an error message
-    appears on the screen.
+    do this with your editor. This means that you can enter a few keystrokes
+    and watch a block of text get reformatted. If you are not doing this,
+    you are missing out of a lot of fun! You may want to supply the -q flag
+    to prevent error messages regarding incorrect syntax, since errors may
+    be obvious in the indentation of the reformatted text. This is entirely
+    optional, but if you do not use the -q flag, you will need to use the
+    undo keys in case an error message appears on the screen.
 
     For example, within the vim editor it is only necessary to select the
     text by any of the text selection methods, and then issue the command
@@ -379,7 +455,7 @@ A Brief Perltidy Tutorial
      :%!perltidy -q
 
     It isn't necessary to format an entire file, however. Perltidy will
-    probably work well provided that you select blocks of text whose braces,
+    probably work well as long as you select blocks of text whose braces,
     parentheses, and square brackets are properly balanced.
 
   Writing an HTML File

@@ -1,3 +1,10 @@
+async {
+    my $sig;
+      while ( $sig = await_signal() ) {
+        &$sig();
+    }
+};
+
 # Illustration of tokenizer code block types
 # The tokenizer uses the token just before the opening '{' to label the block
 doit();

@@ -311,7 +311,11 @@ FORMATTING OPTIONS
         checking is also deactivated by the --quiet flag, discussed above.
 
         The default is to do a syntax check on most operating systems. An
-        exception is Windows 9x/Me systems, which have robustness problems.
+        exception is Windows 9x/Me systems, which do not handle this well.
+        Another exception is when the input or output streams are not
+        connected to identifiable filenames. In the past, copies of these
+        streams were saved in temporary files, but this has caused too many
+        portability problems.
 
         Please note: Even if this type of syntax checking is deactivated,
         perltidy will still do extensive syntax checking on its own.

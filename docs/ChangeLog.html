@@ -51,6 +51,9 @@
   installed as a single script, without modules.  Please see INSTALL for
   details.</PRE>
 <PRE>
+ -Added patch from Axel Rose for MacPerl.  The patch prompts the user
+  for command line arguments before calling the module Perl::Tidy::perltidy.</PRE>
+<PRE>
  -The man page 'perl2web' has been merged back into the main 'perltidy'
   man page to simplify installation.  So you may remove that man page
   if you have an older installation.</PRE>
@@ -147,11 +150,12 @@
         [ 0,                  0,                  1 ]
     );</PRE>
 <PRE>
- -An interrupt handler has been added to delete temporary files if
-  perltidy is interrupted.</PRE>
-<PRE>
- -Perltidy will now use system-generated temporary filenames when
-  necessary, rather than create files with .TMPI and .TMPO extensions.</PRE>
+ -The perl syntax check will now be turned off when input is from
+  standard input or standard output.  The reason is that this requires
+  temporary files, which has produced far too many problems during
+  Windows testing.  For example, the POSIX module under Windows XP/2000
+  creates temporary names in the root directory, to which only the
+  administrator should have permission to write.</PRE>
 <PRE>
  -Merged patch sent by Yves Orton to handle appropriate configuration file
   locations for different Windows varieties (2000, NT, XP, 95, 98).</PRE>

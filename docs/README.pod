@@ -12,18 +12,18 @@ version.
 
 =head1 PREREQUISITES
 
-There are very few.  Perltidy has been tested on perl versions 5.004 and
-later.  It will not work with earlier versions because of the way it
-uses IO::File.  It is known to work under Unix systems, Windows 95 and
-later, and VMS.  It does not require any non-standard modules to work,
-but it may use certain modules if detected, as follows:
+There are very few.  The main requirement is Perl version 5.004 or
+later.  It is known to work under Unix systems, Windows 95 and later,
+and VMS.  It should work with MacPerl.  It does not require any
+non-standard modules to work, but it may use certain modules if
+detected, as follows:
 
-  POSIX    will be used to make temporary file names with tmpnam() 
   Win32    will be used to help identify a Windows system if detected
   HTML::Entities  will be used to encode HTML entities if detected
 
-The following modules are not required, but you may use them in your
-own programs to make calls to the perltidy main module:
+The following modules are not required, but they can be used to allow
+your own programs to avoid passing filenames to the perltidy main
+module:
 
   IO::Scalar
   IO::ScalarArray

@@ -348,7 +348,11 @@ the error output unless the <STRONG>-warning-output</STRONG> flag is given.</P>
 <P>To skip syntax checking, use <STRONG>-nsyn</STRONG> or <STRONG>--nocheck-syntax</STRONG>.  Syntax
 checking is also deactivated by the <STRONG>--quiet</STRONG> flag, discussed above.</P>
 <P>The default is to do a syntax check on most operating systems.  An
-exception is Windows 9x/Me systems, which have robustness problems.</P>
+exception is Windows 9x/Me systems, which do not handle this well.
+Another exception is when the input or output streams are not connected
+to identifiable filenames.  In the past, copies of these streams were
+saved in temporary files, but this has caused too many portability
+problems.</P>
 <P><STRONG>Please note:</STRONG> Even if this type of syntax checking is deactivated,
 perltidy will still do extensive syntax checking on its own.</P>
 <P></P>

@@ -33,6 +33,7 @@
 #      Hugh S. Myers supplied sub streamhandle and the supporting code to
 #        create a Perl::Tidy module which can operate on strings, arrays, etc.
 #      Yves Orton supplied coding to help detect Windows versions.
+#      Axel Rose supplied a patch for MacPerl.
 #      Many others have supplied key ideas, suggestions, and bug reports;
 #        see the CHANGES file.
 #
@@ -50,17 +51,17 @@ use vars qw{
   $VERSION
   @ISA
   @EXPORT
+  $missing_file_spec
 };
 
-@ISA = qw( Exporter );
+@ISA    = qw( Exporter );
 @EXPORT = qw( &perltidy );
 
 use IO::File;
 use File::Basename;
-use File::Spec;
 
 BEGIN {
-    ($VERSION=q($Id: Tidy.pm,v 1.3 2002/02/19 15:30:44 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ($VERSION=q($Id: Tidy.pm,v 1.4 2002/02/21 15:01:19 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 # Preloaded methods go here.
@@ -163,6 +164,32 @@ EOM
     return $fh, ( $ref or $filename );
 }
 
+# concatenate a path and file basename
+# use File::Spec->catfile() if possible
+sub catfile {
+
+    BEGIN { eval "require File::Spec";  $missing_file_spec=$@; }
+
+    unless ($missing_file_spec) {
+        return File::Spec->catfile(@_);
+    }
+
+    # Not all perl 5.004 systems have File::Spec so we'll make 
+    # a simple try.  We assume File::Basename is available.
+    # return undef if not successful.
+    my ($path, $name) = @_;
+    my $test_file = $path . $name;
+    my ($test_name,$test_path) = fileparse($test_file);
+    return $test_file if ($test_name eq $name); 
+    return undef if ($^O eq 'VMS'); 
+
+    # this should work for Windows and Unix:
+    $test_file = $path . '/' . $name;
+    ($test_name,$test_path) = fileparse($test_file);
+    return $test_file if ($test_name eq $name); 
+    return undef;
+}
+
 =pod
 
 POD NOTE: Documentation is contained in separately supplied .pod files;
@@ -210,59 +237,17 @@ basic perltidy distribution.
 =cut
 
 {
-    my @temporary_files;
-
-    sub make_temporary_filename {
-
-        # make a temporary filename for syntax checking when input or
-        # output is not from a known file If POSIX is not installed,
-        # user can just skip with -nsyn
-        my $rpending_complaint = shift;
-        eval "use POSIX qw(tmpnam)";
-        if ($@) {
-            $$rpending_complaint .=
-              "Couldn't find POSIX.pm : will not use syntax checking\n";
-            return ( undef, "(missing POSIX)" );
-        }
-        use IO::File;
-        my ( $name, $fh );
-        for ( 0 .. 1 ) {
-            $name = tmpnam();
-            $fh = IO::File->new( $name, O_RDWR | O_CREAT | O_EXCL );
-            if ($fh) {
-                push @temporary_files, [ $fh, $name ];
-                return ( $fh, $name );
-                last;
-            }
-        }
-        return ( undef, $name );
-    }
-
-    sub delete_temporary_files {
-        while ( $_ = pop @temporary_files ) {
-            my ( $fh, $name ) = @{$_};
-            if ( -e $name ) {
-                $fh->close;
-                unlink $name;
-            }
-        }
-    }
-
-    END { delete_temporary_files() }
-}
-
-{
 
     # variables needed by interrupt handler:
     my $tokenizer;
     my $input_file;
 
-    # this routine may be called to give a status report
-    # if interrupted.  If a parameter is given, it will
-    # call exit with that parameter.
+    # this routine may be called to give a status report if interrupted.  If a
+    # parameter is given, it will call exit with that parameter.  This is no
+    # longer used because it works under Unix but not under Windows.
     sub interrupt_handler {
 
-        my $exit_flag=shift;
+        my $exit_flag = shift;
         print STDERR "perltidy interrupted";
         if ($tokenizer) {
             my $input_line_number =
@@ -276,11 +261,6 @@ basic perltidy distribution.
             print STDERR " $input_file";
         }
         print STDERR "\n";
-        ##$logger_object->close_log_file() if $logger_object;
-
-        # This shouldn't be necessary because of END block elsewhere
-        # and can probably be removed:
-        ##delete_temporary_files();
         exit $exit_flag if defined($exit_flag);
     }
 
@@ -326,6 +306,8 @@ EOM
 
             my $rargv = ref $argv;
             if ( $rargv eq 'SCALAR' ) { $argv = $$argv; $rargv = undef }
+
+            # ref to ARRAY
             if ($rargv) {
                 if ( $rargv eq 'ARRAY' ) {
                     @ARGV = @$argv;
@@ -342,9 +324,14 @@ EOM
 
             # string
             else {
-                $argv =~ s/^\s+//;
-                $argv =~ s/\s+$//;
-                @ARGV = split /\s+/, $argv;
+                my ( $rargv, $msg ) = parse_args($argv);
+                if ($msg) {
+                    die <<EOM;
+Error parsing this string passed to to perltidy with 'argv': 
+$msg
+EOM
+                }
+                @ARGV = @{$rargv};
             }
         }
 
@@ -484,15 +471,22 @@ EOM
 
                     my ( $base, $old_path ) = fileparse($fileroot);
                     my $new_path = $rOpts->{'output-path'};
-                    unless (-d $new_path) {
-                         die <<EOM;
+                    unless ( -d $new_path ) {
+                        die <<EOM;
 ------------------------------------------------------------------------
 The path $new_path does not exist; please check value of -opath 
 ------------------------------------------------------------------------
 EOM
                     }
-                    my $path     = $new_path;
-                    $fileroot = File::Spec->catfile($path , $base);
+                    my $path = $new_path;
+                    $fileroot = catfile( $path, $base );
+                    unless ( $fileroot ) {
+                        die <<EOM;
+------------------------------------------------------------------------
+Problem combining $new_path and $base to make a filename; check -opath
+------------------------------------------------------------------------
+EOM
+                    }
                 }
             }
 
@@ -517,7 +511,9 @@ EOM
             }
 
             # the 'source_object' supplies a method to read the input file
-            my $source_object = Perl::Tidy::LineSource->new( $input_file, $rOpts ,$rpending_complaint);
+            my $source_object =
+              Perl::Tidy::LineSource->new( $input_file, $rOpts,
+                $rpending_complaint );
             next unless ($source_object);
 
             # register this file name with the Diagnostics package
@@ -578,10 +574,10 @@ EOM
             }
 
             # the 'sink_object' knows how to write the output file
-            my $tee_file = $fileroot . $dot . "TEE";
+            my $tee_file    = $fileroot . $dot . "TEE";
             my $sink_object =
-              Perl::Tidy::LineSink->new( $output_file, $tee_file, $rOpts, 
-              $rpending_complaint );
+              Perl::Tidy::LineSink->new( $output_file, $tee_file, $rOpts,
+                $rpending_complaint );
 
             #---------------------------------------------------------------
             # initialize the error logger
@@ -678,7 +674,7 @@ EOM
             $logger_object->finish( $infile_syntax_ok, $formatter )
               if $logger_object;
 
-            delete_temporary_files();
+            ##delete_temporary_files();
 
         }    # end of loop to process all files
 
@@ -980,7 +976,7 @@ sub process_command_line {
       tidy-output
       trim-qw
     );
-    push @defaults,"perl-syntax-check-flags=-c -T";
+    push @defaults, "perl-syntax-check-flags=-c -T";
 
     #---------------------------------------------------------------
     # set the defaults by passing the above list through GetOptions
@@ -1142,7 +1138,7 @@ sub process_command_line {
         elsif ( $i =~ /-extrude$/ ) {
             $saw_extrude = 1;
         }
-        elsif ( $i =~ /-(help|h)$/ ) {
+        elsif ( $i =~ /-(help|h|HELP|H)$/ ) {
             usage();
             exit 1;
         }
@@ -1198,7 +1194,7 @@ EOM
         # look for a config file if we don't have one yet
         my $rconfig_file_chatter;
         $$rconfig_file_chatter = "";
-        $config_file =
+        $config_file           =
           find_config_file( $is_Windows, $Windows_type, $rconfig_file_chatter,
             $rpending_complaint )
           unless $config_file;
@@ -1605,7 +1601,6 @@ sub find_config_file {
     $$rconfig_file_chatter .= "# Config file search...system reported as:";
     if ($is_Windows) {
         $$rconfig_file_chatter .= "Windows $Windows_type\n";
-        ##$$rconfig_file_chatter .= "# (some harmless mixing of '\\' and '/' characters may appear below)\n";
     }
     else {
         $$rconfig_file_chatter .= " $^O\n";
@@ -1638,14 +1633,16 @@ sub find_config_file {
             $$rconfig_file_chatter .= " = $ENV{$var}\n";
 
             # test ENV{ PERLTIDY } as file:
-            if ($var eq 'PERLTIDY') {
+            if ( $var eq 'PERLTIDY' ) {
                 $config_file = "$ENV{$var}";
                 return $config_file if $exists_config_file->($config_file);
             }
 
             # test ENV as directory:
-            $config_file = File::Spec->catfile($ENV{$var},".perltidyrc");
-            return $config_file if $exists_config_file->($config_file);
+            $config_file = catfile( $ENV{$var}, ".perltidyrc" );
+            if ($config_file) {
+                return $config_file if $exists_config_file->($config_file);
+            }
         }
         else {
             $$rconfig_file_chatter .= "\n";
@@ -1662,22 +1659,22 @@ sub find_config_file {
 
             # Check All Users directory, if there is one.
             if ($allusers) {
-                $config_file = $allusers . ".perltidyrc";
+                $config_file = catfile($allusers , ".perltidyrc");
                 return $config_file if $exists_config_file->($config_file);
             }
 
             # Check system directory.
-            $config_file = $system . ".perltidyrc";
+            $config_file = catfile($system , ".perltidyrc");
             return $config_file if $exists_config_file->($config_file);
         }
     }
 
     # Place to add customization code for other systems 
-    elsif ($^O eq 'OS2') {
+    elsif ( $^O eq 'OS2' ) {
     }
-    elsif ($^O eq 'MacOS') {
+    elsif ( $^O eq 'MacOS' ) {
     }
-    elsif ($^O eq 'VMS') {
+    elsif ( $^O eq 'VMS' ) {
     }
 
     # Assume some kind of Unix
@@ -1787,7 +1784,14 @@ sub read_config_file {
             # now do the body
             if ($body) {
 
-                my $rbody_parts = parse_body( $body, $config_file, $line_no );
+                my ( $rbody_parts, $msg ) = parse_args($body);
+                if ($msg) {
+                    die <<EOM;
+Error reading file $config_file at line number $line_no.
+$msg
+Please fix this line or use -npro to avoid reading this file
+EOM
+                }
 
                 if ($name) {
 
@@ -1876,7 +1880,7 @@ EOM
     return $outstr;
 }
 
-sub parse_body {
+sub parse_args {
 
 =pod
 
@@ -1890,10 +1894,11 @@ There is no need, at present, to handle escaped quote characters.
 
 =cut
 
-    my ( $body, $config_file, $line_no ) = @_;
+    my ($body) = @_;
     my @body_parts = ();
     my $quote_char = "";
     my $part       = "";
+    my $msg        = "";
     while (1) {
 
         # looking for ending quote character
@@ -1908,11 +1913,9 @@ There is no need, at present, to handle escaped quote characters.
             # error..we reached the end without seeing the ending quote char
             else {
                 if ($part) { push @body_parts, $part; }
-                die <<EOM;
-Error reading file $config_file at line number $line_no.
+                $msg = <<EOM;
 Did not see ending quote character <$quote_char> in this text:
 $body
-Please fix this line or use -npro to avoid reading this file
 EOM
                 last;
             }
@@ -1936,7 +1939,7 @@ EOM
             }
         }
     }
-    return ( \@body_parts );    # sound's ghoulish!
+    return ( \@body_parts, $msg );
 }
 
 sub dump_long_names {
@@ -2175,12 +2178,12 @@ sub check_syntax {
     # note: perl will accept repeated flags like '-c -c'.  It is safest
     # to append another -c than try to find an interior bundled c, as
     # in -Tc, because such a 'c' might be in a quoted string, for example.
-    if ($flags !~ /(^-c|\s+-c)/) { $flags .= " -c" }
+    if ( $flags !~ /(^-c|\s+-c)/ ) { $flags .= " -c" }
 
     # be sure we invoke perl with -x if requested
     # same comments about repeated parameters applies
-    if ($rOpts->{'look-for-hash-bang'}) {
-        if ($flags !~ /(^-x|\s+-x)/) { $flags .= " -x" }
+    if ( $rOpts->{'look-for-hash-bang'} ) {
+        if ( $flags !~ /(^-x|\s+-x)/ ) { $flags .= " -x" }
     }
 
     # this shouldn't happen unless a termporary file couldn't be made
@@ -2189,7 +2192,7 @@ sub check_syntax {
             "Cannot run perl -c on STDIN and STDOUT\n");
         return $infile_syntax_ok;
     }
-    
+
     $logger_object->write_logfile_entry(
         "checking input file syntax with perl $flags\n");
     $logger_object->write_logfile_entry($line_of_dashes);
@@ -2265,7 +2268,7 @@ package Perl::Tidy::LineSource;
 
 sub new {
 
-    my ($class, $input_file, $rOpts, $rpending_complaint) = @_;
+    my ( $class, $input_file, $rOpts, $rpending_complaint ) = @_;
     my $input_file_copy = undef;
     my $fh_copy;
 
@@ -2276,15 +2279,25 @@ sub new {
     # or when it is an object, we have to make a copy of the file
     if ( ( $input_file eq '-' || ref $input_file ) && $rOpts->{'check-syntax'} )
     {
-        ( $fh_copy, $input_file_copy ) = Perl::Tidy::make_temporary_filename($rpending_complaint);
-        unless ($fh_copy) {
-            $rOpts->{'check-syntax'}=0;
-            $$rpending_complaint .= <<EOM;
-Problem creating temporary file, last attempt was $input_file_copy
-   --syntax check will be skipped, use -nsyn to deactivate
+
+        # Turning off syntax check when input output is used.
+        # The reason is that temporary files seem to cause problems on
+        # on many systems.
+        $rOpts->{'check-syntax'} = 0;
+        $$rpending_complaint .= <<EOM;
+Note: --syntax check will be skipped because standard input is used
 EOM
-            $input_file_copy = '-';
-        }
+
+##       Save for possible future use:
+##        ( $fh_copy, $input_file_copy ) = Perl::Tidy::make_temporary_filename($rpending_complaint);
+##        unless ($fh_copy) {
+##            $rOpts->{'check-syntax'}=0;
+##            $$rpending_complaint .= <<EOM;
+##Problem creating temporary file, last attempt was $input_file_copy
+##   --syntax check will be skipped, use -nsyn to deactivate
+##EOM
+##            $input_file_copy = '-';
+##        }
     }
 
     return bless {
@@ -2340,7 +2353,7 @@ sub new {
 
     if ( $rOpts->{'tidy-output'} ) {
         ( $fh, $output_file ) = Perl::Tidy::streamhandle( $output_file, 'w' );
-        unless ($fh) {die "Cannot write to output stream\n";}
+        unless ($fh) { die "Cannot write to output stream\n"; }
         $output_file_open = 1;
     }
 
@@ -2348,16 +2361,26 @@ sub new {
     # or when it is an object, we have to make a copy of the file
     if ( $output_file eq '-' || ref $output_file ) {
         if ( $rOpts->{'check-syntax'} ) {
-            ( $fh_copy, $output_file_copy ) =
-              Perl::Tidy::make_temporary_filename($rpending_complaint);
-            unless ($fh_copy) {
-                $rOpts->{'check-syntax'}=0;
+
+            # Turning off syntax check when standard output is used.
+            # The reason is that temporary files seem to cause problems on
+            # on many systems.
+            $rOpts->{'check-syntax'} = 0;
             $$rpending_complaint .= <<EOM;
-Problem creating temporary file, last attempt was $output_file_copy
-   --syntax check will be skipped, use -nsyn to deactivate
+Note: --syntax check will be skipped because standard output is used
 EOM
-                $output_file_copy = '-';
-            }
+
+##       Save for possible future use:
+##            ( $fh_copy, $output_file_copy ) =
+##              Perl::Tidy::make_temporary_filename($rpending_complaint);
+##            unless ($fh_copy) {
+##                $rOpts->{'check-syntax'}=0;
+##            $$rpending_complaint .= <<EOM;
+##Problem creating temporary file, last attempt was $output_file_copy
+##   --syntax check will be skipped, use -nsyn to deactivate
+##EOM
+##                $output_file_copy = '-';
+##            }
         }
     }
 
@@ -2524,7 +2547,7 @@ sub new {
         _saw_code_bug    => -1,             # -1=no 0=maybe 1=for sure
         _saw_brace_error => 0,
         _saw_extrude     => $saw_extrude,
-        _output_array     => [],
+        _output_array    => [],
     }, $class;
 }
 
@@ -2626,7 +2649,7 @@ sub write_column_headings {
     my $self = shift;
 
     $self->{_wrote_column_headings} = 1;
-    my $routput_array=$self->{_output_array};
+    my $routput_array = $self->{_output_array};
     push @{$routput_array}, <<EOM;
 The nesting depths in the table below are at the start of the lines.
 The indicated output line numbers are not always exact.
@@ -2781,7 +2804,7 @@ sub warning {
             else {
                 $fh_warnings = IO::File->new(">$warning_file")
                   or death("couldn't open $warning_file: $!\n");
-                print STDERR "Please see file $warning_file!\n";
+                print STDERR "## Please see file $warning_file\n";
             }
             $self->{_fh_warnings} = $fh_warnings;
         }
@@ -2916,13 +2939,13 @@ sub finish {
     $self->ask_user_for_bug_report( $infile_syntax_ok, $formatter );
 
     if ($save_logfile) {
-       my $log_file = $self->{_log_file};
-       my ( $fh, $filename ) = Perl::Tidy::streamhandle( $log_file, 'w' );
-       if ($fh) {
-          my $routput_array = $self->{_output_array};
-          foreach (@{$routput_array}) { $fh->print($_) }
-          $fh->close();
-       }
+        my $log_file = $self->{_log_file};
+        my ( $fh, $filename ) = Perl::Tidy::streamhandle( $log_file, 'w' );
+        if ($fh) {
+            my $routput_array = $self->{_output_array};
+            foreach ( @{$routput_array} ) { $fh->print($_) }
+            $fh->close();
+        }
     }
 }
 
@@ -6091,7 +6114,7 @@ sub set_white_space_flag {
          /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
      Examples:
        *VERSION = \'1.01';
-       ( $VERSION ) = '$Revision: 1.3 $ ' =~ /\$Revision:\s+([^\s]+)/;
+       ( $VERSION ) = '$Revision: 1.4 $ ' =~ /\$Revision:\s+([^\s]+)/;
      We will pass such a line straight through (by changing it
      to a quoted string) unless -npvl is used
     
@@ -6100,7 +6123,7 @@ sub set_white_space_flag {
      block sequence numbers may see a closing sequence number but not
      the corresponding opening sequence number (sidecmt.t).  Example:
 
-    my $VERSION = do { my @r = (q$Revision: 1.3 $ =~ /\d+/g); sprintf
+    my $VERSION = do { my @r = (q$Revision: 1.4 $ =~ /\d+/g); sprintf
     "%d."."%02d" x $#r, @r }; 
 
     Here, the opening brace of 'do {' will not be seen, while the closing
@@ -6152,6 +6175,7 @@ sub set_white_space_flag {
           set_white_space_flag( $jmax, $rtokens, $rtoken_type, $rblock_type );
 
         # find input tabbing to allow checks for tabbing disagreement
+        ## not used for now
         ##$input_line_tabbing = "";
         ##if ( $input_line =~ /^(\s*)/ ) { $input_line_tabbing = $1; }
 
@@ -6422,7 +6446,6 @@ sub set_white_space_flag {
             }
 
             elsif ($is_closing_BLOCK) {
-
 
                 # If there is a pending one-line block ..
                 if ( $index_start_one_line_block != UNDEFINED_INDEX ) {
@@ -8213,7 +8236,8 @@ sub set_adjusted_indentation {
 
     # be sure lines with leading closing tokens are not outdented more
     # than the line which contained the corresponding opening token.
-    my $is_isolated_block_brace=($iend==$ibeg) && $block_type_to_go[$ibeg];
+    my $is_isolated_block_brace =
+      ( $iend == $ibeg ) && $block_type_to_go[$ibeg];
     if ( !$is_isolated_block_brace && defined($opening_indentation) ) {
         if ( get_SPACES($opening_indentation) > get_SPACES($indentation) ) {
             $indentation = $opening_indentation;

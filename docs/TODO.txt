@@ -7,9 +7,10 @@ Perltidy TODO List
     There is a vary large number of relatively minor formatting issues that
     need to be addressed. I'm working on them as time permits.
 
+  Implement 'Vertical Tightness' parameters
   Modularization
-    The current version uses a single module. I plan to break out a more
-    modules when the interfaces stop changing.
+    The current version uses a single module. It will be subdivided as the
+    interfaces stop changing.
 
   BUGS
     There are still a couple of bugs listed in the BUGS file that need to be
@@ -23,11 +24,6 @@ Perltidy TODO List
   Improved Vertical Alignment
     Coding modifications are underway to improve the vertical alignment
     logic.
-
-  Improved indentation of parenthesized terms
-    Further work on indenting parenthesized terms needs to be done. This is
-    tricky because it impacts vertical alignment, so the two tasks need to
-    be done more or less together.
 
   Documentation
     A FAQ is being written to explain some of the more subtle formatting
