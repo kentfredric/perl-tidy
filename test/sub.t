@@ -57,3 +57,6 @@ $SIG{__DIE__} = sub {
         reset_char_props();
     },    # <- outdent ok here; not in BLOCK
 );
+
+# had unwanted break at one time
+$a = [ [CopyName], [], sub { "__copy" }, [] ];

@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.49 2001/10/05 06:38:38 perltidy Exp $
+    $Id: perltidy,v 1.50 2001/10/06 03:56:16 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -268,7 +268,7 @@ sub main {
               Perltidy::Debugger->new( $fileroot . $dot . "DEBUG" );
         }
 
-        my $formatter = undef;
+        $formatter = undef;
 
         #---------------------------------------------------------------
         # create a formatter for this file : html writer or pretty printer
@@ -4721,7 +4721,7 @@ sub print_line_of_tokens {
     #     /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
     # Examples:
     #   *VERSION = \'1.01';
-    #   ( $VERSION ) = '$Revision: 1.49 $ ' =~ /\$Revision:\s+([^\s]+)/;
+    #   ( $VERSION ) = '$Revision: 1.50 $ ' =~ /\$Revision:\s+([^\s]+)/;
     # We will pass such a line straight through unless -npvl is used
     my $is_VERSION_statement = 0;
 
@@ -6928,13 +6928,7 @@ sub scan_list {
     # stored in the array @forced_breakpoint_to_go, which is used to set
     # final breakpoints.
 
-    #-------------------------------------------------------
-    # ?/: rule 2 : if we break at a '?', then break at its ':'
-    #-------------------------------------------------------
-    if ( $tokens_to_go[0] eq '?' ) { set_closing_breakpoint(0) }
-    if ( $tokens_to_go[$max_index_to_go] eq '?' ) { 
-        set_closing_breakpoint($max_index_to_go) 
-    }
+    my $last_colon_sequence_number = -1;
 
     my $starting_depth                = $nesting_depth_to_go[0];
     my $current_depth                 = $starting_depth;
@@ -7019,13 +7013,36 @@ sub scan_list {
         next if ( $type eq 'b' );
         $depth = $nesting_depth_to_go[ $i + 1 ];
 
-        # handle any postponed closing breakpoints
-        if ($type_sequence && $token =~ /^[\)\]\}\:]$/) {
-           if (defined($postponed_breakpoint{$token}{$type_sequence})) {
-               set_forced_breakpoint($i);
-               undef $postponed_breakpoint{$token}{$type_sequence};
-           }
-        } 
+        if ($type_sequence) {
+
+            # handle any postponed closing breakpoints
+            if ( $token =~ /^[\)\]\}\:]$/ ) {
+                if ( $token eq ':' ) {
+                    $last_colon_sequence_number = $type_sequence;
+                }
+                if ( defined( $postponed_breakpoint{$token}{$type_sequence} ) )
+                {
+                    set_forced_breakpoint($i);
+                    undef $postponed_breakpoint{$token}{$type_sequence};
+                }
+            }
+
+            # set breaks at ?/: if they will get separated (and are not a ?/:
+            # chain), or if the '?' is at the end of the line
+            elsif ( $token eq '?' ) {
+                my $i_colon = $mate_index_to_go[$i];
+                if ( $i_colon <= 0 || $i == 0 || $i == $max_index_to_go ) {
+
+                    # don't break at a '?' if preceded by ':' on this
+                    # line of previous ?/: pair on this line.  This is
+                    # an attempt to preserve a chain of ?/: expressions
+                    # (elsif2.t).
+                    set_forced_breakpoint($i)
+                    unless ($type_sequence == $last_colon_sequence_number+1);
+                    set_closing_breakpoint($i);
+                }
+            }
+        }
 
 #print "LISTX sees: i=$i type=$type  tok=$token  block=$block_type depth=$depth\n";
 
@@ -8297,8 +8314,6 @@ sub recombine_breakpoints {
             # examine token at $imidr
             #----------------------------------------------------------
 
-            #else {
-
             # do not recombine lines with leading &&, ||, or :
             next if ( $types_to_go[$imidr] =~ /^(\?|:|\&\&|\|\|)$/ );
 
@@ -8342,19 +8357,55 @@ sub recombine_breakpoints {
                 );
             }
 
-            # keywords look best at start of lines,
-            # but combine things like "1 while" 
-            next
-              if ( ( $types_to_go[$imid] ne 'k' )
-                && ( $types_to_go[$imidr] eq 'k' )
-                && ( $tokens_to_go[$imidr] ne 'while' ) );
+            elsif ( $types_to_go[$imidr] eq 'k' ) {
 
-            # retain leading "and" and "or"
-            next
-              if ( ( $types_to_go[$imidr] eq 'k' )
-                && ( $tokens_to_go[$imidr] =~ /^(and|or)$/ ) );
+                # handle leading "and" and "or" 
+                if ( $tokens_to_go[$imidr] =~ /^(and|or)$/ ) { 
 
-            #}
+                    # Decide if we will combine a single terminal 'and' and
+                    # 'or' after an 'if' or 'unless'.  We should consider the
+                    # possible vertical alignment, and visual clutter.
+
+=pod
+
+    This looks best with the 'and' on the same line as the 'if':
+
+        $a = 1
+          if $seconds and $nu < 2;
+
+    But this looks better as shown:
+
+        $a = 1
+          if !$this->{Parents}{$_}
+          or $this->{Parents}{$_} eq $_;
+
+    Eventually, it would be nice to look for similarities (such as 'this' or
+    'Parents'), but for now I'm using a simple rule that says that the 
+    resulting line length must not be more than half the maximum line length
+    (making it 80/2 = 40 characters by default).
+
+=cut
+                    next unless (
+                    $n == $nmax # if this is the last line
+                    && $types_to_go[$il] eq ';' # ending in ';'
+                    && $types_to_go[$if] eq 'k' # after an 'if' or 'unless'
+                    && $tokens_to_go[$if] =~ /^(if|unless)$/
+
+                    # and if this doesn't make a long last line
+                    && total_line_length($if,$il) <= $rOpts->{'maximum-line-length'}/2
+                    ); 
+                }
+
+                # handle all other leading keywords
+                else {
+
+                    # keywords look best at start of lines,
+                    # but combine things like "1 while" 
+                    next
+                      if ( ( $types_to_go[$imid] ne 'k' )
+                        && ( $tokens_to_go[$imidr] !~ /^(while)$/ ) );
+                }
+            }
 
             # honor hard breakpoints
             next if ( $forced_breakpoint_to_go[$imid] > 0 );
@@ -8427,6 +8478,7 @@ sub set_continuation_breaks {
     my @i_first = ();    # the first index to output
     my @i_last  = ();    # the last index to output
     my @i_colon_breaks = (); # needed to decide if we have to break at ?'s
+    if ($tokens_to_go[0] eq ':') {push @i_colon_breaks, 0}
 
     set_bond_strengths();
 
@@ -8443,6 +8495,16 @@ sub set_continuation_breaks {
     my $max_bias                = 0.001;
     my $leading_alignment_token = "";
     my $leading_alignment_type  = "";
+
+    # see if any ?/:'s are in order
+    my $colons_in_order = 1;
+    my $last_tok = "";
+    my @colon_list = grep /^[\?\:]$/ , @tokens_to_go[0..$max_index_to_go];
+    foreach my $tok( @colon_list) {
+      if ($tok eq $last_tok) {$colons_in_order=0; last}
+      $last_tok=$tok;
+    }
+    my $is_colon_chain = ($colons_in_order && @colon_list > 2) ; 
 
     while ( $i_begin <= $imax ) {
         my $lowest_strength   = NO_BREAK;
@@ -8616,13 +8678,17 @@ sub set_continuation_breaks {
         #-------------------------------------------------------
         foreach my $i ( $i_begin + 1 .. $i_lowest - 1 ) {
             next unless ( $tokens_to_go[$i] eq '?' );
-            unless ( $mate_index_to_go[$i] >= 0
-                && $mate_index_to_go[$i] <= $i_next_nonblank )
-            {
-                $i_lowest = $i;
-                if ( $want_break_before{'?'} ) {$i_lowest--}
-                last;
-            }
+
+            # do not break if probable sequence of ?/: statements
+            next if ($is_colon_chain);
+
+            # no break needed if matching : is also on the line
+            next if ($mate_index_to_go[$i] >= 0
+                && $mate_index_to_go[$i] <= $i_next_nonblank );
+
+            $i_lowest = $i;
+            if ( $want_break_before{'?'} ) {$i_lowest--}
+            last;
         }
 
         # final index calculation
@@ -8696,13 +8762,13 @@ sub set_continuation_breaks {
     #-------------------------------------------------------
     if (@i_colon_breaks) {
 
-       #----------------------------------------------------
-       # FIXME: Temporary simple method
-       my $is_not_chain = (@i_colon_breaks==1  
-         && $types_to_go[$max_index_to_go] eq ';');
-       #----------------------------------------------------
+       # using a simple method for deciding if we are in a ?/: chain --
+       # this is a chain if it has multiple ?/: pairs all in order;
+       # otherwise not.
+       # Note that if line starts in a ':' we count that above as a break
+       my $is_chain = ($colons_in_order && @i_colon_breaks>1) ; 
 
-       if ($is_not_chain) {
+       unless ($is_chain) {
            my @insert_list=();
            foreach my $i(@i_colon_breaks) {
                my $i_question = $mate_index_to_go[$i];
@@ -8732,6 +8798,8 @@ sub insert_additional_breaks {
         $i_l    = $$ri_last[$line_number];
         while($i_break_left >= $i_l) {
             $line_number++;
+
+            # shouldn't happen
             if ($line_number >= @$ri_last) {
                warning("BUBBA: couldn't set break at $i_break_left\n");
                return;
