@@ -61,7 +61,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.34 2002/11/27 06:15:27 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.35 2002/11/28 22:28:42 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 sub streamhandle {
@@ -3115,11 +3115,11 @@ sub make_line_information_string {
         # keep logfile columns aligned for scripts up to 999 lines;
         # for longer scripts it doesn't really matter
         my $extra_space = "";
-        $extra_space .= ( $input_line_number < 10 )  ? "  "
-          :             ( $input_line_number < 100 ) ? " "
+        $extra_space .= ( $input_line_number < 10 ) ? "  "
+          : ( $input_line_number < 100 ) ? " "
           : "";
-        $extra_space .= ( $output_line_number < 10 )  ? "  "
-          :             ( $output_line_number < 100 ) ? " "
+        $extra_space .= ( $output_line_number < 10 ) ? "  "
+          : ( $output_line_number < 100 ) ? " "
           : "";
 
         # there are 2 possible nesting strings:
@@ -4735,9 +4735,9 @@ EOM
 
     # add the line number if requested
     if ( $rOpts->{'html-line-numbers'} ) {
-        my $extra_space .= ( $line_number < 10 )   ? "   "
-          :                ( $line_number < 100 )  ? "  "
-          :                ( $line_number < 1000 ) ? " "
+        my $extra_space .= ( $line_number < 10 ) ? "   "
+          : ( $line_number < 100 )  ? "  "
+          : ( $line_number < 1000 ) ? " "
           : "";
         $html_line = $extra_space . $line_number . " " . $html_line;
     }
@@ -7632,7 +7632,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.34 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.35 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -9728,7 +9728,7 @@ sub add_closing_side_comment {
 
 sub previous_nonblank_token {
     my ($i) = @_;
-    if ($i <= 0) {
+    if ( $i <= 0 ) {
         return "";
     }
     elsif ( $types_to_go[ $i - 1 ] ne 'b' ) {
@@ -9777,9 +9777,9 @@ sub send_lines_to_vertical_aligner {
         my $i_start  = $ibeg;
         my $i;
 
-        my $depth=0;
-        my @container_name=("");
-        my @multiple_comma_arrows=(undef);
+        my $depth                 = 0;
+        my @container_name        = ("");
+        my @multiple_comma_arrows = (undef);
 
         my $j = 0;    # field index
 
@@ -9789,19 +9789,20 @@ sub send_lines_to_vertical_aligner {
             # Keep track of containers balanced on this line only.
             # These are used below to prevent unwanted cross-line alignments.
             # Unbalanced containers already avoid aligning across
-            # container boundaries. 
+            # container boundaries.
             if ( $tokens_to_go[$i] eq '(' ) {
                 my $i_mate = $mate_index_to_go[$i];
                 if ( $i_mate > $i && $i_mate <= $iend ) {
                     $depth++;
-                    my $seqno=$type_sequence_to_go[$i];
-                    my $count=comma_arrow_count($seqno);
-                    $multiple_comma_arrows[$depth]=$count && $count > 1;
-                    $container_name[$depth] =
-                      "+" . previous_nonblank_token($i);
+                    my $seqno = $type_sequence_to_go[$i];
+                    my $count = comma_arrow_count($seqno);
+                    $multiple_comma_arrows[$depth] = $count && $count > 1;
+                    my $name = previous_nonblank_token($i);
+                    $name =~ s/^->//;
+                    $container_name[$depth] = "+" . $name;
                 }
             }
-            elsif ($tokens_to_go[$i] eq ')') {
+            elsif ( $tokens_to_go[$i] eq ')' ) {
                 $depth-- if $depth > 0;
             }
 
@@ -9821,7 +9822,7 @@ sub send_lines_to_vertical_aligner {
                 # cross-line alignments.
                 if ( $raw_tok eq ',' ) {
                     if ( $container_name[$depth] ) {
-                        $tok .= $container_name[$depth]; 
+                        $tok .= $container_name[$depth];
                     }
                 }
 
@@ -9831,13 +9832,12 @@ sub send_lines_to_vertical_aligner {
                 # - The container name if it is bananced and no other '=>'s
                 elsif ( $raw_tok eq '=>' ) {
                     if ( $container_name[$depth] ) {
-                         if ($multiple_comma_arrows[$depth]) {
-                            my $tokm=previous_nonblank_token($i);
-                            $tok .= "+" . $tokm;
-                         }
-                         else {
-                            $tok .= "+" . $container_name[$depth];
-                         }
+                        if ( $multiple_comma_arrows[$depth] ) {
+                            $tok .= "+" . previous_nonblank_token($i);
+                        }
+                        else {
+                            $tok .= $container_name[$depth];
+                        }
                     }
                 }
 
@@ -9964,7 +9964,7 @@ sub send_lines_to_vertical_aligner {
     }
 
     sub comma_arrow_count {
-        my $seqno=$_[0];
+        my $seqno = $_[0];
         return $comma_arrow_count{$seqno};
     }
 
@@ -9976,7 +9976,7 @@ sub send_lines_to_vertical_aligner {
 
         @unmatched_opening_indexes_in_this_batch = ();
         @unmatched_closing_indexes_in_this_batch = ();
-        %comma_arrow_count = ();
+        %comma_arrow_count                       = ();
 
         my ( $i, $i_mate, $token );
         foreach $i ( 0 .. $max_index_to_go ) {
@@ -10006,10 +10006,10 @@ sub send_lines_to_vertical_aligner {
                     }
                 }
             }
-            elsif ( $tokens_to_go[$i] eq '=>') {
+            elsif ( $tokens_to_go[$i] eq '=>' ) {
                 if (@unmatched_opening_indexes_in_this_batch) {
-                    my $j=$unmatched_opening_indexes_in_this_batch[-1];
-                    my $seqno=$type_sequence_to_go[$j];
+                    my $j     = $unmatched_opening_indexes_in_this_batch[-1];
+                    my $seqno = $type_sequence_to_go[$j];
                     $comma_arrow_count{$seqno}++;
                 }
             }
@@ -15116,8 +15116,8 @@ sub initialize {
 
     # variables describing the entire space group:
 
-    $ralignment_list = [];
-    $group_level     = 0;
+    $ralignment_list            = [];
+    $group_level                = 0;
     $last_group_level_written   = -1;
     $extra_indent_ok            = 0;    # can we move all lines to the right?
     $last_side_comment_length   = 0;
@@ -15822,7 +15822,7 @@ sub eliminate_new_fields {
         # never combine fields of a comma list
         return
           unless ( $maximum_field_index > 1 )
-          &&     ( $new_line->get_list_type() !~ /^,/ );
+          && ( $new_line->get_list_type() !~ /^,/ );
     }
 
     my $rfields       = $new_line->get_rfields();
@@ -15909,24 +15909,23 @@ sub check_match {
     {
 
         my $leading_space_count = $new_line->get_leading_space_count();
-        my $saw_equals=0;
+        my $saw_equals          = 0;
         for my $j ( 0 .. $jlimit ) {
             my $match = 1;
 
-            my $old_tok=$$old_rtokens[$j] ;
-            my $new_tok=$$rtokens[$j];
+            my $old_tok = $$old_rtokens[$j];
+            my $new_tok = $$rtokens[$j];
 
             # dumb down the match after an equals
-            if ($saw_equals && $new_tok =~ /(.*)\+/) { 
-                 $new_tok=$1;
-                 $old_tok=~s/\+.*$//;
+            if ( $saw_equals && $new_tok =~ /(.*)\+/ ) {
+                $new_tok = $1;
+                $old_tok =~ s/\+.*$//;
             }
-            if ( $new_tok =~ /^=\d*$/ ) { $saw_equals=1 }
+            if ( $new_tok =~ /^=\d*$/ ) { $saw_equals = 1 }
 
             # we never match if the matching tokens differ
             if (   $j < $jlimit
-                && $old_tok ne $new_tok
-                )
+                && $old_tok ne $new_tok )
             {
                 $match = 0;
             }
@@ -15940,7 +15939,7 @@ sub check_match {
                 # alignment where none is needed than to omit one.  The current
                 # rule: if we are within a matching sub call (indicated by '+'
                 # in the matching token), we'll allow a marginal match, but
-                # otherwise not.  
+                # otherwise not.
                 #
                 # Here's an example where we'd like to align the '='
                 #  my $cfile = File::Spec->catfile( 't',    'callext.c' );
@@ -15958,7 +15957,7 @@ sub check_match {
                         $marginal_match = 1;
                     }
                     else {
-                        $match=0;
+                        $match = 0;
                     }
                 }
 
@@ -15971,7 +15970,7 @@ sub check_match {
                 # the left.
                 elsif ( $new_tok =~ /^=\d*$/ ) {
 
-                    $saw_equals=1;
+                    $saw_equals = 1;
 
                     # It is best to be a little restrictive when
                     # aligning '=' tokens.  Here is an example of
@@ -15999,7 +15998,7 @@ sub check_match {
                     # We'll let this be a tentative match and undo
                     # it later if we don't find more than 2 lines
                     # in the group.
-                    elsif ($maximum_line_index==0) {
+                    elsif ( $maximum_line_index == 0 ) {
                         $marginal_match = 1;
                     }
                 }
@@ -18489,6 +18488,10 @@ sub reset_indentation_level {
     @_ = qw(for foreach);
     @is_for_foreach{@_} = (1) x scalar(@_);
 
+    my %is_my_our;
+    @_ = qw(my our);
+    @is_my_our{@_} = (1) x scalar(@_);
+
     # These keywords may introduce blocks after parenthesized expressions,
     # in the form:
     # keyword ( .... ) { BLOCK }
@@ -19012,6 +19015,14 @@ sub reset_indentation_level {
             # ATTRS: check for a ':' which introduces an attribute list
             # (this might eventually get its own token type)
             elsif ( $statement_type =~ /^sub/ ) {
+                $type = ':';
+            }
+
+            # check for scalar attribute, such as
+            # my $foo : shared = 1;
+            elsif ($is_my_our{$statement_type}
+                && $current_depth[QUESTION_COLON] == 0 )
+            {
                 $type = ':';
             }
 
@@ -19905,6 +19916,11 @@ EOM
                         $statement_type = $tok;
                         error_if_expecting_OPERATOR()
                           if ( $expecting == OPERATOR );
+                    }
+
+                    # remember my and our to check for trailing ": shared"
+                    elsif ( $is_my_our{$tok} ) {
+                        $statement_type = $tok;
                     }
 
                     # Check for misplaced 'elsif' and 'else', but allow isolated
@@ -22399,16 +22415,26 @@ sub scan_id_do {
                 $pos -= length($attrs);
             }
 
+            my $next_nonblank_token = $tok;
+
+            # catch case of line with leading ATTR ':' after anonymous sub
+            if ( $pos == $pos_beg && $tok eq ':' ) {
+                $type = ':';
+            }
+
             # We must convert back from character position
             # to pre_token index.
-            # I don't think an error flag can occur here ..but ?
-            my $error;
-            ( $i, $error ) = inverse_pretoken_map( $i, $pos, $rtoken_map );
-            if ($error) { warning("Possibly invalid sub\n") }
+            else {
 
-            # check for multiple definitions of a sub
-            my ( $next_nonblank_token, $i_next ) =
-              find_next_nonblank_token_on_this_line( $i, $rtokens );
+                # I don't think an error flag can occur here ..but ?
+                my $error;
+                ( $i, $error ) = inverse_pretoken_map( $i, $pos, $rtoken_map );
+                if ($error) { warning("Possibly invalid sub\n") }
+
+                # check for multiple definitions of a sub
+                ( $next_nonblank_token, my $i_next ) =
+                  find_next_nonblank_token_on_this_line( $i, $rtokens );
+            }
 
             if ( $next_nonblank_token =~ /^(\s*|#)$/ )
             {    # skip blank or side comment

@@ -7,6 +7,8 @@
 
 =head2 2002 xx xx
 
+ -Implemented scalar attributes.  Thanks to Sean Tobin for noting this.
+
  -outdent-long-comments (-olc) has been re-instated as a default, since
   it works much better now.  Use -nolc if you want to prevent it.
 
@@ -35,7 +37,7 @@
     $borrowerinfo->configure( -state => 'disabled' );
     $borrowerinfo->grid( -col => 1, -row => 0, -sticky => 'w' );
 
-  Thanks to Mark Olesen for noting this.
+  Thanks to Mark Olesen for suggesting this.
 
  -Numerous other minor improvements in vertical alignment.
 
