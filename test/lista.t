@@ -85,3 +85,17 @@ $thumbheight, $pub, $createtm,$inserttm,$refcount,$crapb,$crapc,$crapd,$border) 
            $fields{ARCH}, $fields{GROUP},
       $fields{SLPKGVERSION},
     ) = unpack( $slp::footer_packstring, $footer );
+
+
+            # This can be formatted with an odd number of columns (lvalue)
+            ( $racine, $vale1, $vale2, $vale3, $vale4,
+               $vale5, $vale6, $vale7, $vale8, $vale9 )
+              = split;
+
+    # This should be formatted with an odd number of columns but
+    # is not currently.  Logic is needed to see that all items
+    # are similar.
+    my @indices = (
+        0x0F, 0x08, 0x0C, 0x0E, 0x17, 0x11, 0x0B, 0x12,
+        0x1D, 0x24, 0x0A, 0x16, 0x09, 0x0D
+    );

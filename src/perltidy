@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.35 2001/08/28 02:00:08 perltidy Exp $
+    $Id: perltidy,v 1.36 2001/08/29 04:52:55 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -4417,7 +4417,7 @@ sub print_line_of_tokens {
     #     /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
     # Examples:
     #   *VERSION = \'1.01';
-    #   ( $VERSION ) = '$Revision: 1.35 $ ' =~ /\$Revision:\s+([^\s]+)/;
+    #   ( $VERSION ) = '$Revision: 1.36 $ ' =~ /\$Revision:\s+([^\s]+)/;
     # We will pass such a line straight through unless -npvl is used
     my $is_VERSION_statement = 0;
 
@@ -5294,7 +5294,9 @@ sub correct_lp_indentation {
                 # looking for indentation item for which we are aligning 
                 # with parens, braces, and brackets 
                 next unless ( $indentation->get_ALIGN_PAREN() );
-                $want_to_flush_vertical_aligner = 1;
+                if ($line == 0 && $line < $max_line && $i == $iend) {
+                    $want_to_flush_vertical_aligner = 1;
+                }
 
                 # Ok, let's see what the error is and try to fix it
                 my $actual_pos;
@@ -6617,6 +6619,7 @@ sub scan_list {
               $breakpoint_stack[$current_depth] != $forced_breakpoint_count;
 
             my $list_type=$container_type[$current_depth];
+            if ( $next_nonblank_type eq '=' ) {$list_type = '='}
             if ( $item_count > 0 ) {
                 set_list_breakpoints(
                     $i_opening,
@@ -6999,7 +7002,10 @@ sub set_list_breakpoints {
     # use an even number of fields unless we know that it is not a hash
     # list.
     my $odd_or_even = 2;  # 1 = odd field count ok, 2 = want even count
-    if (defined($list_type) && $list_type =~ /^(my|local|our)$/) {$odd_or_even=1}
+    if (defined($list_type) && $list_type =~ /^(my|local|our|=)$/) {$odd_or_even=1}
+
+    # TESTING
+    if ($identifier_count == $item_count) {$odd_or_even=1}    # seems safe
 
     # are we an item contained in an outer list?
     my $in_hierarchical_list = $next_nonblank_type =~ /^[\}\,]$/;
@@ -10164,6 +10170,7 @@ use vars qw{
   $last_last_nonblank_token
   $last_last_nonblank_type
   $last_last_nonblank_block_type
+  $last_nonblank_prototype
   $statement_type
   $identifier
   $in_quote
@@ -10191,6 +10198,7 @@ use vars qw{
   $saw_v_string
   %is_constant
   %is_user_function
+  %user_function_prototype
   $max_token_index
   $peeked_ahead
   $current_package
@@ -10224,6 +10232,7 @@ use vars qw{
   %is_trigraph
   %is_valid_token_type
   %is_keyword
+  %really_want_term
   @opening_brace_names
   @closing_brace_names
   %is_keyword_taking_list
@@ -11225,6 +11234,7 @@ sub prepare_for_a_new_file {
     $last_last_nonblank_token = ';';
     $last_last_nonblank_type  = ';';
     $last_last_nonblank_block_type = '';
+    $last_nonblank_prototype  = "";
     $identifier                    = '';
     $in_quote   = 0;     # flag telling if we are chasing a quote, and what kind
     $quote_type = 'Q';
@@ -11248,6 +11258,7 @@ sub prepare_for_a_new_file {
     $brace_package[$paren_depth]                           = $current_package;
     %is_constant                      = ();             # user-defined constants
     %is_user_function                 = ();             # user-defined functions
+    %user_function_prototype          = ();             # their prototypes
     %is_block_function                = ();
     %is_block_list_function           = ();
     $unexpected_error_count           = 0;
@@ -11416,6 +11427,7 @@ current version.
 
     my $tok             = $last_nonblank_token;
     my $type            = $last_nonblank_type;
+    my $prototype       = $last_nonblank_prototype;
     my $last_nonblank_i = -1;
     my $block_type      = $last_nonblank_block_type;
     my $next_tok;
@@ -11548,6 +11560,7 @@ EOM
             $last_last_nonblank_block_type = $last_nonblank_block_type;
             $last_nonblank_token           = $tok;
             $last_nonblank_type            = $type;
+            $last_nonblank_prototype       = $prototype;
             $last_nonblank_block_type      = $block_type;
             $last_nonblank_i               = $i_tok;
         }
@@ -11562,6 +11575,7 @@ EOM
         $tok        = $pre_tok;
         $type       = $pre_type; # to be modified as necessary
         $block_type = "";        # blank for all tokens except code block braces
+        $prototype  = "";        # blank for all tokens except user defined subs
         $i_tok      = $i;
 
         # this pre-token will start an output token
@@ -11668,6 +11682,7 @@ EOM
                     if ( $is_constant{$current_package}{$tok} ) { $type = 'C' }
                     elsif ( $is_user_function{$current_package}{$tok} ) {
                         $type = 'U';
+                        $prototype  = $user_function_prototype{$current_package}{$tok};
                     }
                     elsif ( $tok =~ /^v\d+$/ ) {
                         $type = 'v';
@@ -11739,8 +11754,8 @@ EOM
                 $tokenizer_self->{_saw_use_strict} = 1;
 
                 #$type = 'k';
-                ( $i, $tok, $type ) =
-                  scan_bare_identifier( $input_line, $i, $tok, $type,
+                ( $i, $tok, $type, $prototype ) =
+                  scan_bare_identifier( $input_line, $i, $tok, $type, $prototype,
                     $rtoken_map );
             }
 
@@ -11751,8 +11766,8 @@ EOM
 
                 # scan as identifier, so that we pick up something like:
                 # use warnings::register
-                ( $i, $tok, $type ) =
-                  scan_bare_identifier( $input_line, $i, $tok, $type,
+                ( $i, $tok, $type, $prototype ) =
+                  scan_bare_identifier( $input_line, $i, $tok, $type, $prototype,
                     $rtoken_map );
             }
 
@@ -11772,8 +11787,8 @@ EOM
                 $tokenizer_self->{_look_for_autoloader} = 0;
 
                 #$type = 'k';
-                ( $i, $tok, $type ) =
-                  scan_bare_identifier( $input_line, $i, $tok, $type,
+                ( $i, $tok, $type, $prototype ) =
+                  scan_bare_identifier( $input_line, $i, $tok, $type, $prototype,
                     $rtoken_map );
             }
 
@@ -11786,8 +11801,8 @@ EOM
                 write_logfile_entry("SelfLoader seen, -nlsl deactivates\n");
                 $tokenizer_self->{_saw_selfloader}      = 1;
                 $tokenizer_self->{_look_for_selfloader} = 0;
-                ( $i, $tok, $type ) =
-                  scan_bare_identifier( $input_line, $i, $tok, $type,
+                ( $i, $tok, $type, $prototype ) =
+                  scan_bare_identifier( $input_line, $i, $tok, $type, $prototype,
                     $rtoken_map );
 
                 #$type = 'k';
@@ -11798,8 +11813,8 @@ EOM
             {
 
                 #$type = 'k';
-                ( $i, $tok, $type ) =
-                  scan_bare_identifier( $input_line, $i, $tok, $type,
+                ( $i, $tok, $type, $prototype ) =
+                  scan_bare_identifier( $input_line, $i, $tok, $type, $prototype,
                     $rtoken_map );
                 my ( $next_nonblank_token, $i_next ) =
                   find_next_nonblank_token( $i, $rtokens );
@@ -11934,8 +11949,8 @@ EOM
             # something else -- 
             else {
 
-                ( $i, $tok, $type ) =
-                  scan_bare_identifier( $input_line, $i, $tok, $type,
+                ( $i, $tok, $type, $prototype ) =
+                  scan_bare_identifier( $input_line, $i, $tok, $type, $prototype,
                     $rtoken_map );
 
                 # mark bare words following a file test operator as
@@ -11978,17 +11993,28 @@ EOM
 
             }
 
-            # TENTATIVE
             elsif ( $tok eq '>' ) {    
                 if ( $expecting == TERM ) {
+
+                    # This is tricky to check but probably worthwhile.
+                    # Something like this is ok:  $a = ( rand > 0.5 );
+                    # and a user function without prototype is ok:
+                    #    sub PROTOCOL { 2.0 }
+                    #    if (PROTOCOL > $cache->{PROTOCOL}) { bla  }
+
+                    #if ($last_nonblank_type !~ /^[Uk]$/) {
+                    if ($really_want_term{$last_nonblank_type}) {
                     unexpected( "'>'", "term", $i_tok,
                         $last_nonblank_i );
+                    }
                 }
             }
             elsif ( $tok eq '|' ) {    
                 if ( $expecting == TERM ) {
+                    if ($really_want_term{$last_nonblank_type}) {
                     unexpected( "'>'", "term", $i_tok,
                         $last_nonblank_i );
+                    }
                 }
             }
 
@@ -12424,8 +12450,16 @@ EOM
                         $i    = $i + 1;
                         $type = 'w';
                     }
+
+                    # See comments above for '>'.  Something like this is
+                    # valid but strange: undef ^I;
                     else {
-                        unexpected( "'^'", "term", $i_tok, $last_nonblank_i );
+                       if ($really_want_term{$last_nonblank_type}) {
+                           unexpected( "'^'", "term", $i_tok, $last_nonblank_i );
+                       }
+                       else {
+                           complain("The '^' seems unusual to me here\n");
+                       }
                     }
                 }
             }
@@ -12438,8 +12472,8 @@ EOM
 
             if ( $tok eq '::' ) {    # probably a sub call
 
-                ( $i, $tok, $type ) =
-                  scan_bare_identifier( $input_line, $i, $tok, $type,
+                ( $i, $tok, $type, $prototype ) =
+                  scan_bare_identifier( $input_line, $i, $tok, $type, $prototype,
                     $rtoken_map );
             }
             elsif ( $tok eq '<<' ) {    # maybe a here-doc?
@@ -12473,9 +12507,8 @@ EOM
                   scan_identifier( $i, $id_scan_state, $identifier, $rtokens );
             }
 
-            # type = 'pp' for pre-increment, '++' for post-increment
+            # type = 'pp' for pre-increment, '++' for post-increment 
             elsif ( $tok eq '++' ) {
-
                 if ( $expecting == TERM ) { $type = 'pp' }
             }
 
@@ -12506,6 +12539,7 @@ EOM
         $last_nonblank_token           = $tok;
         $last_nonblank_type            = $type;
         $last_nonblank_block_type      = $block_type;
+        $last_nonblank_prototype       = $prototype;
     }
 
     # reset indentation level if necessary at a sub or package
@@ -13217,6 +13251,14 @@ that it uses, which are initialized in the BEGIN section.
 
     my ( $prev_type, $tok, $next_type ) = @_;
     my $op_expected = UNKNOWN;
+
+    # Note: function prototype is available for token type 'U' for future 
+    # program development.  It contains the leading and trailing parens,
+    # and no blanks.  It might be used to eliminate token type 'C', for
+    # example (prototype = '()'). Thus:
+    # if ($last_nonblank_type eq 'U') {
+    #     print "previous token=$last_nonblank_token  type=$last_nonblank_type prototype=$last_nonblank_prototype\n";
+    # }
 
     # A possible filehandle (or object) requires some care...
     if ( $last_nonblank_type eq 'Z' ) {
@@ -14252,7 +14294,7 @@ sub scan_bare_identifier {
     # this routine is called to scan a token starting with an alphanumeric
     # variable or package separator, :: or '.
 
-    my ( $input_line, $i, $tok, $type, $rtoken_map ) = @_;
+    my ( $input_line, $i, $tok, $type, $prototype, $rtoken_map ) = @_;
     my $i_begin = $i;
     my $package = undef;
 
@@ -14344,6 +14386,7 @@ sub scan_bare_identifier {
             }
             elsif ( $is_user_function{$package}{$sub_name} ) {
                 $type = 'U';
+                $prototype  = $user_function_prototype{$package}{$sub_name};
             }
 
             # check for indirect object
@@ -14456,7 +14499,7 @@ sub scan_bare_identifier {
         # change this warning to log message if it becomes annoying
         warning("didn't find identifier after leading ::\n");
     }
-    return ( $i, $tok, $type );
+    return ( $i, $tok, $type, $prototype );
 }
 
 sub scan_id {
@@ -14609,6 +14652,7 @@ sub do_scan_sub {
             $proto =~ s/\s*\)$//;
             if ($proto) {
                 $is_user_function{$package}{$subname} = 1;
+                $user_function_prototype{$package}{$subname} = "($proto)";
 
                 # prototypes containing '&' must be treated specially..
                 if ( $proto =~ /\&/ ) {
@@ -15382,15 +15426,14 @@ BEGIN {
     # --added srand 20-mar-01
     my @value_requestor = qw(
       AUTOLOAD
-
       BEGIN
+      CHECK
       DESTROY
       END
-      CHECK
-      INIT
       EQ
       GE
       GT
+      INIT
       LE
       LT
       NE
@@ -15434,7 +15477,6 @@ BEGIN {
       fcntl
       fileno
       flock
-
       for
       foreach
       formline
@@ -15460,7 +15502,6 @@ BEGIN {
       grep
       gt
       hex
-
       if
       index
       int
@@ -15507,6 +15548,7 @@ BEGIN {
       prototype
       push
       quotemeta
+      rand
       read
       readdir
       readlink
@@ -15550,6 +15592,8 @@ BEGIN {
       splice
       split
       sprintf
+      sqrt
+      srand
       stat
       study
       substr
@@ -15569,13 +15613,11 @@ BEGIN {
       ucfirst
       umask
       undef
-
       unless
       unlink
       unpack
       unshift
       untie
-
       until
       use
       utime
@@ -15583,7 +15625,6 @@ BEGIN {
       vec
       waitpid
       warn
-
       while
       write
       xor
@@ -15630,14 +15671,6 @@ BEGIN {
 
     push ( @Keywords, @operator_requestor );
 
-    # These may be followed by either an operator or term
-    my @undecided = qw(
-      srand
-      sqrt
-      rand
-    );
-    push ( @Keywords, @undecided );
-
     # These are treated the same but are not considered keywords:
     my @extra_or = qw(
       STDERR
@@ -15669,6 +15702,14 @@ BEGIN {
       ;    # (perl doesn't like a ',' in a qw block)
     @expecting_term_types{@value_requestor_type} =
       (1) x scalar(@value_requestor_type);
+
+    # For simple syntax checking, it is nice to have a list of operators which
+    # will really be unhappy if followed by something like '>'. This is almost
+    # all of the above except for uncertain items like 'U'
+    %really_want_term = %expecting_term_types;
+    undef $really_want_term{'U'};
+    undef $really_want_term{'F'};  # not sure; check all cases
+    undef $really_want_term{'Y'};  # not sure; check all cases
 
     #These keywords are handled specially in the tokenizer code:
     my @special_keywords = qw(
