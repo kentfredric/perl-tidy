@@ -355,6 +355,19 @@ previous example with B<-icp> would give,
         'Nov', 'Dec'
         );
 
+=item B<-icb>, B<--indent-closing-brace>
+
+The B<-icb> option leaves a brace which terminates a code block 
+indented with the same indentation as the previous line.  For example,
+
+        if ($task) {
+            yyy();
+            }    # -icb
+        else {
+            zzz();
+            }
+
+The default is not to do this, indicated by B<-nicb>.
 
 =item B<-ibc>,  B<--indent-block-comments>
 
