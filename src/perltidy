@@ -131,9 +131,9 @@ Write a style sheet to F<mystyle.css> and exit.
 
   perltidy -html -frm mymodule.pm
 
-Write html with a frame holding a table of contents and the actual content.  The
-output files will be F<mymodule.pm.html> (the frame), F<mymodule.pm.left.html>
-(the table of contents), and F<mymodule.pm.right.html> (the perl script).
+Write html with a frame holding a table of contents and the source code.  The
+output files will be F<mymodule.pm.html> (the frame), F<mymodule.pm.toc.html>
+(the table of contents), and F<mymodule.pm.src.html> (the source code).
 
 =head1 OPTIONS - OVERVIEW
 
@@ -2028,54 +2028,65 @@ pod2html (see next item).
 There are two options for formatting pod documentation.  The default is
 to pass the pod through the Pod::Html module (which forms the basis of
 the pod2html utility).  Any code sections are formatted by perltidy, and
-the results then merged.  Note: a temporary file will be created 
-when Pod::Html is used; see L<FILES>.
+the results then merged.  Note: perltidy creates a temporary file when
+Pod::Html is used; see L<FILES>.  Also, Pod::Html creates temporary
+files for its cache.
 
-All of the flags accepted by pod2html may be included in the perltidy
-command line, and they will be passed to pod2html.  These include
+If there is a single pod text section (one =cut line), the pod text will
+be at the top of the html output and the perl code will follow.
+Otherwise, the order of pod text and perl code will be unchanged.
 
-   --backlink=s --cachedir=s --htmlroot=s --libpods=s --title=s --css=s
-   --podpath=s --podroot=s --[no]header --[no]index --[no]recurse
-   --flush
+Most of the flags accepted by pod2html may be included in the perltidy
+command line, and they will be passed to pod2html.  In some cases,
+the flags have a prefix C<pod> to emphasize that they are for the
+pod2html, and this prefix will be removed before they are passed to
+pod2html.  The flags which have the additional C<pod> prefix are:
 
-where 's' is an appropriate character string. See Pod::Html for more
-information.
+   --[no]podheader --[no]podindex --[no]podrecurse --[no]podquiet 
+   --[no]podverbose --podflush
+
+The flags which are unchanged from their use in pod2html are:
+
+   --backlink=s --cachedir=s --htmlroot=s --libpods=s --title=s
+   --podpath=s --podroot=s 
+
+where 's' is an appropriate character string.  Not all of these flags are
+available in older versions of Pod::Html.  See your Pod::Html documentation for
+more information.
 
 The alternative, indicated with B<-npod>, is not to use Pod::Html, but
 rather to format pod text in italics (or whatever the stylesheet
-indicates), without special html markup.  This might be useful if pod is
-merely being used as an alternative way to write comments.
+indicates), without special html markup.  This is useful, for example,
+if pod is being used as an alternative way to write comments.
 
-=item  The B<-frm>, or B<--html-frames> flag
+=item  The B<-frm>, or B<--frames> flag
 
-By default, a single html output file is produced.  This can be changed with
-the B<-frm> option, which creates a frame holding a table of contents in the
-left panel and the actual content in the right side, which simplifies code
-browsing.  Assume, for example, that the input file is F<MyModule.pm>.  Then,
-for default file extension choices, these three files will be created:
+By default, a single html output file is produced.  This can be changed
+with the B<-frm> option, which creates a frame holding a table of
+contents in the left panel and the source code in the right side. This
+simplifies code browsing.  Assume, for example, that the input file is
+F<MyModule.pm>.  Then, for default file extension choices, these three
+files will be created:
 
- MyModule.pm.html        - the frame
- MyModule.pm.left.html   - the table of contents
- MyModule.pm.right.html  - the formatted script
+ MyModule.pm.html      - the frame
+ MyModule.pm.toc.html  - the table of contents
+ MyModule.pm.src.html  - the formatted source code
 
 Obviously this file naming scheme requires that output be directed to a real
 file (as opposed to, say, standard output).  If this is not the
 case, or if the file extension is unknown, the B<-frm> option will be
 ignored.
 
-See the next items for how to modify the extra extensions "left" and
-"right".
-
-=item  The B<-lext=s>, or B<--html-toc-extension> flag
+=item  The B<-text=s>, or B<--html-toc-extension> flag
 
 Use this flag to specify the extra file extension of the table of contents file
-when html frames are used.  The default is "left".
+when html frames are used.  The default is "toc".
 See L<Specifying File Extensions>.
 
-=item  The B<-rext=s>, or B<--html-content-extension> flag
+=item  The B<-sext=s>, or B<--html-src-extension> flag
 
 Use this flag to specify the extra file extension of the content file when html
-frames are used.  The default is "right".
+frames are used.  The default is "src".
 See L<Specifying File Extensions>.
 
 =item  Style Sheets

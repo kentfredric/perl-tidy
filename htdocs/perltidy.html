@@ -18,7 +18,6 @@
 	<LI><A HREF="#options  overview">OPTIONS - OVERVIEW</A></LI>
 	<UL>
 
-		<LI><A HREF="#specifying block types">Specifying Block Types</A></LI>
 		<LI><A HREF="#i/o control">I/O control</A></LI>
 	</UL>
 
@@ -38,6 +37,13 @@
 	</UL>
 
 	<LI><A HREF="#html options">HTML OPTIONS</A></LI>
+	<LI><A HREF="#some common input conventions">SOME COMMON INPUT CONVENTIONS</A></LI>
+	<UL>
+
+		<LI><A HREF="#specifying block types">Specifying Block Types</A></LI>
+		<LI><A HREF="#specifying file extensions">Specifying File Extensions</A></LI>
+	</UL>
+
 	<LI><A HREF="#switches which may be negated">SWITCHES WHICH MAY BE NEGATED</A></LI>
 	<LI><A HREF="#limitations">LIMITATIONS</A></LI>
 	<LI><A HREF="#files">FILES</A></LI>
@@ -144,6 +150,11 @@ larger web page.  No style sheet will be written in this case.</P>
 <PRE>
   perltidy -html -ss &gt;mystyle.css</PRE>
 <P>Write a style sheet to <EM>mystyle.css</EM> and exit.</P>
+<PRE>
+  perltidy -html -frm mymodule.pm</PRE>
+<P>Write html with a frame holding a table of contents and the source code.  The
+output files will be <EM>mymodule.pm.html</EM> (the frame), <EM>mymodule.pm.toc.html</EM>
+(the table of contents), and <EM>mymodule.pm.src.html</EM> (the source code).</P>
 <P>
 <HR>
 <H1><A NAME="options  overview">OPTIONS - OVERVIEW</A></H1>
@@ -166,19 +177,6 @@ is <STRONG>-syn</STRONG> or <STRONG>--check-syntax</STRONG>.  The flag to skip t
 <P>Option names may be terminated early as long as they are uniquely identified.
 For example, instead of <STRONG>-dump-token-types</STRONG>, it would be sufficient to enter
 <STRONG>-dump-tok</STRONG>, or even <STRONG>-dump-t</STRONG>, to uniquely identify this command.</P>
-<P>
-<H2><A NAME="specifying block types">Specifying Block Types</A></H2>
-<P>Several parameters which refer to code block types may be customized by
-also specifying an associated list of block types.  The type of a block
-is the name of the keyword which introduces that block, such as <STRONG>if</STRONG>,
-<STRONG>else</STRONG>, or <STRONG>sub</STRONG>.  An exception is a labeled block, which should be
-specified with just a colon.</P>
-<P>For example, the following parameter specifies <CODE>sub</CODE>, labels, <CODE>BEGIN</CODE>, and
-<CODE>END</CODE> blocks:</P>
-<PRE>
-   -cscl=&quot;sub : BEGIN END&quot;</PRE>
-<P>(the meaning of the -cscl parameter is described below.)  Note that
-quotes are required around the list of block types.</P>
 <P>
 <H2><A NAME="i/o control">I/O control</A></H2>
 <P>The following parameters concern the files which are read and written.</P>
@@ -219,14 +217,9 @@ when desired with <STRONG>-nse</STRONG> on the command line.
 <P></P>
 <DT><STRONG><A NAME="item_%2Doext%3Dext%2C_%2D%2Doutput%2Dfile%2Dextension%3"><STRONG>-oext</STRONG>=ext,    <STRONG>--output-file-extension</STRONG>=ext</A></STRONG><BR>
 <DD>
-Change the extension of the output file to be <EM>.ext</EM> instead of the
-default <EM>.tdy</EM>.  If the <STRONG>-html</STRONG> option is used, this will change
-the extension to be <EM>.ext</EM> instead of the default <EM>.html</EM>.
-<P>If the extension <CODE>ext</CODE> begins with <CODE>A-Z</CODE>, <CODE>a-z</CODE>, or <CODE>0-9</CODE>, then it
-will be appended to the filename with an intermediate '.' (or '_' on
-some systems).  Otherwise, it will be appended directly.  Thus, for
-example, using <CODE>-oext=htm</CODE> and <CODE>-oext=.htm</CODE>  on <EM>somefile.pl</EM> with
-both produce <EM>somefile.pl.htm</EM></P>
+Change the extension of the output file to be <EM>ext</EM> instead of the
+default <EM>tdy</EM> (or <EM>html</EM> in case the -<STRONG>-html</STRONG> option is used).
+See <A HREF="#specifying file extensions">Specifying File Extensions</A>.
 <P></P>
 <DT><STRONG><A NAME="item_%2Dopath%3Dpath%2C_%2D%2Doutput%2Dpath%3Dpath"><STRONG>-opath</STRONG>=path,    <STRONG>--output-path</STRONG>=path</A></STRONG><BR>
 <DD>
@@ -257,13 +250,7 @@ if the <STRONG>-html</STRONG> flag is set.</P>
 <DT><STRONG><A NAME="item_%2Dbext%3Dext%2C_%2D%2Dbackup%2Dfile%2Dextension%3"><STRONG>-bext</STRONG>=ext,    <STRONG>--backup-file-extension</STRONG>=ext</A></STRONG><BR>
 <DD>
 Change the extension of the backup file to be something other than the
-default <EM>.bak</EM>.
-<P>If the extension <CODE>ext</CODE> begins with <CODE>A-Z</CODE>, <CODE>a-z</CODE>, or <CODE>0-9</CODE>, then it
-will be appended to the filename with an intermediate '.' (or '_' on
-some systems).  Otherwise, it will be appended directly.  For example,
-suppose the file is <EM>somefile.pl</EM>.  If <CODE>ext=old</CODE>, the backup file will
-be <EM>somefile.pl.old</EM>.  If <CODE>ext=~</CODE>, then the backup file will be
-<EM>somefile.pl~</EM>  .</P>
+default <EM>.bak</EM>.  See <A HREF="#specifying file extensions">Specifying File Extensions</A>.
 <P></P>
 <DT><STRONG><A NAME="item_%2Dw%2C_%2D%2Dwarning%2Doutput"><STRONG>-w</STRONG>,    <STRONG>--warning-output</STRONG></A></STRONG><BR>
 <DD>
@@ -536,8 +523,7 @@ versions of perltidy.  The negation of this also works, <STRONG>-noll</STRONG> o
 <DT><STRONG><A NAME="item_Outdenting_Labels%3A_%2Dola%2C_%2D%2Doutdent%2Dlab">Outdenting Labels: <STRONG>-ola</STRONG>,  <STRONG>--outdent-labels</STRONG></A></STRONG><BR>
 <DD>
 This command will cause labels to be outdented by 2 spaces (or whatever <STRONG>-ci</STRONG>
-has been set to), if possible.  This is the default.  For example, with
-<STRONG>perltidy -ola</STRONG>:
+has been set to), if possible.  This is the default.  For example:
 <PRE>
         my $i;
       LOOP: while ( $i = &lt;FOTOS&gt; ) {
@@ -545,8 +531,7 @@ has been set to), if possible.  This is the default.  For example, with
             next unless $i;
             fixit($i);
         }</PRE>
-<P>Labels which are already at the leftmost column will not be affected by
-this command.  Use <STRONG>-nola</STRONG> to not outdent labels.</P>
+<P>Use <STRONG>-nola</STRONG> to not outdent labels.</P>
 <P></P>
 <DT><STRONG><A NAME="item_Outdenting_Keywords">Outdenting Keywords</A></STRONG><BR>
 <DD>
@@ -1803,6 +1788,68 @@ web page.
 <DD>
 When the <STRONG>-nnn</STRONG> flag is given, the output lines will be numbered.
 <P></P>
+<DT><STRONG><A NAME="item_The_%2Dtoc%2C_or_%2D%2Dhtml%2Dtable%2Dof%2Dcontent">The <STRONG>-toc</STRONG>, or <STRONG>--html-table-of-contents</STRONG> flag</A></STRONG><BR>
+<DD>
+By default, a table of contents to packages and subroutines will be
+written at the start of html output.  Use <STRONG>-ntoc</STRONG> to prevent this.
+This might be useful, for example, for a pod document which contains a
+number of unrelated code snippets.  This flag only influences the code
+table of contents; it has no effect on any table of contents produced by
+pod2html (see next item).
+<P></P>
+<DT><STRONG><A NAME="item_The_%2Dpod%2C_or_%2D%2Dpod2html_flag">The <STRONG>-pod</STRONG>, or <STRONG>--pod2html</STRONG> flag</A></STRONG><BR>
+<DD>
+There are two options for formatting pod documentation.  The default is
+to pass the pod through the Pod::Html module (which forms the basis of
+the pod2html utility).  Any code sections are formatted by perltidy, and
+the results then merged.  Note: perltidy creates a temporary file when
+Pod::Html is used; see <EM>FILES</EM>.  Also, Pod::Html creates temporary
+files for its cache.
+<P>If there is a single pod text section (one =cut line), the pod text will
+be at the top of the html output and the perl code will follow.
+Otherwise, the order of pod text and perl code will be unchanged.</P>
+<P>All of the flags accepted by pod2html may be included in the perltidy
+command line, and they will be passed to pod2html.  These include</P>
+<PRE>
+   --backlink=s --cachedir=s --htmlroot=s --libpods=s --title=s --css=s
+   --podpath=s --podroot=s --[no]header --[no]index --[no]recurse
+   --flush</PRE>
+<P>where 's' is an appropriate character string. See Pod::Html for more
+information.</P>
+<P>The alternative, indicated with <STRONG>-npod</STRONG>, is not to use Pod::Html, but
+rather to format pod text in italics (or whatever the stylesheet
+indicates), without special html markup.  This is useful, for example,
+if pod is being used as an alternative way to write comments.</P>
+<P></P>
+<DT><STRONG><A NAME="item_The_%2Dfrm%2C_or_%2D%2Dframes_flag">The <STRONG>-frm</STRONG>, or <STRONG>--frames</STRONG> flag</A></STRONG><BR>
+<DD>
+By default, a single html output file is produced.  This can be changed
+with the <STRONG>-frm</STRONG> option, which creates a frame holding a table of
+contents in the left panel and the source code in the right side. This
+simplifies code browsing.  Assume, for example, that the input file is
+<EM>MyModule.pm</EM>.  Then, for default file extension choices, these three
+files will be created:
+<PRE>
+ MyModule.pm.html      - the frame
+ MyModule.pm.toc.html  - the table of contents
+ MyModule.pm.src.html  - the formatted source code</PRE>
+<P>Obviously this file naming scheme requires that output be directed to a real
+file (as opposed to, say, standard output).  If this is not the
+case, or if the file extension is unknown, the <STRONG>-frm</STRONG> option will be
+ignored.</P>
+<P></P>
+<DT><STRONG><A NAME="item_The_%2Dtext%3Ds%2C_or_%2D%2Dhtml%2Dtoc%2Dextension">The <STRONG>-text=s</STRONG>, or <STRONG>--html-toc-extension</STRONG> flag</A></STRONG><BR>
+<DD>
+Use this flag to specify the extra file extension of the table of contents file
+when html frames are used.  The default is ``toc''.
+See <A HREF="#specifying file extensions">Specifying File Extensions</A>.
+<P></P>
+<DT><STRONG><A NAME="item_The_%2Dsext%3Ds%2C_or_%2D%2Dhtml%2Dsrc%2Dextension">The <STRONG>-sext=s</STRONG>, or <STRONG>--html-src-extension</STRONG> flag</A></STRONG><BR>
+<DD>
+Use this flag to specify the extra file extension of the content file when html
+frames are used.  The default is ``src''.
+See <A HREF="#specifying file extensions">Specifying File Extensions</A>.
+<P></P>
 <DT><STRONG><A NAME="item_Style_Sheets">Style Sheets</A></STRONG><BR>
 <DD>
 Style sheets make it very convenient to control and adjust the
@@ -1832,10 +1879,13 @@ syntax-coloring of the html files.</P>
 <P></P>
 <DT><STRONG><A NAME="item_Controlling_HTML_properties">Controlling HTML properties</A></STRONG><BR>
 <DD>
-Syntax colors may be changed from their default values by flags of the either
+Note: It is usually more convenient to accept the default properties
+and then edit the stylesheet which is produced.  However, this section
+shows how to control the properties with flags to perltidy.
+<P>Syntax colors may be changed from their default values by flags of the either
 the long form, <STRONG>-html-color-xxxxxx=n</STRONG>, or more conveniently the short form,
 <STRONG>-hcx=n</STRONG>, where <STRONG>xxxxxx</STRONG> is one of the following words, and <STRONG>x</STRONG> is the
-corresponding abbreviation:
+corresponding abbreviation:</P>
 <PRE>
       Token Type             xxxxxx           x 
       ----------             --------         --
@@ -1909,16 +1959,43 @@ black as a default.</P>
 <P>1. If you find a preferred set of these parameters, you may want
 to create a <EM>.perltidyrc</EM> file containing them.  See the perltidy man
 page for an explanation.</P>
-<P>2. Rather than specifying values for these parameters, it may be easier
-to accept the defaults and then edit a style sheet.  The style sheet
-contains helpful comments which should make this easy.</P>
+<P>2. Rather than specifying values for these parameters, it is probably
+easier to accept the defaults and then edit a style sheet.  The style
+sheet contains comments which should make this easy.</P>
 <P>3. The syntax-colored html files can be very large, so it may be best to
 split large files into smaller pieces to improve download times.</P>
-<P>4. The list of token types is expected to evolve over time as further
-tokenizer improvements allow a refinement in the available token types,
-so you should occasionally check for updates to this program if you use
-it frequently.</P>
 <P></P></DL>
+<P>
+<HR>
+<H1><A NAME="some common input conventions">SOME COMMON INPUT CONVENTIONS</A></H1>
+<P>
+<H2><A NAME="specifying block types">Specifying Block Types</A></H2>
+<P>Several parameters which refer to code block types may be customized by also
+specifying an associated list of block types.  The type of a block is the name
+of the keyword which introduces that block, such as <STRONG>if</STRONG>, <STRONG>else</STRONG>, or <STRONG>sub</STRONG>.
+An exception is a labeled block, which has no keyword, and should be specified
+with just a colon.</P>
+<P>For example, the following parameter specifies <CODE>sub</CODE>, labels, <CODE>BEGIN</CODE>, and
+<CODE>END</CODE> blocks:</P>
+<PRE>
+   -cscl=&quot;sub : BEGIN END&quot;</PRE>
+<P>(the meaning of the -cscl parameter is described above.)  Note that
+quotes are required around the list of block types because of the
+spaces.</P>
+<P>
+<H2><A NAME="specifying file extensions">Specifying File Extensions</A></H2>
+<P>Several parameters allow default file extensions to be overridden.  For
+example, a backup file extension may be specified with <STRONG>-bext=ext</STRONG>,
+where <STRONG>ext</STRONG> is some new extension.  In order to provides the user some
+flexibility, the following convention is used in all cases to decide if
+a leading '.' should be used.  If the extension <CODE>ext</CODE> begins with
+<CODE>A-Z</CODE>, <CODE>a-z</CODE>, or <CODE>0-9</CODE>, then it will be appended to the filename with
+an intermediate '.' (or perhaps an '_' on VMS systems).  Otherwise, it
+will be appended directly.</P>
+<P>For example, suppose the file is <EM>somefile.pl</EM>.  For <CODE>-bext=old</CODE>, a '.' is
+added to give <EM>somefile.pl.old</EM>.  For <CODE>-bext=.old</CODE>, no additional '.' is
+added, so again the backup file is <EM>somefile.pl.old</EM>.  For <CODE>-bext=~</CODE>, then no
+dot is added, and the backup file will be <EM>somefile.pl~</EM>  .</P>
 <P>
 <HR>
 <H1><A NAME="switches which may be negated">SWITCHES WHICH MAY BE NEGATED</A></H1>
@@ -1927,9 +2004,9 @@ it frequently.</P>
 <PRE>
     D anl asc aws b bbb bbc bbs bli boc bok bol bot syn ce csc 
     dac dbc dcsc dnl dws dp dpro dsm dsc ddf dln dop dsn dtt dwls dwrs 
-    f fll hsc html ibc icb icp iob isbc lp log lal x lsl bl 
+    f fll frm hsc html ibc icb icp iob isbc lp log lal x lsl pod bl 
     sbl okw ola oll pvl q opt sbc sfs ssc sts se st sob 
-    t tac tbc tp tsc tqw w</PRE>
+    t tac tbc toc tp tsc tqw w</PRE>
 <P>Equivalently, the prefix 'no' on the corresponding long names may be
 used.</P>
 <P>
@@ -1961,6 +2038,13 @@ in any way.  And, of course, it does not modify pod documents.
 <HR>
 <H1><A NAME="files">FILES</A></H1>
 <DL>
+<DT><STRONG><A NAME="item_Temporary_files">Temporary files</A></STRONG><BR>
+<DD>
+Under the -html option with the default --pod2html flag, a temporary file is
+required to pass text to Pod::Html.  Unix systems will try to use the POSIX
+<CODE>tmpnam()</CODE> function.  Otherwise the file <EM>perltidy.TMP</EM> will be temporarily
+created in the current working directory.
+<P></P>
 <DT><STRONG><A NAME="item_Special_files_when_standard_input_is_used">Special files when standard input is used</A></STRONG><BR>
 <DD>
 When standard input is used, the log file, if saved, is <EM>perltidy.LOG</EM>,

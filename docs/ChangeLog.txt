@@ -5,21 +5,37 @@ Perltidy Change Log
      users.sourceforge.net.  
 
   2002 xx xx
-     -a new flag -frm or --html-frames will cause html output to be in a
-     frame, with table of contents in the left panel and actual content
-     in the right panel.  See updated docs.
+     -Switch/case or given/when syntax is now recognized.  Its vertical alignment
+     is not great yet, but it parses ok.  The words 'switch', 'case', 'given', and
+     'when' are now treated as keywords.  If this causes trouble with older code,
+     we could introduce a switch to deactivate it.  Thanks to Stan Brown and Jochen
+     Schneider for recommending this.
 
-     -a new flag -pod or --pod2html controls formatting of pod text.  The
-     new default is to pass the pod through Pod::Html.  The result is syntax
-     colored code within your pod documents. This can be deactivated with
-     -npod.  Thanks to all who have written to discuss this and give
-     examples, particularly Mark Olesen and Hugh Myers.
+     -Corrected error parsing sub attributes with call parameters.
+     Thanks to Marc Kerr for catching this.
+
+     -Sub prototypes no longer need to be on the same line as sub names.  This
+     was required in perl 5 but not perl 6.
+
+     -The new default for -html formatting is to pass the pod through Pod::Html.
+     The result is syntax colored code within your pod documents. This can be
+     deactivated with -npod.  Thanks to all who have written to discuss this,
+     particularly Mark Olesen and Hugh Myers.
+
+     -a new flag -frm or --frames will cause html output to be in a
+     frame, with table of contents in the left panel and formatted source
+     in the right panel.  Try 'perltidy -html -frm somemodule.pm' for example.
+
+     -the -olc (--outdent-long-comments) option works much better.  It now outdents
+     groups of consecutive comments together, and by just the amount needed to
+     avoid having any one line exceeding the maximum line length.
+
+     -block comments are now trimmed of trailing whitespace.
 
      -if a directory specified with -opath does not exist, it will be created.
 
-     -a new option -toc (--html-table-of-contents) controls the index
-     to packages and subs at the start of html output.  Use -ntoc to
-     prevent this index.
+     -a table of contents to packages and subs is output when -html is used.
+     Use -ntoc to prevent this. 
 
      -fixed an unusual bug in which a 'for' statement following a 'format'
      statement was not correctly tokenized.  Thanks to Boris Zentner for
@@ -28,13 +44,16 @@ Perltidy Change Log
      -Tidy.pm is no longer dependent on modules IO::Scalar and IO::ScalarArray.  
      There were some speed issues.  Suggested by Joerg Walter.
 
-     -The treatment of quoted wildcards (file globs) is now independent of system.
+     -The treatment of quoted wildcards (file globs) is now system-independent. 
      For example
 
         perltidy 'b*x.p[lm]'
 
-     would match box.pl, box.pm, boinx.pm under any system.  Of course, anything
-     unquoted will be subject to expansion by any shell.
+     would match box.pl, box.pm, brinx.pm under any operating system.  Of
+     course, anything unquoted will be subject to expansion by any shell.
+
+     -default color for keywords under -html changed from 
+     SaddleBrown (#8B4513) to magenta4 (#8B008B).
 
      -fixed a glitch in which something like:
        perltidy quick-help

@@ -152,9 +152,9 @@ larger web page.  No style sheet will be written in this case.</P>
 <P>Write a style sheet to <EM>mystyle.css</EM> and exit.</P>
 <PRE>
   perltidy -html -frm mymodule.pm</PRE>
-<P>Write html with a frame holding a table of contents and the actual content.  The
-output files will be <EM>mymodule.pm.html</EM> (the frame), <EM>mymodule.pm.left.html</EM>
-(the table of contents), and <EM>mymodule.pm.right.html</EM> (the perl script).</P>
+<P>Write html with a frame holding a table of contents and the source code.  The
+output files will be <EM>mymodule.pm.html</EM> (the frame), <EM>mymodule.pm.toc.html</EM>
+(the table of contents), and <EM>mymodule.pm.src.html</EM> (the source code).</P>
 <P>
 <HR>
 <H1><A NAME="options  overview">OPTIONS - OVERVIEW</A></H1>
@@ -1802,8 +1802,12 @@ pod2html (see next item).
 There are two options for formatting pod documentation.  The default is
 to pass the pod through the Pod::Html module (which forms the basis of
 the pod2html utility).  Any code sections are formatted by perltidy, and
-the results then merged.  Note: a temporary file will be created 
-when Pod::Html is used; see <EM>FILES</EM>.
+the results then merged.  Note: perltidy creates a temporary file when
+Pod::Html is used; see <EM>FILES</EM>.  Also, Pod::Html creates temporary
+files for its cache.
+<P>If there is a single pod text section (one =cut line), the pod text will
+be at the top of the html output and the perl code will follow.
+Otherwise, the order of pod text and perl code will be unchanged.</P>
 <P>All of the flags accepted by pod2html may be included in the perltidy
 command line, and they will be passed to pod2html.  These include</P>
 <PRE>
@@ -1814,37 +1818,36 @@ command line, and they will be passed to pod2html.  These include</P>
 information.</P>
 <P>The alternative, indicated with <STRONG>-npod</STRONG>, is not to use Pod::Html, but
 rather to format pod text in italics (or whatever the stylesheet
-indicates), without special html markup.  This might be useful if pod is
-merely being used as an alternative way to write comments.</P>
+indicates), without special html markup.  This is useful, for example,
+if pod is being used as an alternative way to write comments.</P>
 <P></P>
-<DT><STRONG><A NAME="item_The_%2Dfrm%2C_or_%2D%2Dhtml%2Dframes_flag">The <STRONG>-frm</STRONG>, or <STRONG>--html-frames</STRONG> flag</A></STRONG><BR>
+<DT><STRONG><A NAME="item_The_%2Dfrm%2C_or_%2D%2Dframes_flag">The <STRONG>-frm</STRONG>, or <STRONG>--frames</STRONG> flag</A></STRONG><BR>
 <DD>
-By default, a single html output file is produced.  This can be changed with
-the <STRONG>-frm</STRONG> option, which creates a frame holding a table of contents in the
-left panel and the actual content in the right side, which simplifies code
-browsing.  Assume, for example, that the input file is <EM>MyModule.pm</EM>.  Then,
-for default file extension choices, these three files will be created:
+By default, a single html output file is produced.  This can be changed
+with the <STRONG>-frm</STRONG> option, which creates a frame holding a table of
+contents in the left panel and the source code in the right side. This
+simplifies code browsing.  Assume, for example, that the input file is
+<EM>MyModule.pm</EM>.  Then, for default file extension choices, these three
+files will be created:
 <PRE>
- MyModule.pm.html        - the frame
- MyModule.pm.left.html   - the table of contents
- MyModule.pm.right.html  - the formatted script</PRE>
+ MyModule.pm.html      - the frame
+ MyModule.pm.toc.html  - the table of contents
+ MyModule.pm.src.html  - the formatted source code</PRE>
 <P>Obviously this file naming scheme requires that output be directed to a real
 file (as opposed to, say, standard output).  If this is not the
 case, or if the file extension is unknown, the <STRONG>-frm</STRONG> option will be
 ignored.</P>
-<P>See the next items for how to modify the extra extensions ``left'' and
-``right''.</P>
 <P></P>
-<DT><STRONG><A NAME="item_The_%2Dlext%3Ds%2C_or_%2D%2Dhtml%2Dtoc%2Dextension">The <STRONG>-lext=s</STRONG>, or <STRONG>--html-toc-extension</STRONG> flag</A></STRONG><BR>
+<DT><STRONG><A NAME="item_The_%2Dtext%3Ds%2C_or_%2D%2Dhtml%2Dtoc%2Dextension">The <STRONG>-text=s</STRONG>, or <STRONG>--html-toc-extension</STRONG> flag</A></STRONG><BR>
 <DD>
 Use this flag to specify the extra file extension of the table of contents file
-when html frames are used.  The default is ``left''.
+when html frames are used.  The default is ``toc''.
 See <A HREF="#specifying file extensions">Specifying File Extensions</A>.
 <P></P>
-<DT><STRONG><A NAME="item_The_%2Drext%3Ds%2C_or_%2D%2Dhtml%2Dcontent%2Dexten">The <STRONG>-rext=s</STRONG>, or <STRONG>--html-content-extension</STRONG> flag</A></STRONG><BR>
+<DT><STRONG><A NAME="item_The_%2Dsext%3Ds%2C_or_%2D%2Dhtml%2Dsrc%2Dextension">The <STRONG>-sext=s</STRONG>, or <STRONG>--html-src-extension</STRONG> flag</A></STRONG><BR>
 <DD>
 Use this flag to specify the extra file extension of the content file when html
-frames are used.  The default is ``right''.
+frames are used.  The default is ``src''.
 See <A HREF="#specifying file extensions">Specifying File Extensions</A>.
 <P></P>
 <DT><STRONG><A NAME="item_Style_Sheets">Style Sheets</A></STRONG><BR>

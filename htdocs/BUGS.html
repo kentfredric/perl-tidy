@@ -15,7 +15,6 @@
 	<UL>
 
 		<LI><A HREF="#a heredoc invoked through an 'e' modifier on a pattern replacement text is not recognized">A here-doc invoked through an 'e' modifier on a pattern replacement text is not recognized</A></LI>
-		<LI><A HREF="#limitation parsing subroutine attributes and prototypes">Limitation parsing subroutine attributes and prototypes</A></LI>
 	</UL>
 
 </UL>
@@ -41,28 +40,6 @@
         Cruel
         END
         print &quot;$text\n&quot;;</PRE>
-<P>
-<H2><A NAME="limitation parsing subroutine attributes and prototypes">Limitation parsing subroutine attributes and prototypes</A></H2>
-<P>Subroutine prototypes and attributes (a perl 5.6 feature) are not
-correctly parsed unless they are on the same line as the subroutine
-name.  (Older versions of perl require the prototype to be on
-the same line as the sub name, but perl 5.6 allows it to be on
-a separate line).  For example, this would cause an error:</P>
-<PRE>
-   sub pi 
-   ()
-   {
-     4 * atan2(1,1);
-   }</PRE>
-<P>The workaround is to simply place the prototype and/or attribute on the same
-line as the sub name, like this:</P>
-<PRE>
-   sub pi ()
-   {
-     4 * atan2(1,1);
-   }</PRE>
-<P>I have not encountered this problem in an actual script.  Fixing
-it is low priority.</P>
 
 </BODY>
 

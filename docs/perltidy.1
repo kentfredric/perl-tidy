@@ -130,7 +130,7 @@
 .\" ========================================================================
 .\"
 .IX Title "PERLTIDY 1"
-.TH PERLTIDY 1 "2002-10-06" "perl v5.6.1" "User Contributed Perl Documentation"
+.TH PERLTIDY 1 "2002-10-28" "perl v5.6.1" "User Contributed Perl Documentation"
 .UC
 .SH "NAME"
 perltidy \- a perl script indenter and reformatter
@@ -252,9 +252,9 @@ Write a style sheet to \fImystyle.css\fR and exit.
 .Vb 1
 \&  perltidy -html -frm mymodule.pm
 .Ve
-Write html with a frame holding a table of contents and the actual content.  The
-output files will be \fImymodule.pm.html\fR (the frame), \fImymodule.pm.left.html\fR
-(the table of contents), and \fImymodule.pm.right.html\fR (the perl script).
+Write html with a frame holding a table of contents and the source code.  The
+output files will be \fImymodule.pm.html\fR (the frame), \fImymodule.pm.toc.html\fR
+(the table of contents), and \fImymodule.pm.src.html\fR (the source code).
 .SH "OPTIONS \- OVERVIEW"
 .IX Header "OPTIONS - OVERVIEW"
 The entire command line is scanned for options, and they are processed
@@ -2031,8 +2031,13 @@ pod2html (see next item).
 There are two options for formatting pod documentation.  The default is
 to pass the pod through the Pod::Html module (which forms the basis of
 the pod2html utility).  Any code sections are formatted by perltidy, and
-the results then merged.  Note: a temporary file will be created 
-when Pod::Html is used; see \s-1FILES\s0.
+the results then merged.  Note: perltidy creates a temporary file when
+Pod::Html is used; see \s-1FILES\s0.  Also, Pod::Html creates temporary
+files for its cache.
+.Sp
+If there is a single pod text section (one =cut line), the pod text will
+be at the top of the html output and the perl code will follow.
+Otherwise, the order of pod text and perl code will be unchanged.
 .Sp
 All of the flags accepted by pod2html may be included in the perltidy
 command line, and they will be passed to pod2html.  These include
@@ -2047,37 +2052,35 @@ information.
 .Sp
 The alternative, indicated with \fB\-npod\fR, is not to use Pod::Html, but
 rather to format pod text in italics (or whatever the stylesheet
-indicates), without special html markup.  This might be useful if pod is
-merely being used as an alternative way to write comments.
-.IP "The \fB\-frm\fR, or \fB\-\-html\-frames\fR flag" 4
-.IX Item "The -frm, or --html-frames flag"
-By default, a single html output file is produced.  This can be changed with
-the \fB\-frm\fR option, which creates a frame holding a table of contents in the
-left panel and the actual content in the right side, which simplifies code
-browsing.  Assume, for example, that the input file is \fIMyModule.pm\fR.  Then,
-for default file extension choices, these three files will be created:
+indicates), without special html markup.  This is useful, for example,
+if pod is being used as an alternative way to write comments.
+.IP "The \fB\-frm\fR, or \fB\-\-frames\fR flag" 4
+.IX Item "The -frm, or --frames flag"
+By default, a single html output file is produced.  This can be changed
+with the \fB\-frm\fR option, which creates a frame holding a table of
+contents in the left panel and the source code in the right side. This
+simplifies code browsing.  Assume, for example, that the input file is
+\&\fIMyModule.pm\fR.  Then, for default file extension choices, these three
+files will be created:
 .Sp
 .Vb 3
-\& MyModule.pm.html        - the frame
-\& MyModule.pm.left.html   - the table of contents
-\& MyModule.pm.right.html  - the formatted script
+\& MyModule.pm.html      - the frame
+\& MyModule.pm.toc.html  - the table of contents
+\& MyModule.pm.src.html  - the formatted source code
 .Ve
 Obviously this file naming scheme requires that output be directed to a real
 file (as opposed to, say, standard output).  If this is not the
 case, or if the file extension is unknown, the \fB\-frm\fR option will be
 ignored.
-.Sp
-See the next items for how to modify the extra extensions \*(L"left\*(R" and
-\&\*(L"right\*(R".
-.IP "The \fB\-lext=s\fR, or \fB\-\-html\-toc\-extension\fR flag" 4
-.IX Item "The -lext=s, or --html-toc-extension flag"
+.IP "The \fB\-text=s\fR, or \fB\-\-html\-toc\-extension\fR flag" 4
+.IX Item "The -text=s, or --html-toc-extension flag"
 Use this flag to specify the extra file extension of the table of contents file
-when html frames are used.  The default is \*(L"left\*(R".
+when html frames are used.  The default is \*(L"toc\*(R".
 See \*(L"Specifying File Extensions\*(R".
-.IP "The \fB\-rext=s\fR, or \fB\-\-html\-content\-extension\fR flag" 4
-.IX Item "The -rext=s, or --html-content-extension flag"
+.IP "The \fB\-sext=s\fR, or \fB\-\-html\-src\-extension\fR flag" 4
+.IX Item "The -sext=s, or --html-src-extension flag"
 Use this flag to specify the extra file extension of the content file when html
-frames are used.  The default is \*(L"right\*(R".
+frames are used.  The default is \*(L"src\*(R".
 See \*(L"Specifying File Extensions\*(R".
 .IP "Style Sheets" 4
 .IX Item "Style Sheets"
