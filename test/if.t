@@ -25,3 +25,13 @@
     # cannot retain this one-line block
     if (defined &replace_external_references_hook) {&replace_external_references_hook;}
 
+        # test of formatting nested parens
+        if ( $styles !~ /^($do_include_rx)$/o
+            && $filename !~ /\.($do_include_ext_rx)$/o
+            && ( $styles =~ /^($dont_include_rx)$/o
+                || ( $opt{auto_exclude}
+                    && $filename =~ /\.($dont_include_ext_rx)$/o ) ) )
+        {
+            print STDERR "$prompt %--- ignoring $filename" if ($debug);
+            print STYLES "$styles\n" if ( $opt{save_styles} );
+        }

@@ -903,6 +903,19 @@ OPTIONS
         -DEBUG will write a file with extension .DEBUG for each input file
         showing the tokenization of all lines of code.
 
+    Working with MakeMaker, AutoLoader and SelfLoader
+        The first $VERSION line of a file which might be eval'd by MakeMaker
+        is passed through unchanged except for indentation. Use
+        --nopass-version-line, or -npvl, to deactivate this feature.
+
+        If the AutoLoader module is used, perltidy will continue formatting
+        code after seeing an __END__ line. Use --nolook-for-autoloader, or
+        -nlal, to deactivate this feature.
+
+        Likewise, if the SelfLoader module is used, perltidy will continue
+        formatting code after seeing a __DATA__ line. Use
+        --nolook-for-selfloader, or -nlsl, to deactivate this feature.
+
     Writing an HTML file
         The flag -html causes perltidy to write an html file with extension
         .html. So, for example, the following command

@@ -36,13 +36,31 @@
  You can help perltidy evolve into a better program.  If you 
  have hit a bug, unusual behavior, annoyance, or have a suggested
  improvement, please send a note to perltidy at users.sourceforge.net.</PRE>
+<PRE>
+ -If the AutoLoader module is used, perltidy will continue formatting
+ code after seeing an __END__ line.  Use B&lt;-nlal&gt; to deactivate this feature.  
+ Likewise, if the SelfLoader module is used, perltidy will continue 
+ formatting code after seeing a __DATA__ line.  Use B&lt;-nlsl&gt;, to
+ deactivate this feature.  Thanks to Slaven Rezic for this suggestion.</PRE>
+<PRE>
+ -pod text after __END__ and __DATA__ is now identified by perltidy
+ so that -dp works correctly.  Thanks to Slaven Rezic for this suggestion.</PRE>
+<PRE>
+ -The first $VERSION line which might be eval'd by MakeMaker
+ is now passed through unchanged.  Use -npvl to deactivate this feature.
+ Thanks to Manfred Winter for this suggestion.</PRE>
+<PRE>
+ -Improved indentation of nested parenthesized expressions.  Tests have
+ given favorable results.  Thanks to Wolfgang Weisselberg for helpful
+ examples.</PRE>
 <P>
 <H2><A NAME="2001 07 23">2001 07 23</A></H2>
 <PRE>
 
  -Fixed a very rare problem in which an unwanted semicolon was inserted
  due to misidentification of anonymous hash reference curly as a code
- block curly.  A workaround for older versions of perltidy is to use
+ block curly.  (No instances of this have been reported; I discovered it
+ during testing).  A workaround for older versions of perltidy is to use
  -nasc.</PRE>
 <PRE>
  -Added -icb (-indent-closing-brace) parameter to indent a brace which

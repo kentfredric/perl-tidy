@@ -903,6 +903,18 @@ around tokens.</P>
 <P><STRONG>-DEBUG</STRONG>  will write a file with extension <EM>.DEBUG</EM> for each input file 
 showing the tokenization of all lines of code.</P>
 <P></P>
+<DT><STRONG><A NAME="item_Working_with_MakeMaker%2C_AutoLoader_and_SelfLoade">Working with MakeMaker, AutoLoader and SelfLoader</A></STRONG><BR>
+<DD>
+The first $VERSION line of a file which might be eval'd by MakeMaker
+is passed through unchanged except for indentation.  
+Use <STRONG>--nopass-version-line</STRONG>, or <STRONG>-npvl</STRONG>, to deactivate this feature.
+<P>If the AutoLoader module is used, perltidy will continue formatting
+code after seeing an __END__ line.
+Use <STRONG>--nolook-for-autoloader</STRONG>, or <STRONG>-nlal</STRONG>, to deactivate this feature.</P>
+<P>Likewise, if the SelfLoader module is used, perltidy will continue formatting
+code after seeing a __DATA__ line.
+Use <STRONG>--nolook-for-selfloader</STRONG>, or <STRONG>-nlsl</STRONG>, to deactivate this feature.</P>
+<P></P>
 <DT><STRONG><A NAME="item_Writing_an_HTML_file">Writing an HTML file</A></STRONG><BR>
 <DD>
 The flag <STRONG>-html</STRONG> causes perltidy to write an html file with extension

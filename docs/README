@@ -75,6 +75,18 @@ Welcome to perltidy!
 
   Installation - Windows
 
+    Some limited testing on two different Windows machines gave these
+    results using Active State Perl:
+
+    Binary Build    Perl Version     Result
+    522             5.005_03         perltidy works ok
+    623             5.6.0            Windows hangs
+    628             5.6.1            Windows hangs
+
+    I would be interested in hearing of other successes or failures in
+    running perltidy under Windows.  Here is how to install perltidy
+    under windows.
+
     After unpacking the zip file, test the script:
 
      perl perltidy lextest.pl
@@ -94,9 +106,9 @@ Welcome to perltidy!
 
     There is a minor problem that you should be aware of if you are running
     perltidy (and perl) under Windows with the standard command.com shell.
-    The problem is that command.com always sends the standard output to the
-    screen. This makes it impossible for perltidy to capture the message
-    'syntax OK' when it runs 'perl -c' with the following code:
+    The problem is that command.com always sends the standard error output
+    to the screen. This makes it impossible for perltidy to capture the
+    message 'syntax OK' when it runs 'perl -c' with the following code:
 
             my $perl_output = <<`END`;
                     perl -c $filename 2>&1
@@ -105,12 +117,13 @@ Welcome to perltidy!
     It also creates an empty file named &1. This means that you will have to
     check for syntax errors yourself. If you do not want to create the empty
     file &1, you can turn off syntax checking with the flag -nsyn. You can
-    check the syntax of a file manually by issuing the command
+    then check the syntax of a file manually by issuing the command
 
      perl -c filename
 
-    The best way to solve this problem is to use a better shell, such as
-    bash - see http://www.cygwin.com
+    The best way to solve this problem is probably to use a better shell,
+    such as bash - see http://www.cygwin.com. If anyone knows a way to code
+    around this in perl please let me know.
 
   VMS Notes
 

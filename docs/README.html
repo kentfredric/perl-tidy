@@ -101,23 +101,25 @@ to invoke perltidy with perl directly, like this:</P>
 <P>
 <H2><A NAME="windows problem with command.com">Windows problem with command.com</A></H2>
 <P>There is a minor problem that you should be aware of if you are running
-perltidy (and perl) under Windows with the standard <EM>command.com</EM> shell.
-The problem is that <EM>command.com</EM> always sends the standard output to
-the screen.  This makes it impossible for perltidy to capture the
-message 'syntax OK' when it runs 'perl -c' with the following code:</P>
+perltidy (and perl) under Windows with the standard <EM>command.com</EM>
+shell.  The problem is that <EM>command.com</EM> always sends the standard
+error output to the screen.  This makes it impossible for perltidy to
+capture the message 'syntax OK' when it runs 'perl -c' with the
+following code:</P>
 <PRE>
         my $perl_output = &lt;&lt;`END`;
                 perl -c $filename 2&gt;&amp;1
         END</PRE>
-<P>It also creates an empty
-file named <EM>&amp;1</EM>.  This means that you will have to check for syntax
-errors yourself.   If you do not want to create the empty file <EM>&amp;1</EM>,
-you can turn off syntax checking with the flag <STRONG>-nsyn</STRONG>.  You can
-check the syntax of a file manually by issuing the command</P>
+<P>It also creates an empty file named <EM>&amp;1</EM>.  This means that you will
+have to check for syntax errors yourself.   If you do not want to create
+the empty file <EM>&amp;1</EM>, you can turn off syntax checking with the flag
+<STRONG>-nsyn</STRONG>.  You can then check the syntax of a file manually by issuing the
+command</P>
 <PRE>
  perl -c filename</PRE>
-<P>The best way to solve this problem is to use a better shell, such as
-bash - see <A HREF="http://www.cygwin.com">http://www.cygwin.com</A></P>
+<P>The best way to solve this problem is probably to use a better shell,
+such as bash - see <A HREF="http://www.cygwin.com.">http://www.cygwin.com.</A>  If anyone knows a way
+to code around this in perl please let me know.</P>
 <P>
 <H2><A NAME="vms notes">VMS Notes</A></H2>
 <P>Perltidy runs under VMS.  You will probably want to use the .zip

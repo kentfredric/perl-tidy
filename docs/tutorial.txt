@@ -1,9 +1,9 @@
 A Brief Perltidy Tutorial
     Perltidy can save you a lot of tedious editing if you spend a few
     minutes learning to use it effectively. There are a large number of
-    options available for customizing it, but for most programmers the
+    options available for customizing it, but for many programmers the
     default parameter set will be satisfactory, with perhaps a few
-    additional parameters to account for tabbing and style preferences.
+    additional parameters to account for style preferences.
 
     This tutorial assumes that perltidy has been installed on your system.
     Installation instructions accompany the package. To follow along with
@@ -23,6 +23,8 @@ A Brief Perltidy Tutorial
        print "Just right!\n";
      }
 
+    It is included in the docs section of the distribution.
+
   A First Test
 
     Assume that the name of your script is testfile.pl. You can reformat it
@@ -31,10 +33,10 @@ A Brief Perltidy Tutorial
 
      perltidy testfile.pl
 
-    Try it now. Perltidy never overwrites your original file. In this case,
-    its output will go to a file named testfile.pl.tdy, which you should
-    examine now with your editor. Here is what the above file looks like
-    with the default options:
+    Try it now. For safety, perltidy never overwrites your original file. In
+    this case, its output will go to a file named testfile.pl.tdy, which you
+    should examine now with your editor. Here is what the above file looks
+    like with the default options:
 
      #Learning Perl Appendix A, Exercise 4.2
      print "What temperature is it? ";
@@ -60,14 +62,17 @@ A Brief Perltidy Tutorial
   Making Backups
 
     In an actual project, at this point you could make a backup copy of the
-    original script and then rename testfile.pl.tdy to be testfile.pl. It is
-    very important to have a standard procedure for backing up your script
-    in case something goes wrong. For a small project, a simple backup
-    procedure using RCS could be as follows (see the rcsintro(1) man page).
+    original script and then rename testfile.pl.tdy to be testfile.pl. While
+    perltidy is a very reliable program, it is very important to have a
+    standard procedure for backing up your script in case something goes
+    wrong. For a small project, a simple backup procedure using RCS could be
+    as follows (see the rcsintro(1) man page).
 
             ci -l testfile.pl
             perltidy testfile.pl
 
+    A good practice is to use a file comparison utility, such as diff, to
+    examine the differences between the original and reformatted files.
     Then, if no problems are seen, update to the new version using
 
             mv testfile.pl testfile.pl.bak
@@ -82,15 +87,15 @@ A Brief Perltidy Tutorial
   Tabs or Spaces?
 
     With indentation, there is always a tab issue to resolve. By default,
-    perltidy will output lines with 4 leading spaces per level of
-    indentation. The reason is that this will be displayed correctly by
-    virtually all editors. If you prefer, you may also choose to use one
-    leading tab character for each level of indentation by using the -t
-    flag. Most editors display tabs as 8 spaces, but they normally have a
-    switch to change this. If you choose tabs, you should use this switch to
-    change tabs to display as 4 columns, because that is the default
-    assumption made by perltidy in aligning lists and side comments
-    vertically.
+    perltidy will use leading ascii space characters instead of tabs. The
+    reason is that this will be displayed correctly by virtually all
+    editors. It is the author's recommendation that tabs not be used for
+    indentation, but if you prefer, you may choose to use one leading tab
+    character for each level of indentation by using the -t flag. Most
+    editors display tabs as 8 spaces, but they normally have a switch to
+    change this. If you choose tabs, you should use this switch to change
+    tabs to display as 4 columns, because that is the default assumption
+    made by perltidy in aligning lists and side comments vertically.
 
     (The number 4 is the indentation spacing suggested in perlstyle(1) for
     Perl scripts, but you may change this to any number "n" of columns with
@@ -98,9 +103,9 @@ A Brief Perltidy Tutorial
 
     For example, the commands for the vim editor are as follows. To change
     to 4 spaces per tab, use ":set ts=4" and ":set sw=4". If you are using
-    real spaces instead of tabs, you will also want to expand tabs to spaces
-    with ":set et". All of these commands can be put in a comment (modeline)
-    at the end of a script like this:
+    real spaces instead of tabs, as recommended, you will also want to
+    expand tabs to spaces with ":set et". All of these commands can be put
+    in a comment (modeline) at the end of a script like this:
 
     # vi: set ts=4 sw=4 et:
 
@@ -143,18 +148,7 @@ A Brief Perltidy Tutorial
     adjacent to the flag, like this -i3 (WRONG). Also, flags must be input
     separately, never bundled together.
 
-  Style Variations, or, What are all of those other parameters for?
-
-    There are a large number of detailed formatting options, and they may be
-    grouped into whitespace controls and line break controls. If you are
-    already happy with your formatting, and just want perltidy to update
-    your indentation, you can bypass all of these controls, and just have
-    perltidy perform indenting with the flag -io, which stands for "indent
-    only". If you are happy with your whitespace, but would like both
-    indenting and line break changes, you can use the command -fws, which
-    stands for "freeze whitespace". Likewise, there is a -fnl flag, which
-    stands for "freeze newlines", and tells perltidy to do indentation and
-    whitespace adjustment, but no line break changes.
+  Style Variations, or, What are All of Those Other Parameters For?
 
     Perltidy has to make some kind of default selection of formatting
     options, and its choice is to try to follow the suggestions in the
@@ -199,12 +193,12 @@ A Brief Perltidy Tutorial
   The Log File
 
     One last topic that needs to be touched upon concerns the .LOG file.
-    This is where perltidy writes messages that are not normally of great
+    This is where perltidy writes messages that are not normally of any
     interest, but which just might occasionally be useful. This file is not
     saved, though, unless there is an error or you ask for it to be saved.
 
-    There are a couple of ways to save a log file. For a relatively sparce
-    log file use
+    There are a couple of ways to ask perltidy to save a log file. For a
+    relatively sparce log file use
 
      perltidy -log testfile.pl
 
@@ -214,9 +208,7 @@ A Brief Perltidy Tutorial
 
     The difference is that the first form only saves detailed information at
     least every 50th line, while the second form saves detailed information
-    about every line. The default log file is saved with the first format,
-    but if you are looking for a nesting problem, you will probably want to
-    rerun perltidy using the second form.
+    about every line.
 
     So returning to our example, lets force perltidy to save a verbose log
     file by issuing the following command
@@ -227,51 +219,34 @@ A Brief Perltidy Tutorial
     directory.
 
     Take a few minutes to examine this file. It is a text file with a
-    combination of warning messages and informative messages. It can be
-    particularly helpful if you are trying to track down a brace nesting
-    error, because it prints out the nesting of braces, parens, and square
-    brackets.
+    combination of warning messages and informative messages. All you need
+    to know for now is that it exists.
 
-    You will see the nesting depths for each line of square brackets,
-    parens, and braces in the left column. On the right are any warning
-    messages plus the first few characters of each line. Warning messages
-    start with ">>>", and lines of code start with dots, one dot per level
-    of indentation. You could also determine the indentation level by
-    examining output script, but sometimes, with deep indentation, it is
-    easier to examine the dots in the log file.
+  Using Perltidy as a Filter on Selected Text from an Editor
 
-    For example, here one line from the .LOG file for the above test file.
+    Most programmer's editors allow a selected group of lines to be passed
+    through an external filter. Perltidy has been designed to work well as a
+    filter, and it is well worthwhile learning the appropriate commands to
+    do this with your editor. You may want to supply the -q flag to prevent
+    error messages regarding incorrect syntax, since errors may be obvious
+    in the indentation of the reformatted text. If you do not use the -q
+    flag, you will need to use the undo keys in case an error message
+    appears on the screen.
 
-     L7:7     i1:1 {          .print "Too cold!\n";
+    For example, within the vim editor it is only necessary to select the
+    text by any of the text selection methods, and then issue the command
+    !perltidy in command mode. Thus, an entire file can be formatted using
 
-    The "L7:7" means that old line 7 became *approximately* new line 7.
-    (Actually it becomes new line 8; the discrepancy is because logfile
-    entries are written when old lines are read, and before their final
-    destinations are precisely known). The "i1:1" tells us that line 7 of
-    the input file had leading spaces implying an indentation level 1 and
-    that the braces also imply a structural indentation level of 1. The "{"
-    tells us that the starting nesting level of this line was one opening
-    curly brace.
+     :%!perltidy -q
 
-    The text
-
-     .print "Too cold!\n"
-
-    shows the first characters of this particular line of the script, with
-    one leading dot per indentation level. Among the other messages that
-    perltidy writes in the log file are the starting and ending locations of
-    here documents and multi-line quotes. At the end of the log file is some
-    useful summary information. One particular item worth noting is the
-    summary of indentation disagreements. If you try to keep your script
-    properly indented, by using perltidy regurlarly, then this should show
-    you precisely the location of any extra or missing curly brace in the
-    script.
+  Summary
 
     That's all you need to know to get started using perltidy. You will want
     to delete unwanted files in the temporary directory created in this
     tutorial. Additional special features and capabilities can be found in
     the manual pages for perltidy.
 
-    Please check the perltidy web site http://perltidy.sourceforge.net
-    occasionally for updates.
+    We hope that perltidy makes perl programming a little more fun. Please
+    check the perltidy web site http://perltidy.sourceforge.net occasionally
+    for updates.
 

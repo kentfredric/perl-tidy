@@ -76,6 +76,18 @@ pages by hand or use
 
 =head2 Installation - Windows
 
+Some limited testing on two different Windows machines gave these
+discouraging results using Active State Perl:
+
+    Binary Build    Perl Version     Result
+    522             5.005_03         perltidy works ok
+    623             5.6.0            Windows hangs
+    628             5.6.1            Windows hangs
+
+I would be interested in hearing of other successes or failures in
+running perltidy under Windows.  Here is how to install perltidy
+under windows.
+
 After unpacking the zip file, test the script:
 
  perl perltidy lextest.pl

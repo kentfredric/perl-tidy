@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.24 2001/07/29 04:16:01 perltidy Exp $
+    $Id: perltidy,v 1.25 2001/07/31 22:17:39 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -160,8 +160,7 @@ sub main {
         # perltidy over and over with wildcard input
         my $output_extension = $rOpts->{'html'} ? "html" : "tdy";
 
-        if (
-            ( $input_file =~
+        if ( ( $input_file =~
             /($dot_pattern)($output_extension|LOG|DEBUG|ERR|TEE|TMPI|TMPO)$/ )
             || ( $input_file eq 'DIAGNOSTICS' ) )
         {
@@ -1731,8 +1730,7 @@ sub black_box {
 
     my $last_input_line_written = $self->{_last_input_line_written};
     my $rOpts                   = $self->{_rOpts};
-    if (
-        ( ( $input_line_number - $last_input_line_written ) >=
+    if ( ( ( $input_line_number - $last_input_line_written ) >=
         $rOpts->{'logfile-gap'} )
         || ( $input_line =~ /^\s*(sub|package)\s+(\w+)/ ) )
     {
@@ -4342,7 +4340,7 @@ sub print_line_of_tokens {
     #     /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
     # Examples:
     #   *VERSION = \'1.01';
-    #   ( $VERSION ) = '$Revision: 1.24 $ ' =~ /\$Revision:\s+([^\s]+)/;
+    #   ( $VERSION ) = '$Revision: 1.25 $ ' =~ /\$Revision:\s+([^\s]+)/;
     # We will pass such a line straight through unless -npvl is used
     my $is_VERSION_statement = 0;
 
@@ -4509,8 +4507,12 @@ sub print_line_of_tokens {
         # or closing BLOCK, followed by a side comment, those sections 
         # of code will handle this flag separately.
         my $side_comment_follows = ( $next_nonblank_token_type eq '#' );
-        my $is_opening_BLOCK = ( $type eq '{' && $token eq '{' && $block_type );
-        my $is_closing_BLOCK = ( $type eq '}' && $token eq '}' && $block_type );
+        my $is_opening_BLOCK     =
+          ( $type eq '{' && $token eq '{' && $block_type
+          && $block_type ne 't' );
+        my $is_closing_BLOCK =
+          ( $type eq '}' && $token eq '}' && $block_type
+          && $block_type ne 't' );
 
         if ( $side_comment_follows && !$is_opening_BLOCK && !$is_closing_BLOCK )
         {
@@ -7227,11 +7229,15 @@ sub undo_forced_breakpoint_stack {
 
 sub recombine_breakpoints {
 
-    # Occasionally small line fragments are produced which would look
-    # better if they were combined.
+    # sub set_continuation_breaks is very liberal in setting line breaks
+    # for long lines, always setting breaks at good breakpoints, even
+    # when that creates small lines.  Occasionally small line fragments
+    # are produced which would look better if they were combined.
+    # That's the task of this routine, recombine_breakpoints.
     my ( $ri_first, $ri_last ) = @_;
     my $more_to_do = 1;
 
+    # Keep looping until there are no more possible recombinations
     my $nmax_last = @$ri_last;
     while ($more_to_do) {
         my $n_best = 0;
@@ -7239,7 +7245,8 @@ sub recombine_breakpoints {
         my $n;
         my $nmax = @$ri_last - 1;
 
-        if ( $nmax >= $nmax_last ) {
+        # safety check..
+        unless ( $nmax < $nmax_last ) {
 
             # shouldn't happen because splice below decreases nmax on each pass:
             # but i get paranoid sometimes
@@ -7248,7 +7255,17 @@ sub recombine_breakpoints {
         $nmax_last  = $nmax;
         $more_to_do = 0;
 
+        # loop over all remaining lines...
         for $n ( 1 .. $nmax ) {
+
+            #----------------------------------------------------------
+            # Indexes of the endpoints of the two lines are:
+            #
+            #  ---left---- | ---right---
+            #  $if   $imid | $imidr   $il
+            #
+            # We want to decide if we should join tokens $imid to $imidr
+            #----------------------------------------------------------
             my $if    = $$ri_first[ $n - 1 ];
             my $il    = $$ri_last[$n];
             my $imid  = $$ri_last[ $n - 1 ];
@@ -7257,9 +7274,7 @@ sub recombine_breakpoints {
             #----------------------------------------------------------
             # Start of special recombination rules 
             # These are ad-hoc rules which have been found to work ok.
-            # Skip to next pair to avoid re-combination.  Inexes are:
-            #  ---left---- | ---right---
-            #  $if   $imid | $imidr   $il
+            # Skip to next pair to avoid re-combination.  
             #----------------------------------------------------------
 
             # a terminal '{' should stay where it is
@@ -7271,21 +7286,29 @@ sub recombine_breakpoints {
                   unless ( ( $if == $imid ) && ( $types_to_go[$il] eq ';' ) );
             }
 
-            # an isolated '},' may join with an identifier + ';' 
-            # this is useful for the class of a 'bless' statement (bless.t)
-            if ( $types_to_go[$imid] eq ',' && $types_to_go[$if] eq '}'
-                && $types_to_go[$imidr] eq 'i' )
-            {
-                next
-                  unless ( ( $if == ( $imid - 1 ) ) && ( $il == ( $imidr + 1 ) )
-                    && ( $types_to_go[$il] eq ';' ) );
+            # for lines ending in a comma...
+            elsif ( $types_to_go[$imid] eq ',' ) {
 
-                # override breakpoint
-                $forced_breakpoint_to_go[$imid] = 0;
+                # an isolated '},' may join with an identifier + ';' 
+                # this is useful for the class of a 'bless' statement (bless.t)
+                if ( $types_to_go[$if] eq '}' && $types_to_go[$imidr] eq 'i' ) {
+                    next
+                      unless ( ( $if == ( $imid - 1 ) )
+                        && ( $il == ( $imidr + 1 ) )
+                        && ( $types_to_go[$il] eq ';' ) );
+
+                    # override breakpoint
+                    $forced_breakpoint_to_go[$imid] = 0;
+                }
+
+                # but otherwise, do not recombine
+                else {
+                    next;
+                }
             }
 
             # isolated paren looks bad
-            if ( $types_to_go[$imid] eq '(' ) {
+            elsif ( $types_to_go[$imid] eq '(' ) {
 
                 next unless ( $imid == $if );
 
@@ -7298,7 +7321,7 @@ sub recombine_breakpoints {
                 $forced_breakpoint_to_go[$imid] = 0;
             }
 
-            if ( $types_to_go[$imid] eq ')' ) {
+            elsif ( $types_to_go[$imid] eq ')' ) {
 
                 next unless ( $imid == $if );
 
@@ -7307,31 +7330,12 @@ sub recombine_breakpoints {
             }
 
             # keep a terminal colon
-            next if ( $types_to_go[$imid] eq ':' );
-
-            # retain leading "and" and "or"
-            next
-              if ( ( $types_to_go[$imidr] eq 'k' )
-                && ( $tokens_to_go[$imidr] =~ /^(and|or)$/ ) );
-
-            # keywords look best at start of lines,
-            # but combine things like "1 while" 
-            next
-              if ( ( $types_to_go[$imid] ne 'k' )
-                && ( $types_to_go[$imidr] eq 'k' )
-                && ( $tokens_to_go[$imidr] ne 'while' ) );
-
-            # make major control keywords stand out, just like this:
-            # (recombine.t)
-            next
-              if ( ( $types_to_go[$imid] eq 'k' )
-                && ( $tokens_to_go[$imid] =~ /^(last|next|redo|return)$/ ) );
-
-            # honor hard breakpoints
-            next if ( $forced_breakpoint_to_go[$imid] > 0 );
+            elsif ( $types_to_go[$imid] eq ':' ) {
+                next;
+            }
 
             # if '=' at end of line ...
-            if ( $types_to_go[$imid] eq '=' ) {
+            elsif ( $types_to_go[$imid] eq '=' ) {
                 my $is_math = ( ( $types_to_go[$il] =~ /^[+-\/\*\)]$/ )
 
                   # note no '$' in pattern because -> can start long identifier
@@ -7355,6 +7359,31 @@ sub recombine_breakpoints {
                 );
             }
 
+            # for keywords..
+            elsif ( $types_to_go[$imid] eq 'k' ) {
+
+                # make major control keywords stand out
+                # (recombine.t)
+                next if ( $tokens_to_go[$imid] =~ /^(last|next|redo|return)$/ );
+            }
+
+            # keywords look best at start of lines,
+            # but combine things like "1 while" 
+            next
+              if ( ( $types_to_go[$imid] ne 'k' )
+                && ( $types_to_go[$imidr] eq 'k' )
+                && ( $tokens_to_go[$imidr] ne 'while' ) );
+
+            # retain leading "and" and "or"
+            next
+              if ( ( $types_to_go[$imidr] eq 'k' )
+                && ( $tokens_to_go[$imidr] =~ /^(and|or)$/ ) );
+
+            next if ( $tokens_to_go[$imidr] =~ /^(\&\&|\|\|)$/ );
+
+            # honor hard breakpoints
+            next if ( $forced_breakpoint_to_go[$imid] > 0 );
+
             #----------------------------------------------------------
             # end of special recombination rules 
             #----------------------------------------------------------
@@ -7366,7 +7395,7 @@ sub recombine_breakpoints {
               if ( total_line_length( $if, $il ) >
                 $rOpts->{'maximum-line-length'} );
 
-            # do not cause a skip in indentation levels
+            # do not recombine if we would skip in indentation levels
             if ( $n < $nmax ) {
                 my $if_next = $$ri_first[ $n + 1 ];
                 next
@@ -7374,28 +7403,27 @@ sub recombine_breakpoints {
                     && $levels_to_go[$imidr] < $levels_to_go[$if_next] );
             }
 
-            # keep break after a leading if or unless
-            next
-              if ( $n == 1 && $types_to_go[$if] eq 'k'
-                && $tokens_to_go[$if] =~ /(if|unless)/ );
-
             # honor no-break's
             next if ( $bs == NO_BREAK );
 
+            # remember the pair with the greatest bond strength
             if ( !$n_best ) {
                 $n_best  = $n;
                 $bs_best = $bs;
             }
             else {
-                $more_to_do++;
 
                 if ( $bs > $bs_best ) {
                     $n_best  = $n;
                     $bs_best = $bs;
                 }
+
+                # we have 2 or more candidates, so need another pass
+                $more_to_do++;
             }
         }
 
+        # recombine the pair with the greatest bond strength
         if ($n_best) {
             splice @$ri_first, $n_best, 1;
             splice @$ri_last, $n_best - 1, 1;
@@ -7646,7 +7674,7 @@ use constant XX_STACK_DEPTH        => 12;    # indentation nesting depth
 sub new {
 
     # Create an 'indentation_item' which describes one level of leading
-    # whitespace when the 'gnu-style' of indentation is used.  We return
+    # whitespace when the '-lp' indentation is used.  We return
     # a reference to an anonymous array of associated variables.
     # See constants _xxx for storage scheme.
     my ( $class, $spaces, $level, $ci_level, $available_spaces, $index,
@@ -7853,6 +7881,7 @@ use constant IS_FORCED_BREAK         => 7;
 use constant OUTDENT_LONG_LINES      => 8;
 use constant LIST_TYPE               => 9;
 use constant IS_HANGING_SIDE_COMMENT => 10;
+use constant RCOLUMNS                => 11;
 
 my %_index_map;
 $_index_map{jmax}                    = JMAX;
@@ -7866,6 +7895,7 @@ $_index_map{is_forced_break}         = IS_FORCED_BREAK;
 $_index_map{outdent_long_lines}      = OUTDENT_LONG_LINES;
 $_index_map{list_type}               = LIST_TYPE;
 $_index_map{is_hanging_side_comment} = IS_HANGING_SIDE_COMMENT;
+$_index_map{rcolumns}                = RCOLUMNS;
 
 my @_default_data = ();
 $_default_data[JMAX]                    = undef;
@@ -7879,10 +7909,11 @@ $_default_data[IS_FORCED_BREAK]         = undef;
 $_default_data[OUTDENT_LONG_LINES]      = undef;
 $_default_data[LIST_TYPE]               = undef;
 $_default_data[IS_HANGING_SIDE_COMMENT] = undef;
+$_default_data[RCOLUMNS]                = undef;
 
 {
 
-    # methods to count instances
+    # methods to count object population
     my $_count = 0;
     sub get_count        { $_count; }
     sub _increment_count { ++$_count }
@@ -7922,6 +7953,7 @@ sub get_is_forced_break         { return $_[0]->[IS_FORCED_BREAK] }
 sub get_outdent_long_lines      { return $_[0]->[OUTDENT_LONG_LINES] }
 sub get_list_type               { return $_[0]->[LIST_TYPE] }
 sub get_is_hanging_side_comment { return $_[0]->[IS_HANGING_SIDE_COMMENT] }
+sub get_rcolumns                { return $_[0]->[RCOLUMNS] }
 
 sub set_jmax                { $_[0]->[JMAX]                = $_[1] }
 sub set_jmax_original_line  { $_[0]->[JMAX_ORIGINAL_LINE]  = $_[1] }
@@ -7934,6 +7966,7 @@ sub set_is_forced_break     { $_[0]->[IS_FORCED_BREAK]     = $_[1] }
 sub set_outdent_long_lines  { $_[0]->[OUTDENT_LONG_LINES]  = $_[1] }
 sub set_list_type           { $_[0]->[LIST_TYPE]           = $_[1] }
 sub set_is_hanging_side_comment { $_[0]->[IS_HANGING_SIDE_COMMENT] = $_[1] }
+sub set_rcolumns                { $_[0]->[RCOLUMNS]                = $_[1] }
 
 package Perltidy::VerticalAligner;
 
@@ -8230,6 +8263,7 @@ The log file warns the user if there are any such tabs.
         outdent_long_lines      => $outdent_long_lines,
         list_type               => "",
         is_hanging_side_comment => 0,
+        rcolumns                => $rcolumns,
     );
 
     my $old_line = undef;
@@ -10320,7 +10354,9 @@ sub get_line {
             }
             else {
                 $line_of_tokens->{_line_type} = 'POD_END';
-                warning("=cut starts a pod section!\n");
+                warning(
+"=cut starts a pod section .. this can fool pod utilities.\n"
+                );
                 write_logfile_entry("Entering POD section\n");
             }
         }
@@ -11350,13 +11386,13 @@ EOM
 
             elsif ( $tok eq '__DATA__' ) {
                 $tokenizer_self->{_in_data} = $tok;
-                $type = ';';
+                $type = ';';    # make tokenizer look for TERM next
                 last;
             }
 
             elsif ( $tok eq '__END__' ) {
                 $tokenizer_self->{_in_end} = $tok;
-                $type = ';';
+                $type = ';';    # make tokenizer look for TERM next
                 last;
             }
 
@@ -11388,8 +11424,12 @@ EOM
                     $rtoken_map );
 
                 # mark bare words following a file test operator as
-                # something that will expect an operator next
-                if ( ( $type eq 'w' ) && ( $last_nonblank_type eq 'F' ) ) {
+                # something that will expect an operator next.
+                # patch 072901: unless followed immediately by a paren,
+                # in which case it must be a function call (pid.t)
+                if ( $type eq 'w' && $last_nonblank_type eq 'F'
+                    && $next_tok ne '(' )
+                {
                     $type = 'C';
                 }
             }
@@ -11471,24 +11511,7 @@ EOM
                 }
 
                 # paren after keyword..
-                elsif ( $last_nonblank_type =~ /^[k]$/
-
-                    # which is in designated list
-#TEST                  && ( $is_keyword_taking_list{$last_nonblank_token}
-
-                    # and paren after keyword which 
-                    # has continuation indentation
-                    #TEST                      # (unless.t).  
-#TEST                      || !( ( $last_last_nonblank_type =~ /[;J]/ )
-#TEST                      || ( $last_last_nonblank_token =~ /[\{\}]/
-                    #TEST
-#TEST                            && $last_last_nonblank_block_type
-                    #TEST                      ) )
-                    #TEST                  )
-
-                    #
-                  )
-                {
+                elsif ( $last_nonblank_type =~ /^[k]$/ ) {
                     $type = '{';
                 }
 
@@ -11593,8 +11616,7 @@ EOM
                     # expecting: (if|elsif|while|until|for|foreach) 
                     # Delete this if it is too redundant
                     #unless ( $is_keyword{$last_nonblank_token} ) {
-                    unless (
-                        $last_nonblank_token =~
+                    unless ( $last_nonblank_token =~
                         /^(if|elsif|unless|while|until|for|foreach)$/ )
                     {
                         warning(
@@ -11782,8 +11804,7 @@ EOM
             elsif ( $tok eq ']' ) {
                 decrease_nesting_depth( SQUARE_BRACKET, $i_tok );
 
-                if (
-                    $square_bracket_structural_type[$square_bracket_depth] eq
+                if ( $square_bracket_structural_type[$square_bracket_depth] eq
                     '{' )
                 {
                     $type = '}';
@@ -12188,8 +12209,7 @@ indentation, but only single continuation-indentation
 
                     # ...and include all block types except user subs with 
                     # block prototypes and these: (sort|grep|map|do|eval)
-                    elsif (
-                        $output_block_type[$i] =~
+                    elsif ( $output_block_type[$i] =~
 /^(\}|\{|BEGIN|END|CHECK|INIT|AUTOLOAD|DESTROY|continue|;|if|elsif|else|unless|while|until|for|foreach)$/
                       )
                     {
@@ -12351,6 +12371,8 @@ sub code_block_type {
 
     # handle case of multiple '{'s
 
+# print "BLOCK_TYPE EXAMINING: type=$last_nonblank_type tok=$last_nonblank_token\n"; 
+
     if ( $last_nonblank_token =~ /^[\{]$/
         && $last_nonblank_type eq $last_nonblank_token )
     {
@@ -12391,6 +12413,13 @@ sub code_block_type {
         }
     }
 
+    # NOTE: braces after type characters start code blocks, but for
+    # simplicity these are not identified as such.  See also 
+    # sub is_non_structural_brace. 
+    # elsif ( $last_nonblank_type eq 't' ) {
+    #    return $last_nonblank_token;
+    # }
+
     # brace after label:
     elsif ( $last_nonblank_type eq 'J' ) {
         return $last_nonblank_token;
@@ -12398,8 +12427,7 @@ sub code_block_type {
 
     # otherwise, look at previous token.  This must be a code block if
     # it follows any of these:
-    elsif (
-        $last_nonblank_token =~
+    elsif ( $last_nonblank_token =~
 /^(BEGIN|END|CHECK|INIT|AUTOLOAD|DESTROY|continue|if|elsif|else|unless|do|while|until|eval|for|foreach|map|grep|sort)$/
       )
     {
@@ -12554,7 +12582,13 @@ sub is_non_structural_brace {
         return 0;
     }
 
-    # it is non-structural if it is decorated by type information
+    # NOTE: braces after type characters start code blocks, but for
+    # simplicity these are not identified as such.  See also 
+    # sub code_block_type
+    # if ($last_nonblank_type eq 't') {return 0} 
+
+    # otherwise, it is non-structural if it is decorated 
+    # by type information.
     # For example, the '{' here is non-structural:   ${xxx}
     ( $last_nonblank_token =~ /^([\$\@\*\&\%\)]|->|::)/
 
@@ -12785,8 +12819,7 @@ sub decrease_nesting_depth {
         for $b ( 0 .. 2 ) {
             next if ( $b == $a );
 
-            unless (
-                $depth_array[$a][$b][ $current_depth[$a] ] ==
+            unless ( $depth_array[$a][$b][ $current_depth[$a] ] ==
                 $current_depth[$b] )
             {
                 my $diff = $current_depth[$b] -
