@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.39 2001/09/01 00:07:48 perltidy Exp $
+    $Id: perltidy,v 1.40 2001/09/03 23:05:33 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -3218,6 +3218,7 @@ sub set_leading_whitespace {
         # it becomes clear that we do not have a good list.
         my $available_space = 0;
         my $align_paren     = 0;
+        my $excess          = 0;
 
         # initialization on empty stack..
         if ( $max_gnu_stack_index == 0 ) {
@@ -3238,7 +3239,7 @@ sub set_leading_whitespace {
         # otherwise use the space to the first non-blank level change token
         else {
 
-            ( $space_count, $available_space ) =
+            ( $space_count, $available_space , $excess) =
               get_gnu_indentation( $standard_increment,
                 $gnu_position_predictor );
             $align_paren = 1;
@@ -3254,6 +3255,11 @@ sub set_leading_whitespace {
                 $space_count,     $level,     $ci_level,
                 $available_space, $align_paren
             );
+
+            #TESTING-LP
+            ##################################################################
+            #$gnu_stack[$max_gnu_stack_index]->set_RECOVERABLE_SPACES($excess);
+            ##################################################################
         }
     }
 
@@ -3262,7 +3268,9 @@ sub set_leading_whitespace {
     if ( $type ne 'b' ) {
 
         # and previous character was structural indentation, comma,
-        if ( $last_nonblank_type =~ /^[\,\{]$/
+        # TESTING-LP: '.' ':', '?' '||' '&&' added (mci.t)
+        #if ( $last_nonblank_type =~ /^([\,\{])$/
+        if ( $last_nonblank_type =~ /^([\:\?\,\{\.]|\|\||\&\&)$/
 
             # or this is a closing structure
             || $type =~ /^[\}]$/
@@ -3270,9 +3278,14 @@ sub set_leading_whitespace {
             # or this is after an assignment after a closing structure
             || ( $last_nonblank_type =~ /=/
                 && $last_nonblank_type !~ /(==|!=|>=|<=|=~|=>)/
-                && $last_last_nonblank_type =~ /^[\}\)\]]$/ )
-          )
+                && ( $last_last_nonblank_type =~ /^[\}\)\]]$/
 
+                    # TESTING-LP:
+                    || $gnu_position_predictor >
+                    $rOpts->{'maximum-line-length'} / 2
+                )
+            )
+          )
         {
             check_for_long_gnu_style_lines();
             $line_start_index_to_go = $max_index_to_go;
@@ -3314,11 +3327,16 @@ sub get_gnu_indentation {
     my $space_count = $gnu_stack[$max_gnu_stack_index]->get_SPACES();
 
     # avoid excessive space if requested...
+    my $excess=0;
     if ( $rOpts->{'maximum-continuation-indentation'} > 0 ) {
-        my $excess =
+        $excess =
           ( $gnu_indentation - $space_count ) -
           $rOpts->{'maximum-continuation-indentation'};
-        if ( $excess > 0 ) { $gnu_indentation -= $excess; }
+        if ( $excess > 0 ) { 
+        #TESTING: - FUTURE LOGIC MAY SKIP THIS
+          $gnu_indentation -= $excess; 
+        }
+        else { $excess=0 }
     }
 
     # always add an increment of at least the standard amount
@@ -3326,6 +3344,9 @@ sub get_gnu_indentation {
 
     # how many spaces do we have extra?
     my $available_space = $gnu_indentation - $min_gnu_indentation;
+    #TESTING-LP : FUTURE UPDATE
+    #$available_space -= $excess;
+    $excess=0;
 
     #----------------------------------------------------------------
     # for TESTING only: this should make the indentation identical to
@@ -3339,9 +3360,10 @@ sub get_gnu_indentation {
     if ( $TESTING || $available_space < 0 ) {
         $gnu_indentation = $min_gnu_indentation;
         $available_space = 0;
+        $excess=0;
     }
 
-    return ( $gnu_indentation, $available_space );
+    return ( $gnu_indentation, $available_space, $excess );
 }
 
 sub check_for_long_gnu_style_lines {
@@ -4453,7 +4475,7 @@ sub print_line_of_tokens {
     #     /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
     # Examples:
     #   *VERSION = \'1.01';
-    #   ( $VERSION ) = '$Revision: 1.39 $ ' =~ /\$Revision:\s+([^\s]+)/;
+    #   ( $VERSION ) = '$Revision: 1.40 $ ' =~ /\$Revision:\s+([^\s]+)/;
     # We will pass such a line straight through unless -npvl is used
     my $is_VERSION_statement = 0;
 
@@ -5356,8 +5378,12 @@ sub correct_lp_indentation {
 
                 my $move_right = $actual_pos - $predicted_pos;
 
-                # done if no error to correct
-                next unless ($move_right);
+                # done if no error to correct (gnu2.t)
+                # next unless ($move_right);
+                if ($move_right==0) {
+                    $indentation->set_RECOVERABLE_SPACES($move_right);
+                    next;
+                }
 
                 # if we have not seen closure for this indentation in
                 # this batch, we can only pass on a request to the
@@ -6893,7 +6919,7 @@ sub scan_list {
                         # containing this one because the space cannot
                         # be recovered at the present time (gnu1.t).  We
                         # might be left with a big gap.
-                        if ( $depth > 1 ) {
+                        if ( $depth >= 1 ) {
                             $last_equals_index[ $depth - 1 ] = undef;
                         }
                     }    # end -lp logic
@@ -6955,6 +6981,9 @@ sub scan_list {
         if ( $want_comma_break[$depth] ) {
             set_forced_breakpoint($i) unless ( $next_nonblank_type eq '#' );
             $want_comma_break[$depth] = 0;
+            if ( $depth >= 1 ) {
+                $last_equals_index[ $depth - 1 ] = undef;
+            }
 
             # hack to handle list which mixes '=>'s and ','s:
             # treat any list items so far as a broken list
@@ -7369,8 +7398,9 @@ sub set_list_breakpoints {
     # displayed.
     #---------------------------------------------------------------
 
-    # Decide if this list is too long for one line.  
-    my $too_long = $packed_columns > $columns;
+    # Decide if this list is too long for one line unless broken 
+    my $total_columns = table_columns_available($i_opening_paren);
+    my $too_long = $packed_columns > $total_columns;
 
     # For a paren list, include the length of the token just before the
     # '(' because this is likely a sub call, and we would have to
@@ -7392,20 +7422,17 @@ sub set_list_breakpoints {
         $too_long =
           total_line_length( $i_opening_minus, $i_effective_last_comma + 1 ) >
           $rOpts->{'maximum-line-length'};
-        my $debug_long =
-          total_line_length( $i_opening_minus, $i_effective_last_comma + 1 ) ;
-        my $debug = $tokens_to_go[$i_opening_minus];
         }
     }
 
     # EXPERIMENTAL: for -lp, assume that we can get back any needed spaces
     # by outdenting
-    if ($too_long && $opening_token eq '(') {
-        my $available_spaces = get_AVAILABLE_SPACES_to_go($i_opening_paren);
-        if ( $available_spaces > 0 ) {
-            $too_long = ( $packed_columns > ( $columns + $available_spaces ) );
-        }
-    }
+#    if ($too_long && $opening_token eq '(') {
+#        my $available_spaces = get_AVAILABLE_SPACES_to_go($i_opening_paren);
+#        if ( $available_spaces > 0 ) {
+#            $too_long = ( $packed_columns > ( $columns + $available_spaces ) );
+#        }
+#    }
 
     # Always break lists contained in '[' and '{' if too long for 1 line,
     # and always break lists which are too long and part of a more complex
@@ -9451,6 +9478,7 @@ sub flush {
         my $maximum_field_index = $group_lines[0]->get_jmax();
         print
 "APPEND0: Flush called from $a $b $c fields=$maximum_field_index list=$group_list_type lines=$maximum_line_index extra=$extra_indent_ok\n";
+
     }
 
     # some small groups are best left unaligned
@@ -10345,6 +10373,7 @@ use vars qw{
   $ci_string_in_tokenizer
   $continuation_string_in_tokenizer
   $in_statement_continuation
+  $started_looking_for_here_target_at
   $nearly_matched_here_target_at
 
   %TOKENIZER_DEBUG_FLAG
@@ -10651,8 +10680,15 @@ EOM
 
     if ( $tokenizer_self->{_in_here_doc} ) {
         my $here_doc_target = $tokenizer_self->{_here_doc_target};
-        warning("hit EOF while in here document $here_doc_target\n");
+        if ($here_doc_target) {
+        warning("hit EOF in here document starting at line $started_looking_for_here_target_at with target: $here_doc_target\n");
+        }
+        else {
+        warning("hit EOF in here document starting at line $started_looking_for_here_target_at with empty target string\n");
+        }
+        if ($nearly_matched_here_target_at) {
         warning("NOTE: almost matched at input line $nearly_matched_here_target_at except for whitespace\n"); 
+        }
     }
 
     if ( $tokenizer_self->{_in_quote} ) {
@@ -10798,6 +10834,7 @@ sub get_line {
                 write_logfile_entry(
                     "Entering HERE document $here_doc_target\n");
                 $nearly_matched_here_target_at = undef; 
+                $started_looking_for_here_target_at = $input_line_number;
             }
             else {
                 $tokenizer_self->{_in_here_doc}     = 0;
@@ -11004,6 +11041,7 @@ sub get_line {
         $tokenizer_self->{_in_here_doc}     = 1;
         $tokenizer_self->{_here_doc_target} = $here_doc_target;
         write_logfile_entry("Entering HERE document $here_doc_target\n");
+        $started_looking_for_here_target_at = $input_line_number;
     }
 
     # NOTE: __END__ and __DATA__ statements are written unformatted

@@ -1,4 +1,4 @@
-Welcome to perltidy!
+Welcome to Perltidy!
     Perltidy is a tool to indent and reformat perl scripts.
 
     Perltidy is free software released under the GNU General Public License
@@ -28,9 +28,9 @@ Welcome to perltidy!
      perl ./perltidy lextest.pl
 
     and then look at the output file, which will be lextest.pl.tdy. You
-    should see a nicely formatted version of the program, in which perltidy
+    should see a nicely formatted version of the program, in which Perltidy
     has added indentation, whitespace, and line breaks. This simple example
-    illustrates what perltidy does.
+    illustrates what Perltidy does.
 
     Perltidy does not require any special modules. We just have to get the
     script in your path and, optionally, install two man pages. You probably
@@ -40,14 +40,14 @@ Welcome to perltidy!
 
      chmod +x perltidy
 
-    2. Verify that the initial line in perltidy works for your system by
+    2. Verify that the initial line in Perltidy works for your system by
     entering:
 
      ./perltidy -h
 
     which should produce the usage text and then exit. This should usually
     work, but if it does not, you will need to change the first line in
-    perltidy to reflect the location of perl on your system. On a Unix
+    Perltidy to reflect the location of perl on your system. On a Unix
     system, you might find the path to perl with the command 'which perl'.
 
     3. Edit Makefile to have the correct paths. See the comments in the
@@ -58,7 +58,7 @@ Welcome to perltidy!
 
      make install
 
-    This installs perltidy and the man pages perltidy.1 and perl2web.1.
+    This installs Perltidy and the man pages perltidy.1 and perl2web.1.
 
     5. Test the installation using
 
@@ -71,51 +71,37 @@ Welcome to perltidy!
 
     which should bring up the manual page.
 
-    If you ever want to remove perltidy, you can remove perltidy and its man
+    If you ever want to remove Perltidy, you can remove Perltidy and its man
     pages by hand or use
 
      make uninstall
 
-  Windows ME WARNING
+  Windows ME Caution
 
-    Some limited testing gave these discouraging results when attempting to
-    run perltidy with Active State Perl with Windows ME:
-
-        Binary Build    Perl Version  Windows Result
-        522             5.005_03      95      ok
-        623             5.6.0         ME      Windows freezes
-        628             5.6.1         ME      Windows freezes
-        628             5.6.1         95      ok
-        ???             5.6.1         2000    ok
-        629             5.6.1         2000    ok
-
-    I've only tested one Windows ME system, so this may be specific to that
-    machine (a new Dell with no known hardware problems). The crash was so
-    bad that even alt+control+delete did not work. If you decide to try to
-    run perltidy on a Windows ME machine, please close all existing
-    applications first to avoid losing any data. I would like to hear of any
-    successes or failures (is it just ME?) so that we can ask ActiveState to
-    look into it if this is a general problem.
-
-    There are no known problems running perltidy under ActiveState Perl and
-    Windows 95 and Windows 2000.
+    Perltidy should run under all versions of Windows. I test it on a
+    Windows 95 system using Perl version 5.005_03 before each release, and I
+    occasionally test it on a Windows 2000 system. I have seen one Windows
+    ME system with Active State Perl that froze when attempting to run
+    Perltidy, but I have other reports of success with Windows ME. In any
+    case, if you install Perltidy on a Windows ME system, please close all
+    applications before the first test to avoid loss of data in case the
+    system freezes. If the first test works, it should be fine.
 
   Installation - Windows
 
-    Here is how to install perltidy under Windows. After unpacking the zip
+    Here is how to install Perltidy under Windows. After unpacking the zip
     file, test the script:
 
      perl perltidy lextest.pl
 
     This will produce an output file lextest.pl.tdy which can be compared to
-    the input file. (This is the point at which the above Windows ME machine
-    hung badly).
+    the input file.
 
     Placing perltidy and perltidy.bat in your path should work. (You can
     determine your path by issuing the msdos command "PATH"). However, the
     batch file probably will not support file redirection. So, for example,
     to pipe the long help message through 'more', you might have to invoke
-    perltidy with perl directly, like this:
+    Perltidy with perl directly, like this:
 
      perl \somepath\perltidy -h | more
 
@@ -125,9 +111,9 @@ Welcome to perltidy!
   Windows 95 problem with command.com
 
     There is a minor problem that you should be aware of if you are running
-    perltidy (and perl) under Windows 95 with the command.com shell. The
+    Perltidy (and perl) under Windows 95 with the command.com shell. The
     problem is that command.com always sends the standard error output to
-    the screen. This makes it impossible for perltidy to capture the message
+    the screen. This makes it impossible for Perltidy to capture the message
     'syntax OK' when it runs 'perl -c' with the following code:
 
             my $perl_output = <<`END`;
@@ -164,7 +150,7 @@ Welcome to perltidy!
      $ deck/dollar="$$Not-In-Perl$$"      !This is DCL not perl
      #!/usr/bin/perl
 
-    you must use the -x flag to tell perltidy to wait until the "hash bang"
+    you must use the -x flag to tell Perltidy to wait until the "hash bang"
     line to start parsing, like this:
 
           perltidy -x myfile.pl
@@ -179,7 +165,7 @@ WHAT NEXT
 
     These documents can also be found at http://perltidy.sourceforge.net
 
-    Reading the brief tutorial should help you use perltidy effectively.
+    Reading the brief tutorial should help you use Perltidy effectively.
 
     Perltidy is still being developed, so please check sourceforge
     occasionally for updates if you find that it is useful. New releases are
@@ -187,12 +173,12 @@ WHAT NEXT
 
 FEEDBACK / BUG REPORTS
     If you see ways to improve this document for the particular system on
-    which you install perltidy, please let the me know so that it can be
+    which you install Perltidy, please let the me know so that it can be
     updated.
 
     Bug reports, comments and suggestions are welcome. Attach the smallest
     piece of code which demonstrates the bug or issue, plus a .LOG file from
-    a perltidy run, if appropriate. Your efforts are greatly appreciated!
+    a Perltidy run, if appropriate. Your efforts are greatly appreciated!
 
     Thank You
 

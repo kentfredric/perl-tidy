@@ -1,3 +1,24 @@
+# a spaarse list
+{
+    $this->{'CURRENT'}{'gfx'}{'MatrixSkew'} = Text::PDF::API::Matrix->new(
+        [ 1, tan( deg2rad($a) ), 0 ], [ tan( deg2rad($b) ), 1, 0 ],
+        [ 0, 0,                  1 ]
+    );
+}
+
+{
+    {
+        {
+            {
+                _safe_symlink(
+                    "$FindBin::Bin/$html_documentation",
+                    "$destdir/$html_documentation"
+                );
+            }
+        }
+    }
+}
+
 # a small list of identifiers
 (
   $scale,  $external, $thumbnail, $map,   $psimage, $align,
@@ -83,3 +104,4 @@ my $xyzda = [
       'b5paper', 1, '10pt',       1, '11pt',    1,
       '12pt',    1, %styles_loaded
     );
+

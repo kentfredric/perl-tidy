@@ -29,47 +29,83 @@ Go to the website and follow the download links.
 
 =head2 Who are the intended users of Perltidy?
 
- TBD
+Anyone who spends much time working with perl scripts will probably find
+Perltidy to be a useful addition to their toolbox.  Even if your own
+formatting style is better than Perltidy can do, you may need to
+reformat a script written by someone else in a style you dislike.
+Programming teams may find it helpful as a means of establishing a
+common standard.  Beginning programmers, and even advanced programmers,
+will appreciate that Perltidy can catch certain types of errors better
+than Perl can, particular brace nesting errors.  And finally, perltidy
+can be extremely useful as an output filter for the output of a code
+generator.
 
 =head2 What is the history of Perltidy?
 
-It's about what you might expect.  I had some scripts to reformat, but
-couldn't find a good tool to do it.  So I decided to try to write one.
+It started in July of 2000, when I decided to spend an afternoon cleaning up
+some scripts that I had put together rather hurriedly over the previous year.
+I was still learning Perl, and they were a real mess from lots of cutting and
+pasting and little modifications made over time, to the extent that it was
+becoming very difficult to work with them.
 
-More specifically, in July 2000 I decided to spend an afternoon cleaning
-up some Perl scripts that I had put together rather hurriedly over the
-previous year.  They were a real mess from lots of cutting and pasting
-and little modifications made over time, and it was becoming very
-difficult to work with them.  Of course, I should have properly
-formatted them in the first place, but I wasn't very skilled with my
-editor at the time I wrote them, and my focus at the time of writing
-them was just solving an immediate problem.
-
-I started to reformat them manually, but grew discouraged because I knew
-that they would get messed up the next time I had to patch them.  So I
-looked for a tool on the internet, and was surprised not to find
-anything really useful.  The most useful information on the subject
-was at Tim Maher's web site http://www.consultix-inc.com/perl_beautifier.html  .
-Tim was working on an interesting approach but hadn't posted a program
-yet.
+I started to reformat them manually, but grew discouraged because I knew that
+they would get messed up the next time I had to patch them.  So I looked for a
+tool on the internet, hoping to find something like 'indent' for C programs,
+and was surprised not to find anything really useful.  The most useful
+information on the subject was at Tim Maher's web site
+http://www.consultix-inc.com/perl_beautifier.html  .  Tim was working on an
+interesting approach but hadn't posted a program yet.
 
 I thought I could put something together fairly quickly to at least
-properly indent them.  I was soooo wrong.  I did get a simple indenter
-working fairly quickly which worked on simple scripts, but its
-reliability was not very good.
+properly indent my own scripts.  After all, it looked like I would just
+have to find the opening and closing braces and keep track of the
+nesting depth, and indent accordingly.  There were a few details to
+iron-out, of course, since I would have to avoid counting braces in
+regular expressions, comments, here-documents, and pod documents.  I was
+soooooo wrong.  I did get a simple indenter working by using some
+regular expressions to parse my scripts, along with a few ad-hoc rules
+to help it out in a few places.  It worked on most of my scripts, but
+its reliability was not very good when tested on a variety of other
+scripts.
 
-I found the problem of reformatting scripts very intriguing, and as a result of
-experimenting with my simple indenter I gained some insight into parsing perl.
-In October of 2000 I wrote a tokenizer, and that formed the basis of the
-present Perltidy.  By November I had a fairly reliable indenter.  I decided
-that it was good enough to distribute, but that it would need a formatter
-(beautifier) before anyone would want to use it, so I added the formatter.
-Sourceforge kindly provided me with a website in December, and after several
-months of refinement and testing, I announced its availability in March of
-2001.  Since then, many people have kindly sent helpful comments, and these
-have helped Perltidy to steadily improve over time.  The updates to perltidy
-after that are recorded in the ChangeLog at
-http://perltidy.sourceforge.net/ChangeLog.html
+But I found the problem of indenting scripts very intriguing, and as a
+result of experimenting with my first indenter I felt that I could make
+it more reliable by writing a 'tokenizer' which would try to simulate
+the way Perl tokenizes scripts.  In October of 2000 I had some time and,
+armed with a copy of the 'Camel' book, I wrote a tokenizer for the
+indenter, and that forms the basis of the present Perltidy.  By November
+the indenter was very reliable.  I decided that it was good enough to be
+useful to others, but that it would need a formatter (beautifier) before
+anyone would want to use it, so I added the formatter in November and
+December.  Sourceforge provided me with a website in December, and after
+several months of refinements to the formatter and testing, I announced
+its availability in March of 2001.  
+
+Since then, many people have sent helpful comments, and these have
+helped Perltidy to steadily improve over time.  The most significant
+improvement was the introduction of the B<-lp> indentation flag for
+lining up arguments with their opening paren or brace.  This works well
+and can greatly improve the appearance of a script.
+
+=head2 What plans are there for further developing Perltidy
+
+=item *
+
+An improved vertical aligner is planned for the near future.  It builds upon
+the experience with the current vertical aligner, which is quite functional but
+limited.
+
+=item *
+
+The next priority after that is to tackle numerous minor cleanups to the
+tokenizer so that it can be useful to other programs.  At the same time
+any current tokenizer-related bugs will be corrected.
+
+=item *
+
+At that point, Perltidy should be finished except for ongoing maintenance and
+testing.  Of course, any changes in Perl itself will need to be incorporated
+into Perltidy.
 
 =head2 How reliable is Perltidy?
 
@@ -77,15 +113,13 @@ Well first, we should really distinguish between a problem with
 beautification and a problem in which a reformatted script does not
 function the same as the original script.  There will always be ways in
 which the beautification of a script can be improved, so this type of
-problem is undesirable but not too serious.  On the other hand, an error
-in which a reformatted script does not function correctly is quite
-serious.
+problem is undesirable but not too serious.  Hopefully, any such
+beautification problems will diminish over time as the program is
+refined.  On the other hand, an error in which a reformatted script does
+not function correctly is quite serious.
 
-As you probably know, Perl is notoriously difficult to parse.  And what
-makes parsing even more difficult is that there is no really precise
-description of the language, in the computer science sense.
-
-Furthermore, perltidy makes a major simplification by not parsing
+As you probably know, Perl is notoriously difficult to parse.  
+Furthermore, Perltidy makes a major simplification by not parsing
 modules which are used with C<require> and C<use> statements, so
 it sometimes has to guess how to parse a statement.
 
@@ -106,12 +140,15 @@ report a syntax error after trying to parse the contents of the here
 document.
 
 It's difficult to give an absolute measure of reliability, but to give
-some sense of it, I can mention that I have a growing collection of perl
-scripts, currently about 500 MB in size, that I process in nightly runs
-after every programming change.  Of the scripts that were written by
-people other than myself, perltidy only fails to parse 1 correctly, as
-far as I can tell, and for that file, perltidy catches its own error
-and ends with a message to that effect.
+some practical sense of it, I can mention that I have a growing
+collection of perl scripts, currently about 500 MB in size, that I
+process in nightly batch runs after every programming change.  In
+addition to these scripts, Perltidy is also tested on a wide variety of
+non-perl scripts, just to be sure that it behaves gracefully under
+stress.  Of the perl scripts that were written by people other than
+myself, Perltidy only fails to parse 1 correctly, as far as I can tell,
+and for that file, perltidy catches its own error and ends with a
+message to that effect.  
 
 That bug, and any other known perltidy bugs are posted at
 http://perltidy.sourceforge.net/BUGS.html
@@ -130,33 +167,37 @@ If Perltidy write a .LOG file, please send that too.
 
 =head2 What else do I need to use Perltidy?
 
-You just need to have Perl on your system.  It should run on versions as
-old as 5.004, but this has not been carefully tested.
+You just need to have Perl on your system.  No special modules are required.
+It should run on versions as old as 5.004, but this has not been checked. (By
+me, at least.  I would appreciate hearing from anyone who has).  It is
+developed on a linux system running v5.6.1 of Perl, and before each release it
+is also tested on a legacy Windows 95 system running version 5.005_03. 
 
 =head2 What platforms does Perltidy run on.
 
-Because Perltidy consists of only Perl code, with a minimal use of
-system calls, it should work anywhere Perl runs, including most Unix
-variants, Windows 95/98, Windows 2000, and VMS.  
+Because Perltidy consists of only Perl code, with a minimal use of system
+calls, it should work anywhere Perl runs, including most Unix variants, Windows
+95/98, Windows 2000, and VMS.  
 
-However, there may be problems with ActiveState Perl under Windows ME.
-I have not received enough reports to know for sure, and would
-appreciate hearing of any successes or failures under Windows ME.
+Please see the README file for
+more information, http://perltidy.sourceforge.net/README.html
 
 =head2 Perltidy seems slow; can you speed it up?
 
-Yes, it is slow.  On a newer PC and a small snippet of code, you may not
-notice much of a delay, but on an older PC and a large script, you will
-have time to go get a snack while it runs.  For example, reformatting
-perltidy itself (about 16000 lines) takes about 2 minutes and 10 seconds
-on a 333 MHz Pentium processor.
+It is slow, that's for sure.  On a newer PC and a small snippet of code,
+you may not notice much of a delay, but on an older PC and a large
+script, you will have time to stretch and go get a snack while it runs.
+You might at first suspect that it is in a loop, but be patient, it will
+eventually finish.  For example, reformatting perltidy itself (about
+16000 lines) takes about 2 minutes and 10 seconds on a 333 MHz Pentium
+processor.
 
-As far as speeding it up goes, there may be some minor speed-ups that
+As far as speeding it up goes, there may be some minor optimizations that
 can be made eventually, but the basic problem is that it is a large Perl
 script, and it does a lot of work trying to decide how best to format
-your script.  As far as I know, there are no bottlenecks in the program,
-and its run time is simply proportional to the length of the script
-being processed.
+your script.  I do not know of any bottlenecks in the program, and its
+run time is simply proportional to the length of the script being
+processed.
 
 =head2 What does "skipping file: somefile.pl: Non-text (override with -f)" mean?
 
@@ -169,16 +210,22 @@ Perltidy to go ahead and process the file.
 
 =head2 Why doesn't Perltidy behave like a normal unix filter by default?
 
-I mentioned above that Perltidy is run on thousands of test scripts
-after each programming change.  Perltidy is a large program, and it
-would be too inefficient to reload it for each file to be processed.  So
-it is important that Perltidy be able to operate on a large number of
-files in a single run.  If it wrote to standard output, all such scripts
-would be concatenated, which would be rather unexpected result, to say
-the least.  A secondary reason also has to do with efficiency.  When
-Perltidy runs as a filter, it has to make a copy of its output file in
-order to run Perl for a syntax check.  It can avoid this if it knows the
-name of the file that it writes.
+It has to do with the need to process multiple files efficiently.  I
+mentioned above that Perltidy is run on thousands of test scripts after
+each programming change.  Perltidy is a large program, and it would be
+too inefficient to reload it for each file to be processed.  So it is
+important that Perltidy be able to operate on a large number of files in
+a single run.  If it wrote to standard output, all such scripts would be
+concatenated, which would be rather unexpected result, to say the least.
+
+A secondary reason also has to do with efficiency.  When Perltidy runs
+as a filter, it has to make a copy of its output file in order to run
+Perl for a syntax check.  It can avoid this if it knows the name of the
+file that it writes.
+
+There are many utilities such as Perltidy which for which the standard
+filter model is not ideal as the default behavior.  The C 'indent'
+program, and the 'gzip' program come to mind.
 
 As the manual explains, you may operate Perltidy as a filter by using
 the -st flag.  You will probably also want to use -se, which sends all
@@ -269,6 +316,34 @@ problem, so you need do nothing.  But if bareword is a function which
 hasn't been defined yet, then Perl will guess that 'bareword' is a
 filehandle, and script may not perform as expected.
 
+=head2 How can Perltidy help me debug a script?
+
+First, look at any error messages, which will be in the F<.ERR> file
+unless you used B<-se> to send the error output to the standard error
+output.
+
+In addition, look for clues to the problem in the formatting of the
+script itself.  Sometimes, the indentation or placing of whitespace
+may give you a clue.  For example, if you see a space between a '*'
+and a trailing word, like this:
+   % hash
+then you know that the % is a modulo operator, not a hash type symbol.
+
+Next, try running with B<-w> to see if there are any warning messages.
+
+If you are still stuck, try running with B<-g> to see a complete F<.LOG>
+file.
+
+Another trick is to use the B<-html> flag to write a syntax-colored
+html file.  You never know, some lines that you thought were code might
+be shaded with the color of a here document or quote.
+
+Finally, as a very last resort you could examine the way that
+perltidy tokenizes your script  by using  the B<-D> flag.  This
+causes a F<.DEBUG> file to be written which contains a side-by-side
+listing of each line and its tokenization.  This file is intended
+for debugging Perltidy itself, but on occasion it has proven helpful
+for debugging perl scripts.
 
 =head2 How do I run Perltidy on selected text from within my editor?
 
@@ -290,10 +365,12 @@ appearing on the screen.  If you don't use -q, you might have to use the
 
 =head1 FORMATTING QUESTIONS
 
-=head2 How well does the default formatting follow the perlstyle(1) guidelines?
+=head2 How well does the default formatting follow the perlstyle guidelines?
 
 Let's look at each of the main formatting issues and see how close it
-comes.
+comes.  
+
+TBD: -lp?
 
 =over 4
 
@@ -420,7 +497,12 @@ no attempt has been made to implement it.
 
 =back
 
+=head2 Why doesn't Perltidy format comments?
 
-=head2 What logic does Perltidy's use to format lists?
+Some experiments have suggested totally automated comment formatting is too
+risky, and that the programmer needs to interactively accept or reject each
+proposed change, much like a spelling checker.  So reformatting comments will
+probably require a specialized tool.  It could be built upon Perltidy's
+tokenizer, however.
 
 =cut
