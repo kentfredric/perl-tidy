@@ -14,6 +14,7 @@
 	<LI><A HREF="#perltidy change log">Perltidy Change Log</A></LI>
 	<UL>
 
+		<LI><A HREF="#2001 07 31">2001 07 31</A></LI>
 		<LI><A HREF="#2001 07 23">2001 07 23 </A></LI>
 		<LI><A HREF="#2001 07 02">2001 07 02</A></LI>
 		<LI><A HREF="#2001 07 01">2001 07 01</A></LI>
@@ -36,11 +37,23 @@
  You can help perltidy evolve into a better program.  If you 
  have hit a bug, unusual behavior, annoyance, or have a suggested
  improvement, please send a note to perltidy at users.sourceforge.net.</PRE>
+<P>
+<H2><A NAME="2001 07 31">2001 07 31</A></H2>
+<PRE>
+ -Corrected minor, uncommon bug found during routine testing, in which a
+ blank got inserted between a function name and its opening paren after
+ a file test operator, but only in the case that the function had not
+ been previously seen.  Perl uses the existance (or lack thereof) of 
+ the blank to guess if it is a function call.  That is,
+    if (-l pid_filename()) {
+ became
+    if (-l pid_filename ()) {
+ which is a syntax error if pid_filename has not been seen by perl.</PRE>
 <PRE>
  -If the AutoLoader module is used, perltidy will continue formatting
- code after seeing an __END__ line.  Use B&lt;-nlal&gt; to deactivate this feature.  
+ code after seeing an __END__ line.  Use -nlal to deactivate this feature.  
  Likewise, if the SelfLoader module is used, perltidy will continue 
- formatting code after seeing a __DATA__ line.  Use B&lt;-nlsl&gt;, to
+ formatting code after seeing a __DATA__ line.  Use -nlsl to
  deactivate this feature.  Thanks to Slaven Rezic for this suggestion.</PRE>
 <PRE>
  -pod text after __END__ and __DATA__ is now identified by perltidy

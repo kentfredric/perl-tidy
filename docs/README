@@ -48,7 +48,7 @@ Welcome to perltidy!
     perltidy to reflect the location of perl on your system. On a Unix
     system, you might find the path to perl with the command 'which perl'.
 
-    3. EDIT Makefile to have the correct paths. See the comments in the
+    3. Edit Makefile to have the correct paths. See the comments in the
     Makefile.
 
     You will need to become root unless you change the paths to point to
@@ -62,37 +62,50 @@ Welcome to perltidy!
 
      perltidy -h
 
-    You should see the usage screen. Then try
+    You should see the usage screen. Then, if you installed the man pages,
+    try
 
      man perltidy
 
-    which should bring up the manual page if you installed it.
+    which should bring up the manual page.
 
     If you ever want to remove perltidy, you can remove perltidy and its man
     pages by hand or use
 
      make uninstall
 
+  Windows ME WARNING
+
+    Some limited testing gave these discouraging results when attempting to
+    run perltidy with Active State Perl with Windows ME:
+
+        Binary Build    Perl Version  Windows Result
+        522             5.005_03      95      ok
+        623             5.6.0         ME      Windows freezes
+        628             5.6.1         ME      Windows freezes
+        628             5.6.1         95      ok
+
+    I've only tested one Windows ME system, so this may be specific to that
+    machine (a new Dell with no known hardware problems). The crash was so
+    bad that even alt+control+delete did not work. If you decide to try to
+    run perltidy on a Windows ME machine, please close all existing
+    applications first to avoid losing any data. I would like to hear of any
+    successes or failures (is it just ME?) so that we can ask ActiveState to
+    look into it if this is a general problem.
+
+    As far as I know, perltidy runs ok under ActiveState Perl and Windows
+    95.
+
   Installation - Windows
 
-    Some limited testing on two different Windows machines gave these
-    results using Active State Perl:
-
-    Binary Build    Perl Version     Result
-    522             5.005_03         perltidy works ok
-    623             5.6.0            Windows hangs
-    628             5.6.1            Windows hangs
-
-    I would be interested in hearing of other successes or failures in
-    running perltidy under Windows.  Here is how to install perltidy
-    under windows.
-
-    After unpacking the zip file, test the script:
+    Here is how to install perltidy under Windows. After unpacking the zip
+    file, test the script:
 
      perl perltidy lextest.pl
 
     This will produce an output file lextest.pl.tdy which can be compared to
-    the input file.
+    the input file. (This is the point at which the above Windows ME machine
+    hung badly).
 
     Placing perltidy and perltidy.bat in your path should work. (You can
     determine your path by issuing the msdos command "PATH"). However, the
@@ -102,13 +115,16 @@ Welcome to perltidy!
 
      perl \somepath\perltidy -h | more
 
+    The documentation that comes with your perl distribution discusses other
+    installation options.
+
   Windows problem with command.com
 
     There is a minor problem that you should be aware of if you are running
-    perltidy (and perl) under Windows with the standard command.com shell.
-    The problem is that command.com always sends the standard error output
-    to the screen. This makes it impossible for perltidy to capture the
-    message 'syntax OK' when it runs 'perl -c' with the following code:
+    perltidy (and perl) under Windows with the command.com shell. The
+    problem is that command.com always sends the standard error output to
+    the screen. This makes it impossible for perltidy to capture the message
+    'syntax OK' when it runs 'perl -c' with the following code:
 
             my $perl_output = <<`END`;
                     perl -c $filename 2>&1
@@ -127,9 +143,9 @@ Welcome to perltidy!
 
   VMS Notes
 
-    Perltidy runs under VMS. You will probably want to use the .zip
-    distribution file to get the <cr><lf> line endings. File extensions will
-    use an underscore character instead of a dot, so
+    Perltidy runs under VMS, thanks to Michael Cartmell. You will probably
+    want to use the .zip distribution file to get the <cr><lf> line endings.
+    File extensions will use an underscore character instead of a dot, so
 
           perltidy myfile.pl
 

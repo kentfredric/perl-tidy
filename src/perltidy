@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.25 2001/07/31 22:17:39 perltidy Exp $
+    $Id: perltidy,v 1.26 2001/08/05 14:30:55 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -3529,8 +3529,7 @@ sub check_options {
     # The -lp indentation logic requires that perltidy examine large
     # blocks of code between flushing.  When the user takes control
     # of line breaks, perltidy never sees large enough buffers to
-    # use the -lp style.  There's no way around this.  "It's my way
-    # or the highway".
+    # use the -lp style.  There's no way around this.  
     if ( $rOpts->{'line-up-parentheses'} ) {
 
         if ( $rOpts->{'indent-only'} || !$rOpts->{'add-newlines'}
@@ -4340,7 +4339,7 @@ sub print_line_of_tokens {
     #     /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
     # Examples:
     #   *VERSION = \'1.01';
-    #   ( $VERSION ) = '$Revision: 1.25 $ ' =~ /\$Revision:\s+([^\s]+)/;
+    #   ( $VERSION ) = '$Revision: 1.26 $ ' =~ /\$Revision:\s+([^\s]+)/;
     # We will pass such a line straight through unless -npvl is used
     my $is_VERSION_statement = 0;
 
@@ -7301,9 +7300,11 @@ sub recombine_breakpoints {
                     $forced_breakpoint_to_go[$imid] = 0;
                 }
 
-                # but otherwise, do not recombine
+                # but otherwise, do not recombine unless this will leave 
+                # just 1 more line
                 else {
-                    next;
+                    #next unless ($nmax <= 2);
+                    next unless ($n+1 >= $nmax );
                 }
             }
 
@@ -7653,23 +7654,23 @@ sub compare_indentation_levels {
 package Perltidy::IndentationItem;
 
 # Indexes for indentation items
-use constant XX_SPACES             => 0;     # total leading white spaces
-use constant XX_LEVEL              => 1;     # the indentation 'level'
-use constant XX_CI_LEVEL           => 2;     # the 'continuation level'
-use constant XX_AVAILABLE_SPACES   => 3;     # how many left spaces available
-                                             # for this level
-use constant XX_CLOSED             => 4;     # index where we saw closing '}'
-use constant XX_COMMA_COUNT        => 5;     # how many commas at this level?
-use constant XX_SEQUENCE_NUMBER    => 6;     # output batch number
-use constant XX_INDEX              => 7;     # index in output batch list
-use constant XX_HAVE_CHILD         => 8;     # any dependents?
-use constant XX_RECOVERABLE_SPACES => 9;     # how many spaces to the right
-                                             # we would like to move to get
-                                             # alignment (negative if left)
-use constant XX_ALIGN_PAREN        => 10;    # do we want to try to align
-                                             # with an opening structure?
-use constant XX_MARKED             => 11;    # if visited by corrector logic
-use constant XX_STACK_DEPTH        => 12;    # indentation nesting depth
+use constant SPACES             => 0;     # total leading white spaces
+use constant LEVEL              => 1;     # the indentation 'level'
+use constant CI_LEVEL           => 2;     # the 'continuation level'
+use constant AVAILABLE_SPACES   => 3;     # how many left spaces available
+                                          # for this level
+use constant CLOSED             => 4;     # index where we saw closing '}'
+use constant COMMA_COUNT        => 5;     # how many commas at this level?
+use constant SEQUENCE_NUMBER    => 6;     # output batch number
+use constant INDEX              => 7;     # index in output batch list
+use constant HAVE_CHILD         => 8;     # any dependents?
+use constant RECOVERABLE_SPACES => 9;     # how many spaces to the right
+                                          # we would like to move to get
+                                          # alignment (negative if left)
+use constant ALIGN_PAREN        => 10;    # do we want to try to align
+                                          # with an opening structure?
+use constant MARKED             => 11;    # if visited by corrector logic
+use constant STACK_DEPTH        => 12;    # indentation nesting depth
 
 sub new {
 
@@ -7731,131 +7732,131 @@ sub tentatively_decrease_AVAILABLE_SPACES {
 
 sub get_STACK_DEPTH {
     my ($self) = @_;
-    return $self->[XX_STACK_DEPTH];
+    return $self->[STACK_DEPTH];
 }
 
 sub get_SPACES {
     my ($self) = @_;
-    return $self->[XX_SPACES];
+    return $self->[SPACES];
 }
 
 sub get_MARKED {
     my ($self) = @_;
-    return $self->[XX_MARKED];
+    return $self->[MARKED];
 }
 
 sub set_MARKED {
     my ( $self, $value ) = @_;
     if ( defined($value) ) {
-        $self->[XX_MARKED] = $value;
+        $self->[MARKED] = $value;
     }
-    return $self->[XX_MARKED];
+    return $self->[MARKED];
 }
 
 sub get_AVAILABLE_SPACES {
     my ($self) = @_;
-    return $self->[XX_AVAILABLE_SPACES];
+    return $self->[AVAILABLE_SPACES];
 }
 
 sub decrease_SPACES {
     my ( $self, $value ) = @_;
     if ( defined($value) ) {
-        $self->[XX_SPACES] -= $value;
+        $self->[SPACES] -= $value;
     }
-    return $self->[XX_SPACES];
+    return $self->[SPACES];
 }
 
 sub decrease_AVAILABLE_SPACES {
     my ( $self, $value ) = @_;
     if ( defined($value) ) {
-        $self->[XX_AVAILABLE_SPACES] -= $value;
+        $self->[AVAILABLE_SPACES] -= $value;
     }
-    return $self->[XX_AVAILABLE_SPACES];
+    return $self->[AVAILABLE_SPACES];
 }
 
 sub get_ALIGN_PAREN {
     my ($self) = @_;
-    return $self->[XX_ALIGN_PAREN];
+    return $self->[ALIGN_PAREN];
 }
 
 sub get_RECOVERABLE_SPACES {
     my ($self) = @_;
-    return $self->[XX_RECOVERABLE_SPACES];
+    return $self->[RECOVERABLE_SPACES];
 }
 
 sub set_RECOVERABLE_SPACES {
     my ( $self, $value ) = @_;
     if ( defined($value) ) {
-        $self->[XX_RECOVERABLE_SPACES] = $value;
+        $self->[RECOVERABLE_SPACES] = $value;
     }
-    return $self->[XX_RECOVERABLE_SPACES];
+    return $self->[RECOVERABLE_SPACES];
 }
 
 sub increase_RECOVERABLE_SPACES {
     my ( $self, $value ) = @_;
     if ( defined($value) ) {
-        $self->[XX_RECOVERABLE_SPACES] += $value;
+        $self->[RECOVERABLE_SPACES] += $value;
     }
-    return $self->[XX_RECOVERABLE_SPACES];
+    return $self->[RECOVERABLE_SPACES];
 }
 
 sub get_CI_LEVEL {
     my ($self) = @_;
-    return $self->[XX_CI_LEVEL];
+    return $self->[CI_LEVEL];
 }
 
 sub get_LEVEL {
     my ($self) = @_;
-    return $self->[XX_LEVEL];
+    return $self->[LEVEL];
 }
 
 sub get_SEQUENCE_NUMBER {
     my ($self) = @_;
-    return $self->[XX_SEQUENCE_NUMBER];
+    return $self->[SEQUENCE_NUMBER];
 }
 
 sub get_INDEX {
     my ($self) = @_;
-    return $self->[XX_INDEX];
+    return $self->[INDEX];
 }
 
 sub set_HAVE_CHILD {
     my ( $self, $value ) = @_;
     if ( defined($value) ) {
-        $self->[XX_HAVE_CHILD] = $value;
+        $self->[HAVE_CHILD] = $value;
     }
-    return $self->[XX_HAVE_CHILD];
+    return $self->[HAVE_CHILD];
 }
 
 sub get_HAVE_CHILD {
     my ($self) = @_;
-    return $self->[XX_HAVE_CHILD];
+    return $self->[HAVE_CHILD];
 }
 
 sub set_COMMA_COUNT {
     my ( $self, $value ) = @_;
     if ( defined($value) ) {
-        $self->[XX_COMMA_COUNT] = $value;
+        $self->[COMMA_COUNT] = $value;
     }
-    return $self->[XX_COMMA_COUNT];
+    return $self->[COMMA_COUNT];
 }
 
 sub get_COMMA_COUNT {
     my ($self) = @_;
-    return $self->[XX_COMMA_COUNT];
+    return $self->[COMMA_COUNT];
 }
 
 sub set_CLOSED {
     my ( $self, $value ) = @_;
     if ( defined($value) ) {
-        $self->[XX_CLOSED] = $value;
+        $self->[CLOSED] = $value;
     }
-    return $self->[XX_CLOSED];
+    return $self->[CLOSED];
 }
 
 sub get_CLOSED {
     my ($self) = @_;
-    return $self->[XX_CLOSED];
+    return $self->[CLOSED];
 }
 
 #####################################################################
@@ -7866,6 +7867,8 @@ sub get_CLOSED {
 #####################################################################
 
 package Perltidy::VerticalAligner::Line;
+
+{
 
 use strict;
 use Carp;
@@ -7882,6 +7885,7 @@ use constant OUTDENT_LONG_LINES      => 8;
 use constant LIST_TYPE               => 9;
 use constant IS_HANGING_SIDE_COMMENT => 10;
 use constant RCOLUMNS                => 11;
+use constant RSTARTING_COLUMNS       => 12;
 
 my %_index_map;
 $_index_map{jmax}                    = JMAX;
@@ -7896,6 +7900,7 @@ $_index_map{outdent_long_lines}      = OUTDENT_LONG_LINES;
 $_index_map{list_type}               = LIST_TYPE;
 $_index_map{is_hanging_side_comment} = IS_HANGING_SIDE_COMMENT;
 $_index_map{rcolumns}                = RCOLUMNS;
+$_index_map{rstarting_columns}       = RSTARTING_COLUMNS;
 
 my @_default_data = ();
 $_default_data[JMAX]                    = undef;
@@ -7910,6 +7915,7 @@ $_default_data[OUTDENT_LONG_LINES]      = undef;
 $_default_data[LIST_TYPE]               = undef;
 $_default_data[IS_HANGING_SIDE_COMMENT] = undef;
 $_default_data[RCOLUMNS]                = undef;
+$_default_data[RSTARTING_COLUMNS]       = undef;
 
 {
 
@@ -7942,18 +7948,75 @@ sub DESTROY {
     $_[0]->_decrement_count();
 }
 
-sub get_jmax                    { return $_[0]->[JMAX] }
-sub get_jmax_original_line      { return $_[0]->[JMAX_ORIGINAL_LINE] }
-sub get_rtokens                 { return $_[0]->[RTOKENS] }
-sub get_rfields                 { return $_[0]->[RFIELDS] }
-sub get_rpatterns               { return $_[0]->[RPATTERNS] }
-sub get_indentation             { return $_[0]->[INDENTATION] }
-sub get_leading_space_count     { return $_[0]->[LEADING_SPACE_COUNT] }
-sub get_is_forced_break         { return $_[0]->[IS_FORCED_BREAK] }
-sub get_outdent_long_lines      { return $_[0]->[OUTDENT_LONG_LINES] }
-sub get_list_type               { return $_[0]->[LIST_TYPE] }
-sub get_is_hanging_side_comment { return $_[0]->[IS_HANGING_SIDE_COMMENT] }
-sub get_rcolumns                { return $_[0]->[RCOLUMNS] }
+sub get_jmax                    {  $_[0]->[JMAX] }
+sub get_jmax_original_line      {  $_[0]->[JMAX_ORIGINAL_LINE] }
+sub get_rtokens                 {  $_[0]->[RTOKENS] }
+sub get_rfields                 {  $_[0]->[RFIELDS] }
+sub get_rpatterns               {  $_[0]->[RPATTERNS] }
+sub get_indentation             {  $_[0]->[INDENTATION] }
+sub get_leading_space_count     {  $_[0]->[LEADING_SPACE_COUNT] }
+sub get_is_forced_break         {  $_[0]->[IS_FORCED_BREAK] }
+sub get_outdent_long_lines      {  $_[0]->[OUTDENT_LONG_LINES] }
+sub get_list_type               {  $_[0]->[LIST_TYPE] }
+sub get_is_hanging_side_comment {  $_[0]->[IS_HANGING_SIDE_COMMENT] }
+
+# currently unused:
+# sub get_rcolumns                {  $_[0]->[RCOLUMNS] }
+# sub get_rstarting_columns       {  $_[0]->[RSTARTING_COLUMNS] }
+
+# get_column($k) returns location of kth column on this line
+sub get_column           {  $_[0]->[RCOLUMNS]->[ $_[1] ] }
+sub get_starting_column  {  $_[0]->[RSTARTING_COLUMNS]->[ $_[1] ] }
+sub get_all_columns      {  @{$_[0]->[RCOLUMNS]} }
+
+sub current_field_width {
+    my $self=shift;
+    my ($j) = @_;
+    if ( $j == 0 ) {
+        return $self->get_column($j);
+    }
+    else {
+        return $self->get_column($j) - $self->get_column( $j - 1 );
+    }
+}
+
+sub field_width_growth {
+    my $self = shift;
+    my ($j) = @_;
+    return $self->get_column($j) - $self->get_starting_column($j);
+}
+
+sub starting_field_width {
+    my $self = shift;
+    my ($j) = @_;
+    if ( $j == 0 ) {
+        return $self->get_starting_column($j);
+    }
+    else {
+        return $self->get_starting_column($j) - $self->get_column($j);
+    }
+}
+
+# set_column($k, $value)
+sub set_column { $_[0]->[RCOLUMNS]->[ $_[1] ] = $_[2] }
+sub increment_column { $_[0]->[RCOLUMNS]->[ $_[1] ] += $_[2] }
+
+sub set_starting_column { $_[0]->[RSTARTING_COLUMNS]->[ $_[1] ] = $_[2] }
+sub set_all_columns      {  my $self=shift; @{$self->[RCOLUMNS]} = @_ }
+sub set_all_starting_columns  {  
+   my $self=shift; 
+   @{$self->[RSTARTING_COLUMNS]} = @_ 
+}
+
+sub increase_field_width {
+
+    my $self=shift;
+    my ( $j, $pad ) = @_;
+    my $jmax = $self->get_jmax();
+    for my $k ( $j .. $jmax ) {
+        $self->increment_column( $k, $pad );
+    }
+}
 
 sub set_jmax                { $_[0]->[JMAX]                = $_[1] }
 sub set_jmax_original_line  { $_[0]->[JMAX_ORIGINAL_LINE]  = $_[1] }
@@ -7966,7 +8029,91 @@ sub set_is_forced_break     { $_[0]->[IS_FORCED_BREAK]     = $_[1] }
 sub set_outdent_long_lines  { $_[0]->[OUTDENT_LONG_LINES]  = $_[1] }
 sub set_list_type           { $_[0]->[LIST_TYPE]           = $_[1] }
 sub set_is_hanging_side_comment { $_[0]->[IS_HANGING_SIDE_COMMENT] = $_[1] }
-sub set_rcolumns                { $_[0]->[RCOLUMNS]                = $_[1] }
+
+# currently unused:
+# sub set_rcolumns                { $_[0]->[RCOLUMNS]                = $_[1] }
+# sub set_rstarting_columns       { $_[0]->[RSTARTING_COLUMNS]       = $_[1] }
+
+}
+
+#####################################################################
+#
+# the Perltidy::VerticalAligner::Alignment class holds information
+# on a single column being aligned
+#
+#####################################################################
+package PerlTidy::VerticalAligner::Alignment;
+
+{
+
+use strict;
+use Carp;
+
+# Symbolic array indexes
+use constant COLUMN          => 0;  # the current column number
+use constant STARTING_COLUMN => 1;  # column number when created
+use constant MATCHING_TOKEN  => 2;  # what token we are matching
+use constant STARTING_LINE   => 3;  # the line index of creation
+use constant ENDING_LINE     => 4;  # the most recent line to use it
+
+# Correspondence between variables and array indexes
+my %_index_map;
+$_index_map{column}          = COLUMN;
+$_index_map{starting_column} = STARTING_COLUMN;
+$_index_map{matching_token}  = MATCHING_TOKEN;
+$_index_map{starting_line}   = STARTING_LINE;
+$_index_map{ending_line}     = ENDING_LINE;
+
+my @_default_data = ();
+$_default_data[COLUMN]          = undef;
+$_default_data[STARTING_COLUMN] = undef;
+$_default_data[MATCHING_TOKEN]  = undef;
+$_default_data[STARTING_LINE]   = undef;
+$_default_data[ENDING_LINE]     = undef;
+
+# class population count
+{
+    my $_count = 0;
+    sub get_count        { $_count; }
+    sub _increment_count { ++$_count }
+    sub _decrement_count { --$_count }
+}
+
+# constructor
+sub new {
+    my ( $caller, %arg ) = @_;
+    my $caller_is_obj = ref($caller);
+    my $class = $caller_is_obj || $caller;
+    no strict "refs";
+    my $self = bless [], $class;
+
+    foreach my $member ( keys %_index_map ) {
+        my $index = $_index_map{$member};
+        if ( exists $arg{$member} ) { $self->[$index] = $arg{$member} }
+        elsif ($caller_is_obj) { $self->[$index] = $caller->[$index] }
+        else { $self->[$index] = $_default_data[$index] }
+    }
+    $self->_increment_count();
+    return $self;
+}
+
+sub DESTROY {
+    $_[0]->_decrement_count();
+}
+
+sub get_column          { return $_[0]->[COLUMN] }
+sub get_starting_column { return $_[0]->[STARTING_COLUMN] }
+sub get_matching_token  { return $_[0]->[MATCHING_TOKEN] }
+sub get_starting_line   { return $_[0]->[STARTING_LINE] }
+sub get_ending_line     { return $_[0]->[ENDING_LINE] }
+
+sub set_column          { $_[0]->[COLUMN]          = $_[1] }
+sub set_starting_column { $_[0]->[STARTING_COLUMN] = $_[1] }
+sub set_matching_token  { $_[0]->[MATCHING_TOKEN]  = $_[1] }
+sub set_starting_line   { $_[0]->[STARTING_LINE]   = $_[1] }
+sub set_ending_line     { $_[0]->[ENDING_LINE]     = $_[1] }
+
+}
 
 package Perltidy::VerticalAligner;
 
@@ -8213,13 +8360,19 @@ The log file warns the user if there are any such tabs.
 
         if ( $maximum_line_index >= 0 ) {
             my $maximum_field_index = $group_lines[0]->get_jmax();
+
+            # flush the current group if it has some aligned columns..
             if ( $maximum_field_index > 1 ) { flush() }
 
-            # flush current group unless we are just collecting side
-            # comments, and we saw one recently
-            elsif ( ( $zero_count > 3 )
+            # flush current group if we are just collecting side comments..
+            elsif ( 
+            
+               # ...and we haven't seen a comment lately
+               ( $zero_count > 3 )
+
+                # ..or if this new line doesn't fit to the left of the comments
                 || ( ( $leading_space_count + length( $$rfields[0] ) ) >
-                    get_column(0) ) )
+                    $group_lines[0]->get_column(0) ))
             {
                 flush();
             }
@@ -8264,6 +8417,7 @@ The log file warns the user if there are any such tabs.
         list_type               => "",
         is_hanging_side_comment => 0,
         rcolumns                => $rcolumns,
+        rstarting_columns       => $rstarting_columns,
     );
 
     my $old_line = undef;
@@ -8429,13 +8583,13 @@ sub eliminate_group_fields {
 
             if ( $$old_rtokens[$k] eq $$rtokens[$j] ) {
                 $in_match = 1;
-                $new_matching_tokens[$j]   = $$old_rtokens[$k];
                 $new_fields[$j]            = $current_field;
                 $new_matching_patterns[$j] = $current_pattern;
                 $current_field   = '';
                 $current_pattern = '';
-                $new_columns[$j]          = get_column($k);
-                $new_starting_columns[$j] = get_starting_column($k);
+                $new_matching_tokens[$j]   = $$old_rtokens[$k];
+                $new_columns[$j]          = $old_line->get_column($k);
+                $new_starting_columns[$j] = $old_line->get_starting_column($k);
                 $j++;
             }
             else {
@@ -8455,12 +8609,14 @@ sub eliminate_group_fields {
             $current_pattern .= $$old_rpatterns[$k];
             $new_fields[$j]            = $current_field;
             $new_matching_patterns[$j] = $current_pattern;
-            $new_columns[$j]           = get_column($k);
-            $new_starting_columns[$j]  = get_starting_column($k);
+            $new_columns[$j]           = $old_line->get_column($k);
+            $new_starting_columns[$j]  = $old_line->get_starting_column($k);
             $maximum_field_index = $j;
 
-            @$rcolumns          = @new_columns;
-            @$rstarting_columns = @new_starting_columns;
+#            @$rcolumns          = @new_columns;
+#            @$rstarting_columns = @new_starting_columns;
+            $old_line->set_all_columns(@new_columns);
+            $old_line->set_all_starting_columns(@new_starting_columns);
 
             $old_line->set_jmax($jmax);
             $old_line->set_rtokens( \@new_matching_tokens );
@@ -8639,7 +8795,8 @@ sub check_match {
                 # Don't let line with fewer fields increase column widths
                 # ( align3.t )
                 if ( $maximum_field_index > $jmax ) {
-                    my $pad = length( $$rfields[$j] ) - current_field_width($j);
+                    #my $pad = length( $$rfields[$j] ) - current_field_width($j);
+                    my $pad = length( $$rfields[$j] ) - $old_line->current_field_width($j);
 
                     if ( $j == 0 ) {
                         $pad += $leading_space_count;
@@ -8692,13 +8849,13 @@ sub check_fit {
     if ( $maximum_line_index >= 0 ) {
         my $padding_so_far    = 0;
         my $padding_available =
-          $rOpts->{'maximum-line-length'} - get_column($maximum_field_index);
+          $rOpts->{'maximum-line-length'} - $old_line->get_column($maximum_field_index);
 
         # save current columns in case this doesn't work
-        my @old_columns = @$rcolumns;
+        my @old_columns = $old_line->get_all_columns();
 
         for my $j ( 0 .. $jmax ) {
-            my $pad = length( $$rfields[$j] ) - current_field_width($j);
+            my $pad = length( $$rfields[$j] ) - $old_line->current_field_width($j);
 
             if ( $j == 0 ) {
                 $pad += $leading_space_count;
@@ -8722,8 +8879,7 @@ sub check_fit {
                 # a sudden decrease of over '8' spaces to a new low is too much
                 elsif ( $pad < 0 ) {
                     my $test_pad =
-                      length( $$rfields[$j] ) - starting_field_width($j);
-
+                      length( $$rfields[$j] ) - $old_line->starting_field_width($j);
                     if ( $j == 0 ) {
                         $test_pad += $leading_space_count;
                     }
@@ -8746,7 +8902,7 @@ sub check_fit {
                 || ( $j < $jmax - 1
 
                     # causes too many consecutive columns of whitespace 
-                    && ( ( $pad + field_width_growth($j) >
+                    && ( ( $pad + $old_line->field_width_growth($j) >
                         $rOpts->{'maximum-whitespace-columns'} )
 
                     )
@@ -8755,13 +8911,13 @@ sub check_fit {
             {
 
                 # revert to starting state then flush; things didn't work out
-                @$rcolumns = @old_columns;
+                $old_line->set_all_columns(@old_columns);
                 flush();
                 last;
             }
 
             # looks ok, squeeze this field in
-            increase_field_width( $j, $pad );
+            $old_line->increase_field_width( $j, $pad );
             $padding_available -= $pad;
         }
     }
@@ -8778,70 +8934,25 @@ sub accept_line {
         my $jmax    = $new_line->get_jmax();
         my $rfields = $new_line->get_rfields();
         my $j;
+
+        my @new_columns           = ();
+        my @new_starting_columns  = ();
+
         my $col = $new_line->get_leading_space_count();
 
         for $j ( 0 .. $jmax ) {
             $col += length( $$rfields[$j] );
-            set_column( $j,          $col );
-            set_starting_column( $j, $col );
+            push @new_columns, $col;
+            push @new_starting_columns, $col;
+            #$new_line->set_column( $j,          $col );
+            #$new_line->set_starting_column( $j, $col );
         }
+
+        $new_line->set_all_columns(@new_columns);
+        $new_line->set_all_starting_columns(@new_starting_columns);
 
         $maximum_jmax_seen = $jmax;
         $minimum_jmax_seen = $jmax;
-    }
-}
-
-sub set_column {
-    $$rcolumns[ $_[0] ] = $_[1];
-}
-
-sub set_starting_column {
-    $$rstarting_columns[ $_[0] ] = $_[1];
-}
-
-sub increment_column {
-    $$rcolumns[ $_[0] ] += $_[1];
-}
-
-sub get_starting_column {
-    return $$rstarting_columns[ $_[0] ];
-}
-
-sub get_column {
-    return $$rcolumns[ $_[0] ];
-}
-
-sub increase_field_width {
-
-    my $maximum_field_index = $group_lines[0]->get_jmax();
-    my ( $j, $pad ) = @_;
-    for my $k ( $j .. $maximum_field_index ) {
-        increment_column( $k, $pad );
-    }
-}
-
-sub field_width_growth {
-    my ($j) = @_;
-    return get_column($j) - get_starting_column($j);
-}
-
-sub current_field_width {
-    my ($j) = @_;
-    if ( $j == 0 ) {
-        return get_column($j);
-    }
-    else {
-        return get_column($j) - get_column( $j - 1 );
-    }
-}
-
-sub starting_field_width {
-    my ($j) = @_;
-    if ( $j == 0 ) {
-        return get_starting_column($j);
-    }
-    else {
-        return get_starting_column($j) - get_column($j);
     }
 }
 
@@ -8941,11 +9052,13 @@ sub adjust_side_comment {
 
     if ($have_side_comment) {
 
+        my $line = $group_lines[0];
+
         # the maximum space without exceeding the line length:
-        my $avail = $rOpts->{'maximum-line-length'} - get_column( $kmax - 1 );
+        my $avail = $rOpts->{'maximum-line-length'} - $line->get_column( $kmax - 1 );
 
         # try to use the previous comment column
-        my $move = $last_comment_column - get_column( $kmax - 2 );
+        my $move = $last_comment_column - $line->get_column( $kmax - 2 );
 
         if ( $kmax > 0 && !$do_not_align ) {
 
@@ -8977,18 +9090,18 @@ sub adjust_side_comment {
 
             # we can only increase space, never decrease
             if ( $move > 0 ) {
-                increase_field_width( $maximum_field_index - 1, $move );
+                $line->increase_field_width( $maximum_field_index - 1, $move );
             }
 
             # remember this column for the next group
-            $last_comment_column = get_column( $kmax - 2 );
+            $last_comment_column = $line->get_column( $kmax - 2 );
         }
 
         else {
 
             # try to at least line up the existing side comment location
             if ( $kmax > 0 && $move > 0 && $move < $avail ) {
-                increase_field_width( $maximum_field_index - 1, $move );
+                $line->increase_field_width( $maximum_field_index - 1, $move );
                 $do_not_align = 0;
             }
 
@@ -9041,8 +9154,9 @@ use overload '+' => \&plus,
             my $line                = $group_lines[$i];
             my $leading_space_count = $line->get_leading_space_count();
             my $rfields             = $line->get_rfields();
+
             my $gap                 =
-              get_column(0) - $leading_space_count - length( $$rfields[0] );
+              $line->get_column(0) - $leading_space_count - length( $$rfields[0] );
 
             if ( $leading_space_count > $group_leader_length ) {
                 if ( $gap < $min_ci_gap ) { $min_ci_gap = $gap }
@@ -9092,7 +9206,7 @@ sub write_line {
 
         # compute spaces of padding before this field
         my $pad =
-          get_column( $j - 1 ) - ( length($str) + $leading_space_count );
+          $line->get_column( $j - 1 ) - ( length($str) + $leading_space_count );
 
         if ($do_not_align) {
             $pad =
@@ -9159,7 +9273,7 @@ sub get_extra_leading_spaces {
                 # the maximum space without exceeding the line length:
                 my $avail =
                   $rOpts->{'maximum-line-length'} -
-                  get_column($maximum_field_index);
+                  $group_lines[0]->get_column($maximum_field_index);
                 $extra_leading_spaces =
                   ( $avail > $extra_indentation_spaces_wanted ) ?
                   $extra_indentation_spaces_wanted : $avail;
@@ -9186,24 +9300,25 @@ sub combine_fields {
             $$rfields[0] .= $$rfields[$k];
         }
         $$rfields[1] = $$rfields[$maximum_field_index];
+        my @new_columns           = (0,0);
         $line->set_jmax(1);
+        $line->set_all_columns( @new_columns );
+        #$line->set_column( 0, 0 );
+        #$line->set_column( 1, 0 );
     }
     $maximum_field_index = 1;
-
-    set_column( 0, 0 );
-    set_column( 1, 0 );
 
     for $j ( 0 .. $maximum_line_index ) {
         my $line    = $group_lines[$j];
         my $rfields = $line->get_rfields();
         for $k ( 0 .. $maximum_field_index ) {
-            my $pad = length( $$rfields[$k] ) - current_field_width($k);
+            my $pad = length( $$rfields[$k] ) - $line->current_field_width($k);
             if ( $k == 0 ) {
                 $pad += $group_lines[$j]->get_leading_space_count();
             }
 
             if ( $pad > 0 ) {
-                increase_field_width( $k, $pad );
+                $line->increase_field_width( $k, $pad );
             }
         }
     }
@@ -9236,7 +9351,6 @@ sub write_leader_and_string {
         # Otherwise, outdent if permitted
         #else {
 
-        #if ( $rOpts->{'outdent-long-lines'} ) {
         if ($outdent_long_lines) {
             $leading_string         = "";
             $last_outdented_line_at =
@@ -11461,10 +11575,10 @@ EOM
             # nothing to do for these tokens:
             if ( $tok =~ /^[\=\|\>\\\~\!]/ ) {
 
-                # the rest of these are in order of approximate frequency
-                # of occurance in a typical program according to my
-                # highly scientific study :)
             }
+
+            # the rest of these are in order of approximate frequency
+            # of occurance. 
             elsif ( $tok eq '$' ) {    # start looking for a scalar
                 if ( $expecting == OPERATOR ) {
                     unexpected( "Scalar", "operator", $i_tok,
@@ -13937,13 +14051,28 @@ sub do_scan_sub {
     my $subname = undef;
     my $package = undef;
     my $proto   = undef;
+    my $attrs   = undef;
 
     my $pos_beg = $$rtoken_map[$i_beg];
     pos($input_line) = $pos_beg;
 
-    if ( $input_line =~ m/\G\s*((?:\w*(?:'|::))*)(\w+)(\s*\([^){]*\))?/gc ) {
+    # sub NAME PROTO ATTRS BLOCK
+    #if ( $input_line =~ m/\G\s*((?:\w*(?:'|::))*)(\w+)(\s*\([^){]*\))?/gc ) {
+    if ( $input_line =~ 
+        m/\G\s*
+        ((?:\w*(?:'|::))*)  # package - something that ends in :: or '
+        (\w+)               # NAME    - required
+        (\s*\([^){]*\))?    # PROTO   - something in parens
+        (\s*:(\s*(\w+))+)?  # ATTRS   - leading : followed by one or more words
+        /gcx ) 
+    {
         $subname = $2;
         $proto   = $3;
+        $attrs   = $4;
+        if ($attrs) {
+            # remove this after testing
+            write_diagnostics("Found sub ATTRS $attrs for NAME=$2\n");
+        }
         $package = ( defined($1) && $1 ) ? $1 : $current_package;
         $package =~ s/\'/::/g;
         if ( $package =~ /^\:/ ) { $package = 'main' . $package }
@@ -13993,7 +14122,16 @@ sub do_scan_sub {
 
     # look for prototype following an anonymous sub so they don't get
     # stranded.  ( sub.t )  
-    elsif ( $input_line =~ m/\G\s*\([^){]*\)/gc ) {
+    #elsif ( $input_line =~ m/\G\s*\([^){]*\)/gc ) 
+    # sub PROTO ATTRS BLOCK
+    elsif ( $input_line =~ 
+      m/\G(\s*\([^){]*\))?  # PROTO
+      (\s*:(\s*(\w+))+)?    # ATTRS
+      /gcx 
+      && ($1 || $2) ) 
+    {
+        # remove this after testing
+        if ($2) {write_diagnostics("Found anonymous sub ATTRS $2 \n");}
         my $pos = pos($input_line);
         my $error;
         ( $i, $error ) = inverse_pretoken_map( $i, $pos, $rtoken_map );

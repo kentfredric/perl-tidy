@@ -14,6 +14,7 @@
 	<LI><A HREF="#perltidy open bugs">Perltidy open BUGS</A></LI>
 	<UL>
 
+		<LI><A HREF="#a heredoc invoked through an 'e' modifier on the replacement text is not recognized (slh, 20010802)">A here-doc invoked through an 'e' modifier on the replacement text is not recognized (SLH, 2001-08-02)</A></LI>
 		<LI><A HREF="#perl v5.6.0 features not yet parsed correctly (slh, 20010331)">perl v5.6.0 features not yet parsed correctly (SLH, 2001-03-31)</A></LI>
 	</UL>
 
@@ -31,8 +32,18 @@
  This file only lists open bugs.  For bugs which have been fixed, 
  see the ChangeLog.</PRE>
 <P>
+<H2><A NAME="a heredoc invoked through an 'e' modifier on the replacement text is not recognized (slh, 20010802)">A here-doc invoked through an 'e' modifier on the replacement text is not recognized (SLH, 2001-08-02)</A></H2>
+<P>For example, the output of perltidy for this script has a syntax error:</P>
+<PRE>
+        my $text=&quot;Hello World!\n&quot;;
+        $text =~ s@Hello@&lt;&lt;'END'@e;
+        Goodbye 
+        Cruel
+        END
+        print &quot;$text\n&quot;;</PRE>
+<P>
 <H2><A NAME="perl v5.6.0 features not yet parsed correctly (slh, 20010331)">perl v5.6.0 features not yet parsed correctly (SLH, 2001-03-31)</A></H2>
-<P>Subroutine attributes have not been implemented in perltdy yet.  For example:</P>
+<P>Subroutine attributes have not been implemented in perltidy yet.  For example:</P>
 <PRE>
    sub witch : locked {
      ...        

@@ -31,6 +31,15 @@ my ( $num, $numi, $numj,   $xyza, $ka,   $xyzb,  $kb, $aff, $error );
 my ( $i,   $j,    $error,  $aff,  $asum, $avec );
 my ( $km,  $area, $varea );
 
+# note that original aligns common word endings - cannot do that
+my $classmac_output_file = $outdirname.$schoolcode."classmac.txt";
+my  $classpc_output_file = $outdirname.$schoolcode."classpc.txt";
+my   $barmac_output_file = $outdirname.$schoolcode."barmac.txt";
+my    $barpc_output_file = $outdirname.$schoolcode."barpc.txt";
+close    MACOUTFILE;
+close     PCOUTFILE;
+close BARMACOUTFILE;
+close  BARPCOUTFILE;
 
 # combinations of tokens to line up, with varying line lengths
 SWITCH: {

@@ -15,6 +15,7 @@
 	<UL>
 
 		<LI><A HREF="#installation  unix">Installation - Unix</A></LI>
+		<LI><A HREF="#windows me warning">Windows ME WARNING</A></LI>
 		<LI><A HREF="#installation  windows">Installation - Windows</A></LI>
 		<LI><A HREF="#windows problem with command.com">Windows problem with command.com</A></LI>
 		<LI><A HREF="#vms notes">VMS Notes</A></LI>
@@ -66,7 +67,7 @@ entering:</P>
 work, but if it does not, you will need to change the first line in
 perltidy to reflect the location of perl on your system.  On a Unix
 system, you might find the path to perl with the command 'which perl'.</P>
-<P>3. EDIT <EM>Makefile</EM> to have the correct paths.  See the comments in the
+<P>3. Edit <EM>Makefile</EM> to have the correct paths.  See the comments in the
 <EM>Makefile</EM>.</P>
 <P>You will need to become root unless you change the paths to point to
 somewhere in your home directory.  Then issue the command</P>
@@ -76,21 +77,43 @@ somewhere in your home directory.  Then issue the command</P>
 <P>5. Test the installation using</P>
 <PRE>
  perltidy -h</PRE>
-<P>You should see the usage screen.  Then try</P>
+<P>You should see the usage screen.  Then, if you installed the man pages, 
+try</P>
 <PRE>
  man perltidy</PRE>
-<P>which should bring up the manual page if you installed it.</P>
+<P>which should bring up the manual page.</P>
 <P>If you ever want to remove perltidy, you can remove perltidy and its man
 pages by hand or use</P>
 <PRE>
  make uninstall</PRE>
 <P>
+<H2><A NAME="windows me warning">Windows ME WARNING</A></H2>
+<P>Some limited testing gave these discouraging results when attempting to
+run perltidy with Active State Perl with Windows ME:</P>
+<PRE>
+    Binary Build    Perl Version  Windows Result
+    522             5.005_03      95      ok
+    623             5.6.0         ME      Windows freezes
+    628             5.6.1         ME      Windows freezes
+    628             5.6.1         95      ok</PRE>
+<P>I've only tested one Windows ME system, so this may be specific to that
+machine (a new Dell with no known hardware problems).  The crash was
+so bad that even alt+control+delete did not work.  If you decide to try
+to run perltidy on a Windows ME machine, please close all existing
+applications first to avoid losing any data.  I would like to hear of
+any successes or failures (is it just ME?) so that we can ask
+ActiveState to look into it if this is a general problem.</P>
+<P>As far as I know, perltidy runs ok under ActiveState Perl and Windows
+95.</P>
+<P>
 <H2><A NAME="installation  windows">Installation - Windows</A></H2>
-<P>After unpacking the zip file, test the script:</P>
+<P>Here is how to install perltidy under Windows.
+After unpacking the zip file, test the script:</P>
 <PRE>
  perl perltidy lextest.pl</PRE>
 <P>This will produce an output file lextest.pl.tdy which can be
-compared to the input file.</P>
+compared to the input file.  (This is the point at which the above
+Windows ME machine hung badly).</P>
 <P>Placing <EM>perltidy</EM> and <EM>perltidy.bat</EM> in your path should work.  (You can
 determine your path by issuing the msdos command <CODE>PATH</CODE>).  However,
 the batch file probably will not support file redirection.  So, for
@@ -98,31 +121,36 @@ example, to pipe the long help message through 'more', you might have
 to invoke perltidy with perl directly, like this:</P>
 <PRE>
  perl \somepath\perltidy -h | more</PRE>
+<P>The documentation that comes with your perl distribution discusses other
+installation options.</P>
 <P>
 <H2><A NAME="windows problem with command.com">Windows problem with command.com</A></H2>
 <P>There is a minor problem that you should be aware of if you are running
-perltidy (and perl) under Windows with the standard <EM>command.com</EM> shell.
-The problem is that <EM>command.com</EM> always sends the standard output to
-the screen.  This makes it impossible for perltidy to capture the
-message 'syntax OK' when it runs 'perl -c' with the following code:</P>
+perltidy (and perl) under Windows with the <EM>command.com</EM>
+shell.  The problem is that <EM>command.com</EM> always sends the standard
+error output to the screen.  This makes it impossible for perltidy to
+capture the message 'syntax OK' when it runs 'perl -c' with the
+following code:</P>
 <PRE>
         my $perl_output = &lt;&lt;`END`;
                 perl -c $filename 2&gt;&amp;1
         END</PRE>
-<P>It also creates an empty
-file named <EM>&amp;1</EM>.  This means that you will have to check for syntax
-errors yourself.   If you do not want to create the empty file <EM>&amp;1</EM>,
-you can turn off syntax checking with the flag <STRONG>-nsyn</STRONG>.  You can
-check the syntax of a file manually by issuing the command</P>
+<P>It also creates an empty file named <EM>&amp;1</EM>.  This means that you will
+have to check for syntax errors yourself.   If you do not want to create
+the empty file <EM>&amp;1</EM>, you can turn off syntax checking with the flag
+<STRONG>-nsyn</STRONG>.  You can then check the syntax of a file manually by issuing the
+command</P>
 <PRE>
  perl -c filename</PRE>
-<P>The best way to solve this problem is to use a better shell, such as
-bash - see <A HREF="http://www.cygwin.com">http://www.cygwin.com</A></P>
+<P>The best way to solve this problem is probably to use a better shell,
+such as bash - see <A HREF="http://www.cygwin.com.">http://www.cygwin.com.</A>  If anyone knows a way
+to code around this in perl please let me know.</P>
 <P>
 <H2><A NAME="vms notes">VMS Notes</A></H2>
-<P>Perltidy runs under VMS.  You will probably want to use the .zip
-distribution file to get the &lt;cr&gt;&lt;lf&gt; line endings.  File extensions
-will use an underscore character instead of a dot, so</P>
+<P>Perltidy runs under VMS, thanks to Michael Cartmell.  You will
+probably want to use the .zip distribution file to get the &lt;cr&gt;&lt;lf&gt; line
+endings.  File extensions will use an underscore character instead of a
+dot, so</P>
 <PRE>
       perltidy myfile.pl</PRE>
 <P>will generate the output file <EM>myfile.pl_tdy</EM> instead of

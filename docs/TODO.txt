@@ -6,23 +6,28 @@ Perltidy TODO List
     There is (and always will be) a large backlog of little formatting
     issues in which the formatting could be better. These are things like
     improving line break choices and improving vertical alignment. I'm
-    working on them as time permits, with priority given to items that are
-    of interest to perltidy users.
-
-  Option to reformat block comments
-
-    A future option should use Text::Autoformat to reformat block comments.
-    Thanks to Tim Maher for this suggestion.
+    working on them as time permits.
 
   Improved Vertical Alignment
 
-    Coding modifications are underway to enhance the vertical alignment.
+    Coding modifications are underway to significantly enhance the vertical
+    alignment. This is an extensive update and will take another month or
+    so, since it is summer.
 
   BUGS
 
     There are still a couple of bugs listed in the BUGS file that need to be
     fixed. These are low priority compared to formatting issues, but need to
     be done.
+
+  Option to reformat block comments
+
+    I'm looking into an option to use Text::Autoformat to reformat comments.
+    Thanks to Tim Maher for this suggestion. Some preliminary testing
+    suggests that this might best be an interactive tool, something like a
+    spelling checker, which would walk through a file looking for groups of
+    comments, and present a proposed a reformatting to the user with a Y/N
+    response request.
 
   Automated testing
 
@@ -37,7 +42,7 @@ Perltidy TODO List
   Tokenization issues
 
     It would be nice to introduce some more token types, such as procedure
-    calls, so that they can be given separate colors in html files.
+    calls, so that they can easily be given separate colors in html files.
 
     There are some subtle issues with distinguishing block types that should
     be addressed to make the tokenizer more correct, even though they do not

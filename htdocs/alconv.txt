@@ -75,16 +75,16 @@ tested on several varieties of Unix systems, Windows 95, and VMS.
 
 <li>Please check the <a href="README.html">README Installation Notes</a>
 
-<li>download <a href="http://prdownloads.sourceforge.net/perltidy/perltidy-20010723.tgz">
+<li>download <a href="http://prdownloads.sourceforge.net/perltidy/perltidy-20010731.tgz">
 The latest release for unix (.tgz)</a>
 
-<li>download <a href="http://prdownloads.sourceforge.net/perltidy/perltidy-20010723.zip">
+<li>download <a href="http://prdownloads.sourceforge.net/perltidy/perltidy-20010731.zip">
 The latest release for Windows (.zip)</a>
 
-<li>download <a href="http://prdownloads.sourceforge.net/perltidy/perltidy-20010723-test.tgz">
+<li>download <a href="http://prdownloads.sourceforge.net/perltidy/perltidy-20010731-test.tgz">
 test scripts (.tgz)</a>.  These are not required for installation.
 
-<li>download <a href="http://prdownloads.sourceforge.net/perltidy/perltidy-20010723-test.zip">
+<li>download <a href="http://prdownloads.sourceforge.net/perltidy/perltidy-20010731-test.zip">
 test scripts (.zip)</a>.  These are not required for installation.
 
 <li> If these links are broken, 

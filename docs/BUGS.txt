@@ -6,9 +6,20 @@ Perltidy open BUGS
      This file only lists open bugs.  For bugs which have been fixed, 
      see the ChangeLog.  
 
+  A here-doc invoked through an 'e' modifier on the replacement text is not recognized (SLH, 2001-08-02)
+
+    For example, the output of perltidy for this script has a syntax error:
+
+            my $text="Hello World!\n";
+            $text =~ s@Hello@<<'END'@e;
+            Goodbye 
+            Cruel
+            END
+            print "$text\n";
+
   perl v5.6.0 features not yet parsed correctly (SLH, 2001-03-31)
 
-    Subroutine attributes have not been implemented in perltdy yet. For
+    Subroutine attributes have not been implemented in perltidy yet. For
     example:
 
        sub witch : locked {
