@@ -61,7 +61,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.28 2002/09/20 17:40:28 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.29 2002/09/22 02:26:29 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 # Preloaded methods go here.
@@ -3388,13 +3388,15 @@ TOC_END
     }
     $$rtoc_item_count++;
 
-    # make a unique anchor name for this location
+    # make a unique anchor name for this location:
+    #   - packages get a 'package-' prefix
+    #   - subs use their names
     my $unique_name = $name;
     if ( $type eq 'package' ) { $unique_name = "package-$name" }
 
     # append '-1', '-2', etc if necessary to make unique; this will
     # be unique because subs and packages cannot have a '-'
-    if ( my $count = $rtoc_name_count->{$unique_name}++ ) {
+    if ( my $count = $rtoc_name_count->{ lc $unique_name }++ ) {
         $unique_name .= "-$count";
     }
 
@@ -3833,7 +3835,7 @@ sub markup_tokens {
             $token = $2;
             $type  = 'M';
             my $subname = $token;
-            $subname =~ s/\s.*$//;    # remove any attributes and prototype
+            $subname =~ s/[\s\(].*$//;    # remove any attributes and prototype
             $self->add_toc_item( $subname, 'sub' );
         }
 
@@ -4034,6 +4036,7 @@ use vars qw{
   $last_unadjusted_indentation
 
   $saw_VERSION_in_this_file
+  $saw_END_or_DATA_
 
   @gnu_item_list
   $max_gnu_item_index
@@ -4382,6 +4385,7 @@ sub new {
     $last_unadjusted_indentation = 0;
 
     $saw_VERSION_in_this_file = !$rOpts->{'pass-version-line'};
+    $saw_END_or_DATA_            = 0;
 
     @block_type_to_go            = ();
     @type_sequence_to_go         = ();
@@ -4570,17 +4574,17 @@ sub write_line {
 
             # patch to put a blank line after =cut
             # (required by podchecker)
-            if ( $line_type eq 'POD_END' ) {
+            if ( $line_type eq 'POD_END' && !$saw_END_or_DATA_ ) {
                 $file_writer_object->reset_consecutive_blank_lines();
                 $want_blank_line_next = 1;
             }
-
         }
 
         # leave the blank counters in a predictable state 
         # after __END__ or __DATA__
         elsif ( $line_type =~ /^(END_START|DATA_START)$/ ) {
             $file_writer_object->reset_consecutive_blank_lines();
+            $saw_END_or_DATA_ = 1;
         }
 
         # write unindented non-code line
@@ -6566,7 +6570,13 @@ sub set_white_space_flag {
         $mate_index_to_go[$max_index_to_go]            = -1;
         $matching_token_to_go[$max_index_to_go]        = '';
 
-        $levels_to_go[$max_index_to_go] = $level;
+        # Note: negative levels are currently retained as a diagnostic so that
+        # the 'final indentation level' is correctly reported for bad scripts.
+        # But this means that every use of $level as an index must be checked.
+        # If this becomes too much of a problem, we might give up and just clip
+        # them at zero.
+        ## $levels_to_go[$max_index_to_go] = ( $level > 0 ) ? $level : 0;
+        $levels_to_go[$max_index_to_go] = $level; 
         $nesting_depth_to_go[$max_index_to_go] = ( $slevel >= 0 ) ? $slevel : 0;
         $lengths_to_go[ $max_index_to_go + 1 ] =
           $lengths_to_go[$max_index_to_go] + length($token);
@@ -6841,7 +6851,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.28 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.29 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -8286,8 +8296,7 @@ sub output_line_to_go {
             # Break before certain block types if we haven't had a break at this
             # level for a while.  This is the difficult decision..
             elsif ($leading_token =~ /^(unless|if|while|until|for|foreach)$/
-                && $leading_type eq 'k'
-                && $last_line_leading_level >= 0 )
+                && $leading_type eq 'k' )
             {
                 my $lc = $nonblank_lines_at_depth[$last_line_leading_level];
                 if ( !defined($lc) ) { $lc = 0 }
@@ -8314,9 +8323,9 @@ sub output_line_to_go {
         # non-blank, non-comment lines at this level
         $last_last_line_leading_level = $last_line_leading_level;
         $last_line_leading_level      = $levels_to_go[$imin];
+        if ($last_line_leading_level < 0) {$last_line_leading_level=0}
         $last_line_leading_type       = $types_to_go[$imin];
         if (   $last_line_leading_level == $last_last_line_leading_level
-            && $last_line_leading_level >= 0
             && $last_line_leading_type ne 'b'
             && $last_line_leading_type ne '#'
             && defined( $nonblank_lines_at_depth[$last_line_leading_level] ) )
@@ -13577,10 +13586,12 @@ sub set_closing_breakpoint {
 
     if ( $mate_index_to_go[$i_break] >= 0 ) {
 
-        # watch out for break between something like '()' 
-        # which can occur under certain error conditions.
-        # -- infinte recursion will occur (attrib.t)
-        if ( $mate_index_to_go[$i_break] > $i_break + 1 ) {
+        # CAUTION: infinite recursion possible here: 
+        #   set_closing_breakpoint calls set_forced_breakpoint, and
+        #   set_forced_breakpoint call set_closing_breakpoint
+        #   ( test files attrib.t, BasicLyx.pm.html).
+        # Don't reduce the '2' in the statement below 
+        if ( $mate_index_to_go[$i_break] > $i_break + 2 ) {
 
             # break before } ] and ), but sub set_forced_breakpoint will decide
             # to break before or after a ? and :
@@ -22429,10 +22440,6 @@ BEGIN {
 1;
 __END__
 
-
-
-
-
 =head1 NAME
 
 Perl::Tidy - main module for the perltidy utility
@@ -22558,7 +22565,7 @@ to perltidy.
 
 =head1 VERSION
 
-This man page documents Perl::Tidy version 20020826.
+This man page documents Perl::Tidy version 20020920.
 
 =head1 AUTHOR
 
@@ -22571,9 +22578,5 @@ The perltidy(1) man page describes all of the features of perltidy.  It
 can be found at http://perltidy.sourceforge.net.
 
 =cut
-
-
-
-
 
 

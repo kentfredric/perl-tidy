@@ -5,12 +5,12 @@
  suggested improvement, please send a note to perltidy at
  users.sourceforge.net.  
 
-=head2 2002 xx xx
+=head2 2002 09 20
  
  -New option '-b' or '--backup-and-modify-in-place' will cause perltidy to
  overwrite the original file with the tidied output file.  The original
  file will be saved with a '.bak' extension (which can be changed with
- -bext=s).  Please see updated docs.  Thanks to Rudi Farkas for the suggestion.
+ -bext=s).  Thanks to Rudi Farkas for the suggestion.
 
  -An index to all subs is included at the top of -html output, unless
  only the <pre> section is written.
@@ -32,7 +32,8 @@
 
  -Fixed bug in which an extra blank line was added before an =head or 
  similar pod line after an __END__ or __DATA__ line each time 
- perltidy was run.  Thanks to Mike Birdsall for reporting this.
+ perltidy was run.  Also, an extra blank was being added after
+ a terminal =cut.  Thanks to Mike Birdsall for reporting this.
 
 =head2 2002 08 26
 
