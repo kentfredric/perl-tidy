@@ -1036,24 +1036,24 @@ the problem.
 
 The following flags are available for debugging:
 
-B<-dump-defaults>  will write the default option set to standard output and quit
+B<--dump-defaults> or B<-ddf> will write the default option set to standard output and quit
 
-B<-dump-options>   will write current option set to standard output and quit.
+B<--dump-options> or B<-dop>  will write current option set to standard output and quit.
 
-B<-dump-long-names>   will write all command line long names (passed 
+B<--dump-long-names> or B<-dln>  will write all command line long names (passed 
 to Get_options) to standard output and quit.
 
-B<-dump-short-names>   will write all command line short names 
+B<--dump-short-names>  or B<-dsn> will write all command line short names 
 to standard output and quit.
 
-B<-dump-token-types>   will write a list of all token types 
+B<--dump-token-types> or B<-dtt>  will write a list of all token types 
 to standard output and quit.
 
-B<-dump-want-left-space>   will write the hash %want_left_space
+B<--dump-want-left-space> or B<-dwls>  will write the hash %want_left_space
 to standard output and quit.  See the section on controlling whitespace
 around tokens.
 
-B<-dump-want-right-space>   will write the hash %want_right_space
+B<--dump-want-right-space> or B<-dwrs>  will write the hash %want_right_space
 to standard output and quit.  See the section on controlling whitespace
 around tokens.
 
@@ -1074,7 +1074,6 @@ Likewise, if the SelfLoader module is used, perltidy will continue formatting
 code after seeing a __DATA__ line.
 Use B<--nolook-for-selfloader>, or B<-nlsl>, to deactivate this feature.
 
-
 =item Writing an HTML file
 
 The flag B<-html> causes perltidy to write an html file with extension
@@ -1090,6 +1089,19 @@ Documentation for this option has been moved to a separate man
 page, perl2web(1).
 
 =back
+
+=head1 SWITCHES WHICH MAY BE NEGATED
+
+The following list shows all short parameter names which allow a prefix
+'n' to produce the negated form:
+
+    D anl asc aws bbb bbc bbs bli baa syn ce dac dbc dnl
+    dws dp dsm dsc ddf dln dop dsn dtt dwls dwrs f fll
+    hsc html ibc icb icp lp log lal x lsl bl sbl oll pvl
+    q opt sfs sts se st sob t tac tbc tp tsc tqw w
+
+Equivalently, the prefix 'no' on the corresponding long names may be
+used.
 
 =head1 LIMITATIONS
 

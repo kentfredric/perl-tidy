@@ -1,0 +1,9 @@
+Perltidy test files
+-------------------
+
+These files are code snippets which have been useful during the
+development of perltidy, but which are probably not of interest to the
+average user.  The comments in perltidy make reference to a few of them.
+Many of them are designed to produce error messages and to illustrate
+current formatting problems and bugs.
+

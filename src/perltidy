@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.51 2001/10/06 22:12:25 perltidy Exp $
+    $Id: perltidy,v 1.52 2001/10/10 16:10:06 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -54,8 +54,8 @@ CVS
 POD NOTE: Documentation is contained in separately supplied .pod files;
 pod is used here only for long comments. 
 
-Here is a map of the flow of data from the input file to the output
-file:
+Here is a map of the flow of data from the input source to the output
+line sink:
 
 LineSource-->Tokenizer-->Formatter-->VerticalAligner-->FileWriter-->
       input                         groups                 output
@@ -86,9 +86,8 @@ certain tokens, such as '=>', '#', and '=' by adding whitespace.
 FileWriter simply writes lines to the output stream.
 
 The Logger package, not shown, records significant events and warning
-messages.  It writes a .LOG file, which is automatically saved if
-perltidy detects an error.  The .LOG file may also be saved with a
-'-log' flag.
+messages.  It writes a .LOG file, which may be saved with a
+'-log' or a '-g' flag.
 
 Some comments in this file refer to separate test files, most of which
 are in the test directory which can be downloaded in addition to the
@@ -268,6 +267,9 @@ sub main {
               Perltidy::Debugger->new( $fileroot . $dot . "DEBUG" );
         }
 
+        
+        # we have to delete any old formatter because, for safety, 
+        # formatter will check to see that there is only one.
         $formatter = undef;
 
         #---------------------------------------------------------------
@@ -389,104 +391,113 @@ sub process_command_line {
     # Define the option string passed to GetOptions.
     #---------------------------------------------------------------
 
-    my @option_string = qw(
-      DEBUG!
-      DIAGNOSTICS!
-      look-for-hash-bang!
-      check-multiline-quotes!
-      dump-defaults!
-      dump-options!
-      dump-long-names!
-      dump-short-names!
-      dump-token-types!
-      dump-want-left-space!
-      dump-want-right-space!
-      version
-      npro
-      noprofile
+    my @option_string = ();
+    my %expansion     = ();
+    my $rop           = \@option_string;
+    my $rex           = \%expansion;
+
+    # These long option names have no abbreviations or are treated specially
+    @option_string = qw(
       html!
-      recombine!
-      add-newlines!
-      add-semicolons!
-      add-whitespace!
-      blanks-before-blocks!
-      blanks-before-comments!
-      blanks-before-subs!
-      swallow-optional-blank-lines!
-      brace-tightness=i
-      check-syntax!
-      continuation-indentation=i
-      cuddled-else!
-      delete-block-comments!
-      delete-pod!
-      delete-side-comments!
-      delete-semicolons!
-      force-read-binary!
-      fuzzy-line-length!
-      help
-      indent-block-comments!
-      indent-columns=i
-      delete-old-newlines!
-      delete-old-whitespace!
-      logfile!
-      logfile-gap:i
-      maximum-fields-per-table=i
-      maximum-consecutive-blank-lines=i
-      maximum-line-length=i
-      maximum-space-to-comment=i
-      minimum-space-to-comment=i
       maximum-whitespace-columns=i
-      opening-brace-on-new-line!
-      opening-sub-brace-on-new-line!
-      outdent-long-lines!
-      indent-closing-paren!
-      indent-closing-brace!
-      outfile=s
-      paren-tightness=i
-      block-brace-tightness=i
-      quiet!
-      space-for-semicolon!
-      space-terminal-semicolon!
-      show-options!
-      square-bracket-tightness=i
-      starting-indentation-level=i
-      standard-output!
-      standard-error-output!
-      tabs!
-      tee-block-comments!
-      tee-pod!
-      tee-side-comments!
-      tidy-output!
-      break-after-comma-arrows!
-      want-left-space=s
-      nowant-left-space=s
-      want-right-space=s
-      nowant-right-space=s
-      want-break-after=s
-      want-break-before=s
-      line-up-parentheses!
-      trim-qw!
-      hanging-side-comments!
-      opening-brace-always-on-right
-      brace-left-and-indent!
-      break-after-opening-brace!
-      maximum-continuation-indentation=i
-      big-space-jump=i
-      warning-output!
-      pass-version-line!
-      look-for-autoloader!
-      look-for-selfloader!
-      long-block-line-count=i
-      short-concatenation-item-length=i
-      ignore-old-line-breaks!
+      noprofile
+      npro
+      recombine!
     );
+
+    # These are long option names with a simple abbreviation.  Options with
+    # code '!' get standard negation ('no' for long names, 'n' for
+    # abbreviations)
+    add_option( 'DEBUG',                            'D',    '!',  $rop, $rex );
+    add_option( 'DIAGNOSTICS',                      'I',    '!',  $rop, $rex );
+    add_option( 'add-newlines',                     'anl',  '!',  $rop, $rex );
+    add_option( 'add-semicolons',                   'asc',  '!',  $rop, $rex );
+    add_option( 'add-whitespace',                   'aws',  '!',  $rop, $rex );
+    add_option( 'big-space-jump',                   'bsj',  '=i', $rop, $rex );
+    add_option( 'blanks-before-blocks',             'bbb',  '!',  $rop, $rex );
+    add_option( 'blanks-before-comments',           'bbc',  '!',  $rop, $rex );
+    add_option( 'blanks-before-subs',               'bbs',  '!',  $rop, $rex );
+    add_option( 'block-brace-tightness',            'bbt',  '=i', $rop, $rex );
+    add_option( 'brace-left-and-indent',            'bli',  '!',  $rop, $rex );
+    add_option( 'brace-tightness',                  'bt',   '=i', $rop, $rex );
+    add_option( 'break-after-comma-arrows',         'baa',  '!',  $rop, $rex );
+    add_option( 'break-after-opening-brace',        'bob',  '!',  $rop, $rex );
+    add_option( 'check-multiline-quotes',           'chk',  '!',  $rop, $rex );
+    add_option( 'check-syntax',                     'syn',  '!',  $rop, $rex );
+    add_option( 'continuation-indentation',         'ci',   '=i', $rop, $rex );
+    add_option( 'cuddled-else',                     'ce',   '!',  $rop, $rex );
+    add_option( 'delete-block-comments',            'dbc',  '!',  $rop, $rex );
+    add_option( 'delete-old-newlines',              'dnl',  '!',  $rop, $rex );
+    add_option( 'delete-old-whitespace',            'dws',  '!',  $rop, $rex );
+    add_option( 'delete-pod',                       'dp',   '!',  $rop, $rex );
+    add_option( 'delete-semicolons',                'dsm',  '!',  $rop, $rex );
+    add_option( 'delete-side-comments',             'dsc',  '!',  $rop, $rex );
+    add_option( 'dump-defaults',                    'ddf',  '!',  $rop, $rex );
+    add_option( 'dump-long-names',                  'dln',  '!',  $rop, $rex );
+    add_option( 'dump-options',                     'dop',  '!',  $rop, $rex );
+    add_option( 'dump-short-names',                 'dsn',  '!',  $rop, $rex );
+    add_option( 'dump-token-types',                 'dtt',  '!',  $rop, $rex );
+    add_option( 'dump-want-left-space',             'dwls', '!',  $rop, $rex );
+    add_option( 'dump-want-right-space',            'dwrs', '!',  $rop, $rex );
+    add_option( 'force-read-binary',                'f',    '!',  $rop, $rex );
+    add_option( 'fuzzy-line-length',                'fll',  '!',  $rop, $rex );
+    add_option( 'hanging-side-comments',            'hsc',  '!',  $rop, $rex );
+    add_option( 'help',                             'h',    '',   $rop, $rex );
+    add_option( 'ignore-old-line-breaks',           'iob',  '!',  $rop, $rex );
+    add_option( 'indent-block-comments',            'ibc',  '!',  $rop, $rex );
+    add_option( 'indent-closing-brace',             'icb',  '!',  $rop, $rex );
+    add_option( 'indent-closing-paren',             'icp',  '!',  $rop, $rex );
+    add_option( 'indent-columns',                   'i',    '=i', $rop, $rex );
+    add_option( 'line-up-parentheses',              'lp',   '!',  $rop, $rex );
+    add_option( 'logfile',                          'log',  '!',  $rop, $rex );
+    add_option( 'logfile-gap',                      'g',    ':i', $rop, $rex );
+    add_option( 'long-block-line-count',            'lbl',  '=i', $rop, $rex );
+    add_option( 'look-for-autoloader',              'lal',  '!',  $rop, $rex );
+    add_option( 'look-for-hash-bang',               'x',    '!',  $rop, $rex );
+    add_option( 'look-for-selfloader',              'lsl',  '!',  $rop, $rex );
+    add_option( 'maximum-consecutive-blank-lines',  'mbl',  '=i', $rop, $rex );
+    add_option( 'maximum-continuation-indentation', 'mci',  '=i', $rop, $rex );
+    add_option( 'maximum-fields-per-table',         'mft',  '=i', $rop, $rex );
+    add_option( 'maximum-line-length',              'l',    '=i', $rop, $rex );
+    add_option( 'maximum-space-to-comment',         'xsc',  '=i', $rop, $rex );
+    add_option( 'minimum-space-to-comment',         'msc',  '=i', $rop, $rex );
+    add_option( 'nowant-left-space',                'nwls', '=s', $rop, $rex );
+    add_option( 'nowant-right-space',               'nwrs', '=s', $rop, $rex );
+    add_option( 'opening-brace-always-on-right',    'bar',  '',   $rop, $rex );
+    add_option( 'opening-brace-on-new-line',        'bl',   '!',  $rop, $rex );
+    add_option( 'opening-sub-brace-on-new-line',    'sbl',  '!',  $rop, $rex );
+    add_option( 'outdent-long-lines',               'oll',  '!',  $rop, $rex );
+    add_option( 'outfile',                          'o',    '=s', $rop, $rex );
+    add_option( 'paren-tightness',                  'pt',   '=i', $rop, $rex );
+    add_option( 'pass-version-line',                'pvl',  '!',  $rop, $rex );
+    add_option( 'quiet',                            'q',    '!',  $rop, $rex );
+    add_option( 'short-concatenation-item-length',  'scl',  '=i', $rop, $rex );
+    add_option( 'show-options',                     'opt',  '!',  $rop, $rex );
+    add_option( 'space-for-semicolon',              'sfs',  '!',  $rop, $rex );
+    add_option( 'space-terminal-semicolon',         'sts',  '!',  $rop, $rex );
+    add_option( 'square-bracket-tightness',         'sbt',  '=i', $rop, $rex );
+    add_option( 'standard-error-output',            'se',   '!',  $rop, $rex );
+    add_option( 'standard-output',                  'st',   '!',  $rop, $rex );
+    add_option( 'starting-indentation-level',       'sil',  '=i', $rop, $rex );
+    add_option( 'swallow-optional-blank-lines',     'sob',  '!',  $rop, $rex );
+    add_option( 'tabs',                             't',    '!',  $rop, $rex );
+    add_option( 'tee-block-comments',               'tbc',  '!',  $rop, $rex );
+    add_option( 'tee-pod',                          'tp',   '!',  $rop, $rex );
+    add_option( 'tee-side-comments',                'tsc',  '!',  $rop, $rex );
+    add_option( 'tidy-output',                      'tdy',  '!',  $rop, $rex );
+    add_option( 'trim-qw',                          'tqw',  '!',  $rop, $rex );
+    add_option( 'version',                          'v',    '',   $rop, $rex );
+    add_option( 'want-break-after',                 'wba',  '=s', $rop, $rex );
+    add_option( 'want-break-before',                'wbb',  '=s', $rop, $rex );
+    add_option( 'want-left-space',                  'wls',  '=s', $rop, $rex );
+    add_option( 'want-right-space',                 'wrs',  '=s', $rop, $rex );
+    add_option( 'warning-output',                   'w',    '!',  $rop, $rex );
 
     #---------------------------------------------------------------
     # Here are the undocumented flags as far as I know.  Any of them
     # may disappear at any time.  They are mainly for fine-tuning
-    # and to work around temporary coding problems.
+    # and debugging. 
     #
-    # br  --> noopening-brace-on-new-line # this is just because indent had it
     # xsc --> maximum-space-to-comment    # for spacing side comments
     # fll --> fuzzy-line-length           # trivial parameter
     # iob --> ignore-old-line-breaks      # do not follow breaks in old script
@@ -496,6 +507,9 @@ sub process_command_line {
     # scl --> short-concatenation-item-length   # helps break at '.'
     # bob --> break-after-opening-brace   # this is the default
     # bsj --> big-space-jump              # used by vertical aligner
+    # recombine                           # for debugging line breaks
+    # I   --> DIAGNOSTICS                 # for debugging 
+    #         maximum-whitespace-columns
     #---------------------------------------------------------------
 
     # The Perltidy::HtmlWriter will add its own options to the string
@@ -516,7 +530,6 @@ sub process_command_line {
       blanks-before-subs
       brace-tightness=1
       block-brace-tightness=0
-      check-syntax
       continuation-indentation=2
       fuzzy-line-length
       indent-block-comments
@@ -560,6 +573,16 @@ sub process_command_line {
       noignore-old-line-breaks
     );
 
+    # PATCH: default will be no syntax check for Windows because of 
+    # command.com inability to redirect standard error output.
+    # Windows users can use -syn if their shell allows this.
+    if ( $^O =~ /^(MSWin32|msdos|dos|win32)$/ ) {
+        push @defaults, 'nocheck-syntax';
+    }
+    else {
+        push @defaults, 'check-syntax';
+    }
+
     #---------------------------------------------------------------
     # set the defaults by passing the above list through GetOptions
     #---------------------------------------------------------------
@@ -579,79 +602,8 @@ sub process_command_line {
     # Define abbreviations which will be expanded into the above primitives.
     # These may be defined recursively.
     #---------------------------------------------------------------
-    my %expansion = (
-        'v'                   => [qw(version)],
-        'x'                   => [qw(look-for-hash-bang)],
-        'nx'                  => [qw(nolook-for-hash-bang)],
-        'l'                   => [qw(maximum-line-length)],
-        'g'                   => [qw(logfile-gap)],
-        'opt'                 => [qw(show-options)],
-        'nso'                 => [qw(noshow-options)],
-        'ci'                  => [qw(continuation-indentation)],
-        'sil'                 => [qw(starting-indentation-level)],
-        'mbl'                 => [qw(maximum-consecutive-blank-lines)],
-        'sbt'                 => [qw(square-bracket-tightness)],
-        'bt'                  => [qw(brace-tightness)],
-        'bbt'                 => [qw(block-brace-tightness)],
-        'pt'                  => [qw(paren-tightness)],
-        'bbb'                 => [qw(blanks-before-blocks)],
-        'nbbb'                => [qw(noblanks-before-blocks)],
-        'bbc'                 => [qw(blanks-before-comments)],
-        'nbbc'                => [qw(noblanks-before-comments)],
-        'bbs'                 => [qw(blanks-before-subs)],
-        'nbbs'                => [qw(noblanks-before-subs)],
-        'sob'                 => [qw(swallow-optional-blank-lines)],
-        'nsob'                => [qw(noswallow-optional-blank-lines)],
-        'dws'                 => [qw(delete-old-whitespace)],
-        'ndws'                => [qw(nodelete-old-whitespace)],
-        'aws'                 => [qw(add-whitespace)],
-        'naws'                => [qw(noadd-whitespace)],
-        'dnl'                 => [qw(delete-old-newlines)],
-        'ndnl'                => [qw(nodelete-old-newlines)],
-        'anl'                 => [qw(add-newlines)],
-        'nanl'                => [qw(noadd-newlines)],
-        'oll'                 => [qw(outdent-long-lines)],
-        'noll'                => [qw(nooutdent-long-lines)],
-        'fll'                 => [qw(fuzzy-line-length)],
-        'nfll'                => [qw(nofuzzy-line-length)],
-        'ce'                  => [qw(cuddled-else)],
-        'nce'                 => [qw(nocuddled-else)],
-        'h'                   => [qw(help)],
-        'st'                  => [qw(standard-output)],
-        'nst'                 => [qw(nostandard-output)],
-        'se'                  => [qw(standard-error-output)],
-        'nse'                 => [qw(nostandard-error-output)],
-        'log'                 => [qw(logfile)],
-        'nlog'                => [qw(nologfile)],
-        'D'                   => [qw(DEBUG)],
-        'nD'                  => [qw(noDEBUG)],
-        'I'                   => [qw(DIAGNOSTICS)],
-        'nI'                  => [qw(noDIAGNOSTICS)],
-        'syn'                 => [qw(check-syntax)],
-        'nsyn'                => [qw(nocheck-syntax)],
-        'chk'                 => [qw(check-multiline-quotes)],
-        'nchk'                => [qw(nocheck-multiline-quotes)],
-        'q'                   => [qw(quiet)],
-        'msc'                 => [qw(minimum-space-to-comment)],
-        'xsc'                 => [qw(maximum-space-to-comment)],
-        'o'                   => [qw(outfile)],
-        't'                   => [qw(tabs)],
-        'nt'                  => [qw(notabs)],
-        'sfs'                 => [qw(space-for-semicolon)],
-        'nsfs'                => [qw(nospace-for-semicolon)],
-        'sts'                 => [qw(space-terminal-semicolon)],
-        'nsts'                => [qw(nospace-terminal-semicolon)],
-        'i'                   => [qw(indent-columns)],
-        'ibc'                 => [qw(indent-block-comments)],
-        'nibc'                => [qw(noindent-block-comments)],
-        'dbc'                 => [qw(delete-block-comments)],
-        'ndbc'                => [qw(nodelete-block-comments)],
-        'tbc'                 => [qw(tee-block-comments)],
-        'ntbc'                => [qw(notee-block-comments)],
-        'dsc'                 => [qw(delete-side-comments)],
-        'ndsc'                => [qw(nodelete-side-comments)],
-        'tsc'                 => [qw(tee-side-comments)],
-        'ntsc'                => [qw(notee-side-comments)],
+    %expansion = (
+        %expansion,
         'freeze-newlines'     => [qw(noadd-newlines nodelete-old-newlines)],
         'fnl'                 => [qw(freeze-newlines)],
         'freeze-whitespace'   => [qw(noadd-whitespace nodelete-old-whitespace)],
@@ -663,67 +615,13 @@ sub process_command_line {
         'nodelete-all-comments' =>
         [qw(nodelete-block-comments nodelete-side-comments)],
         'dac'                => [qw(delete-all-comments)],
-        'ndac'               => [qw(no-delete-all-comments)],
-        'bl'                 => [qw(opening-brace-on-new-line)],
-        'nbl'                => [qw(noopening-brace-on-new-line)],
-        'sbl'                => [qw(opening-sub-brace-on-new-line)],
-        'nsbl'               => [qw(noopening-sub-brace-on-new-line)],
-        'bar'                => [qw(opening-brace-always-on-right)],
-        'icp'                => [qw(indent-closing-paren)],
-        'nicp'               => [qw(noindent-closing-paren)],
-        'icb'                => [qw(indent-closing-brace)],
-        'nicb'               => [qw(noindent-closing-brace)],
-        'br'                 => [qw(noopening-brace-on-new-line)],
-        'nbr'                => [qw(opening-brace-on-new-line)],
+        'ndac'               => [qw(nodelete-all-comments)],
+        'gnu'                => [qw(gnu-style)],
         'tee-all-comments'   => [qw(tee-block-comments tee-side-comments)],
         'notee-all-comments' => [qw(notee-block-comments notee-side-comments)],
         'tac'                => [qw(tee-all-comments)],
         'ntac'               => [qw(notee-all-comments)],
-        'dp'                 => [qw(delete-pod)],
-        'tp'                 => [qw(tee-pod)],
-        'ntp'                => [qw(notee-pod)],
-        'f'                  => [qw(force-read-binary)],
-        'nf'                 => [qw(noforce-read-binary)],
-        'mft'                => [qw(maximum-fields-per-table)],
-        'dsm'                => [qw(delete-semicolons)],
-        'ndsm'               => [qw(nodelete-semicolons)],
-        'asc'                => [qw(add-semicolons)],
-        'nasc'               => [qw(noadd-semicolons)],
         'nhtml'              => [qw(nohtml)],
-        'tdy'                => [qw(tidy-output)],
-        'ntdy'               => [qw(notidy-output)],
-        'baa'                => [qw(break-after-comma-arrows)],
-        'nbaa'               => [qw(nobreak-after-comma-arrows)],
-        'wls'                => [qw(want-left-space)],
-        'nwls'               => [qw(nowant-left-space)],
-        'wrs'                => [qw(want-right-space)],
-        'nwrs'               => [qw(nowant-right-space)],
-        'wba'                => [qw(want-break-after)],
-        'wbb'                => [qw(want-break-before)],
-        'gnu'                => [qw(gnu-style)],
-        'nlp'                => [qw(noline-up-parentheses)],
-        'lp'                 => [qw(line-up-parentheses)],
-        'tqw'                => [qw(trim-qw)],
-        'mci'                => [qw(maximum-continuation-indentation)],
-        'ntqw'               => [qw(notrim-qw)],
-        'hsc'                => [qw(hanging-side-comments)],
-        'nhsc'               => [qw(nohanging-side-comments)],
-        'bli'                => [qw(brace-left-and-indent)],
-        'bsj'                => [qw(big-space-jump)],
-        'bob'                => [qw(break-after-opening-brace)],
-        'nbob'               => [qw(nobreak-after-opening-brace)],
-        'pvl'                => [qw(pass-version-line)],
-        'npvl'               => [qw(nopass-version-line)],
-        'lal'                => [qw(look-for-autoloader)],
-        'nlal'               => [qw(nolook-for-autoloader)],
-        'lsl'                => [qw(look-for-selfloader)],
-        'nlsl'               => [qw(nolook-for-selfloader)],
-        'w'                  => [qw(warning-output)],
-        'nw'                 => [qw(nowarning-output)],
-        'lbl'                => [qw(long-block-line-count)],
-        'scl'                => [qw(short-concatenation-item-length)],
-        'iob'                => [qw(ignore-old-line-breaks)],
-        'niob'               => [qw(noignore-old-line-breaks)],
 
         # 'mangle' originally deleted pod and comments, but to keep it
         # reversible, it no longer does because i have removed:
@@ -782,10 +680,6 @@ sub process_command_line {
             check-syntax
             )
         ],
-
-        # (experimental) stricter match to perlstyle(1)
-        # deactivated this undocumented feature -- was not useful
-        # 'camel' => ["wba='<< >> && || .'"],
 
         # this style tries to follow the GNU Coding Standards (which do
         # not really apply to perl but which are followed by some perl
@@ -981,10 +875,10 @@ EOM
     my $pending_complaint = "";
 
     # these systems have problems with doing the syntax check
-    if ( $^O =~ /^(MSWin32|msdos|dos|win32)$/ ) {
-        $Opts{'check-syntax'} = 0;
-    }
-    else {
+    unless ( $^O =~ /^(MSWin32|msdos|dos|win32)$/ ) {
+#        $Opts{'check-syntax'} = 0;
+#    }
+#    else {
         if ( $< == 0 ) {
             $Opts{'check-syntax'} = 0;
             $pending_complaint =
@@ -1070,6 +964,29 @@ EOM
 
 }    # end of process_command_line
 
+sub add_option {
+    my ( $long_name, $short_name, $flag, $roption_string, $rexpansion ) = @_;
+    push @{$roption_string}, $long_name . $flag;
+    if ($short_name) {
+        if ( $rexpansion->{$short_name} ) {
+            my $existing_name = $rexpansion->{$short_name}[0];
+            die
+"redefining abbreviation $short_name for $long_name; already used for $existing_name\n";
+        }
+        $rexpansion->{$short_name} = [$long_name];
+        if ( $flag eq '!' ) {
+            my $nshort_name = 'n' . $short_name;
+            my $nolong_name = 'no' . $long_name;
+            if ( $rexpansion->{$nshort_name} ) {
+                my $existing_name = $rexpansion->{$nshort_name}[0];
+                die
+"attempting to redefine abbreviation $nshort_name for $nolong_name; already used for $existing_name\n";
+            }
+            $rexpansion->{$nshort_name} = [$nolong_name];
+        }
+    }
+}
+
 # Debug routine -- this will dump the expansion hash
 sub dump_short_names {
     my ($rexpansion) = @_;
@@ -1077,7 +994,7 @@ sub dump_short_names {
 List of short names.  This list shows how all abbreviations are
 translated into other abbreviations and, eventually, into long names.
 New abbreviations may be defined in a .perltidyrc file.  
-For a list of all long names, use perltidy --dump-long-names.
+For a list of all long names, use perltidy --dump-long-names (-dln).
 --------------------------------------------------------------------------
 EOM
     foreach my $abbrev ( sort keys %$rexpansion ) {
@@ -1390,11 +1307,13 @@ Other controls
  -x      do not format lines before hash-bang line (i.e., for VMS)
  -asc    allows perltidy to add a ';' when missing (default)
  -dsm    allows perltidy to delete an unnecessary ';'  (default)
- -dump-options      write options used in this run to standard output and quit
- -dump-defaults     write default options to standard output and quit
- -dump-short-names  write all option short names to standard output and quit
- -dump-long-names   write all option long names to standard output and quit
- -dump-token-types  write all token types to standard output and quit
+
+ -dop    dump options used in this run to standard output and quit
+ -ddf    dump default options to standard output and quit
+ -dsn    dump all option short names to standard output and quit
+ -dln    dump option long names to standard output and quit
+ -dtt    dump all token types to standard output and quit
+
  -html   write an html file (see 'man perl2web' for many options)
          Note: when -html is used, no indentation or formatting are done.
          Hint: try perltidy -html -css=mystyle.css filename.pl
@@ -1510,9 +1429,10 @@ sub check_syntax {
 sub do_syntax_check {
     my ( $fname, $flags, $error_redirection ) = @_;
 
+    # BUBBA
     #    if ( $^O eq 'MSWin32' ) {
     #        my $msg=do_win95_syntax_check($fname, $flags, $error_redirection); 
-    #        print "Doing win95 syntax check: result is $msg\n";
+    #        #print "Doing win95 syntax check: result is $msg\n";
     #        return $msg;
     #    }
     #    else {
@@ -1539,8 +1459,10 @@ sub do_win95_syntax_check {
     }
     my $script = <SCRIPT>;
     close SCRIPT;
+
     $script = "{ last; $script;\n }";
     $script =~ s/(__DATA__|__END__)/}$1/g;
+
     my $msg = "";
     { local $^W = 0; no strict; $msg = eval $script; }
     if ($msg) {
@@ -2254,7 +2176,7 @@ BEGIN {
     # The values of this hash table correspond to the keys of the
     # previous hash table.
     # The keys of this hash table are token types and can be seen
-    # by running with --dump-token-types. 
+    # by running with --dump-token-types (-dtt). 
 
     # When adding NEW_TOKENS: update this hash table
     # $type => $short_name
@@ -4035,7 +3957,7 @@ sub dump_want_left_space {
     print $fh <<EOM;
 These values are the main control of whitespace to the left of a token type;
 They may be altered with the -wls parameter.
-For a list of token types, use perltidy --dump-token-types
+For a list of token types, use perltidy --dump-token-types (-dtt)
  1 means the token wants a space to its left
 -1 means the token does not want a space to its left
 ---------------------------------------------------------------
@@ -4051,7 +3973,7 @@ sub dump_want_right_space {
     print $fh <<EOM;
 These values are the main control of whitespace to the right of a token type;
 They may be altered with the -wrs parameter.
-For a list of token types, use perltidy --dump-token-types
+For a list of token types, use perltidy --dump-token-types (-dtt)
  1 means the token wants a space to its right
 -1 means the token does not want a space to its right
 ---------------------------------------------------------------
@@ -4720,7 +4642,7 @@ sub print_line_of_tokens {
     #     /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
     # Examples:
     #   *VERSION = \'1.01';
-    #   ( $VERSION ) = '$Revision: 1.51 $ ' =~ /\$Revision:\s+([^\s]+)/;
+    #   ( $VERSION ) = '$Revision: 1.52 $ ' =~ /\$Revision:\s+([^\s]+)/;
     # We will pass such a line straight through unless -npvl is used
     my $is_VERSION_statement = 0;
 
@@ -8562,6 +8484,8 @@ sub set_continuation_breaks {
         if ( $tok eq $last_tok ) { $colons_in_order = 0; last }
         $last_tok = $tok;
     }
+
+    # This is a sufficient but not necessary condition for colon chain
     my $is_colon_chain = ( $colons_in_order && @colon_list > 2 );
 
     while ( $i_begin <= $imax ) {
@@ -8616,7 +8540,7 @@ sub set_continuation_breaks {
                     $strength   = $lowest_strength / 2;
                     $must_break = 1;
                 }
-            }
+            }  
 
             # quit if a break here would put a good terminal token on
             # the next line and we already have a possible break
@@ -8743,8 +8667,11 @@ sub set_continuation_breaks {
             # do not break if probable sequence of ?/: statements
             next if ($is_colon_chain);
 
-            # do not break if ends in side comment
-            next if ( $tokens_to_go[$max_index_to_go] eq '#' );
+            # do not break if statement is broken by side comment
+            next
+              if ( $tokens_to_go[$max_index_to_go] eq '#'
+                && terminal_type( \@types_to_go, \@block_type_to_go, 0,
+                    $max_index_to_go ) !~ /^[\;\}]$/ );
 
             # no break needed if matching : is also on the line
             next
@@ -8854,6 +8781,9 @@ sub set_continuation_breaks {
 
 sub insert_additional_breaks {
 
+    # this routine will add line breaks at requested locations after
+    # sub set_continuation_breaks has made preliminary breaks.
+
     my ( $ri_break_list, $ri_first, $ri_last ) = @_;
     my $i_f;
     my $i_l;
@@ -8865,9 +8795,10 @@ sub insert_additional_breaks {
         while ( $i_break_left >= $i_l ) {
             $line_number++;
 
-            # shouldn't happen
+            # shouldn't happen unless caller passes bad indexes
             if ( $line_number >= @$ri_last ) {
-                warning("BUBBA: couldn't set break at $i_break_left\n");
+                warning(
+"Non-fatal program bug: couldn't set break at $i_break_left\n");
                 return;
             }
             $i_f = $$ri_first[$line_number];
@@ -11040,7 +10971,7 @@ sub really_open_debug_file {
     }
     $self->{_debug_file_opened} = 1;
     $self->{_fh}                = $fh;
-    print $fh "Use -dump-token-types to get a list of token type codes\n";
+    print $fh "Use -dump-token-types (-dtt) to get a list of token type codes\n";
 }
 
 sub close_debug_file {
@@ -11344,26 +11275,29 @@ sub new {
     my $line_buffer_object = Perltidy::LineBuffer->new($source_object);
 
     # Tokenizer state data is as follows:
-    # _rhere_target_list   reference to list of here-doc targets
-    # _here_doc_target     the target string for a here document
-    # _quote_target        character we seek if chasing a quote
-    # _line_start_quote    line where we started looking for a long quote
-    # _in_here_doc         flag indicating if we are in a here-doc
-    # _in_pod              flag set if we are in pod documentation
-    # _in_error            flag set if we saw severe error (binary in script)
-    # _in_data             flag set if we are in __DATA__ section
-    # _in_end              flag set if we are in __END__ section
-    # _in_format           flag set if we are in a format description
-    # _in_quote            flag telling if we are chasing a quote
-    # _starting_level      indentation level of first line
-    # _input_tabstr        string denoting one indentation level of input file
-    # _know_input_tabstr   flag indicating if we know _input_tabstr
-    # _line_buffer_object  object with get_line() method to supply source code
-    # _diagnostics_object  place to write debugging information
+    # _rhere_target_list    reference to list of here-doc targets
+    # _here_doc_target      the target string for a here document
+    # _here_quote_character the type of here-doc quoting (" ' ` or none)
+    #                       to determine if interpolation is done
+    # _quote_target         character we seek if chasing a quote
+    # _line_start_quote     line where we started looking for a long quote
+    # _in_here_doc          flag indicating if we are in a here-doc
+    # _in_pod               flag set if we are in pod documentation
+    # _in_error             flag set if we saw severe error (binary in script)
+    # _in_data              flag set if we are in __DATA__ section
+    # _in_end               flag set if we are in __END__ section
+    # _in_format            flag set if we are in a format description
+    # _in_quote             flag telling if we are chasing a quote
+    # _starting_level       indentation level of first line
+    # _input_tabstr         string denoting one indentation level of input file
+    # _know_input_tabstr    flag indicating if we know _input_tabstr
+    # _line_buffer_object   object with get_line() method to supply source code
+    # _diagnostics_object   place to write debugging information
     $tokenizer_self = {
         _rhere_target_list   => undef,
         _in_here_doc         => 0,
         _here_doc_target     => "",
+        _here_quote_character=> "",
         _in_data             => 0,
         _in_end              => 0,
         _in_format           => 0,
@@ -11710,6 +11644,7 @@ sub get_line {
         _curly_brace_depth    => $brace_depth,
         _square_bracket_depth => $square_bracket_depth,
         _paren_depth          => $paren_depth,
+        _quote_character      => '',
     };
 
     # must print line unchanged if we are in a here document
@@ -11717,7 +11652,7 @@ sub get_line {
 
         $line_of_tokens->{_line_type} = 'HERE';
         my $here_doc_target = $tokenizer_self->{_here_doc_target};
-
+        my $here_quote_character = $tokenizer_self->{_here_quote_character};
         my $candidate_target = $input_line;
         chomp $candidate_target;
         if ( $candidate_target eq $here_doc_target ) {
@@ -11727,8 +11662,10 @@ sub get_line {
 
             my $rhere_target_list = $tokenizer_self->{_rhere_target_list};
             if (@$rhere_target_list) {    # there can be multiple here targets
-                $here_doc_target = shift @$rhere_target_list;
+                ($here_doc_target,$here_quote_character) = 
+                  @{shift @$rhere_target_list};
                 $tokenizer_self->{_here_doc_target} = $here_doc_target;
+                $tokenizer_self->{_here_quote_character} = $here_quote_character;
                 write_logfile_entry(
                     "Entering HERE document $here_doc_target\n");
                 $nearly_matched_here_target_at      = undef;
@@ -11737,6 +11674,7 @@ sub get_line {
             else {
                 $tokenizer_self->{_in_here_doc}     = 0;
                 $tokenizer_self->{_here_doc_target} = "";
+                $tokenizer_self->{_here_quote_character} = "";
             }
         }
 
@@ -11943,9 +11881,12 @@ sub get_line {
     # see if this line contains here doc targets
     my $rhere_target_list = $tokenizer_self->{_rhere_target_list};
     if (@$rhere_target_list) {
-        my $here_doc_target = shift @$rhere_target_list;
+        #my $here_doc_target = shift @$rhere_target_list;
+        my ($here_doc_target,$here_quote_character) = 
+                  @{shift @$rhere_target_list};
         $tokenizer_self->{_in_here_doc}     = 1;
         $tokenizer_self->{_here_doc_target} = $here_doc_target;
+        $tokenizer_self->{_here_quote_character} = $here_quote_character;
         write_logfile_entry("Entering HERE document $here_doc_target\n");
         $started_looking_for_here_target_at = $input_line_number;
     }
@@ -12526,6 +12467,7 @@ current version.
     my $next_type;
     my $expecting;
     my $here_doc_target;
+    my $here_quote_character;
     my @here_target_list = ();        # list of here-doc target strings
 
     $peeked_ahead = 0;
@@ -13577,12 +13519,14 @@ EOM
                   ;    # here doc not possible if end of line
 
                 if ( $expecting != OPERATOR ) {
-                    my $found_target;
-                    ( $found_target, $here_doc_target, $i ) =
+                    my ($found_target);
+                    ( $found_target, $here_doc_target, $here_quote_character, 
+                    $i ) =
                       find_here_doc( $expecting, $i, $rtokens, $rtoken_map );
 
                     if ($found_target) {
-                        push ( @here_target_list, $here_doc_target );
+                        push @here_target_list, 
+                          [$here_doc_target,$here_quote_character] ;
                         $type = 'h';
                         if ( length($here_doc_target) > 80 ) {
                             my $truncated = substr( $here_doc_target, 0, 80 );
@@ -15186,6 +15130,7 @@ sub find_here_doc {
     my $ibeg            = $i;
     my $found_target    = 0;
     my $here_doc_target = '';
+    my $here_quote_character = '';
     my ( $next_nonblank_token, $i_next_nonblank, $next_token );
     $next_token = $$rtokens[ $i + 1 ];
 
@@ -15203,13 +15148,12 @@ sub find_here_doc {
 
         my $in_quote        = 1;
         my $quote_depth     = 0;
-        my $quote_character = '';
         my $quote_pos       = 0;
 
-        ( $i, $in_quote, $quote_character, $quote_pos, $quote_depth ) =
+        ( $i, $in_quote, $here_quote_character, $quote_pos, $quote_depth ) =
           follow_quoted_string(
             $i_next_nonblank, $in_quote,  $rtokens,
-            $quote_character, $quote_pos, $quote_depth
+            $here_quote_character, $quote_pos, $quote_depth
         );
 
         if ($in_quote) {    # didn't find end of quote, so no target found
@@ -15228,7 +15172,7 @@ sub find_here_doc {
                 next
                   if ( $tokj eq "\\"
                     && $j < $i - 1
-                    && $$rtokens[ $j + 1 ] eq $quote_character );
+                    && $$rtokens[ $j + 1 ] eq $here_quote_character );
                 $here_doc_target .= $tokj;
             }
         }
@@ -15271,7 +15215,7 @@ sub find_here_doc {
     # patch to neglect any prepended backslash
     if ( $found_target && $backslash ) { $i++ }
 
-    return ( $found_target, $here_doc_target, $i );
+    return ( $found_target, $here_doc_target, $here_quote_character, $i );
 }
 
 # try to resolve here-doc vs. shift by looking ahead for

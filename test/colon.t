@@ -1,3 +1,9 @@
+{
+    # with side comment
+    $me = $Is_MSWin32 ? $ENV{'USERNAME'}
+      : $^O eq 'os2' ? $ENV{'USER'} || $ENV{'LOGNAME'}
+      : eval { getpwuid($<) };    # May be missing
+}
 {{{
             # a simple ?/: pair to format
             ( $feat->strand == -1 )

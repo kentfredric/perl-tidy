@@ -56,8 +56,10 @@
  instead of actual input file name.  Thanks to Simon Perreault for finding
  this and sending a patch.</PRE>
 <PRE>
- -Lines with a single ?/: pair will now be more likely to break at both
- the ? and the :</PRE>
+ -Breaks will now have the ':' placed at the start of a line, 
+ one per line by default because this shows logical structure
+ more clearly. This coding has been completely redone. Some 
+ examples of new ?/: formatting:</PRE>
 <PRE>
        OLD:
             wantarray ? map( $dir::cwd-&gt;lookup($_)-&gt;path, @_ ) :
@@ -68,8 +70,28 @@
               ? map( $dir::cwd-&gt;lookup($_)-&gt;path, @_ )
               : $dir::cwd-&gt;lookup( $_[0] )-&gt;path;</PRE>
 <PRE>
- -Long lines containing '?:' conditionals will now have the ':' placed
- at the start of a line, one per line.  For example:</PRE>
+       OLD:
+                $a = ( $b &gt; 0 ) ? {
+                    a =&gt; 1,
+                    b =&gt; 2
+                } : { a =&gt; 6, b =&gt; 8 };</PRE>
+<PRE>
+       NEW:
+                $a = ( $b &gt; 0 )
+                  ? {
+                    a =&gt; 1,
+                    b =&gt; 2
+                  }
+                  : { a =&gt; 6, b =&gt; 8 };</PRE>
+<PRE>
+    OLD: (-gnu):
+    $self-&gt;note($self-&gt;{skip} ? &quot;Hunk #$self-&gt;{hunk} ignored at 1.\n&quot; :
+                &quot;Hunk #$self-&gt;{hunk} failed--$@&quot;);</PRE>
+<PRE>
+    NEW: (-gnu):
+    $self-&gt;note($self-&gt;{skip} 
+                ? &quot;Hunk #$self-&gt;{hunk} ignored at 1.\n&quot;
+                : &quot;Hunk #$self-&gt;{hunk} failed--$@&quot;);</PRE>
 <PRE>
     OLD:
         $which_search =
@@ -87,15 +109,12 @@
 
  You can use -wba=':' to recover the previous default which placed ':'
  at the end of a line.  Thanks to Michael Cartmell for helpful
- discussions and examples.  There are two main reasons for this.  First,
- leading ':'s can be aligned and more easily seen.  Second, a ':' is
- essentially equivalent to an 'else' or 'elsif', which is also at the
- start of a line.</PRE>
+ discussions and examples.</PRE>
 <PRE>
  -Tokenizer updated to do syntax checking for matched ?/: pairs.  Also,
- the tokenizer now outputs a unique serial number for every balanced pair
- of brace types and ?/: pairs.  This will simplify the formatter and 
- allow future formatting improvements.</PRE>
+ the tokenizer now outputs a unique serial number for every balanced
+ pair of brace types and ?/: pairs.  This greatly simplifies the
+ formatter.</PRE>
 <PRE>
  -Long lines with repeated 'and', 'or', '&amp;&amp;', '||'  will now have
  one such item per line.  For example:</PRE>
@@ -203,6 +222,17 @@
  For example, 
    old: $$&lt; 700 
    new: $$ &lt; 700</PRE>
+<PRE>
+ -Improved line break choices 'and' and 'or' to display logic better.
+ For example:</PRE>
+<PRE>
+    OLD:
+        exists $self-&gt;{'build_dir'} and push @e,
+          &quot;Unwrapped into directory $self-&gt;{'build_dir'}&quot;;</PRE>
+<PRE>
+    NEW:
+        exists $self-&gt;{'build_dir'}
+          and push @e, &quot;Unwrapped into directory $self-&gt;{'build_dir'}&quot;;</PRE>
 <PRE>
  -Fixed error of multiple use of abbreviatioin '-dsc'.  -dsc remains 
  abbreviation for delete-side-comments; -dsm is new abbreviation for 

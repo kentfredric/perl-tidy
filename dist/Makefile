@@ -41,7 +41,7 @@ uninstall:
 # I've removed pods because they waste space and can be obtained from CVS
 ###############################################################
 
-VERSION=20011003
+VERSION=20011006
 PROG=$(PROGRAM)-$(VERSION)
 PROGTEST=$(PROGRAM)-$(VERSION)-test
 TMPDIR=/tmp/$(PROG)
@@ -89,6 +89,7 @@ dist:
 	rm -rf $(TMPDIR)
 	mkdir $(TMPDIR)
 	mkdir $(TMPDIR)/test
+	cp ../test/README $(TMPDIR)/test
 	cp ../test/*.t $(TMPDIR)/test
 	(cd $(TMPDIR)/..; \
 	    tar cfz /tmp/$(PROGTEST).tgz $(PROG))

@@ -201,7 +201,16 @@
  -Paranoia struck.  I added a -T flag when doing perl -c syntax check.
  This is because I test it on a large number of scripts from sources
  unknown, and who knows what might be hidden in initialization blocks?
- Also, deactivated the syntax check if perltidy is run as root.
+ Also, deactivated the syntax check if perltidy is run as root.  As a
+ benign example, running the previous version of perltidy on the
+ following file would cause it to disappear:
+
+        BEGIN{
+                print "Bye, bye baby!\n";
+                unlink $0;
+        }
+        
+ The new version will not let that happen.
 
 =head2 2001 09 03 
 

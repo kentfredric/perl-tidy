@@ -17,8 +17,10 @@ Perltidy Change Log
      instead of actual input file name.  Thanks to Simon Perreault for finding
      this and sending a patch.
 
-     -Lines with a single ?/: pair will now be more likely to break at both
-     the ? and the :
+     -Breaks will now have the ':' placed at the start of a line, 
+     one per line by default because this shows logical structure
+     more clearly. This coding has been completely redone. Some 
+     examples of new ?/: formatting:
 
            OLD:
                 wantarray ? map( $dir::cwd->lookup($_)->path, @_ ) :
@@ -29,8 +31,28 @@ Perltidy Change Log
                   ? map( $dir::cwd->lookup($_)->path, @_ )
                   : $dir::cwd->lookup( $_[0] )->path;
 
-     -Long lines containing '?:' conditionals will now have the ':' placed
-     at the start of a line, one per line.  For example:
+           OLD:
+                    $a = ( $b > 0 ) ? {
+                        a => 1,
+                        b => 2
+                    } : { a => 6, b => 8 };
+
+           NEW:
+                    $a = ( $b > 0 )
+                      ? {
+                        a => 1,
+                        b => 2
+                      }
+                      : { a => 6, b => 8 };
+
+        OLD: (-gnu):
+        $self->note($self->{skip} ? "Hunk #$self->{hunk} ignored at 1.\n" :
+                    "Hunk #$self->{hunk} failed--$@");
+
+        NEW: (-gnu):
+        $self->note($self->{skip} 
+                    ? "Hunk #$self->{hunk} ignored at 1.\n"
+                    : "Hunk #$self->{hunk} failed--$@");
 
         OLD:
             $which_search =
@@ -46,15 +68,12 @@ Perltidy Change Log
  
      You can use -wba=':' to recover the previous default which placed ':'
      at the end of a line.  Thanks to Michael Cartmell for helpful
-     discussions and examples.  There are two main reasons for this.  First,
-     leading ':'s can be aligned and more easily seen.  Second, a ':' is
-     essentially equivalent to an 'else' or 'elsif', which is also at the
-     start of a line.  
+     discussions and examples.  
 
      -Tokenizer updated to do syntax checking for matched ?/: pairs.  Also,
-     the tokenizer now outputs a unique serial number for every balanced pair
-     of brace types and ?/: pairs.  This will simplify the formatter and 
-     allow future formatting improvements.
+     the tokenizer now outputs a unique serial number for every balanced
+     pair of brace types and ?/: pairs.  This greatly simplifies the
+     formatter.
 
      -Long lines with repeated 'and', 'or', '&&', '||'  will now have
      one such item per line.  For example:
@@ -159,6 +178,17 @@ Perltidy Change Log
      For example, 
        old: $$< 700 
        new: $$ < 700
+
+     -Improved line break choices 'and' and 'or' to display logic better.
+     For example:
+
+        OLD:
+            exists $self->{'build_dir'} and push @e,
+              "Unwrapped into directory $self->{'build_dir'}";
+
+        NEW:
+            exists $self->{'build_dir'}
+              and push @e, "Unwrapped into directory $self->{'build_dir'}";
 
      -Fixed error of multiple use of abbreviatioin '-dsc'.  -dsc remains 
      abbreviation for delete-side-comments; -dsm is new abbreviation for 
