@@ -299,7 +299,7 @@ The same example, with n=0, is a little harder to read:
  my $level =   # -ci=0    
  ( $max_index_to_go >= 0 ) ? $levels_to_go[0] : $last_output_level;
 
-=item List indentation using B<-gnu>, B<--gnu-style-indentation>
+=item List indentation using B<-lp>, B<--line-up-parentheses>
 
 By default, perltidy indents lists with 4 spaces, or whatever value
 is specified with B<-i=n>.  Here is a small list formatted in this way:
@@ -309,17 +309,18 @@ is specified with B<-i=n>.  Here is a small list formatted in this way:
         'Nov', 'Dec'
     );
 
-Use the B<-gnu> flag to add extra indentation to cause the data to begin
-past the opening paren (or square bracket or curly brace).  With this
-option set, the above list would become:
+Use the B<-lp> flag to add extra indentation to cause the data to begin
+past the opening parentheses of a sub call or list, or opening square
+bracket of an anonymous array, or opening curly brace of an anonymous
+hash.  With this option set, the above list would become:
 
     @month_of_year = (
                        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug',
                        'Sep', 'Oct', 'Nov', 'Dec'
     );
 
-If the available line length of 80 columns ( or whatever is specified with
-B<-l=n> ) does not permit this much space, perltidy will use less.
+If the available line length (see B<-l=n> ) does not permit this much 
+space, perltidy will use less.  
 
 This option has no effect on code BLOCKS, such as if/then/else blocks,
 which always use whatever is specified with B<-i=n>.  Also, the
@@ -327,21 +328,22 @@ existance of line breaks and/or block comments between the opening and
 closing parens may cause perltidy to temporarily revert to its default
 method.
 
-Note: The B<-gnu> option may not be used together with the B<-t> tabs option.
+Note: The B<-lp> option may not be used together with the B<-t> tabs option.
 If B<-t> is specified, it will be ignored.
 
 In addition, any parameter which restricts the ability of perltidy to
-choose newlines will all conflict with B<-gnu> and will cause B<-gnu> to
+choose newlines will all conflict with B<-lp> and will cause B<-lp> to
 be deactivated.  These include 
 B<-io>, B<-fnl>, B<-nanl>, and B<-ndnl>.
 
 =item B<-mci=n>, B<--maximum-continuation-indentation=n>
 
-When the B<-gnu> method is used for list indentation, excessive space
-may cause an undesirable compression of a table against the right
+When the B<-lp> method is used for list indentation, excessive space
+could cause an undesirable compression of a table against the right
 margin, even if there is enough space to fit.  To prevent this, an upper
 limit can be placed on the allowable increment of indentation spaces
-with the parameter B<-mci=n>.  The default value of B<n> is 40.
+with the parameter B<-mci=n>.  This parameter should seldom be required,
+and the default is for unlimited indentation.
 
 =item B<-ibc>,  B<--indent-block-comments>
 
@@ -572,8 +574,10 @@ alternatives:
 
 Use the flag B<-bl> to place the opening brace on a new line:
 
-  if ( $input_file eq '-' ) 
-  {                             # -bl
+  if ( $input_file eq '-' )    # -bl 
+  {                          
+      important_function();
+  }
 
 This flag applies to all structural blocks, including sub's.
 
@@ -582,9 +586,24 @@ the keyword introducing it.  For example,
 
   if ( $input_file eq '-' ) {   # -nbl (default)
 
+=item B<-bli>,    B<--brace-left-and-indent>     
+
+The flag B<-bli> is the same as B<-bl> but in addition it causes one 
+unit of continuation indentation ( see B<-ci> ) to be placed before 
+an opening and closing brace associated with the keywords 
+B<if>, B<elsif>, B<else>, B<unless>, B<for>, B<foreach>, B<sub>, 
+B<while>, B<until>, and also with a preceding label.  
+
+For example,
+
+        if ( $input_file eq '-' )    # -bli
+          {
+            important_function();
+          }
+
 =item B<-bar>,    B<--opening-brace-always-on-right>     
 
-However, the default style, B<-nbl> places the opening brace on a new
+The default style, B<-nbl> places the opening brace on a new
 line if it does not fit on the same line as the opening keyword, like
 this:
 
@@ -602,7 +621,7 @@ flag.  In this case, the above example becomes
             big_waste_of_time();
         }
 
-A conflict occurs if both B<-bl> and B<-bar> are specified, so don't do it.
+A conflict occurs if both B<-bl> and B<-bar> are specified.
 
 =item B<-dnl>,  B<--delete-old-newlines>
 

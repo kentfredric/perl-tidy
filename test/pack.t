@@ -1,4 +1,4 @@
-        # pack.t: Test file for future update to scan_list
+        # pack.t: test for breaking after the final '}'
         # possible flag to break after closing }
         $f_offset->Button(
           -text    => 'Calculate',

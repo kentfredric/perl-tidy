@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.4 2001/06/15 01:16:40 perltidy Exp $
+    $Id: perltidy,v 1.5 2001/06/16 01:15:27 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -423,11 +423,12 @@ sub process_command_line {
       nowant-right-space=s
       want-break-after=s
       want-break-before=s
-      gnu-indentation!
-      maximum-continuation-indentation=i
+      line-up-parentheses!
       trim-qw!
       hanging-side-comments!
       opening-brace-always-on-right
+      brace-left-and-indent!
+      maximum-continuation-indentation=i
     );
 
     # The Perltidy::HtmlWriter will add its own options to the string
@@ -475,9 +476,10 @@ sub process_command_line {
       notabs
       tidy-output
       nobreak-after-comma-arrows
-      maximum-continuation-indentation=40
       trim-qw
       hanging-side-comments
+      nobrace-left-and-indent
+      maximum-continuation-indentation=0
     );
 
     #---------------------------------------------------------------
@@ -613,13 +615,15 @@ sub process_command_line {
         'nwrs'               => [qw(nowant-right-space)],
         'wba'                => [qw(want-break-after)],
         'wbb'                => [qw(want-break-before)],
-        'gnu'                => [qw(gnu-indentation)],
-        'ngnu'               => [qw(nognu-indentation)],
-        'mci'                => [qw(maximum-continuation-indentation)],
+        'gnu'                => [qw(gnu-style)],
+        'ngnu'               => [qw(noline-up-parentheses)],
+        'lp'                 => [qw(line-up-parentheses)],
         'tqw'                => [qw(trim-qw)],
+        'mci'                => [qw(maximum-continuation-indentation)],
         'ntqw'               => [qw(notrim-qw)],
         'hsc'                => [qw(hanging-side-comments)],
         'nhsc'               => [qw(nohanging-side-comments)],
+        'bli'                => [qw(brace-left-and-indent)],
 
         # 'mangle' originally deleted pod and comments, but to keep it
         # reversible, it no longer does because i have removed:
@@ -676,6 +680,13 @@ sub process_command_line {
             delete-semicolons
             noadd-semicolons
             check-syntax
+            )
+        ],
+
+        'gnu-style' => [
+            qw(
+            line-up-parentheses
+            brace-left-and-indent
             )
         ],
 
@@ -893,6 +904,11 @@ EOM
       && !$Opts{'add-newlines'} && !$Opts{'delete-old-newlines'} )
     {
         $Opts{'indent-only'} = 1;
+    }
+
+    # -bli flag implies -bl
+    if ( $Opts{'brace-left-and-indent'} ) {
+        $Opts{'opening-brace-on-new-line'} = 1;
     }
 
     if ( $Opts{'opening-brace-always-on-right'}
@@ -1173,6 +1189,7 @@ Whitespace Control
  -pt=n   paren tightness (n=0, 1 or 2)
  -sbt    square bracket tightness (n=0, 1, or 2)
  -ci=n   sets continuation indentation=n,  default is n=2 spaces
+ -lp     line up parentheses, brackets, and non-BLOCK braces
  -ibc    indent block comments; this is the default
  -ssf    add space before semicolon in for( ; ; )
  -msc=n  minimum spaces to side comment, default 4
@@ -1192,6 +1209,7 @@ Line Break Control
  -mbl=n  maximum consecutive blank lines (default=1)
  -l=n    maximum line length;  default n=80
  -bl     opening brace on new line 
+ -bli    opening brace on new line and indented
 
 Delete selected text
  -dac    delete all comments 
@@ -1204,6 +1222,11 @@ Send selected text to a '.TEE' file
  -tbc    tee block comments       
  -tsc    tee side comments       
  -tp     tee pod           
+
+Styles (Combinations of other parameter) 
+ -gnu     approximate the Gnu Coding Standards (for C)
+ -mangle  remove as many newlines as possible (but keep comments and pods)
+ -extrude  insert as many newlines as possible
 
 Other controls
  -mft   maximum fields per table; default n=40
@@ -2430,12 +2453,13 @@ use vars qw{
 
   @gnu_stack
   $max_gnu_stack_index
-  $gnu_maximum_position
+  $gnu_position_predictor
   $line_start_index_to_go
 
   @gnu_item_list
   $max_gnu_item_index
   $gnu_sequence_number
+  $last_output_indentation
 
   @block_type_to_go
   @bond_strength_to_go
@@ -2616,12 +2640,13 @@ sub new {
 
     # initialize the leading whitespace stack to negative levels
     # so that we can never run off the end of the stack
-    $gnu_maximum_position = 0;
-    $max_gnu_stack_index  = 0;
-    $max_gnu_item_index   = -1;
-    $gnu_stack[0] = new_gnu_indentation_item( 0, -1, -1, 0 );
-    @gnu_item_list       = ();
-    $gnu_sequence_number = 0;    # this will count the output batches
+    $gnu_position_predictor = 0;    # where the current token is predicted to be
+    $max_gnu_stack_index    = 0;
+    $max_gnu_item_index     = -1;
+    $gnu_stack[0] = new_gnu_indentation_item( 0, -1, -1, 0, 0 );
+    @gnu_item_list           = ();
+    $gnu_sequence_number     = 0;    # this will count the output batches
+    $last_output_indentation = 0;
 
     @block_type_to_go        = ();
     @bond_strength_to_go     = ();
@@ -2793,12 +2818,12 @@ sub get_AVAILABLE_SPACES_to_go {
 sub new_gnu_indentation_item {
 
     # this is a temporary interface to the IndentationItem class
-    my ( $spaces, $level, $ci_level, $available_spaces ) = @_;
+    my ( $spaces, $level, $ci_level, $available_spaces, $align_paren ) = @_;
     my $index = 0;
     if ( $level >= 0 ) { $index = ++$max_gnu_item_index; }
     my $item =
       Perltidy::IndentationItem->new( $spaces, $level, $ci_level,
-        $available_spaces, $index, $gnu_sequence_number );
+        $available_spaces, $index, $gnu_sequence_number, $align_paren );
 
     # A negative level implies not to store the item in the item_list
     if ( $level >= 0 ) {
@@ -2817,6 +2842,15 @@ sub set_leading_whitespace {
 
     my ( $level, $ci_level, $in_continued_quote ) = @_;
 
+    # patch for -bli, which adds one continuation indentation for 
+    # opening braces
+    if ( $max_index_to_go == 0 && $rOpts->{'brace-left-and-indent'}
+      && $block_type_to_go[$max_index_to_go] =~
+      /^((if|else|elsif|unless|while|for|foreach|do|\w+:)$|sub)/ )
+    {
+        $ci_level++;
+    }
+
     # patch to avoid trouble when input file has negative indentation. 
     # other logic should catch this error.
     if ( $level < 0 ) { $level = 0 }
@@ -2824,7 +2858,7 @@ sub set_leading_whitespace {
     #-------------------------------------------
     # handle the standard indentation scheme
     #-------------------------------------------
-    unless ( $rOpts->{'gnu-indentation'} ) {
+    unless ( $rOpts->{'line-up-parentheses'} ) {
         my $space_count =
           $ci_level * $rOpts->{'continuation-indentation'} + $level *
           $rOpts->{'indent-columns'};
@@ -2858,7 +2892,7 @@ sub set_leading_whitespace {
         $leading_spaces_to_go[$max_index_to_go] =
           $reduced_spaces_to_go[$max_index_to_go] =
           new_gnu_indentation_item( $space_count, $level, $ci_level,
-          $available_space );
+          $available_space, 0 );
         return;
     }
 
@@ -2992,6 +3026,7 @@ sub set_leading_whitespace {
         # reduced as necessary when long lines are encountered or when
         # it becomes clear that we do not have a good list.
         my $available_space = 0;
+        my $align_paren     = 0;
 
         # initialization on empty stack..
         if ( $max_gnu_stack_index == 0 ) {
@@ -3013,8 +3048,9 @@ sub set_leading_whitespace {
         else {
 
             ( $space_count, $available_space ) =
-              get_gnu_indentation( $standard_increment, $gnu_maximum_position );
-
+              get_gnu_indentation( $standard_increment,
+                $gnu_position_predictor );
+            $align_paren = 1;
         }
 
         # update state, but not on a blank token
@@ -3024,7 +3060,7 @@ sub set_leading_whitespace {
 
             $gnu_stack[ ++$max_gnu_stack_index ] =
               new_gnu_indentation_item( $space_count, $level, $ci_level,
-              $available_space );
+              $available_space, $align_paren );
         }
     }
 
@@ -3050,11 +3086,11 @@ sub set_leading_whitespace {
 
     # remember the position of this token on the hypothetical line
     if ( $max_index_to_go > $line_start_index_to_go ) {
-        $gnu_maximum_position =
+        $gnu_position_predictor =
           total_line_length( $line_start_index_to_go, $max_index_to_go );
     }
     else {
-        $gnu_maximum_position = $space_count +
+        $gnu_position_predictor = $space_count +
           token_sequence_length( $max_index_to_go, $max_index_to_go );
     }
 
@@ -3082,11 +3118,13 @@ sub get_gnu_indentation {
     # total indentation we already have:
     my $space_count = $gnu_stack[$max_gnu_stack_index]->get_SPACES();
 
-    # but avoid excessive space if requested
-    my $excess =
-      ( $gnu_indentation - $space_count ) -
-      $rOpts->{'maximum-continuation-indentation'};
-    if ( $excess > 0 ) { $gnu_indentation -= $excess; }
+    # avoid excessive space if requested...
+    if ( $rOpts->{'maximum-continuation-indentation'} > 0 ) {
+        my $excess =
+          ( $gnu_indentation - $space_count ) -
+          $rOpts->{'maximum-continuation-indentation'};
+        if ( $excess > 0 ) { $gnu_indentation -= $excess; }
+    }
 
     # always add an increment of at least the standard amount
     my $min_gnu_indentation = $space_count + $standard_increment;
@@ -3117,7 +3155,7 @@ sub check_for_long_gnu_style_lines {
     # remove some whitespace if it exceeds the desired maximum
 
     # this is only for the 'gnu' style
-    return unless ( $rOpts->{'gnu-indentation'} );
+    return unless ( $rOpts->{'line-up-parentheses'} );
 
     # nothing can be done if no stack items defined for this line
     return if ( $max_gnu_item_index == UNDEFINED_INDEX );
@@ -3126,7 +3164,7 @@ sub check_for_long_gnu_style_lines {
     # keep 2 extra free because they are needed in some cases
     # (result of trial-and-error testing)
     my $spaces_needed =
-      $gnu_maximum_position - $rOpts->{'maximum-line-length'} + 2;
+      $gnu_position_predictor - $rOpts->{'maximum-line-length'} + 2;
 
     return if ( $spaces_needed < 0 );
 
@@ -3192,8 +3230,8 @@ sub check_for_long_gnu_style_lines {
                 report_definite_bug();
             }
         }
-        $gnu_maximum_position -= $deleted_spaces;
-        $spaces_needed        -= $deleted_spaces;
+        $gnu_position_predictor -= $deleted_spaces;
+        $spaces_needed -= $deleted_spaces;
         last unless ( $spaces_needed > 0 );
     }
 }
@@ -3210,7 +3248,7 @@ sub finish_gnu_batch {
     # aligner, though.
 
     # this is only for the 'gnu' style
-    return unless ( $rOpts->{'gnu-indentation'} );
+    return unless ( $rOpts->{'line-up-parentheses'} );
 
     # nothing can be done if no stack items defined for this line
     return if ( $max_gnu_item_index == UNDEFINED_INDEX );
@@ -3263,11 +3301,11 @@ sub undo_gnu_indentation {
     return $deleted_spaces if ( $spaces_needed < 0 );
 
     # this is only for the 'gnu' style
-    return $deleted_spaces unless ( $rOpts->{'gnu-indentation'} );
+    return $deleted_spaces unless ( $rOpts->{'line-up-parentheses'} );
 
     # it is only safe to undo indentation if there are no children.  
     my $item = $leading_spaces_to_go[$i];
-    if ( $item->get_HAVE_CHILD() >= 0 ) {
+    if ( $item->get_HAVE_CHILD() ) {
         return $deleted_spaces;
     }
 
@@ -3404,7 +3442,7 @@ sub check_options {
     # of line breaks, perltidy never sees large enough buffers to
     # use the -gnu style.  There's no way around this.  "It's my way
     # or the highway".
-    if ( $rOpts->{'gnu-indentation'} ) {
+    if ( $rOpts->{'line-up-parentheses'} ) {
 
         if ( $rOpts->{'indent-only'} || !$rOpts->{'add-newlines'}
           || !$rOpts->{'delete-old-newlines'} )
@@ -3412,14 +3450,14 @@ sub check_options {
             print STDERR <<EOM;
 Conflict: -gnu  conflicts with -io, -fnl, -nanl, or -ndnl; ignoring -gnu
 EOM
-            $rOpts->{'gnu-indentation'} = 0;
+            $rOpts->{'line-up-parentheses'} = 0;
         }
     }
 
-    # At present, tabs are not compatable with the gnu-indentation style
+    # At present, tabs are not compatable with the line-up-parentheses style
     # (it would be possible to entab the total leading whitespace
     # just prior to writing the line, if desired).
-    if ( $rOpts->{'gnu-indentation'} && $rOpts->{'tabs'} ) {
+    if ( $rOpts->{'line-up-parentheses'} && $rOpts->{'tabs'} ) {
         print STDERR <<EOM;
 Conflict: -t (tabs) cannot be used with the -gnu  option; ignoring -t.
 EOM
@@ -3513,14 +3551,17 @@ EOM
     }
     else { $if_brace_follower_pattern = ""; }
 
-    if ( $rOpts->{'opening-brace-on-new-line'} ) {
-        $left_bond_strength{'{'}  = WEAK;
-        $right_bond_strength{'{'} = VERY_STRONG;
-    }
-    else {
-        $right_bond_strength{'{'} = WEAK;
-        $left_bond_strength{'{'}  = VERY_STRONG;
-    }
+    # TESTING -- deactivated 20010614 because -bl didn't
+    # work well with it.
+    #if ( $rOpts->{'opening-brace-on-new-line'} ) {
+    #    $left_bond_strength{'{'}  = WEAK;
+    #    $right_bond_strength{'{'} = VERY_STRONG;
+    #}
+    #else {
+    $right_bond_strength{'{'} = WEAK;
+    $left_bond_strength{'{'}  = VERY_STRONG;
+
+    #}
 
     # make -l=0  equal to -l=infinite
     if ( !$rOpts->{'maximum-line-length'} ) {
@@ -4297,21 +4338,39 @@ sub print_line_of_tokens {
         $next_nonblank_token      = $$rtokens[$j_next];
         $next_nonblank_token_type = $$rtoken_type[$j_next];
 
-        if ( ( $next_nonblank_token_type eq '#' ) and ( $token ne '}' ) ) {
+        # Do not allow breaks which would promote a side comment to a
+        # block comment.  In order to allow a break before an opening
+        # or closing BLOCK, followed by a side comment, those sections 
+        # of code will handle this flag separately.
+        my $side_comment_follows = ( $next_nonblank_token_type eq '#' );
+        my $is_opening_BLOCK = ( $type eq '{' && $token eq '{' && $block_type );
+        my $is_closing_BLOCK = ( $type eq '}' && $token eq '}' && $block_type );
+
+        if ( $side_comment_follows && !$is_opening_BLOCK && !$is_closing_BLOCK )
+
+          #&& !( $type =~ /^[\}\{]$/ && $token eq $type && $block_type ) )
+        {
             $no_internal_newlines = 1;
         }
+
+        #if ( ( $next_nonblank_token_type eq '#' ) and ( $token ne '}' ) ) {
+        #    $no_internal_newlines = 1;
+        #}
 
         # We're only going to handle breaking for code BLOCKS at this
         # (top) level.  Other indentation breaks will be handled by
         # sub scan_list, which is better suited to dealing with them.
-        if ( $type eq '{' && $token eq '{' && $block_type ) {
+        #if ( $type eq '{' && $token eq '{' && $block_type ) {
+        if ($is_opening_BLOCK) {
 
             # Tentatively output this token.  This is required before
             # calling starting_one_line_block.  We may have to unstore
             # it, though, if we have to break before it.
-            store_token_to_go( $token, $type, $block_type,
-                $no_internal_newlines, $level, $slevel, $nesting_blocks,
-                $ci_level, $in_continued_quote );
+            store_token_to_go(
+                $token, $type, $block_type,
+                ( $no_internal_newlines || $side_comment_follows ), $level,
+                $slevel, $nesting_blocks, $ci_level, $in_continued_quote
+            );
 
             # Look ahead to see if we might form a one-line block
             my $too_long =
@@ -4364,19 +4423,26 @@ sub print_line_of_tokens {
                     # and now store this token at the start of a new line
                     store_token_to_go(
                         $token, $type, $block_type,
-                        $no_internal_newlines, $level, $slevel, $nesting_blocks,
+                        ( $no_internal_newlines || $side_comment_follows ),
+                        $level,    $slevel,           $nesting_blocks,
                         $ci_level, $in_continued_quote
                     );
                 }
             }
 
+            # Now update for side comment
+            if ($side_comment_follows) { $no_internal_newlines = 1 }
+
             # now output this line
+            # (NOTE: It would be possible to create a flag saying to not 
+            # break here)
             unless ($no_internal_newlines) {
                 output_line_to_go();
             }
         }
 
-        elsif ( $type eq '}' && $token eq '}' && $block_type ) {
+        #elsif ( $type eq '}' && $token eq '}' && $block_type ) {
+        elsif ($is_closing_BLOCK) {
 
             # If there is a pending one-line block ..
             if ( $index_start_one_line_block != UNDEFINED_INDEX ) {
@@ -4438,12 +4504,8 @@ sub print_line_of_tokens {
                 output_line_to_go();
             }
 
-            # If a side comment follows this '}', set a flag to prevent
-            # a line break between the two.  Otherwise, the side comment
-            # would be promoted to a full line comment.
-            if ( $next_nonblank_token_type eq '#' ) {
-                $no_internal_newlines = 1;
-            }
+            # Now update for side comment
+            if ($side_comment_follows) { $no_internal_newlines = 1 }
 
             # store the closing curly brace
             store_token_to_go( $token, $type, $block_type,
@@ -4956,6 +5018,59 @@ sub write_unindented_line {
     $file_writer_object->write_line( $_[0] );
 }
 
+sub correct_gnu_indentation {
+
+    # make a last pass through each line to correct the indentation
+    # positions in case they differ from the predictions
+    my ( $ibeg, $iend ) = @_;
+    my $i;
+    foreach $i ( $ibeg .. $iend ) {
+
+        # look for next unvisited indentation item
+        my $indentation = $leading_spaces_to_go[$i];
+        if ( !$indentation->get_MARKED() ) {
+            $indentation->set_MARKED(1);
+
+            # this is only for indentation where we align with 'parens'
+            next unless ( $indentation->get_ALIGN_PAREN() );
+
+            my $actual_pos = total_line_length( $ibeg, $i - 1 );
+            my $predicted_pos = $indentation->get_SPACES();
+            my $move_left     = $predicted_pos - $actual_pos;
+
+            # It's ok to shift left if there are no dependents.
+            # in use.
+
+            #--------------------------------------------------------
+            # FIXME: NOTE for future development: if there are dependents,
+            # we might be able to look ahead to see if any of them are 
+            # actually in use.  Or at least look one line ahead,
+            # which is a common case of interest. 
+            #--------------------------------------------------------
+
+            if ( $move_left > 0 ) {
+                if ( !$indentation->get_HAVE_CHILD() ) {
+                    $indentation->decrease_AVAILABLE_SPACES($move_left);
+                    $indentation->decrease_SPACES($move_left);
+                    my $recoverable = $indentation->get_RECOVERABLE_SPACES();
+                    my $got         =
+                      $indentation->increase_RECOVERABLE_SPACES(
+                        -$recoverable );
+                }
+            }
+
+            # But moving right is a problem because some
+            # long lines might already depend on this indentation.
+            # So we hope the aligner gets to fix it.
+            elsif ( $move_left < 0 ) {
+                my $recoverable = $indentation->get_RECOVERABLE_SPACES();
+                my $want        = -$move_left - $recoverable;
+                my $got = $indentation->increase_RECOVERABLE_SPACES($want);
+            }
+        }
+    }
+}
+
 =pod
 flush() is called to output any tokens in the pipeline, so that
 an alternate source of lines can be written in the correct order
@@ -5094,8 +5209,13 @@ sub output_line_to_go {
 
         # loop to dump out the line(s)
         for my $n ( 0 .. @$ri_first - 1 ) {
-            my $ibeg     = $$ri_first[$n];
-            my $iend     = $$ri_last[$n];
+            my $ibeg = $$ri_first[$n];
+            my $iend = $$ri_last[$n];
+
+            if ( $rOpts->{'line-up-parentheses'} ) {
+                correct_gnu_indentation( $ibeg, $iend );
+            }
+
             my @patterns = ();
             my @tokens   = ();
             my @fields   = ();
@@ -5152,8 +5272,13 @@ sub output_line_to_go {
                 }
             }
             push ( @fields, join ( '', @tokens_to_go[ $i_start .. $iend ] ) );
+
             my ( $terminal_type, $i_terminal ) =
               terminal_type( \@types_to_go, \@block_type_to_go, $ibeg, $iend );
+
+            my $is_terminal_statement =
+              ( $terminal_type eq ';' && ( $nesting_depth_to_go[$iend] ) <
+              $nesting_depth_to_go[$ibeg] );
 
             # Most lines are indented according to the initial token.
             # But it is common to outdent to the level just after the
@@ -5167,9 +5292,11 @@ sub output_line_to_go {
                 if ( $tokens_to_go[$ibeg] =~ /^[\)\}\]]$/
 
                   # outdent closing lines of the form:   ");  };  ];  )->xxx;" 
-                  && ( $terminal_type eq ';'
-                  && ( $nesting_depth_to_go[$iend] ) <
-                  $nesting_depth_to_go[$ibeg] )
+                  && $is_terminal_statement
+
+                  #&& ( $terminal_type eq ';'
+                  #&& ( $nesting_depth_to_go[$iend] ) <
+                  #$nesting_depth_to_go[$ibeg] )
 
                   # outdent 'cuddled parens' of the form:   ")->pack("  
                   || ( $terminal_type eq '(' && $types_to_go[$ibeg] eq ')'
@@ -5215,9 +5342,11 @@ sub output_line_to_go {
               && $types_to_go[$ibeg] =~ /^[Q#]$/ );
 
             # send this new line down the pipe
-            Perltidy::VerticalAligner::append_line( $lev, $indentation,
+            Perltidy::VerticalAligner::append_line(
+                $lev, $indentation,
                 \@fields, \@tokens, \@patterns, $forced_breakpoint_to_go[$iend],
-                $outdent_long_lines );
+                $outdent_long_lines, $is_terminal_statement
+            );
         }
     }
     prepare_for_a_new_line();
@@ -6951,6 +7080,8 @@ use constant GNU_ITEM_SEQUENCE_NUMBER    => 6;  # output batch number
 use constant GNU_ITEM_INDEX              => 7;  # index in output batch list
 use constant GNU_ITEM_HAVE_CHILD         => 8;  # any dependents?
 use constant GNU_ITEM_RECOVERABLE_SPACES => 9;  # desired extra rhs indentation
+use constant GNU_ITEM_ALIGN_PAREN        => 10; # align with opening structure?
+use constant GNU_ITEM_MARKED             => 11; # marked by corrector logic
 
 sub new {
 
@@ -6959,23 +7090,38 @@ sub new {
     # a reference to an anonymous array of associated variables.
     # See constants GNU_ITEM_xxx for storage scheme.
     my ( $class, $spaces, $level, $ci_level, $available_spaces, $index,
-      $gnu_sequence_number ) = @_;
+      $gnu_sequence_number, $align_paren ) = @_;
     my $closed            = 0;
     my $comma_count       = 0;
-    my $have_child        = -1;
+    my $have_child        = 0;
     my $want_right_spaces = 0;
+    my $marked            = 0;
     bless [
         $spaces,              $level,
         $ci_level,            $available_spaces,
         $closed,              $comma_count,
         $gnu_sequence_number, $index,
-        $have_child,          $want_right_spaces
+        $have_child,          $want_right_spaces,
+        $align_paren,         $marked,
     ], $class;
 }
 
 sub get_SPACES {
     my ($self) = @_;
     return $self->[GNU_ITEM_SPACES];
+}
+
+sub get_MARKED {
+    my ($self) = @_;
+    return $self->[GNU_ITEM_MARKED];
+}
+
+sub set_MARKED {
+    my ( $self, $value ) = @_;
+    if ( defined($value) ) {
+        $self->[GNU_ITEM_MARKED] = $value;
+    }
+    return $self->[GNU_ITEM_MARKED];
 }
 
 sub get_AVAILABLE_SPACES {
@@ -6997,6 +7143,11 @@ sub decrease_AVAILABLE_SPACES {
         $self->[GNU_ITEM_AVAILABLE_SPACES] -= $value;
     }
     return $self->[GNU_ITEM_AVAILABLE_SPACES];
+}
+
+sub get_ALIGN_PAREN {
+    my ($self) = @_;
+    return $self->[GNU_ITEM_ALIGN_PAREN];
 }
 
 sub get_RECOVERABLE_SPACES {
@@ -7260,7 +7411,7 @@ The log file warns the user if there are any such tabs.
 
 =cut
     my ( $level, $indentation, $rfields, $rtokens, $rpatterns, $is_forced_break,
-      $outdent_long_lines ) = @_;
+      $outdent_long_lines, $is_terminal_statement ) = @_;
 
     my $leading_space_count = get_SPACES($indentation);
 
@@ -7292,7 +7443,13 @@ The log file warns the user if there are any such tabs.
           ( $level < $group_level && $last_group_level_written < $group_level );
 
         flush();
-        $extra_indent_ok     = 0;
+
+        # If we know that this line will get flushed out by itself because
+        # of level changes, we can leave the extra_indent_ok flag set.
+        # That way, if we get an external flush call, we will still be
+        # able to do some -gnu alignment if necessary.
+        $extra_indent_ok = ( $is_terminal_statement && $level > $group_level );
+
         $last_comment_column = 0;
         $group_level         = $level;
     }
@@ -7318,6 +7475,22 @@ The log file warns the user if there are any such tabs.
 
         # write directly if no current group and no side comment
         if ( $maximum_line_index < 0 ) {
+
+            # Recover spaces if possible
+            if ( $extra_indent_ok && ref($indentation) ) {
+                my $extra_indentation_spaces_wanted =
+                  get_RECOVERABLE_SPACES($indentation);
+                if ( $extra_indentation_spaces_wanted > 0 ) {
+                    my $avail =
+                      $rOpts->{'maximum-line-length'} -
+                      ( length( $$rfields[0] ) + $leading_space_count );
+                    my $extra_leading_spaces =
+                      ( $avail > $extra_indentation_spaces_wanted ) ?
+                      $extra_indentation_spaces_wanted : $avail;
+                    $leading_space_count += $extra_leading_spaces;
+                }
+            }
+
             write_leader_and_string( $leading_space_count, $$rfields[0], 0,
                 $outdent_long_lines );
             $lines_since_last_side_comment++;
@@ -8088,6 +8261,7 @@ sub write_leader_and_string {
 
     $file_writer_object->write_code_line( $leading_string . $str . "\n" );
     $last_group_level_written = $group_level;
+    $extra_indent_ok = 0;
 }
 
 sub get_leading_string {
@@ -9666,7 +9840,7 @@ current version.
                             last if ( ++$i > $max_token_index );
                         }
 
-                        # Looks like the turkey joined a quote modifier
+                        # Looks like a joined a quote modifier
                         # and keyword, maybe something like
                         # s/xxx/yyy/gefor @k=...  
                         # Example is "galgen.pl".  Would have to split
