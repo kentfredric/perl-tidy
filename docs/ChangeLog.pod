@@ -7,6 +7,33 @@
 
 =head2 2002 xx xx
 
+ -added 2 new flags to control spaces between keywords and opening parens:
+   -sak=s  or --space-after-keyword=s,  and
+   -nsak=s or --nospace-after-keyword=s, where 's' is a list of keywords.
+
+ The NEW default list of keywords which get a space is:
+
+   "my local our and or eq ne if else elsif until unless while for foreach
+     return switch case given when"
+
+ Use -sak=s and -nsak=s to add and remove keywords from this list,
+    respectively.
+
+ Explanation: Stephen Hildrey noted that perltidy was being inconsistent
+ in placing spaces between keywords and opening parens, and sent a patch
+ to give user control over this.  The above list was selected as being
+ a reasonable default keyword list.  Previously, perltidy
+ had a hardwired list which also included these keywords:
+
+        push pop shift unshift join split die
+
+ but did not have 'our'.  So, if you prefer to make perltidy behave
+ exactly as before, you can include the following two lines in your
+ .perltidyrc file: 
+
+   -sak="push pop local shift unshift join split die"
+   -nsak="our"
+
  -Corrected html error in .toc file when -frm -html is used (extra ");
   browsers were tolerant of it.
 

@@ -620,7 +620,7 @@ FORMATTING OPTIONS
         want any old whitespace removed, use -ndws or
         --nodelete-old-whitespace.
 
-    Detailed whitespace controls
+    Detailed whitespace controls around tokens
         For those who want more detailed control over the whitespace around
         tokens, there are four parameters which can directly modify the
         default whitespace rules built into perltidy for any token. They
@@ -665,6 +665,24 @@ FORMATTING OPTIONS
         It is necessary to have a list of all token types in order to create
         this type of input. Such a list can be obtained by the command
         -dump-token-types.
+
+    Space between keyword and opening paren
+        When an opening paren follows a keyword, no space is introduced
+        after the keyword, unless it is (by default) one of these:
+
+           my local our and or eq ne if else elsif until unless 
+           while for foreach return switch case given when
+
+        These defaults can be modified with two commands:
+
+        -sak=s or --space-after-keyword=s adds keywords.
+
+        -nsak=s or --nospace-after-keyword=s removes keywords.
+
+        where s is a list of keywords (in quotes if necessary). For example,
+
+          my ( $a, $b, $c ) = @_;    # default
+          my( $a, $b, $c ) = @_;     # -nsak="my local our"
 
     Trimming whitespace around "qw" quotes
         -tqw or --trim-qw provide the default behavior of trimming spaces

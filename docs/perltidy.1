@@ -130,7 +130,7 @@
 .\" ========================================================================
 .\"
 .IX Title "PERLTIDY 1"
-.TH PERLTIDY 1 "2002-11-30" "perl v5.6.1" "User Contributed Perl Documentation"
+.TH PERLTIDY 1 "2003-01-04" "perl v5.6.1" "User Contributed Perl Documentation"
 .UC
 .SH "NAME"
 perltidy \- a perl script indenter and reformatter
@@ -788,8 +788,8 @@ Setting this option allows perltidy to remove some old whitespace
 between characters, if necessary.  This is the default.  If you
 do not want any old whitespace removed, use \fB\-ndws\fR or
 \&\fB\-\-nodelete\-old\-whitespace\fR.
-.IP "Detailed whitespace controls" 4
-.IX Item "Detailed whitespace controls"
+.IP "Detailed whitespace controls around tokens" 4
+.IX Item "Detailed whitespace controls around tokens"
 For those who want more detailed control over the whitespace around
 tokens, there are four parameters which can directly modify the default
 whitespace rules built into perltidy for any token.  They are:
@@ -835,6 +835,27 @@ a space takes priority.
 It is necessary to have a list of all token types in order to create
 this type of input.  Such a list can be obtained by the command
 \&\fB\-dump\-token\-types\fR.
+.IP "Space between keyword and opening paren" 4
+.IX Item "Space between keyword and opening paren"
+When an opening paren follows a keyword, no space is introduced after the
+keyword, unless it is (by default) one of these:
+.Sp
+.Vb 2
+\&   my local our and or eq ne if else elsif until unless 
+\&   while for foreach return switch case given when
+.Ve
+These defaults can be modified with two commands:
+.Sp
+\&\fB\-sak=s\fR  or \fB\-\-space\-after\-keyword=s\fR  adds keywords.
+.Sp
+\&\fB\-nsak=s\fR  or \fB\-\-nospace\-after\-keyword=s\fR  removes keywords.
+.Sp
+where \fBs\fR is a list of keywords (in quotes if necessary).  For example, 
+.Sp
+.Vb 2
+\&  my ( $a, $b, $c ) = @_;    # default
+\&  my( $a, $b, $c ) = @_;     # -nsak="my local our"
+.Ve
 .ie n .IP "Trimming whitespace around ""qw"" quotes" 4
 .el .IP "Trimming whitespace around \f(CWqw\fR quotes" 4
 .IX Item "Trimming whitespace around qw quotes"

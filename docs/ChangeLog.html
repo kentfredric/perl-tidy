@@ -14,6 +14,7 @@
 	<LI><A HREF="#perltidy change log">Perltidy Change Log</A></LI>
 	<UL>
 
+		<LI><A HREF="#2002 xx xx">2002 xx xx</A></LI>
 		<LI><A HREF="#2002 11 30">2002 11 30</A></LI>
 		<LI><A HREF="#2002 11 06">2002 11 06</A></LI>
 		<LI><A HREF="#2002 09 22">2002 09 22</A></LI>
@@ -50,6 +51,38 @@
  have hit a bug, unusual behavior, annoyance, or have a
  suggested improvement, please send a note to perltidy at
  users.sourceforge.net.</PRE>
+<P>
+<H2><A NAME="2002 xx xx">2002 xx xx</A></H2>
+<PRE>
+ -added 2 new flags to control spaces between keywords and opening parens:
+   -sak=s  or --space-after-keyword=s,  and
+   -nsak=s or --nospace-after-keyword=s, where 's' is a list of keywords.</PRE>
+<PRE>
+ The NEW default list of keywords which get a space is:</PRE>
+<PRE>
+   &quot;my local our and or eq ne if else elsif until unless while for foreach
+     return switch case given when&quot;</PRE>
+<PRE>
+ Use -sak=s and -nsak=s to add and remove keywords from this list,
+    respectively.</PRE>
+<PRE>
+ Explanation: Stephen Hildrey noted that perltidy was being inconsistent
+ in placing spaces between keywords and opening parens, and sent a patch
+ to give user control over this.  The above list was selected as being
+ a reasonable default keyword list.  Previously, perltidy
+ had a hardwired list which also included these keywords:</PRE>
+<PRE>
+        push pop shift unshift join split die</PRE>
+<PRE>
+ but did not have 'our'.  So, if you prefer to make perltidy behave
+ exactly as before, you can include the following two lines in your
+ .perltidyrc file:</PRE>
+<PRE>
+   -sak=&quot;push pop local shift unshift join split die&quot;
+   -nsak=&quot;our&quot;</PRE>
+<PRE>
+ -Corrected html error in .toc file when -frm -html is used (extra &quot;);
+  browsers were tolerant of it.</PRE>
 <P>
 <H2><A NAME="2002 11 30">2002 11 30</A></H2>
 <PRE>

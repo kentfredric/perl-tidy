@@ -664,7 +664,7 @@ between characters, if necessary.  This is the default.  If you
 do not want any old whitespace removed, use <STRONG>-ndws</STRONG> or
 <STRONG>--nodelete-old-whitespace</STRONG>.
 <P></P>
-<DT><STRONG><A NAME="item_Detailed_whitespace_controls">Detailed whitespace controls</A></STRONG><BR>
+<DT><STRONG><A NAME="item_Detailed_whitespace_controls_around_tokens">Detailed whitespace controls around tokens</A></STRONG><BR>
 <DD>
 For those who want more detailed control over the whitespace around
 tokens, there are four parameters which can directly modify the default
@@ -698,6 +698,21 @@ a space takes priority.</P>
 <P>It is necessary to have a list of all token types in order to create
 this type of input.  Such a list can be obtained by the command
 <STRONG>-dump-token-types</STRONG>.</P>
+<P></P>
+<DT><STRONG><A NAME="item_Space_between_keyword_and_opening_paren">Space between keyword and opening paren</A></STRONG><BR>
+<DD>
+When an opening paren follows a keyword, no space is introduced after the
+keyword, unless it is (by default) one of these:
+<PRE>
+   my local our and or eq ne if else elsif until unless 
+   while for foreach return switch case given when</PRE>
+<P>These defaults can be modified with two commands:</P>
+<P><STRONG>-sak=s</STRONG>  or <STRONG>--space-after-keyword=s</STRONG>  adds keywords.</P>
+<P><STRONG>-nsak=s</STRONG>  or <STRONG>--nospace-after-keyword=s</STRONG>  removes keywords.</P>
+<P>where <STRONG>s</STRONG> is a list of keywords (in quotes if necessary).  For example,</P>
+<PRE>
+  my ( $a, $b, $c ) = @_;    # default
+  my( $a, $b, $c ) = @_;     # -nsak=&quot;my local our&quot;</PRE>
 <P></P>
 <DT><STRONG><A NAME="item_Trimming_whitespace_around_qw_quotes">Trimming whitespace around <CODE>qw</CODE> quotes</A></STRONG><BR>
 <DD>
