@@ -60,6 +60,27 @@ map( $matchwords{ join "", sort split //, $_ } = $_, 'cig',
   = @_;
 
 {
+    %enc_map = (
+        'WinAnsiEncoding' => [
+            0 .. 126, 128, 160, 128, 145, 134,
+            140,      131, 129, 130, 26,  139,
+            151,      136, 150, 128, 153, 128,
+            128,      143, 144, 141, 142, 128,
+            133,      132, 31,  146, 157, 137,
+            156,      128, 158, 152, 32,  161 .. 255
+        ],
+    );
+
+    my (
+        $Day,        $N,       $M,       $Ec,        $Lambdasun,
+        $ml,         $MM,      $MN,      $Ev,        $Ae,
+        $A3,         $MmP,     $mEc,     $A4,        $lP,
+        $V,          $lPP,     $NP,      $y,         $x,
+        $Lambdamoon, $BetaM,   $MoonAge, $MoonPhase, $MoonDist,
+        $MoonDFrac,  $MoonAng, $MoonPar, $F,         $SunDist,
+        $SunAng,     $mpfrac
+    );
+
     # bare words not identifiers
     %SQLStmtTypes = (
                       SQL_CLOSE,        "SQL_CLOSE",

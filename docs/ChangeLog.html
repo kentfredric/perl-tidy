@@ -45,6 +45,18 @@
  suggested improvement, please send a note to perltidy at
  users.sourceforge.net.</PRE>
 <PRE>
+ -Six parameters for controlling 'vertical tightness' have been added:
+  -pvt, -pcvt, -bvt, -bcvt, -sbvt, -sbcvt.  See updated manual. Examples:</PRE>
+<PRE>
+    # perltidy -lp -pvt=1
+    @month_of_year = ( 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' );</PRE>
+<PRE>
+    # perltidy -lp -pvt=1 -pcvt=0
+    @month_of_year = ( 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    );</PRE>
+<PRE>
  -Lists which do not format well in uniform columns are now better
   identified and formated.</PRE>
 <PRE>

@@ -1,6 +1,88 @@
 # some alignment tests
 
+# good test line:
+die sprintf("Usage: %s [ -r | -a | -f fmt ] file ...\n", ($0 =~ m|.*/(.*)|o))
+    if ($opt_h || (! @ARGV) || (($opt_a && $opt_r) || ($opt_a && $opt_f) ||
+                                ($opt_r && $opt_f)));
+if ( abs($offhour) >= 24 ) {
+    die ("822-date: local time offset greater than or equal to 24 hours\n");
+}
+
+# From unicode.pl
+# should line up the leading commas
+%low_entities = (    #
+                  %iso_8859_low_ents, '255', '376'
+                  ,                   '257', '256'
+                  ,                   '259', '258'
+                  ,                   '261', '260'
+                  ,                   '263', '262'
+                  );
+
+printf(
+    "%s, %2d %s %d %02d:%02d:%02d %s%02d%02d\n",
+    ( Sun, Mon, Tue, Wed, Thu, Fri, Sat )[ $localtm[6] ],    # day of week
+    $localtm[3],                                             # day of month
+    ( Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec )
+      [ $localtm[4] ],                                       # month
+    $localtm[5] + 1900,                                      # year
+    $localtm[2],                                             # hour
+    $localtm[1],                                             # minute
+    $localtm[0],                                             # sec
+    ( $offset >= 0 ) ? '+' : '-',    # TZ offset direction
+    abs($offhour),                   # TZ offset hour
+    $offmin,                         # TZ offset minute
+) || die "822-date: output error: $!\n";
+
 {
+    # Examples of alignment oppoturnities for a trailing line
+    # would be nice to align the 'rgb->slice' here:
+    return ( $l,
+             $rgb->slice("${s},(0)"),
+             $rgb->slice("${s},(1)"),
+             $rgb->slice("${s},(2)") );
+
+    # another example:
+    chmod( 0666,
+           $TempFiles{'numeric'}, $TempFiles{'alpha'}, $TempFiles{'blank'} );
+
+    PDL::gl_triangles( ( map { $points->slice($_) } @sls1 ),
+                       ( map { $this->{Colors}->slice($_) } @sls1 ) );
+
+    # another - note useless parens
+    printf( "%s|%d|\n",
+            substr( $field3, 0, 10 ), ( substr( $field4, 1, 9 ) * 100 ) );
+    # break at comma before arrow
+    return (
+        %::PDL_OPTIONS, 'NAME' => $mod,
+        'VERSION_FROM' => "$w/Basic/Core/Version.pm",
+        'TYPEMAPS'     => [ &PDL_TYPEMAP() ],
+        'OBJECT'       => "$pref\$(OBJ_EXT)",
+        PM             => { "$pref.pm" => "\$(INST_LIBDIR)/$pref.pm" },
+        MAN3PODS       => { "$pref.pm" => "\$(INST_MAN3DIR)/$mod.\$(MAN3EXT)" },
+        'INC'          => &PDL_INCLUDE(),
+        'LIBS'         => [''],
+        'clean' => { 'FILES' => "$pref.xs $pref.pm $pref\$(OBJ_EXT) $pref.c" },
+    );
+
+    # shouldn't match these:
+    $pri = $f2pricf      {$f};
+    $pri = $sourcedefault{'Priority'} if !length($pri);
+
+    $levels_to_go[$max_index_to_go]        = $level;
+    $nesting_depth_to_go[$max_index_to_go] = ( $slevel >= 0 ) ? $slevel : 0;
+
+    # the '=' should align
+    local ($article_no) = pop (@_);
+    local ($sub_line)   = "";
+
+    # Good alignment example:
+    return
+      unless ( ( $sl =~ m/^(.*\D)(\d+)\s*o\s*f\s*(\d+)/i )
+        || ( $sl =~ m/^(.*\D)(\d+)\s*f\s*o\s*(\d+)/i )
+        || ( $sl =~ m/^(.*\D)(\d+)\s*\/\s*(\d+)/ )
+        || ( $sl =~ m/^(.*\D)(\d+)\s*\|\s*(\d+)/ )
+        || ( $sl =~ m/^(.*\D)(\d+)\s*\\\s*(\d+)/ ) );
+
     # from Cookbook:
     $page  =    /Mac/            && 'm/Macintrash.html'
              || /Win(dows )?NT/  && 'e/evilandrude.html'
@@ -44,6 +126,13 @@
     &logr( "\n",                                        $logr_files_aref );
 
     {
+        # This was an alignment problem once:
+        $data = $pkg->new(
+            PeerAddr => join ( ".", @port[ 0 .. 3 ] ),
+            PeerPort => $port[4] * 256 + $port[5],
+            Proto    => 'tcp'
+        );
+
         s/^([^_-]+)_([^_-]+)_([^_-]+)$/$1-$2-$3/ if (/\s/);
         s/_/-/g                                  if (/\s.+\s/);
 
@@ -52,6 +141,21 @@
         print '      <form method="post" action="">',                   "\n";
 
         {
+            # one per line please
+            unless ( ( $line =~ /^SUBJECT>/i ) || ( $line =~ /^ADMIN>/i )
+                || ( $line =~ /^POSTER>/i ) || ( $line =~ /^EMAIL>/i )
+                || ( $line =~ /^DATE>/i )   || ( $line =~ /^EMAILNOTICES>/i )
+                || ( $line =~ /^IP_ADDRESS>/i ) || ( $line =~ /^<!--/i )
+                || ( $line =~ /^PASSWORD>/i )   || ( $line =~ /^PREVIOUS>/i )
+                || ( $line =~ /^NEXT>/i )       || ( $line =~ /^IMAGE>/i )
+                || ( $line =~ /^LINKNAME>/i )   || ( $line =~ /^LINKURL>/i )
+                || ( $line =~ /^<([^>])*>&gt;/i )
+                || ( $line =~ /^<([^>])*>$AutoQuoteChar/i )
+                || ( $line =~ /^<([^>])*>$/i ) )
+            {
+                $quotedtext .= $line;
+            }
+
             print STDERR "+"                                  if $verbose == 1;
             print STDERR "Error reading $File::Find::name \n" if $verbose == 2;
 

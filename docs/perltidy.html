@@ -550,7 +550,7 @@ within.  A numerical value of 0, 1, or 2 defines the tightness, with
 0 being least tight and 2 being most tight.  Spaces within containers
 are always symmetric, so if there is a space after a <CODE>(</CODE> then there
 will be a space before the corresponding <CODE>)</CODE>.
-<P>The <STRONG>-pt=n</STRONG> or <STRONG>--paren-tightness</STRONG> parameter controls the space within
+<P>The <STRONG>-pt=n</STRONG> or <STRONG>--paren-tightness=n</STRONG> parameter controls the space within
 parens.  The example below shows the effect of the three possible
 values, 0, 1, and 2:</P>
 <PRE>
@@ -561,7 +561,7 @@ values, 0, 1, and 2:</P>
 of a ')'.  For n=2 there is never a space.  For n=1, the default, there
 is a space unless the quantity within the parens is a single token, such
 as an identifier or quoted string.</P>
-<P>Likewise, the parameter <STRONG>-sbt=n</STRONG> or <STRONG>--square-bracket-tightness</STRONG>
+<P>Likewise, the parameter <STRONG>-sbt=n</STRONG> or <STRONG>--square-bracket-tightness=n</STRONG>
 controls the space within square brackets, as illustrated below.</P>
 <PRE>
  $width = $col[ $j + $k ] - $col[ $j ];  # -sbt=0
@@ -585,67 +585,109 @@ example below.</P>
 <DD>
 The ``tightness'' of the previous section really referred to what might
 better be called ``horizontal tightness''.  A separate set of parameters
-control what we call vertical tightness.  Some important notes
-regarding these parameters are:
+control what shall be called vertical tightness.  Here are the main
+points:
 <UL>
 <LI>
-Most of these parameters require the variable indentation provided
-by the <STRONG>-lp</STRONG> flag, or otherwise they probably will not work properly.
+Opening tokens are controlled by <STRONG>-vt=n</STRONG>, or <STRONG>--vertical-tightness=n</STRONG>, 
+where
+<PRE>
+ -vt=0 always open (default), 
+ -vt=1 close unless closing produces more than one 
+    step in indentation in a line.
+ -vt=2 always close.</PRE>
 <P></P>
 <LI>
-Also, please note that these vertical tightness flags are merely hints
-to the formatter, and it is not always possible for it to obey then.
-Things which make it difficult or impossible include comments, blank
-lines, and blocks of code within a list.  Also, these flags will often
-be ignored for very small lists.
+You must also use the <STRONG>-lp</STRONG> flag to control the behavior of the opening
+tokens. The reason is explained below.
+<P></P>
+<LI>
+Closing tokens are controlled by <STRONG>-vtc=n</STRONG>, or
+<STRONG>--vertical-tightness-closing=n</STRONG>, where
+<PRE>
+ -vtc=0 always open (default), 
+ -vtc=1 close if followed by a semicolon, another closing token, 
+        and not in a list environment.
+ -vtc=2 always close.</PRE>
+<P></P>
+<LI>
+Different controls may be applied to to different token types;
+see below.
+<P></P>
+<LI>
+Finally, please note that these vertical tightness flags are merely
+hints to the formatter, and it cannot always follow them.  Things which
+make it difficult or impossible include comments, blank lines, blocks of
+code within a list, and possibly the lack of the <STRONG>-lp</STRONG> parameter.
+Also, these flags will often be ignored for very small lists.
 <P></P></UL>
-<P>The <STRONG>-pvt=n</STRONG> or <STRONG>--paren-vertical-tightness=n</STRONG> parameter controls if
-and when a parenthesized container is ``broken open''.  The default is
-<STRONG>n=0</STRONG>, and causes most significant lists to be broken open.  A value
-<STRONG>n=1</STRONG> will cause a list to remain closed provided that this does not
-produce two or more indentation steps on a single line (which can be
-difficult to read).  A value of <STRONG>n=2</STRONG> will try to keep all
-parenthesized containers closed.</P>
 <P>Here are some examples:</P>
 <PRE>
-    # perltidy -lp -pvt=0 (default)
-    @month_of_year = (
-                       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    );</PRE>
-<PRE>
-    # perltidy -lp -pvt=1
-    @month_of_year = ( 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' );</PRE>
-<P>In the examples so far, the closing paren has behaved symmetrically with
-the opening paren, either opening or closing.  This is the default, but
-it can be controlled independently with the flag <STRONG>-pcvt=n</STRONG> or
-<STRONG>-paren-closing-vertical-tightness=n</STRONG>.  The possible values for <STRONG>n</STRONG>
-are <STRONG>n=0</STRONG>, always open up,  <STRONG>n=1</STRONG> (default) do whatever the opening
-paren does, and <STRONG>n=2</STRONG> always stay closed.  Here are a few examples:</P>
-<PRE>
-    # perltidy -lp -pvt=1 -pcvt=0
+    # perltidy -lp -vt=1 -vtc=0
     @month_of_year = ( 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
     );</PRE>
 <PRE>
-    # perltidy -lp -pvt=0 -pcvt=2
+    # perltidy -lp -vt=0 -vtc=1
     @month_of_year = (
                        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' );</PRE>
 <PRE>
-    # perltidy -pcvt=2
-    @month_of_year = (
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' );</PRE>
-<P>Similar parameters for non-code block braces are <STRONG>-bvt=n</STRONG> or
-<STRONG>--brace-vertical-tightness</STRONG>, and <STRONG>-bcvt=n</STRONG> or
-<STRONG>--brace-closing-vertical-tightness=n</STRONG>.</P>
+    # perltidy -lp -vt=1 -vtc=1
+    @month_of_year = ( 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' );</PRE>
+<P>The difference between <STRONG>-vt=1</STRONG> and <STRONG>-vt=2</STRONG> is shown here:</P>
+<PRE>
+    # perltidy -lp -vt=0 -vtc=0  (default)
+    $init-&gt;add(
+                mysprintf(
+                           &quot;(void)find_threadsv(%s);&quot;,
+                           cstring( $threadsv_names[ $op-&gt;targ ] )
+                )
+    );</PRE>
+<PRE>
+    # perltidy -lp -vt=1 -vtc=0
+    $init-&gt;add(
+                mysprintf( &quot;(void)find_threadsv(%s);&quot;,
+                           cstring( $threadsv_names[ $op-&gt;targ ] )
+                )
+    );</PRE>
+<PRE>
+    # perltidy -lp -vt=2 -vtc=0
+    $init-&gt;add( mysprintf( &quot;(void)find_threadsv(%s);&quot;,
+                           cstring( $threadsv_names[ $op-&gt;targ ] )
+                )
+    );</PRE>
+<P>The tightest, and least readable, code is produced with both <CODE>-vt=2</CODE> and
+<CODE>-vtc=2</CODE>:</P>
+<PRE>
+    # perltidy -lp -vt=2 -vtc=2
+    $init-&gt;add( mysprintf( &quot;(void)find_threadsv(%s);&quot;,
+                           cstring( $threadsv_names[ $op-&gt;targ ] ) ) );</PRE>
+<P>Notice how the code in all of these examples collapses vertically as
+<STRONG>-vt</STRONG> increases, but the indentation remains unchanged.  Perltidy
+implements the <STRONG>-vt</STRONG> parameter by first formatting as if <STRONG>-vt=0</STRONG>, and
+then simply overwriting one output line on top of the next, if possible,
+to achieve the desired vertical tightness.  The <STRONG>-lp</STRONG> indentation style
+has been designed to allow this vertical collapse to occur, which is why
+it is required for the <STRONG>-vt</STRONG> parameter.</P>
+<P>Similar controls can be applied independently to each of the closing
+container token types, although it usually looks best to use the same
+scheme for each.</P>
+<P>The parameters for controlling parentheses are <STRONG>-pvt=n</STRONG> or
+<STRONG>--paren-vertical-tightness=n</STRONG>, and <STRONG>-pcvt=n</STRONG> or
+<STRONG>--paren-vertical-tightness-closing=n</STRONG>.</P>
 <P>Likewise, the parameters for square brackets are <STRONG>-sbvt=n</STRONG> or
 <STRONG>--square-bracket-vertical-tightness=n</STRONG>, and <STRONG>-sbcvt=n</STRONG> or
-<STRONG>--square-bracket-closing-vertical-tightness=n</STRONG>.</P>
-<P>Similar parameters for controlling code block braces are not currently
-available.</P>
+<STRONG>--square-bracket-vertical-tightness-closing=n</STRONG>.</P>
+<P>Parameters for controlling non-code block braces are <STRONG>-bvt=n</STRONG> or
+<STRONG>--brace-vertical-tightness=n</STRONG>, and <STRONG>-bcvt=n</STRONG> or
+<STRONG>--brace-vertical-tightness-closing=n</STRONG>.</P>
+<P>(Similar parameters for controlling code block braces are not currently
+available).</P>
+<P>In fact, the parameter <STRONG>-vt=n</STRONG> is actually just an abbreviation for
+<STRONG>-pvt=n -bvt=n and sbvt=n</STRONG>, and likewise <STRONG>-vtc=n</STRONG> is an abbreviation
+for <STRONG>-pvtc=n -bvtc=n and sbvtc=n</STRONG>.</P>
 <DT><STRONG><A NAME="item_%2Dsts%2C_%2D%2Dspace%2Dterminal%2Dsemicolon"><STRONG>-sts</STRONG>,   <STRONG>--space-terminal-semicolon</STRONG></A></STRONG><BR>
 <DD>
 Some programmers prefer a space before all terminal semicolons.  The
@@ -878,28 +920,24 @@ first block is <CODE> ( !defined( $_[0] )...</CODE>.  The existing limit of
 <P></P>
 <DT><STRONG><A NAME="item_%2Dcsce%3Dn%2C_or_%2Dclosing%2Dside%2Dcomment%2Del"><STRONG>-csce=n</STRONG>, or <STRONG>-closing-side-comment-else-flag=n</STRONG></A></STRONG><BR>
 <DD>
-The text after an <CODE>else</CODE> block will be given the text of the
-<CODE>if</CODE> block which introduces it.  Additional text can be appended to
-<CODE>else</CODE> and <CODE>elsif</CODE> closing side comments, as follows:
-
-<PRE>
-
- n=0: else blocks get leading if block text (default)
- n=1: same as 0 plus:
-        - elsif blocks also get leading if block text, and
-        - else block gets terminal elsif block text if any,
-      provided line length limit is not exceeded.
- n=2: same as 1 regardless of line length</PRE>
-<PRE>
-
-=item B&lt;-cscw&gt;, or B&lt;-closing-side-comment-warnings&gt;</PRE>
-<P>This parameter is intended to help make the initial transition to the use of
+The default, <STRONG>n=0</STRONG>, places the text of the opening <CODE>if</CODE> statement after any
+terminal <CODE>else</CODE>.
+<P>If <STRONG>n=2</STRONG> is used, then each <CODE>elsif</CODE> is also given the text of the opening
+<CODE>if</CODE> statement.  Also, an <CODE>else</CODE> will include the text of a preceding
+<CODE>elsif</CODE> statement.  Note that this may result some long closing
+side comments.</P>
+<P>If <STRONG>n=1</STRONG> is used, the results will be the same as <STRONG>n=2</STRONG> whenever the
+resulting line length is less than the maximum allowed.</P>
+<P></P>
+<DT><STRONG><A NAME="item_%2Dcscw%2C_or_%2Dclosing%2Dside%2Dcomment%2Dwarnin"><STRONG>-cscw</STRONG>, or <STRONG>-closing-side-comment-warnings</STRONG></A></STRONG><BR>
+<DD>
+This parameter is intended to help make the initial transition to the use of
 closing side comments.  
 It causes two
 things to happen if a closing side comment replaces an existing, different
 closing side comment:  first, an error message will be issued, and second, the
 original side comment will be placed alone on a new specially marked comment
-line for later attention.</P>
+line for later attention.
 <P>The intent is to avoid clobbering existing hand-written side comments
 which happen to match the pattern of closing side comments. This flag
 should only be needed on the first run with <STRONG>-csc</STRONG>.</P>

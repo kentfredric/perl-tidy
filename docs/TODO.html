@@ -19,7 +19,6 @@
 		<LI><A HREF="#bugs">BUGS</A></LI>
 		<LI><A HREF="#improved : formatting">improved ?: formatting</A></LI>
 		<LI><A HREF="#improved vertical alignment">Improved Vertical Alignment</A></LI>
-		<LI><A HREF="#implement 'vertical tightness' parameters">Implement 'Vertical Tightness' parameters</A></LI>
 		<LI><A HREF="#documentation">Documentation</A></LI>
 		<LI><A HREF="#html writer">HTML writer</A></LI>
 		<LI><A HREF="#further modularization">Further Modularization</A></LI>
@@ -65,41 +64,6 @@ future release.  this will make nested ?: statements more readable.</P>
 <H2><A NAME="improved vertical alignment">Improved Vertical Alignment</A></H2>
 <P>Coding modifications are underway to improve the vertical alignment
 logic.</P>
-<P>
-<H2><A NAME="implement 'vertical tightness' parameters">Implement 'Vertical Tightness' parameters</A></H2>
-<P>At present, perltidy usually breaks open container when they
-contain multiple lines.  For example, using perltidy -lp,</P>
-<PRE>
-        %romanNumerals = (
-                           one   =&gt; 'I',
-                           two   =&gt; 'II',
-                           three =&gt; 'III',
-                           four  =&gt; 'IV',
-                           five  =&gt; 'V',
-                           six   =&gt; 'VI',
-                           seven =&gt; 'VII',
-                           eight =&gt; 'VIII',
-                           nine  =&gt; 'IX',
-                           ten   =&gt; 'X'
-        );</PRE>
-<P>Some prefer to keep the container unbroken, if possible, like this:</P>
-<PRE>
-        %romanNumerals = ( one   =&gt; 'I',
-                           two   =&gt; 'II',
-                           three =&gt; 'III',
-                           four  =&gt; 'IV',
-                           five  =&gt; 'V',
-                           six   =&gt; 'VI',
-                           seven =&gt; 'VII',
-                           eight =&gt; 'VIII',
-                           nine  =&gt; 'IX',
-                           ten   =&gt; 'X');</PRE>
-<P>Parameters to control this are being studied.  They could be, for
-example, <STRONG>paren-vertical-tightness</STRONG>,
-<STRONG>square-bracket-vertical-tightness</STRONG>,
-<STRONG>brace-vertical-tightness</STRONG>.  This update requires further development
-of the vertical alignment logic, and will probably be implemented
-in steps.</P>
 <P>
 <H2><A NAME="documentation">Documentation</A></H2>
 <P>A FAQ is being written to explain some of the more subtle formatting

@@ -69,4 +69,20 @@ foreach ( $i = 0 ; $i <= 10 ; $i += 2 ) {
           && length(%unicode_table) > 2 ) ) {
             &convert_to_unicode($_);
         }
-}}
+
+        {{
+
+                # This is complex:
+		foreach $orig ( sort { pack('C*' => split(/\./,$a)) cmp
+			      	       pack('C*' => split(/\./,$b))
+
+				} keys %{$mips{$net}} ) {
+			$map.= "\$ORIGIN ".join(".",reverse(split(/\./,$orig))).".in-addr.arpa.\n"; # append $ORIGIN to map
+			my $ptrs = $mips{$net}->{$orig};
+			foreach $ptr ( sort { $a <=> $b } keys %{$ptrs} ) {
+				# Add PTR line to map
+				$map.= "$ptr\tPTR\t".$ptrs->{$ptr}."\n";
+			}
+
+		}
+}}}}

@@ -4,6 +4,22 @@
         "\015\012" => "GET $path HTTP/1.0",
         "Host: $netloc", "User-Agent: lwp-trivial/$VERSION", "", ""
     );
+
+    # Do not allow terminal comma to make this a mixed list:
+    # Otherwise, it looks good
+    $canvas->create( 'oval',
+                     $path_x - $circle_radius,
+                     $path_y - $circle_radius,
+                     $path_x + $circle_radius,
+                     $path_y + $circle_radius,
+                     -fill => 'white', );
+
+    $canvas->create( 'oval',
+                     $path_x - $circle_radius,
+                     $path_y - $circle_radius,
+                     $path_x + $circle_radius,
+                     $path_y + $circle_radius,
+                     -fill => 'white' );
 }
 
 my @Option_spec = (
@@ -32,7 +48,9 @@ my @Option_spec = (
     'version'		=> sub { print "$Me version $VERSION\n"; exit },
 );
 
-{{{
+{{
+
+{
             # problem with mixed comma types : should break before '-outline':
             $c->create(
                 'rectangle',

@@ -41,6 +41,17 @@ my %fields = ( tag => 1,    # old/new
 
 # Note that side comments at different indentation levels should not be aligned
 {
+    # part of table from banner..last side comment was not aligned
+    @data_table = (
+
+        #0     1     2     3     4     5     6     7     8     9
+        129, 227, 130, 34,  6,   90, 19,  129, 32, 10,     #    0
+        74,  40,  129, 31,  12,  64, 53,  129, 30, 14,     #   10
+        63,  13,  80,  4,   129, 67, 17,  129, 71, 13,     # 9250
+        129, 74,  10,  129, 78,  6,  129, 80,  4,  131,    # 9260
+        193                                                # 9270
+    );
+
     {
         {
             {
