@@ -1,3 +1,17 @@
+
+my %matchwords;
+map( $matchwords{ join "", sort split //, $_ } = $_, 'cig',
+    'cog',   'cos',
+    'cogs',  'cox',
+    'go',    'is',
+    'ism',   'iso',
+    'mig',   'mix',
+    'osmic', 'ox',
+    'sic',   'sig',
+    'six',   'smog',
+    'so',    'soc',
+    'sog',   'xi' );
+
 # broken list - testing behavior of closing paren
 my %ENTITIES = (
 
@@ -187,3 +201,30 @@ $thumbheight, $pub, $createtm,$inserttm,$refcount,$crapb,$crapc,$crapd,$border) 
         $contents, ( $color_env ? "\\egroup" : '' ),
         "\\end{$env}", ( ( $inner_math =~ /in(display|line)/ ) ? '$' : '' )
     );
+
+{
+%morse = (
+           ".-",     "a", "-...",  "b",  "-.-.",   "c",  "-..",    "d",
+           ".",      "e", "..-.",  "f",  "--.",    "g",  "....",   "h",
+           "..",     "i", ".---",  "j",  "-.-",    "k",  ".-..",   "l",
+           "--",     "m", "-.",    "n",  "---",    "o",  ".--.",   "p",
+           "--.-",   "q", ".-.",   "r",  "...",    "s",  "-",      "t",
+           "..-",    "u", "...-",  "v",  ".--",    "w",  "-..-",   "x",
+           "-.--",   "y", "--..",  "z",  ".-.-.-", ".",  "--..--", ",",
+           "..--..", "?", "-..-.", "/",  ".-.-.",  "+",  "-----",  "0",
+           ".----",  "1", "..---", "2",  "...--",  "3",  "....-",  "4",
+           ".....",  "5", "-....", "6",  "--...",  "7",  "---..",  "8",
+           "----.",  "9", "-...-", "BT", ".-.-.",  "AR", "...-.-", "SK",
+           );
+}
+
+# a broken list because of side comment
+make_node(
+    $nn_cnv1 = ++$nn,
+    "dc converter cnv1",
+    $tzero,
+    123.4,    # incorrect, to be updated
+    $q_cnv1,
+    "\$ power to power board cnv1",
+    \@nodes
+);

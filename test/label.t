@@ -43,3 +43,11 @@ $a++;
 print "looping with label format:, a=$a\n";
 if ($a<10) {goto "format"}
 }
+
+# these are valid labels:
+package: {
+    print "hello!\n";
+}
+sub: {
+    print "hello!\n";
+}

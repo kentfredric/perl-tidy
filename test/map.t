@@ -46,7 +46,7 @@ sub NXArgs {
     ( $y, $M, $w, $d, $h, $m, $s ) = map { 1 * $_; } ( $y, $M, $w, $d, $h, $m, $s );
 }
 
-# do not create single lines with opening parens:
+# this will create single lines with opening parens
 {
       (
       map {

@@ -1,3 +1,18 @@
+# opening brace separated from sub and sub name:
+sub 
+MakeVariables
+{
+    my ($filename, %OldHash) = @_;
+    my ($name, $value, %Hash, $line_number, $line);
+    local(*FILE_HANDLE);
+}
+
+# 'package' variations
+package    # hide this package from CPAN indexer
+  Win32::ODBC;
+package 
+DBI;    # hide this non-DBI package from simple indexers
+
 # anonomyous sub with prototype
 *$AUTOLOAD = sub () { $val };
 

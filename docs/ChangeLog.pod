@@ -6,6 +6,11 @@
 
 =head2 2001 xx xx
 
+ -Corrected tokenization error of signed hex/octal/binary numbers. For
+ example, the first hex number below would have been parsed correctly
+ but the second one was not:
+    if ( ( $tmp >= 0x80_00_00 ) || ( $tmp < -0x80_00_00 ) ) { }
+
  -I experimented with different ways of reporting syntax errors found
  when perl -c is run on the INPUT file.  I decided that the best thing
  to do for now is to output 'perl -c' error messages only if perltidy is
