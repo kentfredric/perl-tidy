@@ -300,7 +300,7 @@ use them.  For those who prefer tabs, however, there are two different
 options.  
 
 Except for possibly introducing tab indentation characters, as outlined
-below, Perltidy does not introduce any tab characters into your file,
+below, perltidy does not introduce any tab characters into your file,
 and it removes any tabs from the code (unless requested not to do so
 with B<-fws>).  If you have any tabs in your comments, quotes, or
 here-documents, they will remain.
@@ -1368,7 +1368,7 @@ file:
 A very helpful command is B<--dump-profile> or B<-dpro>.  It writes a
 list of all configuration filenames tested to standard output, and 
 if a file is found, it dumps the content to standard output before
-exiting.  So, to find out where Perltidy looks for its configuration
+exiting.  So, to find out where perltidy looks for its configuration
 files, and which one if any it selects, just enter 
 
   perltidy -dpro
@@ -1515,9 +1515,9 @@ block is something like this,
 where the contents within the curly braces is short enough to fit
 on a single line.
 
-With few exceptions, Perltidy retains existing one-line blocks, if it
+With few exceptions, perltidy retains existing one-line blocks, if it
 is possible within the line-length constraint, but it does not attempt
-to form new ones.  In other words, Perltidy will try to follow the
+to form new ones.  In other words, perltidy will try to follow the
 one-line block style of the input file.
 
 If an existing one-line block is longer than the maximum line length,
@@ -1525,7 +1525,7 @@ however, it will be broken into multiple lines.  When this happens, perltidy
 checks for and adds any optional terminating semicolon (unless the B<-nasc>
 option is used) if the block is a code block.  
 
-The main exception is that Perltidy will attempt to form new one-line
+The main exception is that perltidy will attempt to form new one-line
 blocks following the keywords C<map>, C<eval>, and C<sort>, because
 these code blocks are often small and most clearly displayed in a single
 line.
@@ -1534,7 +1534,7 @@ Occasionally it is helpful to introduce line breaks in lists containing
 a '=>' symbol, which is sometimes called a "comma-arrow".  To force
 perltidy to introduce breaks in a one-line block containing comma
 arrows, use the B<--break-after-comma-arrows>, or B<-baa>, flag.  For
-example, given the following single line, Perltidy will not add any line
+example, given the following single line, perltidy will not add any line
 breaks:
 
     bless { B => $B, Root => $Root } => $package;   -nbaa (default)
@@ -1840,11 +1840,26 @@ confusing filenames such as F<somefile.tdy.tdy.tdy>.
 
 =head1 SEE ALSO
 
-perlstyle(1)
+perlstyle(1), Perl::Tidy(3)
 
 =head1 VERSION
 
-This man page documents perltidy version 20020214.
+This man page documents perltidy version 20020222.
+
+=head1 CREDITS
+
+Michael Cartmell supplied code for adaptation to VMS and helped with
+v-strings.
+
+Yves Orton supplied code for adaptation to the various versions
+of Windows. 
+
+Axel Rose supplied a patch for MacPerl.
+
+Hugh S. Myers designed and implemented the initial Perl::Tidy module interface. 
+
+Many others have supplied key ideas, suggestions, and bug reports;
+see the CHANGES file.
 
 =head1 AUTHOR
 

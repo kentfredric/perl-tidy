@@ -40,6 +40,10 @@
   whatever configuration file is selected, and its contents.  This should
   help debugging config files, especially on different Windows systems.
 
+ -The -w parameter now notes possible errors of the form:
+
+	$comment = s/^\s*(\S+)\..*/$1/;   # trim whitespace
+
  -Corrections added for a leading ':' and for leaving a leading 'tcsh'
   line untouched.  Mark Olesen reported that lines of this form were
   accepted by perl but not by perltidy:

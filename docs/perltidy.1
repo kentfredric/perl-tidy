@@ -130,7 +130,7 @@
 .\" ========================================================================
 .\"
 .IX Title "PERLTIDY 1"
-.TH PERLTIDY 1 "2002-02-21" "perl v5.6.1" "User Contributed Perl Documentation"
+.TH PERLTIDY 1 "2002-02-22" "perl v5.6.1" "User Contributed Perl Documentation"
 .UC
 .SH "NAME"
 perltidy \- a perl script indenter and reformatter
@@ -419,7 +419,7 @@ use them.  For those who prefer tabs, however, there are two different
 options.  
 .Sp
 Except for possibly introducing tab indentation characters, as outlined
-below, Perltidy does not introduce any tab characters into your file,
+below, perltidy does not introduce any tab characters into your file,
 and it removes any tabs from the code (unless requested not to do so
 with \fB\-fws\fR).  If you have any tabs in your comments, quotes, or
 here\-documents, they will remain.
@@ -1418,7 +1418,7 @@ file:
 A very helpful command is \fB\-\-dump\-profile\fR or \fB\-dpro\fR.  It writes a
 list of all configuration filenames tested to standard output, and 
 if a file is found, it dumps the content to standard output before
-exiting.  So, to find out where Perltidy looks for its configuration
+exiting.  So, to find out where perltidy looks for its configuration
 files, and which one if any it selects, just enter 
 .Sp
 .Vb 1
@@ -1564,9 +1564,9 @@ block is something like this,
 where the contents within the curly braces is short enough to fit
 on a single line.
 .Sp
-With few exceptions, Perltidy retains existing one-line blocks, if it
+With few exceptions, perltidy retains existing one-line blocks, if it
 is possible within the line-length constraint, but it does not attempt
-to form new ones.  In other words, Perltidy will try to follow the
+to form new ones.  In other words, perltidy will try to follow the
 one-line block style of the input file.
 .Sp
 If an existing one-line block is longer than the maximum line length,
@@ -1574,7 +1574,7 @@ however, it will be broken into multiple lines.  When this happens, perltidy
 checks for and adds any optional terminating semicolon (unless the \fB\-nasc\fR
 option is used) if the block is a code block.  
 .Sp
-The main exception is that Perltidy will attempt to form new one-line
+The main exception is that perltidy will attempt to form new one-line
 blocks following the keywords \f(CW\*(C`map\*(C'\fR, \f(CW\*(C`eval\*(C'\fR, and \f(CW\*(C`sort\*(C'\fR, because
 these code blocks are often small and most clearly displayed in a single
 line.
@@ -1583,7 +1583,7 @@ Occasionally it is helpful to introduce line breaks in lists containing
 a '=>' symbol, which is sometimes called a \*(L"comma\-arrow\*(R".  To force
 perltidy to introduce breaks in a one-line block containing comma
 arrows, use the \fB\-\-break\-after\-comma\-arrows\fR, or \fB\-baa\fR, flag.  For
-example, given the following single line, Perltidy will not add any line
+example, given the following single line, perltidy will not add any line
 breaks:
 .Sp
 .Vb 1
@@ -1871,10 +1871,24 @@ a duplicated file extension.  These extensions are \fI.tdy\fR, \fI.LOG\fR, \fI.E
 confusing filenames such as \fIsomefile.tdy.tdy.tdy\fR.
 .SH "SEE ALSO"
 .IX Header "SEE ALSO"
-\&\fIperlstyle\fR\|(1)
+\&\fIperlstyle\fR\|(1), \fIPerl::Tidy\fR\|(3)
 .SH "VERSION"
 .IX Header "VERSION"
-This man page documents perltidy version 20020214.
+This man page documents perltidy version 20020222.
+.SH "CREDITS"
+.IX Header "CREDITS"
+Michael Cartmell supplied code for adaptation to \s-1VMS\s0 and helped with
+v\-strings.
+.PP
+Yves Orton supplied code for adaptation to the various versions
+of Windows. 
+.PP
+Axel Rose supplied a patch for MacPerl.
+.PP
+Hugh S. Myers designed and implemented the initial Perl::Tidy module interface. 
+.PP
+Many others have supplied key ideas, suggestions, and bug reports;
+see the \s-1CHANGES\s0 file.
 .SH "AUTHOR"
 .IX Header "AUTHOR"
 .Vb 3

@@ -23,6 +23,7 @@ PREREQUISITES
       IO::Scalar
       IO::ScalarArray
 
+
 INSTALLATION
     Please see the file INSTALL for installation information.
 
@@ -34,7 +35,7 @@ WHAT NEXT
     Documentation can be found in the docs directory, and it can also be
     found at http://perltidy.sourceforge.net
 
-    Reading the brief tutorial should help you use Perltidy effectively.
+    Reading the brief tutorial should help you use perltidy effectively.
 
     Perltidy is still being developed, so please check sourceforge
     occasionally for updates if you find that it is useful. New releases are
@@ -42,12 +43,12 @@ WHAT NEXT
 
 FEEDBACK / BUG REPORTS
     If you see ways to improve this document for the particular system on
-    which you install Perltidy, please let the me know so that it can be
+    which you install perltidy, please let the me know so that it can be
     updated.
 
     Bug reports, comments and suggestions are welcome. Attach the smallest
-    piece of code which demonstrates the bug or issue, plus a .LOG file from
-    a Perltidy run, if appropriate. Your efforts are greatly appreciated!
+    piece of code which demonstrates the bug or issue, plus a .LOG file if
+    appropriate. Your efforts are greatly appreciated!
 
     Thank You
 

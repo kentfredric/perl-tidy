@@ -45,19 +45,16 @@ style preferences.</P>
 <P>This tutorial assumes that perltidy has been installed on your system.
 Installation instructions accompany the package.  To follow along with
 this tutorial, please find a small Perl script and place a copy in a
-temporary directory.  For example, here is a small script (from the book
-Learning Perl 2nd edition, by Randall Schwartz and Tom Christiansen
-(http://www.oreilly.com/catalog/lperl2/):</P>
+temporary directory.  For example, here is a small (and silly) script:</P>
 <PRE>
- #Learning Perl Appendix A, Exercise 4.2
- print &quot;What temperature is it? &quot;;
- chop($temperature = &lt;STDIN&gt;);
- if ($temperature &gt; 75) {
-   print &quot;Too hot!\n&quot;;
- } elsif ($temperature &lt; 68) {
-   print &quot;Too cold!\n&quot;;
+ print &quot;Help Desk -- What Editor do you use?&quot;;
+ chomp($editor = &lt;STDIN&gt;);
+ if ($editor =~ /emacs/i) {
+   print &quot;Why aren't you using vi?\n&quot;;
+ } elsif ($editor =~ /vi/i) {
+   print &quot;Why aren't you using emacs?\n&quot;;
  } else {
-   print &quot;Just right!\n&quot;;
+   print &quot;I think that's the problem\n&quot;;
  }</PRE>
 <P>It is included in the <EM>docs</EM> section of the distribution.</P>
 <P>
@@ -72,21 +69,20 @@ its output will go to a file named <EM>testfile.pl.tdy</EM>, which you should
 examine now with your editor.  Here is what the above file looks like
 with the default options:</P>
 <PRE>
- #Learning Perl Appendix A, Exercise 4.2
- print &quot;What temperature is it? &quot;;
- chop( $temperature = &lt;STDIN&gt; );
- if ( $temperature &gt; 75 ) {
-     print &quot;Too hot!\n&quot;;
+ print &quot;Help Desk -- What Editor do you use?&quot;;
+ chomp( $editor = &lt;STDIN&gt; );
+ if ( $editor =~ /emacs/i ) {
+     print &quot;Why aren't you using vi?\n&quot;;
  }
- elsif ( $temperature &lt; 68 ) {
-     print &quot;Too cold!\n&quot;;
+ elsif ( $editor =~ /vi/i ) {
+     print &quot;Why aren't you using emacs?\n&quot;;
  }
  else {
-     print &quot;Just right!\n&quot;;
+     print &quot;I think that's the problem\n&quot;;
  }</PRE>
 <P>You'll notice an immediate style change from the ``cuddled-else'' style of
 the original to the default ``non-cuddled-else'' style.  This is because
-Perltidy has to make some kind of default selection of formatting
+perltidy has to make some kind of default selection of formatting
 options, and this default tries to follow the suggestions in the
 perlstyle man pages.</P>
 <P>If you prefer the original ``cuddled-else'' style you can indicate that
@@ -135,9 +131,9 @@ The continuation indentation is the extra indentation -- 2 spaces by
 default -- given to that portion of a long line which has been placed
 below the start of a statement.  For example:</P>
 <PRE>
-    croak &quot;Couldn't pop genome file&quot;
-      unless sysread($impl-&gt;{file}, $element, $impl-&gt;{group})
-      and truncate($impl-&gt;{file}, $new_end);</PRE>
+ croak &quot;Couldn't pop genome file&quot;
+   unless sysread( $impl-&gt;{file}, $element, $impl-&gt;{group} )
+   and truncate( $impl-&gt;{file}, $new_end );</PRE>
 <P>There is no fixed rule for setting the value for <STRONG>-ci=n</STRONG>, but it should
 probably not exceed one-half of the number of spaces of a full
 indentation level.</P>
@@ -148,27 +144,26 @@ line length is 80 characters by default.  You can change this to be any
 number <STRONG>n</STRONG> with the <STRONG>-l=n</STRONG> flag.  Perltidy tries to produce lines
 which do not exceed this length, and it does this by finding good break
 points.  For example, the above snippet would look like this with
-<STRONG>-l=40</STRONG>:</P>
+<STRONG>perltidy -l=40</STRONG>:</P>
 <PRE>
-    croak &quot;Couldn't pop genome file&quot;
-      unless sysread(
-        $impl-&gt;{file}, $element,
-        $impl-&gt;{group}
-      )
-      and truncate( $impl-&gt;{file},
-        $new_end );</PRE>
+ croak &quot;Couldn't pop genome file&quot;
+   unless sysread(
+     $impl-&gt;{file}, $element,
+     $impl-&gt;{group}
+   )
+   and truncate( $impl-&gt;{file},
+     $new_end );</PRE>
 <P>
 <H2><A NAME="tabs or spaces">Tabs or Spaces?</A></H2>
 <P>With indentation, there is always a tab issue to resolve.  By default,
 perltidy will use leading ascii space characters instead of tabs.  The
 reason is that this will be displayed correctly by virtually all
-editors, and in the long run, will avoid maintenance problems.  (It may
-be hard to appreciate this unless you have had to remove tabs from
-someone else's program, and guarantee that the program still functions
-exactly as before).</P>
+editors, and in the long run, will avoid maintenance problems.</P>
 <P>However, if you prefer, you may have perltidy entab the leading
 whitespace of a line with the command <STRONG>-et=n</STRONG>, where <STRONG>n</STRONG> is the number
-of spaces which will be represented by one tab.</P>
+of spaces which will be represented by one tab.  But note that your text
+will not be displayed properly unless viewed with software that is
+configured to display <STRONG>n</STRONG> spaces per tab.</P>
 <P>
 <H2><A NAME="input/output control">Input/Output Control</A></H2>
 <P>In the first example, we saw that if we pass perltidy the name
@@ -206,7 +201,7 @@ and overwrite the original version.  This is a safety precaution.</P>
 <H2><A NAME="making backups">Making Backups</A></H2>
 <P>In an actual project, you will need to make a backup copy of the
 original script and then rename <EM>testfile.pl.tdy</EM> to be <EM>testfile.pl</EM>.
-While Perltidy is a very reliable program, it is very important to have
+While perltidy is a very reliable program, it is very important to have
 a standard procedure for backing up your script in case something goes
 wrong.  For a small project, a simple backup procedure using RCS could
 be as follows (see the <CODE>rcsintro(1)</CODE> man page).</P>
@@ -246,22 +241,23 @@ If you prefer cuddled elses, use the <STRONG>-ce</STRONG> flag.
 <DD>
 Here is what the <CODE>if</CODE> block in the above script looks like with <STRONG>-bl</STRONG>:
 <PRE>
-        if ( $temperature &gt; 75 )
-        {
-            print &quot;Too hot!\n&quot;;
-        }
-        elsif ( $temperature &lt; 68 )
-        {
-            print &quot;Too cold!\n&quot;;
-        }
-        else
-        {
-            print &quot;Just right!\n&quot;;
-        }</PRE>
+ if ( $editor =~ /emacs/i )
+ {
+     print &quot;Why aren't you using vi?\n&quot;;
+ }
+ elsif ( $editor =~ /vi/i )
+ {
+     print &quot;Why aren't you using emacs?\n&quot;;
+ }
+ else
+ {
+     print &quot;I think that's the problem\n&quot;;
+ }</PRE>
 <P></P>
 <DT><STRONG><A NAME="item_%2Dlp%2C_Lining_up_with_parentheses"><STRONG>-lp</STRONG>, Lining up with parentheses</A></STRONG><BR>
 <DD>
-Consider:
+The <STRONG>-lp</STRONG> parameter can enhance the readability of lists by adding
+extra indentation.  Consider:
 <PRE>
         %romanNumerals = (
             one   =&gt; 'I',
@@ -367,14 +363,14 @@ the following message on the terminal (or standard error output):</P>
  The most recent un-matched '{' is on line 6
  6: } elsif ($temperature &lt; 68) {{
                                 ^</PRE>
-<P>This shows how Perltidy will, by default, write error messages to a file
+<P>This shows how perltidy will, by default, write error messages to a file
 with the extension <EM>.ERR</EM>, and it will write a note that it did so to
 the standard error device.  If you would prefer to have the error
 messages sent to standard output, instead of to a <EM>.ERR</EM> file, use the
 <STRONG>-se</STRONG> flag.</P>
 <P>Almost every programmer would want to see error messages of this type,
 but there are a number of messages which, if reported, would be
-annoying.  To manage this problem, Perltidy puts its messages into two
+annoying.  To manage this problem, perltidy puts its messages into two
 categories: errors and warnings.  The default is to just report the
 errors, but you can control this with input flags, as follows:</P>
 <PRE>
@@ -467,7 +463,7 @@ output in HTML.  To do this, use the <STRONG>-html</STRONG> flag, like this:</P>
 parameters available for adjusting the appearance of an HTML file, but a
 very easy way is to just write the HTML file with this simple command
 and then edit the stylesheet which is embedded at its top.</P>
-<P>One important thing to know about the <STRONG>-html</STRONG> flag is that Perltidy can
+<P>One important thing to know about the <STRONG>-html</STRONG> flag is that perltidy can
 either send its output to its beautifier or to its HTML writer, but not
 both in a single run.  So the situation can be represented like this:</P>
 <PRE>
@@ -476,7 +472,7 @@ both in a single run.  So the situation can be represented like this:</P>
  testfile.pl --&gt;  | perltidy | --&gt;
                   |          |     ---&gt;HTML -------&gt; testfile.pl.html
                   ------------</PRE>
-<P>And in the future, there may be more output selections.  So if you would
+<P>And in the future, there may be more output filters.  So if you would
 like to both beautify a script and write it to HTML, you need to do it
 in two steps.</P>
 <P>

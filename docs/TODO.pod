@@ -6,7 +6,7 @@ them.
 
 =head2 XML Output
 
-The ability to write a tokenized script in a simple XML format looks
+The ability to write a tokenized script in XML format looks
 very useful.  This would allow the creation of simple utilities to
 reliably manipulate perl code.
 
@@ -79,7 +79,8 @@ Parameters to control this are being studied.  They could be, for
 example, B<paren-vertical-tightness>,
 B<square-bracket-vertical-tightness>,
 B<brace-vertical-tightness>.  This update requires further development
-of the vertical alignment logic.
+of the vertical alignment logic, and will probably be implemented
+in steps.
 
 =head2 Documentation
 
@@ -111,7 +112,7 @@ of a brace is known when it is encountered. But given this coding
      ..
  }
 
-you have to examine the first couple of tokens of the interior 
+we have to examine the first couple of tokens of the interior 
 braces to see if it is a code block or anonymous hash reference.  This
 needs to be done.  Also, brace types of something like ${ ... } are
 not currently labeled as code blocks because this simplifies formatting.

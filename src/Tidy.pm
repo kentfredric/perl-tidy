@@ -61,7 +61,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ($VERSION=q($Id: Tidy.pm,v 1.5 2002/02/22 18:06:28 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ($VERSION=q($Id: Tidy.pm,v 1.6 2002/02/25 04:34:21 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 # Preloaded methods go here.
@@ -6130,7 +6130,7 @@ sub set_white_space_flag {
          /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
      Examples:
        *VERSION = \'1.01';
-       ( $VERSION ) = '$Revision: 1.5 $ ' =~ /\$Revision:\s+([^\s]+)/;
+       ( $VERSION ) = '$Revision: 1.6 $ ' =~ /\$Revision:\s+([^\s]+)/;
      We will pass such a line straight through (by changing it
      to a quoted string) unless -npvl is used
     
@@ -6139,7 +6139,7 @@ sub set_white_space_flag {
      block sequence numbers may see a closing sequence number but not
      the corresponding opening sequence number (sidecmt.t).  Example:
 
-    my $VERSION = do { my @r = (q$Revision: 1.5 $ =~ /\d+/g); sprintf
+    my $VERSION = do { my @r = (q$Revision: 1.6 $ =~ /\d+/g); sprintf
     "%d."."%02d" x $#r, @r }; 
 
     Here, the opening brace of 'do {' will not be seen, while the closing
@@ -6315,6 +6315,31 @@ sub set_white_space_flag {
 
             elsif ( $type eq 'Q' ) {
                 note_embedded_tab() if ( $token =~ "\t" );
+
+                # make note of something like '$var = s/xxx/yyy/;'
+                # in case it should have been '$var =~ s/xxx/yyy/;'
+                if ( $token =~ /^(s|tr|y|m|\/)/
+                    && $last_nonblank_token =~ /^(=|==|!=)$/
+
+                    # precededed by simple scalar
+                    && $last_last_nonblank_type eq 'i'
+                    && $last_last_nonblank_token =~ /^\$/
+
+                    # followed by some kind of termination
+                    # (but give complaint if we can's see far enough ahead)
+                    && $next_nonblank_token =~ /^[; \)\}]$/
+
+                    # scalar is not decleared
+                    && !(
+                        $types_to_go[0] eq 'k'
+                        && $tokens_to_go[0] =~ /^(my|our|local)$/
+                    )
+                  )
+                {
+                    my $guess = substr($last_nonblank_token,0,1) . '~';
+                    complain(
+"Note: be sure you want '$last_nonblank_token' instead of '$guess' here\n");
+                }
             }
 
             # trim blanks from right of qw quotes

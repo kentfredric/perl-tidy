@@ -4,9 +4,9 @@ Perltidy TODO List
     them.
 
   XML Output
-    The ability to write a tokenized script in a simple XML format looks
-    very useful. This would allow the creation of simple utilities to
-    reliably manipulate perl code.
+    The ability to write a tokenized script in XML format looks very useful.
+    This would allow the creation of simple utilities to reliably manipulate
+    perl code.
 
     This option is probably of greatest interest right now; hopefully the
     next release will have an experimental version. The output will be
@@ -70,7 +70,7 @@ Perltidy TODO List
     Parameters to control this are being studied. They could be, for
     example, paren-vertical-tightness, square-bracket-vertical-tightness,
     brace-vertical-tightness. This update requires further development of
-    the vertical alignment logic.
+    the vertical alignment logic, and will probably be implemented in steps.
 
   Documentation
     A FAQ is being written to explain some of the more subtle formatting
@@ -99,7 +99,7 @@ Perltidy TODO List
          ..
      }
 
-    you have to examine the first couple of tokens of the interior braces to
+    we have to examine the first couple of tokens of the interior braces to
     see if it is a code block or anonymous hash reference. This needs to be
     done. Also, brace types of something like ${ ... } are not currently
     labeled as code blocks because this simplifies formatting. However, this

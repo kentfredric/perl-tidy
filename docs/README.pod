@@ -5,10 +5,10 @@ Perltidy is a tool to indent and reformat perl scripts.
 Perltidy is free software released under the GNU General Public
 License -- please see the included file "COPYING" for details.
 
-There are two source distribution files, a F<.tgz> "tarball" for unix
-systems and a zip file, F<.zip> for Windows.  The only differences is
-that the line endings have been changed to <cr><lf> for the Windows
-version.
+There are two source distribution files, a F<.tar.gz> "tarball" and a
+zip file, F<.zip>.  The only difference is that the line endings have
+been changed from Unix-style <lf> in the F<.tar.gz> to Windows-style
+<cr><lf> in the F<.zip> version.
 
 =head1 PREREQUISITES
 
@@ -26,6 +26,10 @@ module:
   IO::Scalar
   IO::ScalarArray
 
+The total disk space needed after removing the installation directory
+will about 1 Mb.  (If neccessary, this could be reduced to about 320k
+by using perltidy to squeeze itself down using B<-dac --mangle> .)
+
 =head1 INSTALLATION
 
 Please see the file INSTALL for installation information.
@@ -39,7 +43,7 @@ Please see the BUGS file for a list of all known open bugs.
 Documentation can be found in the F<docs> directory, and it can also be 
 found at http://perltidy.sourceforge.net
 
-Reading the brief tutorial should help you use Perltidy effectively.  
+Reading the brief tutorial should help you use perltidy effectively.  
 
 Perltidy is still being developed, so please check sourceforge occasionally
 for updates if you find that it is useful.  New releases are announced
@@ -48,12 +52,12 @@ on freshmeat.net.
 =head1 FEEDBACK / BUG REPORTS
 
 If you see ways to improve this document for the particular system on
-which you install Perltidy, please let the me know so that it can be
+which you install perltidy, please let the me know so that it can be
 updated.
 
 Bug reports, comments and suggestions are welcome.  Attach the smallest
-piece of code which demonstrates the bug or issue, plus a .LOG file from
-a Perltidy run, if appropriate.  Your efforts are greatly appreciated!
+piece of code which demonstrates the bug or issue, plus a .LOG file 
+if appropriate.  Your efforts are greatly appreciated!
 
 Thank You
 
