@@ -5,14 +5,23 @@
  suggested improvement, please send a note to perltidy at
  users.sourceforge.net.  
 
- -Six parameters for controlling 'vertical tightness' have been added:
-  -pvt, -pcvt, -bvt, -bcvt, -sbvt, -sbcvt.  See updated manual. Examples:
+ -A new flag -isbc has been added for more control on comments. This flag
+  has the effect that if there is no leading space on the line, then the
+  comment will not be indented, and otherwise it may be.  If both -ibc and
+  -isbc are set, then -isbc takes priority.  Thanks to Frank Steinhauer
+  for suggesting this.
 
-    # perltidy -lp -pvt=1
+ -Parameters for controlling 'vertical tightness' have been added:
+  -vt and -vtc are the main controls, but finer control is provided
+  with -pvt, -pcvt, -bvt, -bcvt, -sbvt, -sbcvt.  Block brace vertical
+  tightness controls have also been added.
+  See updated manual. Simple examples:
+
+    # perltidy -lp -vt=1 -vtc=1
     @month_of_year = ( 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' );
 
-    # perltidy -lp -pvt=1 -pcvt=0
+    # perltidy -lp -vt=1 -vtc=0
     @month_of_year = ( 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
     );
@@ -57,6 +66,9 @@
   sort, map, or grep.  This brings perltidy into closer agreement
   with common practice.  Of course, you can still put semicolons 
   there if you like.  Thanks to Simon Perreault for a discussion of this.
+
+ -A new flag -wocb=n has been added to allow existing list formatting
+  to be retained.  (--want-old-comma-breaks).  See updated manual.
 
  -Removed undocumented parameter --maximum-space-to-comment, which isn't
   necessary and causes some unwanted limitations. Thanks to Wolfgang 

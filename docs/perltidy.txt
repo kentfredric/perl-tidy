@@ -548,33 +548,34 @@ FORMATTING OPTIONS
          %bf = map { $_ => -M $_ } grep {/\.deb$/} dirents '.';   # -bbt=1
          %bf = map {$_ => -M $_} grep {/\.deb$/} dirents '.';     # -bbt=2
 
-    Vertical tightness of curly braces, parentheses, and square brackets.
+    Vertical tightness of non-block curly braces, parentheses, and square
+    brackets.
         The "tightness" of the previous section really referred to what
         might better be called "horizontal tightness". A separate set of
         parameters control what shall be called vertical tightness. Here are
         the main points:
 
-        *   Opening tokens are controlled by -vt=n, or
-            --vertical-tightness=n, where
+        *   Opening tokens (except for block braces) are controlled by
+            -vt=n, or --vertical-tightness=n, where
 
              -vt=0 always open (default), 
              -vt=1 close unless closing produces more than one 
                 step in indentation in a line.
              -vt=2 always close.  
 
-        *   You must also use the -lp flag to control the behavior of the
-            opening tokens. The reason is explained below.
+        *   You must also use the -lp flag when you use the -vt flag; the
+            reason is explained below.
 
-        *   Closing tokens are controlled by -vtc=n, or
-            --vertical-tightness-closing=n, where
+        *   Closing tokens (except for block braces) are controlled by
+            -vtc=n, or --vertical-tightness-closing=n, where
 
              -vtc=0 always open (default), 
              -vtc=1 close if followed by a semicolon, another closing token, 
                     and not in a list environment.
              -vtc=2 always close.  
 
-        *   Different controls may be applied to to different token types;
-            see below.
+        *   Different controls may be applied to to different token types,
+            and it is also possible to control block braces; see below.
 
         *   Finally, please note that these vertical tightness flags are
             merely hints to the formatter, and it cannot always follow them.
@@ -649,16 +650,55 @@ FORMATTING OPTIONS
         --square-bracket-vertical-tightness=n, and -sbcvt=n or
         --square-bracket-vertical-tightness-closing=n.
 
-        Parameters for controlling non-code block braces are -bvt=n or
-        --brace-vertical-tightness=n, and -bcvt=n or
+        Finally, the parameters for controlling non-code block braces are
+        -bvt=n or --brace-vertical-tightness=n, and -bcvt=n or
         --brace-vertical-tightness-closing=n.
 
-        (Similar parameters for controlling code block braces are not
-        currently available).
-
         In fact, the parameter -vt=n is actually just an abbreviation for
-        -pvt=n -bvt=n and sbvt=n, and likewise -vtc=n is an abbreviation for
-        -pvtc=n -bvtc=n and sbvtc=n.
+        -pvt=n -bvt=n sbvt=n, and likewise -vtc=n is an abbreviation for
+        -pvtc=n -bvtc=n sbvtc=n.
+
+    -bbvt or --block-brace-vertical-tightness
+        The -bbvt flag means not to place a line break after an opening
+        brace. The default, -nbbvt, is to break after an opening block
+        brace. It is necessary to also use -bl or -bli for this to work,
+        because, like other vertical tightness controls, it is implemented
+        by simply overwriting one line onto the next. For example:
+
+            # default:
+            if ( -s $File ) {
+                if ( open( FILE, "< $File" ) ) {
+                    while ( $File = <FILE> ) {
+                        $In .= $File;
+                        $count++;
+                    }
+                    close(FILE);
+                }
+            }
+
+            # perltidy -bli -bbvt
+            if ( -s $File )
+              { if ( open( FILE, "< $File" ) )
+                  { while ( $File = <FILE> )
+                      { $In .= $File;
+                        $count++;
+                      }
+                    close(FILE);
+                  }
+              }
+
+        By default this applies to blocks associated with keywords if,
+        elsif, else, unless, for, foreach, sub, while, until, and also with
+        a preceding label. This can be controlled with the parameter
+        -bbvtl=string, or --block-brace-vertical-tightness-list=string,
+        where string is a space-separated list of block types. For more
+        information on the possible values of this string, please see the
+        discussion of the flag -cscl. For example, if we want to just apply
+        this style to "if", "elsif", and "else" blocks, we could use
+        "perltidy -bli -bbvt -bbvtl='if elsif else'".
+
+        There is no vertical tightness control for closing block braces;
+        they will normally remain on a separate line.
 
     -sts, --space-terminal-semicolon
         Some programmers prefer a space before all terminal semicolons. The
@@ -779,8 +819,14 @@ FORMATTING OPTIONS
          # this comment is not indented              (-nibc)
                      if ($task) { yyy(); }
 
-        See also -sbc for a way to have some indented and some outdented
-        block comments.
+        See also the next item, -isbc, as well as -sbc, for other ways to
+        have some indented and some outdented block comments.
+
+    -isbc, --indent-spaced-block-comments
+        If there is no leading space on the line, then the comment will not
+        be indented, and otherwise it may be.
+
+        If both -ibc and -isbc are set, then -isbc takes priority.
 
     -olc, --outdent-long-comments
         When -olc is set, lines which are full-line (block) comments longer
@@ -814,7 +860,7 @@ FORMATTING OPTIONS
         command -csc (or -closing-side-comments) adds or updates closing
         side comments. For example, here is a small code snippet
 
-                sub foo {
+                sub message {
                     if ( !defined( $_[0] ) ) {
                         print("Hello, World\n");
                     }
@@ -825,19 +871,19 @@ FORMATTING OPTIONS
 
         And here is the result of processing with "perltidy -csc":
 
-                sub foo {
+                sub message {
                     if ( !defined( $_[0] ) ) {
                         print("Hello, World\n");
                     }
                     else {
                         print( $_[0], "\n" );
                     }
-                } ## end sub foo
+                } ## end sub message
 
-        A closing side comment was added for "sub foo" in this case, but not
-        for the "if" and "else" blocks, because they were below the 6 line
-        cutoff limit for adding closing side comments. This limit may be
-        changed with the -csci command, described below.
+        A closing side comment was added for "sub message" in this case, but
+        not for the "if" and "else" blocks, because they were below the 6
+        line cutoff limit for adding closing side comments. This limit may
+        be changed with the -csci command, described below.
 
         The command -dcsc (or --delete-closing-side-comments) reverses this
         process and removes these comments.
@@ -848,17 +894,17 @@ FORMATTING OPTIONS
         -csci=n, or -closing-side-comment-interval=n
             where "n" is the minimum number of lines that a block must have
             in order for a closing side comment to be added. The default
-            value is "n=6". To illustrate, here is the above block processed
-            with "-csci=2 -csc":
+            value is "n=6". To illustrate:
 
-                    sub foo {
+                    # perltidy -csci=2 -csc
+                    sub message {
                         if ( !defined( $_[0] ) ) {
                             print("Hello, World\n");
-                        } ## end if ( !defined( $_[0] )...
+                        } ## end if ( !defined( $_[0] ))
                         else {
                             print( $_[0], "\n" );
-                        } ## end else
-                    } ## end sub foo
+                        } ## end else [ if ( !defined( $_[0] ))
+                    } ## end sub message
 
             Now the "if" and "else" blocks are commented. However, now this
             has become very cluttered.
@@ -1085,7 +1131,7 @@ FORMATTING OPTIONS
 
         produces this result:
 
-         sub foo
+         sub message
          {
             if (!defined($_[0])) {
                 print("Hello, World\n");
@@ -1131,6 +1177,41 @@ FORMATTING OPTIONS
                 }
 
         A conflict occurs if both -bl and -bar are specified.
+
+    -wocb=n, --want-old-comma-breaks=n
+        The parameter -wocb=n can be used to encourage or force perltidy to
+        use existing breaks at commas. The value of n indicates the degree
+        to which perltidy should follow the old commas:
+
+           n=0 means always ignore old comma breakpoints
+           n=1 means give priority to old comma breakpoints in list
+               formatting,
+           n=2 means always use old comma breakpoints in list formatting.
+
+        At present, n=1 and n=2 are really equivalent, but n=1 is included
+        to allow future program development.
+
+        Consider:
+
+            my @list = (1,
+                        1, 1,
+                        1, 2, 1,
+                        1, 3, 3, 1,
+                        1, 4, 6, 4, 1,);
+
+        The default formatting will just be:
+
+            my @list = ( 1, 1, 1, 1, 2, 1, 1, 3, 3, 1, 1, 4, 6, 4, 1, );
+
+        which hides the structure. Using -wocb, plus additional flags to
+        retain the original style, yields
+
+            # perltidy -wocb=2 -lp -pt=2 -vt=1 -vtc=1
+            my @list = (1,
+                        1, 1,
+                        1, 2, 1,
+                        1, 3, 3, 1,
+                        1, 4, 6, 4, 1,);
 
     -dnl, --delete-old-newlines
         By default, perltidy first deletes all old line break locations, and
@@ -1717,9 +1798,9 @@ SWITCHES WHICH MAY BE NEGATED
     The following list shows all short parameter names which allow a prefix
     'n' to produce the negated form:
 
-        D anl asc aws bbb bbc bbs bli baa syn ce csc dac dbc dcsc dnl
+        D anl asc aws bbb bbc bbs bbvt bli baa syn ce csc dac dbc dcsc dnl
         dws dp dpro dsm dsc ddf dln dop dsn dtt dwls dwrs f fll
-        hsc html ibc icb icp lp log lal x lsl bl sbl okw ola oll
+        hsc html ibc icb icp isbc lp log lal x lsl bl sbl okw ola oll
         pvl q opt sbc sfs ssc sts se st sob t tac tbc tp tsc tqw w
 
     Equivalently, the prefix 'no' on the corresponding long names may be

@@ -604,7 +604,7 @@ example below.
  %bf = map { $_ => -M $_ } grep {/\.deb$/} dirents '.';   # -bbt=1
  %bf = map {$_ => -M $_} grep {/\.deb$/} dirents '.';     # -bbt=2
 
-=item Vertical tightness of curly braces, parentheses, and square brackets.
+=item Vertical tightness of non-block curly braces, parentheses, and square brackets.
 
 The "tightness" of the previous section really referred to what might
 better be called "horizontal tightness".  A separate set of parameters
@@ -615,8 +615,8 @@ points:
 
 =item *
 
-Opening tokens are controlled by B<-vt=n>, or B<--vertical-tightness=n>, 
-where
+Opening tokens (except for block braces) are controlled by B<-vt=n>, or
+B<--vertical-tightness=n>, where
 
  -vt=0 always open (default), 
  -vt=1 close unless closing produces more than one 
@@ -625,12 +625,12 @@ where
 
 =item *
 
-You must also use the B<-lp> flag to control the behavior of the opening
-tokens. The reason is explained below.
+You must also use the B<-lp> flag when you use the B<-vt> flag; the
+reason is explained below.
 
 =item *
 
-Closing tokens are controlled by B<-vtc=n>, or
+Closing tokens (except for block braces) are controlled by B<-vtc=n>, or
 B<--vertical-tightness-closing=n>, where
 
  -vtc=0 always open (default), 
@@ -640,8 +640,8 @@ B<--vertical-tightness-closing=n>, where
 
 =item *
 
-Different controls may be applied to to different token types;
-see below.
+Different controls may be applied to to different token types,
+and it is also possible to control block braces; see below.
 
 =item *
 
@@ -719,16 +719,57 @@ Likewise, the parameters for square brackets are B<-sbvt=n> or
 B<--square-bracket-vertical-tightness=n>, and B<-sbcvt=n> or
 B<--square-bracket-vertical-tightness-closing=n>.
 
-Parameters for controlling non-code block braces are B<-bvt=n> or
-B<--brace-vertical-tightness=n>, and B<-bcvt=n> or
+Finally, the parameters for controlling non-code block braces are
+B<-bvt=n> or B<--brace-vertical-tightness=n>, and B<-bcvt=n> or
 B<--brace-vertical-tightness-closing=n>.
 
-(Similar parameters for controlling code block braces are not currently
-available).
-
 In fact, the parameter B<-vt=n> is actually just an abbreviation for
-B<-pvt=n -bvt=n and sbvt=n>, and likewise B<-vtc=n> is an abbreviation
-for B<-pvtc=n -bvtc=n and sbvtc=n>.
+B<-pvt=n -bvt=n sbvt=n>, and likewise B<-vtc=n> is an abbreviation
+for B<-pvtc=n -bvtc=n sbvtc=n>.
+
+=item B<-bbvt> or B<--block-brace-vertical-tightness>
+
+The B<-bbvt> flag means not to place a line break after an opening
+brace.  The default, B<-nbbvt>, is to break after an opening block
+brace.  It is necessary to also use B<-bl> or B<-bli> for this to work,
+because, like other vertical tightness controls, it is implemented by
+simply overwriting one line onto the next.  For example:
+
+    # default:
+    if ( -s $File ) {
+        if ( open( FILE, "< $File" ) ) {
+            while ( $File = <FILE> ) {
+                $In .= $File;
+                $count++;
+            }
+            close(FILE);
+        }
+    }
+
+    # perltidy -bli -bbvt
+    if ( -s $File )
+      { if ( open( FILE, "< $File" ) )
+          { while ( $File = <FILE> )
+              { $In .= $File;
+                $count++;
+              }
+            close(FILE);
+          }
+      }
+
+By default this applies to blocks associated with keywords B<if>,
+B<elsif>, B<else>, B<unless>, B<for>, B<foreach>, B<sub>, B<while>,
+B<until>, and also with a preceding label.  This can be controlled with
+the parameter B<-bbvtl=string>, or
+B<--block-brace-vertical-tightness-list=string>, where B<string> is a
+space-separated list of block types.  For more information on the
+possible values of this string, please see the discussion of the flag
+B<-cscl>.  For example, if we want to just apply this style to C<if>,
+C<elsif>, and C<else> blocks, we could use 
+C<perltidy -bli -bbvt -bbvtl='if elsif else'>.
+
+There is no vertical tightness control for closing block braces; they
+will normally remain on a separate line.
 
 =item B<-sts>,   B<--space-terminal-semicolon>
 
@@ -858,8 +899,15 @@ The alternative is B<-nibc>:
  # this comment is not indented              (-nibc)
 	     if ($task) { yyy(); }
 
-See also B<-sbc> for a way to have some indented and some outdented
-block comments.
+See also the next item, B<-isbc>, as well as B<-sbc>, for other ways to
+have some indented and some outdented block comments.
+
+=item B<-isbc>,  B<--indent-spaced-block-comments>
+
+If there is no leading space on the line, then the comment will not be
+indented, and otherwise it may be.
+
+If both B<-ibc> and B<-isbc> are set, then B<-isbc> takes priority.
 
 =item B<-olc>, B<--outdent-long-comments>
 
@@ -897,7 +945,7 @@ They can be useful for code maintenance and debugging.  The command
 B<-csc> (or B<-closing-side-comments>) adds or updates closing side
 comments.  For example, here is a small code snippet
 
-        sub foo {
+        sub message {
             if ( !defined( $_[0] ) ) {
                 print("Hello, World\n");
             }
@@ -908,16 +956,16 @@ comments.  For example, here is a small code snippet
 
 And here is the result of processing with C<perltidy -csc>:
 
-        sub foo {
+        sub message {
             if ( !defined( $_[0] ) ) {
                 print("Hello, World\n");
             }
             else {
                 print( $_[0], "\n" );
             }
-        } ## end sub foo
+        } ## end sub message
 
-A closing side comment was added for C<sub foo> in this case, but not
+A closing side comment was added for C<sub message> in this case, but not
 for the C<if> and C<else> blocks, because they were below the 6 line
 cutoff limit for adding closing side comments.  This limit may be
 changed with the B<-csci> command, described below.
@@ -934,17 +982,17 @@ commands, B<-csc> and B<-dcsc>:
 
 where C<n> is the minimum number of lines that a block must have in
 order for a closing side comment to be added.  The default value is
-C<n=6>.  To illustrate, here is the above block processed with
-C<-csci=2 -csc>:
+C<n=6>.  To illustrate:
 
-        sub foo {
+        # perltidy -csci=2 -csc
+        sub message {
             if ( !defined( $_[0] ) ) {
                 print("Hello, World\n");
-            } ## end if ( !defined( $_[0] )...
+            } ## end if ( !defined( $_[0] ))
             else {
                 print( $_[0], "\n" );
-            } ## end else
-        } ## end sub foo
+            } ## end else [ if ( !defined( $_[0] ))
+        } ## end sub message
 
 Now the C<if> and C<else> blocks are commented.  However, now this has
 become very cluttered.
@@ -1217,7 +1265,7 @@ opening sub braces.  For example,
 
 produces this result:
 
- sub foo
+ sub message
  {
     if (!defined($_[0])) {
         print("Hello, World\n");
@@ -1266,6 +1314,42 @@ flag.  In this case, the above example becomes
         }
 
 A conflict occurs if both B<-bl> and B<-bar> are specified.
+
+=item B<-wocb=n>,  B<--want-old-comma-breaks=n>
+
+The parameter B<-wocb=n> can be used to encourage or force perltidy
+to use existing breaks at commas.  The value of B<n> indicates the
+degree to which perltidy should follow the old commas:
+
+   n=0 means always ignore old comma breakpoints
+   n=1 means give priority to old comma breakpoints in list
+       formatting,
+   n=2 means always use old comma breakpoints in list formatting.
+
+At present, n=1 and n=2 are really equivalent, but n=1 is included
+to allow future program development.
+
+Consider:
+
+    my @list = (1,
+                1, 1,
+                1, 2, 1,
+                1, 3, 3, 1,
+                1, 4, 6, 4, 1,);
+
+The default formatting will just be:
+
+    my @list = ( 1, 1, 1, 1, 2, 1, 1, 3, 3, 1, 1, 4, 6, 4, 1, );
+
+which hides the structure. Using B<-wocb>, plus additional flags
+to retain the original style, yields
+
+    # perltidy -wocb=2 -lp -pt=2 -vt=1 -vtc=1
+    my @list = (1,
+                1, 1,
+                1, 2, 1,
+                1, 3, 3, 1,
+                1, 4, 6, 4, 1,);
 
 =item B<-dnl>,  B<--delete-old-newlines>
 
@@ -1914,9 +1998,9 @@ it frequently.
 The following list shows all short parameter names which allow a prefix
 'n' to produce the negated form:
 
-    D anl asc aws bbb bbc bbs bli baa syn ce csc dac dbc dcsc dnl
+    D anl asc aws bbb bbc bbs bbvt bli baa syn ce csc dac dbc dcsc dnl
     dws dp dpro dsm dsc ddf dln dop dsn dtt dwls dwrs f fll
-    hsc html ibc icb icp lp log lal x lsl bl sbl okw ola oll
+    hsc html ibc icb icp isbc lp log lal x lsl bl sbl okw ola oll
     pvl q opt sbc sfs ssc sts se st sob t tac tbc tp tsc tqw w
 
 Equivalently, the prefix 'no' on the corresponding long names may be

@@ -130,7 +130,7 @@
 .\" ========================================================================
 .\"
 .IX Title "PERLTIDY 1"
-.TH PERLTIDY 1 "2002-03-25" "perl v5.6.1" "User Contributed Perl Documentation"
+.TH PERLTIDY 1 "2002-03-27" "perl v5.6.1" "User Contributed Perl Documentation"
 .UC
 .SH "NAME"
 perltidy \- a perl script indenter and reformatter
@@ -712,16 +712,16 @@ example below.
 \& %bf = map { $_ => -M $_ } grep {/\e.deb$/} dirents '.';   # -bbt=1
 \& %bf = map {$_ => -M $_} grep {/\e.deb$/} dirents '.';     # -bbt=2
 .Ve
-.IP "Vertical tightness of curly braces, parentheses, and square brackets." 4
-.IX Item "Vertical tightness of curly braces, parentheses, and square brackets."
+.IP "Vertical tightness of non-block curly braces, parentheses, and square brackets." 4
+.IX Item "Vertical tightness of non-block curly braces, parentheses, and square brackets."
 The \*(L"tightness\*(R" of the previous section really referred to what might
 better be called \*(L"horizontal tightness\*(R".  A separate set of parameters
 control what shall be called vertical tightness.  Here are the main
 points:
 .RS 4
 .IP "\(bu" 4
-Opening tokens are controlled by \fB\-vt=n\fR, or \fB\-\-vertical\-tightness=n\fR, 
-where
+Opening tokens (except for block braces) are controlled by \fB\-vt=n\fR, or
+\&\fB\-\-vertical\-tightness=n\fR, where
 .Sp
 .Vb 4
 \& -vt=0 always open (default), 
@@ -730,10 +730,10 @@ where
 \& -vt=2 always close.
 .Ve
 .IP "\(bu" 4
-You must also use the \fB\-lp\fR flag to control the behavior of the opening
-tokens. The reason is explained below.
+You must also use the \fB\-lp\fR flag when you use the \fB\-vt\fR flag; the
+reason is explained below.
 .IP "\(bu" 4
-Closing tokens are controlled by \fB\-vtc=n\fR, or
+Closing tokens (except for block braces) are controlled by \fB\-vtc=n\fR, or
 \&\fB\-\-vertical\-tightness\-closing=n\fR, where
 .Sp
 .Vb 4
@@ -743,8 +743,8 @@ Closing tokens are controlled by \fB\-vtc=n\fR, or
 \& -vtc=2 always close.
 .Ve
 .IP "\(bu" 4
-Different controls may be applied to to different token types;
-see below.
+Different controls may be applied to to different token types,
+and it is also possible to control block braces; see below.
 .IP "\(bu" 4
 Finally, please note that these vertical tightness flags are merely
 hints to the formatter, and it cannot always follow them.  Things which
@@ -827,17 +827,59 @@ Likewise, the parameters for square brackets are \fB\-sbvt=n\fR or
 \&\fB\-\-square\-bracket\-vertical\-tightness=n\fR, and \fB\-sbcvt=n\fR or
 \&\fB\-\-square\-bracket\-vertical\-tightness\-closing=n\fR.
 .Sp
-Parameters for controlling non-code block braces are \fB\-bvt=n\fR or
-\&\fB\-\-brace\-vertical\-tightness=n\fR, and \fB\-bcvt=n\fR or
+Finally, the parameters for controlling non-code block braces are
+\&\fB\-bvt=n\fR or \fB\-\-brace\-vertical\-tightness=n\fR, and \fB\-bcvt=n\fR or
 \&\fB\-\-brace\-vertical\-tightness\-closing=n\fR.
 .Sp
-(Similar parameters for controlling code block braces are not currently
-available).
-.Sp
 In fact, the parameter \fB\-vt=n\fR is actually just an abbreviation for
-\&\fB\-pvt=n \-bvt=n and sbvt=n\fR, and likewise \fB\-vtc=n\fR is an abbreviation
-for \fB\-pvtc=n \-bvtc=n and sbvtc=n\fR.
+\&\fB\-pvt=n \-bvt=n sbvt=n\fR, and likewise \fB\-vtc=n\fR is an abbreviation
+for \fB\-pvtc=n \-bvtc=n sbvtc=n\fR.
 .RE
+.IP "\fB\-bbvt\fR or \fB\-\-block\-brace\-vertical\-tightness\fR" 4
+.IX Item "-bbvt or --block-brace-vertical-tightness"
+The \fB\-bbvt\fR flag means not to place a line break after an opening
+brace.  The default, \fB\-nbbvt\fR, is to break after an opening block
+brace.  It is necessary to also use \fB\-bl\fR or \fB\-bli\fR for this to work,
+because, like other vertical tightness controls, it is implemented by
+simply overwriting one line onto the next.  For example:
+.Sp
+.Vb 10
+\&    # default:
+\&    if ( -s $File ) {
+\&        if ( open( FILE, "< $File" ) ) {
+\&            while ( $File = <FILE> ) {
+\&                $In .= $File;
+\&                $count++;
+\&            }
+\&            close(FILE);
+\&        }
+\&    }
+.Ve
+.Vb 10
+\&    # perltidy -bli -bbvt
+\&    if ( -s $File )
+\&      { if ( open( FILE, "< $File" ) )
+\&          { while ( $File = <FILE> )
+\&              { $In .= $File;
+\&                $count++;
+\&              }
+\&            close(FILE);
+\&          }
+\&      }
+.Ve
+By default this applies to blocks associated with keywords \fBif\fR,
+\&\fBelsif\fR, \fBelse\fR, \fBunless\fR, \fBfor\fR, \fBforeach\fR, \fBsub\fR, \fBwhile\fR,
+\&\fBuntil\fR, and also with a preceding label.  This can be controlled with
+the parameter \fB\-bbvtl=string\fR, or
+\&\fB\-\-block\-brace\-vertical\-tightness\-list=string\fR, where \fBstring\fR is a
+space-separated list of block types.  For more information on the
+possible values of this string, please see the discussion of the flag
+\&\fB\-cscl\fR.  For example, if we want to just apply this style to \f(CW\*(C`if\*(C'\fR,
+\&\f(CW\*(C`elsif\*(C'\fR, and \f(CW\*(C`else\*(C'\fR blocks, we could use 
+\&\f(CW\*(C`perltidy \-bli \-bbvt \-bbvtl='if elsif else'\*(C'\fR.
+.Sp
+There is no vertical tightness control for closing block braces; they
+will normally remain on a separate line.
 .IP "\fB\-sts\fR,   \fB\-\-space\-terminal\-semicolon\fR" 4
 .IX Item "-sts,   --space-terminal-semicolon"
 Some programmers prefer a space before all terminal semicolons.  The
@@ -963,8 +1005,14 @@ The alternative is \fB\-nibc\fR:
 \& # this comment is not indented              (-nibc)
 \&             if ($task) { yyy(); }
 .Ve
-See also \fB\-sbc\fR for a way to have some indented and some outdented
-block comments.
+See also the next item, \fB\-isbc\fR, as well as \fB\-sbc\fR, for other ways to
+have some indented and some outdented block comments.
+.IP "\fB\-isbc\fR,  \fB\-\-indent\-spaced\-block\-comments\fR" 4
+.IX Item "-isbc,  --indent-spaced-block-comments"
+If there is no leading space on the line, then the comment will not be
+indented, and otherwise it may be.
+.Sp
+If both \fB\-ibc\fR and \fB\-isbc\fR are set, then \fB\-isbc\fR takes priority.
 .IP "\fB\-olc\fR, \fB\-\-outdent\-long\-comments\fR" 4
 .IX Item "-olc, --outdent-long-comments"
 When \fB\-olc\fR is set, lines which are full-line (block) comments longer
@@ -1000,7 +1048,7 @@ They can be useful for code maintenance and debugging.  The command
 comments.  For example, here is a small code snippet
 .Sp
 .Vb 8
-\&        sub foo {
+\&        sub message {
 \&            if ( !defined( $_[0] ) ) {
 \&                print("Hello, World\en");
 \&            }
@@ -1012,16 +1060,16 @@ comments.  For example, here is a small code snippet
 And here is the result of processing with \f(CW\*(C`perltidy \-csc\*(C'\fR:
 .Sp
 .Vb 8
-\&        sub foo {
+\&        sub message {
 \&            if ( !defined( $_[0] ) ) {
 \&                print("Hello, World\en");
 \&            }
 \&            else {
 \&                print( $_[0], "\en" );
 \&            }
-\&        } ## end sub foo
+\&        } ## end sub message
 .Ve
-A closing side comment was added for \f(CW\*(C`sub foo\*(C'\fR in this case, but not
+A closing side comment was added for \f(CW\*(C`sub message\*(C'\fR in this case, but not
 for the \f(CW\*(C`if\*(C'\fR and \f(CW\*(C`else\*(C'\fR blocks, because they were below the 6 line
 cutoff limit for adding closing side comments.  This limit may be
 changed with the \fB\-csci\fR command, described below.
@@ -1036,18 +1084,18 @@ commands, \fB\-csc\fR and \fB\-dcsc\fR:
 .IX Item "-csci=n, or -closing-side-comment-interval=n"
 where \f(CW\*(C`n\*(C'\fR is the minimum number of lines that a block must have in
 order for a closing side comment to be added.  The default value is
-\&\f(CW\*(C`n=6\*(C'\fR.  To illustrate, here is the above block processed with
-\&\f(CW\*(C`\-csci=2 \-csc\*(C'\fR:
+\&\f(CW\*(C`n=6\*(C'\fR.  To illustrate:
 .Sp
-.Vb 8
-\&        sub foo {
+.Vb 9
+\&        # perltidy -csci=2 -csc
+\&        sub message {
 \&            if ( !defined( $_[0] ) ) {
 \&                print("Hello, World\en");
-\&            } ## end if ( !defined( $_[0] )...
+\&            } ## end if ( !defined( $_[0] ))
 \&            else {
 \&                print( $_[0], "\en" );
-\&            } ## end else
-\&        } ## end sub foo
+\&            } ## end else [ if ( !defined( $_[0] ))
+\&        } ## end sub message
 .Ve
 Now the \f(CW\*(C`if\*(C'\fR and \f(CW\*(C`else\*(C'\fR blocks are commented.  However, now this has
 become very cluttered.
@@ -1296,7 +1344,7 @@ opening sub braces.  For example,
 produces this result:
 .Sp
 .Vb 9
-\& sub foo
+\& sub message
 \& {
 \&    if (!defined($_[0])) {
 \&        print("Hello, World\en");
@@ -1347,6 +1395,46 @@ flag.  In this case, the above example becomes
 \&        }
 .Ve
 A conflict occurs if both \fB\-bl\fR and \fB\-bar\fR are specified.
+.IP "\fB\-wocb=n\fR,  \fB\-\-want\-old\-comma\-breaks=n\fR" 4
+.IX Item "-wocb=n,  --want-old-comma-breaks=n"
+The parameter \fB\-wocb=n\fR can be used to encourage or force perltidy
+to use existing breaks at commas.  The value of \fBn\fR indicates the
+degree to which perltidy should follow the old commas:
+.Sp
+.Vb 4
+\&   n=0 means always ignore old comma breakpoints
+\&   n=1 means give priority to old comma breakpoints in list
+\&       formatting,
+\&   n=2 means always use old comma breakpoints in list formatting.
+.Ve
+At present, n=1 and n=2 are really equivalent, but n=1 is included
+to allow future program development.
+.Sp
+Consider:
+.Sp
+.Vb 5
+\&    my @list = (1,
+\&                1, 1,
+\&                1, 2, 1,
+\&                1, 3, 3, 1,
+\&                1, 4, 6, 4, 1,);
+.Ve
+The default formatting will just be:
+.Sp
+.Vb 1
+\&    my @list = ( 1, 1, 1, 1, 2, 1, 1, 3, 3, 1, 1, 4, 6, 4, 1, );
+.Ve
+which hides the structure. Using \fB\-wocb\fR, plus additional flags
+to retain the original style, yields
+.Sp
+.Vb 6
+\&    # perltidy -wocb=2 -lp -pt=2 -vt=1 -vtc=1
+\&    my @list = (1,
+\&                1, 1,
+\&                1, 2, 1,
+\&                1, 3, 3, 1,
+\&                1, 4, 6, 4, 1,);
+.Ve
 .IP "\fB\-dnl\fR,  \fB\-\-delete\-old\-newlines\fR" 4
 .IX Item "-dnl,  --delete-old-newlines"
 By default, perltidy first deletes all old line break locations, and then it
@@ -1959,9 +2047,9 @@ The following list shows all short parameter names which allow a prefix
 \&'n' to produce the negated form:
 .PP
 .Vb 4
-\&    D anl asc aws bbb bbc bbs bli baa syn ce csc dac dbc dcsc dnl
+\&    D anl asc aws bbb bbc bbs bbvt bli baa syn ce csc dac dbc dcsc dnl
 \&    dws dp dpro dsm dsc ddf dln dop dsn dtt dwls dwrs f fll
-\&    hsc html ibc icb icp lp log lal x lsl bl sbl okw ola oll
+\&    hsc html ibc icb icp isbc lp log lal x lsl bl sbl okw ola oll
 \&    pvl q opt sbc sfs ssc sts se st sob t tac tbc tp tsc tqw w
 .Ve
 Equivalently, the prefix 'no' on the corresponding long names may be

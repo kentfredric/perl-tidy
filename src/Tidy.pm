@@ -61,7 +61,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ($VERSION=q($Id: Tidy.pm,v 1.12 2002/03/25 16:35:24 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ($VERSION=q($Id: Tidy.pm,v 1.13 2002/03/27 20:49:09 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 # Preloaded methods go here.
@@ -869,6 +869,8 @@ sub process_command_line {
     $add_option->( 'blanks-before-comments',                    'bbc',   '!' );
     $add_option->( 'blanks-before-subs',                        'bbs',   '!' );
     $add_option->( 'block-brace-tightness',                     'bbt',   '=i' );
+    $add_option->( 'block-brace-vertical-tightness',            'bbvt',  '!' );
+    $add_option->( 'block-brace-vertical-tightness-list',       'bbvtl', '=s' );
     $add_option->( 'brace-left-and-indent',                     'bli',   '!' );
     $add_option->( 'brace-tightness',                           'bt',    '=i' );
     $add_option->( 'brace-vertical-tightness',                  'bvt',   '=i' );
@@ -909,9 +911,11 @@ sub process_command_line {
     $add_option->( 'help',                                      'h',     '' );
     $add_option->( 'ignore-old-line-breaks',                    'iob',   '!' );
     $add_option->( 'indent-block-comments',                     'ibc',   '!' );
+    $add_option->( 'indent-spaced-block-comments',              'isbc',  '!' );
     $add_option->( 'indent-closing-brace',                      'icb',   '!' );
     $add_option->( 'indent-closing-paren',                      'icp',   '!' );
     $add_option->( 'indent-columns',                            'i',     '=i' );
+    $add_option->( 'want-old-comma-breaks',                     'wocb',  '=i' );
     $add_option->( 'line-up-parentheses',                       'lp',    '!' );
     $add_option->( 'logfile',                                   'log',   '!' );
     $add_option->( 'logfile-gap',                               'g',     ':i' );
@@ -966,6 +970,8 @@ sub process_command_line {
     $add_option->( 'tee-side-comments',                         'tsc',   '!' );
     $add_option->( 'trim-qw',                                   'tqw',   '!' );
     $add_option->( 'version',                                   'v',     '' );
+    $add_option->( 'vertical-tightness',                        'vt',    '=i' );
+    $add_option->( 'vertical-tightness-closing',                'vtc',   '=i' );
     $add_option->( 'want-break-after',                          'wba',   '=s' );
     $add_option->( 'want-break-before',                         'wbb',   '=s' );
     $add_option->( 'want-left-space',                           'wls',   '=s' );
@@ -1041,6 +1047,7 @@ sub process_command_line {
       static-block-comments
       trim-qw
       format=tidy
+      want-old-comma-breaks=0
     );
     push @defaults, "perl-syntax-check-flags=-c -T";
 
@@ -1367,6 +1374,16 @@ EOM
     # Now we have to handle any interactions among the options..
     #---------------------------------------------------------------
 
+    # Since -vt and -vtc are really abbreviations, we cannot allow
+    # any spaces around the equal sign.  The error messages would
+    # be confusing without these checks:
+    if ( defined $Opts{'vertical-tightness'} ) {
+        die "Please enter -vt=0, -vt=1, or -vt=2 without any spaces";
+    }
+    if ( defined $Opts{'vertical-tightness-closing'} ) {
+        die "Please enter -vtc=0, -vtc=1, or -vtc=2 without any spaces";
+    }
+
     # In quiet mode, there is no log file and hence no way to report
     # results of syntax check, so don't do it.
     if ( $Opts{'quiet'} ) {
@@ -1425,6 +1442,11 @@ EOM
         && !$Opts{'delete-old-newlines'} )
     {
         $Opts{'indent-only'} = 1;
+    }
+    
+    # -isbc implies -ibc
+    if ( $Opts{'indent-spaced-block-comments'} ) {
+        $Opts{'indent-block-comments'} = 1;
     }
 
     # -nbob implies -bli
@@ -2128,6 +2150,8 @@ Whitespace Control
            and disables the following switches:
  -bt=n   sets brace tightness,  n= (0 = loose, 1=default, 2 = tight)
  -bbt    same as -bt but for code block braces; same as -bt if not given
+ -bbvt   block braces vertically tight; use with -bl or -bli
+ -bbvtl=s  make -bbvt to apply to selected list of block types
  -pt=n   paren tightness (n=0, 1 or 2)
  -sbt=n  square bracket tightness (n=0, 1, or 2)
  -bvt=n  brace vertical tightness, 
@@ -3819,10 +3843,12 @@ use vars qw{
   $static_side_comment_pattern
   %opening_vertical_tightness
   %closing_vertical_tightness
+  $block_brace_vertical_tightness_pattern
 
   $rOpts_add_newlines
   $rOpts_add_whitespace
   $rOpts_block_brace_tightness
+  $rOpts_block_brace_vertical_tightness
   $rOpts_brace_left_and_indent
   $rOpts_break_after_comma_arrows
   $rOpts_closing_side_comment_else_flag
@@ -3838,6 +3864,7 @@ use vars qw{
   $rOpts_maximum_line_length
   $rOpts_short_concatenation_item_length
   $rOpts_swallow_optional_blank_lines
+  $rOpts_want_old_comma_breaks
 
   $half_maximum_line_length
 
@@ -4986,6 +5013,8 @@ sub check_options {
         }
     }
 
+    make_block_brace_vertical_tightness_pattern(); 
+
     # The -lp indentation logic requires that perltidy examine large
     # blocks of code between flushing.  When the user takes control
     # of line breaks, perltidy never sees large enough buffers to
@@ -5202,6 +5231,8 @@ EOM
     $rOpts_add_newlines             = $rOpts->{'add-newlines'};
     $rOpts_add_whitespace           = $rOpts->{'add-whitespace'};
     $rOpts_block_brace_tightness    = $rOpts->{'block-brace-tightness'};
+    $rOpts_block_brace_vertical_tightness =
+      $rOpts->{'block-brace-vertical-tightness'};
     $rOpts_brace_left_and_indent    = $rOpts->{'brace-left-and-indent'};
     $rOpts_break_after_comma_arrows = $rOpts->{'break-after-comma-arrows'};
     $rOpts_closing_side_comment_else_flag =
@@ -5220,6 +5251,7 @@ EOM
       $rOpts->{'short-concatenation-item-length'};
     $rOpts_swallow_optional_blank_lines =
       $rOpts->{'swallow-optional-blank-lines'};
+    $rOpts_want_old_comma_breaks = $rOpts->{'want-old-comma-breaks'}; 
     $half_maximum_line_length = $rOpts_maximum_line_length / 2;
 
     # Note that both opening and closing tokens can access the opening
@@ -5275,6 +5307,22 @@ sub make_closing_side_comment_list_pattern {
     {
         $closing_side_comment_list_pattern =
           make_block_pattern( $rOpts->{'closing-side-comment-list'} );
+    }
+}
+
+sub make_block_brace_vertical_tightness_pattern {
+
+    # turn any input list into a regex for recognizing selected block types
+    $block_brace_vertical_tightness_pattern = $bli_pattern; 
+    if (
+        defined(
+            $rOpts->{'block-brace-vertical-tightness-list'}
+              && $rOpts->{'block-brace-vertical-tightness-list'}
+        )
+      )
+    {
+        $block_brace_vertical_tightness_pattern =
+          make_block_pattern( $rOpts->{'block-brace-vertical-tightness-list'} );
     }
 }
 
@@ -6325,10 +6373,13 @@ sub set_white_space_flag {
                 $last_line_leading_type = 'b';
             }
 
-            if ( $rOpts->{'indent-block-comments'}
-                && !$is_static_block_comment_without_leading_space )
+            if (
+                $rOpts->{'indent-block-comments'}
+                && ( !$rOpts->{'indent-spaced-block-comments'}
+                    || $input_line =~ /^\s+/ )
+                && !$is_static_block_comment_without_leading_space
+              )
             {
-
                 extract_token(0);
                 store_token_to_go();
                 flush();
@@ -6365,7 +6416,7 @@ sub set_white_space_flag {
          /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
      Examples:
        *VERSION = \'1.01';
-       ( $VERSION ) = '$Revision: 1.12 $ ' =~ /\$Revision:\s+([^\s]+)/;
+       ( $VERSION ) = '$Revision: 1.13 $ ' =~ /\$Revision:\s+([^\s]+)/;
      We will pass such a line straight through (by changing it
      to a quoted string) unless -npvl is used
     
@@ -6374,7 +6425,7 @@ sub set_white_space_flag {
      block sequence numbers may see a closing sequence number but not
      the corresponding opening sequence number (sidecmt.t).  Example:
 
-    my $VERSION = do { my @r = (q$Revision: 1.12 $ =~ /\d+/g); sprintf
+    my $VERSION = do { my @r = (q$Revision: 1.13 $ =~ /\d+/g); sprintf
     "%d."."%02d" x $#r, @r }; 
 
     Here, the opening brace of 'do {' will not be seen, while the closing
@@ -6522,7 +6573,7 @@ sub set_white_space_flag {
             $next_nonblank_token_type = $$rtoken_type[$j_next];
 
             #--------------------------------------------------------
-            # Start of patch section
+            # Start of section to patch token text
             #--------------------------------------------------------
 
             # Modify certain tokens here for whitespace
@@ -6587,7 +6638,7 @@ sub set_white_space_flag {
             }
 
             #--------------------------------------------------------
-            # End of patch section
+            # End of section to patch token text
             #--------------------------------------------------------
 
             # insert any needed whitespace
@@ -6674,7 +6725,7 @@ sub set_white_space_flag {
 
                   # do not break for anonymous subs
                   : 0;
-
+                  
                 # Break before an opening '{' ...
                 if (
 
@@ -6822,11 +6873,10 @@ sub set_white_space_flag {
 
                     # we have to actually make it by removing tentative
                     # breaks that were set within it
-                    undo_forced_breakpoint_stack(0);
-
+                    undo_forced_breakpoint_stack(0); 
                     set_nobreaks( $index_start_one_line_block,
                         $max_index_to_go - 1 );
-
+                    
                     # then re-initialize for the next one-line block
                     destroy_one_line_block();
 
@@ -8405,18 +8455,6 @@ sub send_lines_to_vertical_aligner {
                     $rvertical_tightness_flags->[0] = 1;
                     $rvertical_tightness_flags->[1] = $ovt;
                     $rvertical_tightness_flags->[2] = 0;
-
-                    # Note: pass 0 sequence number unless symmetric closing is
-                    # used.  This avoids possibly creating a needless large
-                    # hash table in the vertical aligner.  This option used
-                    # to be indicated with cvt=1, but no longer;
-                    ##my $seqno = 0;
-                    ##if ($closing_vertical_tightness{$token_end} == 1 ) {
-                    ##    $seqno = $type_sequence_to_go[$iend];
-                    ##}
-                    ##$rvertical_tightness_flags->[2] = $seqno;
-                    ##$rvertical_tightness_flags->[3] = 0;
-                    ##$tightness{$token_end} == 2 ? 0 : 1;
                 }
             }
 
@@ -8430,13 +8468,6 @@ sub send_lines_to_vertical_aligner {
             {
                 my $ovt = $opening_vertical_tightness{$token_next};
                 my $cvt = $closing_vertical_tightness{$token_next};
-##                my $diff =
-##                  ( $nesting_depth_to_go[$ibeg_next] -
-##                      $nesting_depth_to_go[ $iend_next + 1 ] );
-
-                ##print "BUBBA: tok=$token_next env= $container_environment_to_go[$ibeg_next] unbal=$diff\n"; 
-                ##if ( $container_environment_to_go[$ibeg_next] ne 'LIST'
-                ##    && ( $cvt == 2 || $cvt == 1 && $ovt > 0 ) )
                 if (
                     (
                         $nesting_depth_to_go[$ibeg_next] ==
@@ -8447,7 +8478,6 @@ sub send_lines_to_vertical_aligner {
                         || (
                             $container_environment_to_go[$ibeg_next] ne 'LIST'
                             && $cvt == 1
-                            ##&& ($ovt > 0 || !$ALLOW_SYMMETRY)
                         )
                     )
                   )
@@ -8461,7 +8491,6 @@ sub send_lines_to_vertical_aligner {
                             @types_to_go[ $ibeg_next + 1 .. $ibeg_next + 2 ] );
 
                         # append closing token if followed by comment or ';' 
-                        ##if ($str=~/^b?([#;]|,b?[\}\)\]R])/) {$ok=1}
                         if ( $str =~ /^b?[#;]/ ) { $ok = 1 }
                     }
 
@@ -8470,11 +8499,19 @@ sub send_lines_to_vertical_aligner {
                         $rvertical_tightness_flags->[1] =
                           $tightness{$token_next} == 2 ? 0 : 1;
                         $rvertical_tightness_flags->[2] = 0;
-                        ##$type_sequence_to_go[$ibeg_next];
-                        ##$rvertical_tightness_flags->[1] = $cvt;
                     }
                 }
             }
+        }
+        elsif ( $rOpts_block_brace_vertical_tightness
+            && $ibeg eq $iend
+            && $types_to_go[$iend] eq '{'
+            && $block_type_to_go[$iend] =~
+            /$block_brace_vertical_tightness_pattern/o )
+        {
+            $rvertical_tightness_flags->[0] = 1;
+            $rvertical_tightness_flags->[1] = 1;
+            $rvertical_tightness_flags->[2] = 0;
         }
 
         # flush an outdented line to avoid any unwanted vertical alignment
@@ -10758,11 +10795,12 @@ sub find_token_starting_list {
         #---------------------------------------------------------------
         # Interrupted List Rule:
         # A list is is forced to use old breakpoints if it was interrupted
-        # by side comments or blank lines.
+        # by side comments or blank lines, or requested by user.
         #---------------------------------------------------------------
-        if ( $interrupted || $i_opening_paren < 0 ) {
-            write_logfile_entry("list broken: using old breakpoints\n")
-              unless ( $item_count < 6 );
+        if ( $rOpts_want_old_comma_breaks
+            || $interrupted
+            || $i_opening_paren < 0 )
+        {
             copy_old_breakpoints( $i_first_comma, $i_last_comma );
             return;
         }
@@ -11449,8 +11487,8 @@ sub study_list_complexity {
         # add weight for extra tokens.
         $weighted_length += 2 * ( $ie - $ib );
 
-##        my $BUBBA = join '', @tokens_to_go[$ib..$ie];
-##        print "# COMPLEXITY:$weighted_length   $BUBBA\n";
+##        my $BUB = join '', @tokens_to_go[$ib..$ie];
+##        print "# COMPLEXITY:$weighted_length   $BUB\n";
 
 ##push @item_complexity, $weighted_length;
 
@@ -11472,7 +11510,6 @@ sub study_list_complexity {
             }
 
             push @i_ragged_break_list, $i;
-            ##print "BUBBA: (@i_ragged_break_list)\n";
             $i_last_last_break = $i_last_break;
             $i_last_break      = $i;
         }
@@ -13537,7 +13574,7 @@ The log file warns the user if there are any such tabs.
     };
 
     # patch until new aligner is finished
-    if ($do_not_pad) { flush() }
+    if ($do_not_pad) { my_flush() }
 
     # shouldn't happen:
     if ( $level < 0 ) { $level = 0 }
@@ -13550,7 +13587,7 @@ The log file warns the user if there are any such tabs.
         $extra_indent_ok =
           ( $level < $group_level && $last_group_level_written < $group_level );
 
-        flush();
+        my_flush();
 
         # If we know that this line will get flushed out by itself because
         # of level changes, we can leave the extra_indent_ok flag set.
@@ -13576,7 +13613,7 @@ The log file warns the user if there are any such tabs.
         if ( $maximum_line_index >= 0 ) {
 
             # flush the current group if it has some aligned columns..
-            if ( $group_lines[0]->get_jmax() > 1 ) { flush() }
+            if ( $group_lines[0]->get_jmax() > 1 ) { my_flush() }
 
             # flush current group if we are just collecting side comments..
             elsif (
@@ -13589,7 +13626,7 @@ The log file warns the user if there are any such tabs.
                     $group_lines[0]->get_column(0) )
               )
             {
-                flush();
+                my_flush();
             }
         }
 
@@ -13963,7 +14000,7 @@ sub check_match {
     my $maximum_field_index = $old_line->get_jmax();
 
     # flush if this line has too many fields
-    if ( $jmax > $maximum_field_index ) { flush(); return }
+    if ( $jmax > $maximum_field_index ) { my_flush(); return }
 
     # flush if adding this line would make a non-monotonic field count
     if (
@@ -13974,7 +14011,7 @@ sub check_match {
         )
       )
     {
-        flush();
+        my_flush();
         return;
     }
 
@@ -14049,7 +14086,7 @@ sub check_match {
         }
     }
 
-    flush() unless ($everything_matches);
+    my_flush() unless ($everything_matches);
 }
 
 sub check_fit {
@@ -14107,7 +14144,7 @@ sub check_fit {
 
             # revert to starting state then flush; things didn't work out
             restore_alignment_columns();
-            flush();
+            my_flush();
             last;
         }
 
@@ -14171,9 +14208,25 @@ flush() sends the current Perl::Tidy::VerticalAligner group down the pipeline to
 
 =cut
 
+# This is the external flush, which also empties the cache
 sub flush {
 
-    return unless ( $maximum_line_index >= 0 );
+    if ( $maximum_line_index < 0 ) {
+        if ($cached_line_type) {
+            $file_writer_object->write_code_line( $cached_line_text . "\n" );
+            $cached_line_type = 0;
+            $cached_line_text = "";
+        }
+    }
+    else {
+        my_flush();
+    }
+}
+
+# This is the internal flush, which leaves the cache intact
+sub my_flush {
+
+    return if ($maximum_line_index < 0); 
 
     VALIGN_DEBUG_FLAG_APPEND0 && do {
         my $group_list_type = $group_lines[0]->get_list_type();
