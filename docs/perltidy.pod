@@ -807,27 +807,42 @@ style overrides the default style with the following parameters:
 
 =over 4
 
+=item Deleting selected text 
+
+Perltidy can selectively delete comments and/or pod documentation.  The
+command B<-dac> or  B<--delete-all-comments> will delete all comments
+B<and> all pod documentation, leaving just code and any leading system
+control lines.
+
+The command B<-dp> or B<--delete-pod> will remove all pod documentation
+(but not comments).
+
+Two commands which remove comments (but not pod) are: B<-dbc> or
+B<--delete-block-comments> and B<-dsc> or  B<--delete-side-comments>.
+(Hanging side comments will be deleted with block comments here.)
+
+The negatives of these commands also work, and are the defaults.  When
+block comments are deleted, any leading 'hash-bang' will be retained.
+Also, if the B<-x> flag is used, any system commands before a leading
+hash-bang will be retained (even if they are in the form of comments).
+
 =item Writing selected text to a file
 
 When perltidy writes a formatted text file, it has the ability to also
 send selected text to a file with a F<.TEE> extension.  This text can
-include comments and pod documentation.  The relevant commands are:
-B<-tac> or B<--tee-all-comments>,  B<-tbc> or  B<--tee-block-comments>,
-B<-tsc> or B<--tee-side-comments>, and B<-tp> or  B<--tee-pod>.  The
-negatives of these commands also work, and are the defaults.
+include comments and pod documentation.  
 
-=item Deleting selected text 
+The command B<-tac> or  B<--tee-all-comments> will write all comments
+B<and> all pod documentation.
 
-Perltidy can selectively delete comments and pod documentation.
-The commands to do this are:
+The command B<-tp> or B<--tee-pod> will write all pod documentation (but
+not comments).
 
-B<-dac> or  B<--delete-all-comments>,  B<-dbc> or  B<--delete-block-comments>, 
-B<-dsc> or  B<--delete-side-comments>,
-and B<-dp> or  B<--delete-pod>.  The negatives of these commands also
-work, and are the defaults.  When block comments are deleted, any leading
-'hash-bang' will be retained.  Also, if the B<-x> flag is used, any
-system commands before a leading hash-bang will be retained (even if
-they are in the form of comments).
+The commands which write comments (but not pod) are: B<-tbc> or
+B<--tee-block-comments> and B<-tsc> or  B<--tee-side-comments>.
+(Hanging side comments will be written with block comments here.)
+
+The negatives of these commands also work, and are the defaults.  
 
 =item Using a F<.perltidyrc> command file
 

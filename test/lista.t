@@ -1,3 +1,8 @@
+# this was once mis-tokenized:
+@a = (1,2,3,4,5,6,7);
+$b = @a[0..5]/2.;
+print "b is $b\n";
+
 {
     my ( %data, @row, $line, $obj, %new, $first, $last, $daily, $row, $month );
 

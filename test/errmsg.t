@@ -7,6 +7,18 @@
 
 =cut
 
+# mutiple subs
+sub a{ print "hi"}
+sub a{ print "hi"}
+
+# complain of multiple commas (require -w)
+register_language(
+    'name'        => => 'objc',
+    'linker'      => 'OBJCLINK',
+    ,
+    'link' =>
+    );
+
   # nesting error
 $b = $a ? ( $a : $a + 1 );
 

@@ -47,3 +47,15 @@ my @Option_spec = (
 '@'=>19630,
 '*' =>0b0101100101,
 );
+
+# But this is currently a problem:
+use constant PI => 4 * atan2 1, 1;
+
+# unconventional mixing of ',' and '=>' will cause trouble, like here:
+    $c->createOval(
+        $x + $R, $y +
+          $R => $x - $R,
+        $y - $R,
+        -fill => 'black',
+    );
+

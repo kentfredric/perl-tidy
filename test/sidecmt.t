@@ -57,3 +57,30 @@ $VERSION = do {
     my @r = (q$rEvIsIoN: 1.2 $ =~ /\d+/g);
     sprintf "%d." . "%02d" x $#r, @r;
   };    # must be all one line, for MakeMaker
+
+# Side comments problems...
+# The main problem here is that any memory of the side comment alignment
+# column is thrown away whenever indentation level changes (and so is all
+# other vertical alignment -- I found that aligning across indentation
+# level changes is not a good idea).  Since this particular block has lots
+# of indentation changes, it comes out very messy at present.
+
+    if ( not $on ) {    # --- ....
+        return "ignore" if ( not $Dn and not $oD );    # --- --- ---
+        return "ignore" if ( $Dn eq "ref" and $oD eq "ref" )    # --- ref ref
+    } elsif ( $on eq "ref" ) {    # ref ....
+        return "ignore" if ( not $Dn and $oD eq "ref" );    # ref --- ref
+        if ( $Dn eq "ref" ) {                               # ref ref ....
+            return "recurse_into" if ( not $oD );         # ref ref ---
+            return "recurse_into" if ( $oD eq "ref" );    # ref ref ref
+        }
+        return "ignore" if ( $Dn eq "new" and $od eq "missing" ); # ref new miss
+    } elsif ( $on eq "new" and not $oD ) {    # new .... ---
+        return "ignore" if ( not $Dn );         # new --- ---
+        return "ignore" if ( $Dn eq "ref" );    # new ref ---
+        return "insert" if ( $Dn eq "new" ),    # new new ---
+    } elsif ( $on eq "miss" and not $Dn ) {    # miss --- ....
+        return "delete" if ( not $oD );          # miss --- ---
+        return "delete" if ( $oD eq "ref" );     # miss --- ref
+        return "ignore" if ( $oD eq "miss" );    # miss --- miss
+    }

@@ -70,3 +70,10 @@ my $ado_info = [ qw{
                         die "INVALID SLICE DEF $_"
                 } @_));
     }
+
+    # long first term but all other items fit on one line; do not format
+    $s = sprintf(
+        "%2d wallclock secs (%$f usr %$f sys + %$f cusr %$f csys = %$f CPU)",
+        $r, $pu, $ps, $cu, $cs, $tt
+      )
+      if $style eq 'all';
