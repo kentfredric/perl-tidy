@@ -274,35 +274,35 @@ Setting B<-l=0> is equivalent to setting B<-l=(a large number)>.
 
 Use n columns per indentation level (default n=4).
 
-See also B<--tabs>.
+=item Tabs
+
+Tabs are considered harmful, and will almost certainly lead to future
+portability and maintenance problems, so the default and recommendation
+is not to use them.  For those who prefer tabs, however, there are two
+different options.  
+
+Except for possibly introducing tab indentation characters, as outlined
+below, Perltidy does not introduce any tab characters into your file,
+and it removes any tabs from the code (unless requested not to do so
+with B<-fws>).  If you have any tabs in your comments, quotes, or
+here-documents, they will remain.
+
+=over 4
 
 =item B<-t>,   B<--tabs>
 
-This flag defines the characters used to indicate the indentation level
-of each line of code to be tabs.  Perltidy allows two possible ways to
-represent the indentation at the beginning of each line of code.  You
-may either use one tab character per level of indentation (signified
-with the -t flag), or you may use n real space characters per level,
-(where n is defined by the -i flag).  The default is to use ASCII space
-characters because they should be properly displayed on all editors or
-viewers, even though they are not always the most convenient for
-editing. Of course, you can always rerun perltidy to change the
-indentation characters.
+This flag causes one leading tab character to be inserted for each
+level of indentation.  Certain other features are incompatible with this
+option, and if these are given, then a warning message will be issued
+and this flag will be unset.  One example is the B<-lp> option.
 
-If you choose tabs, you will want to give the appropriate setting to
-your editor to display tabs as 4 blanks (or whatever value has been set
-with the B<-i> command).  
+=item B<-et=n>,   B<--entab-leading-whitespace>
 
-Except for these possible tab indentation characters, Perltidy does not
-introduce any tab characters into your file, and it removes any tabs
-from the code (unless requested not to do so with B<-fws>).  If you have
-any tabs in your comments, quotes, or here-documents, they will remain.
+This flag causes each B<n> initial space characters to be replaced by
+one tab character.  Note that the integer B<n> is completely independent
+of the integer specified for indentation parameter, B<-i=n>.
 
-Certain commands are incompatible with tabs, and if these are given,
-then a warning message will be given and tabs will be deactivated.  An
-example is the B<-lp> option.
-
-The default and recommendation is B<-nt> (or B<--notabs>).
+=back
 
 =item B<-io>,   B<--indent-only>       
 
@@ -1309,13 +1309,15 @@ when finished.
 
 =item *
 
-The parameters in the F<.perltidyrc>
-file can be switched off with the B<-npro> option.  
+B<--dump-profile> or B<-dpro>  will write the name of the current 
+F<.perltidyrc> file and its contents to standard output and quit.
+If no configuration file is found, a list of all filenames
+tested will be written.
 
 =item *
 
-B<--dump-profile> or B<-dpro>  will write the name of the current 
-F<.perltidyrc> file and its contents to standard output and quit.
+The parameters in the F<.perltidyrc>
+file can be switched off with the B<-npro> option.  
 
 =item *
 

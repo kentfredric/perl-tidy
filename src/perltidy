@@ -11,8 +11,7 @@ use PerlTidy;
 
 # remove any temporary files if interrupted
 $SIG{INT} = sub {
-    print STDERR "perltidy interrupted\n";
-    PerlTidy::cleanup();
+    PerlTidy::interrupt_handler();
     exit -1;
 };
 

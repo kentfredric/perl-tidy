@@ -287,32 +287,32 @@ Setting <STRONG>-l=0</STRONG> is equivalent to setting <STRONG>-l=(a large numbe
 <DT><STRONG><A NAME="item_%2Di%3Dn%2C_%2D%2Dindent%2Dcolumns%3Dn"><STRONG>-i=n</STRONG>,  <STRONG>--indent-columns=n</STRONG></A></STRONG><BR>
 <DD>
 Use n columns per indentation level (default n=4).
-<P>See also <STRONG>--tabs</STRONG>.</P>
 <P></P>
+<DT><STRONG><A NAME="item_Tabs">Tabs</A></STRONG><BR>
+<DD>
+Tabs are considered harmful, and will almost certainly lead to future
+portability and maintenance problems, so the default and recommendation
+is not to use them.  For those who prefer tabs, however, there are two
+different options.
+<P>Except for possibly introducing tab indentation characters, as outlined
+below, Perltidy does not introduce any tab characters into your file,
+and it removes any tabs from the code (unless requested not to do so
+with <STRONG>-fws</STRONG>).  If you have any tabs in your comments, quotes, or
+here-documents, they will remain.</P>
+<DL>
 <DT><STRONG><A NAME="item_%2Dt%2C_%2D%2Dtabs"><STRONG>-t</STRONG>,   <STRONG>--tabs</STRONG></A></STRONG><BR>
 <DD>
-This flag defines the characters used to indicate the indentation level
-of each line of code to be tabs.  Perltidy allows two possible ways to
-represent the indentation at the beginning of each line of code.  You
-may either use one tab character per level of indentation (signified
-with the -t flag), or you may use n real space characters per level,
-(where n is defined by the -i flag).  The default is to use ASCII space
-characters because they should be properly displayed on all editors or
-viewers, even though they are not always the most convenient for
-editing. Of course, you can always rerun perltidy to change the
-indentation characters.
-<P>If you choose tabs, you will want to give the appropriate setting to
-your editor to display tabs as 4 blanks (or whatever value has been set
-with the <STRONG>-i</STRONG> command).</P>
-<P>Except for these possible tab indentation characters, Perltidy does not
-introduce any tab characters into your file, and it removes any tabs
-from the code (unless requested not to do so with <STRONG>-fws</STRONG>).  If you have
-any tabs in your comments, quotes, or here-documents, they will remain.</P>
-<P>Certain commands are incompatible with tabs, and if these are given,
-then a warning message will be given and tabs will be deactivated.  An
-example is the <STRONG>-lp</STRONG> option.</P>
-<P>The default and recommendation is <STRONG>-nt</STRONG> (or <STRONG>--notabs</STRONG>).</P>
+This flag causes one leading tab character to be inserted for each
+level of indentation.  Certain other features are incompatible with this
+option, and if these are given, then a warning message will be issued
+and this flag will be unset.  One example is the <STRONG>-lp</STRONG> option.
 <P></P>
+<DT><STRONG><A NAME="item_%2Det%3Dn%2C_%2D%2Dentab%2Dleading%2Dwhitespace"><STRONG>-et=n</STRONG>,   <STRONG>--entab-leading-whitespace</STRONG></A></STRONG><BR>
+<DD>
+This flag causes each <STRONG>n</STRONG> initial space characters to be replaced by
+one tab character.  Note that the integer <STRONG>n</STRONG> is completely independent
+of the integer specified for indentation parameter, <STRONG>-i=n</STRONG>.
+<P></P></DL>
 <DT><STRONG><A NAME="item_%2Dio%2C_%2D%2Dindent%2Donly"><STRONG>-io</STRONG>,   <STRONG>--indent-only</STRONG></A></STRONG><BR>
 <DD>
 This flag is used to deactivate all formatting and line break changes.

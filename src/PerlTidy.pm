@@ -51,19 +51,13 @@ use vars qw{
   @EXPORT
 };
 
-##  $missing_io_scalar
-##  $missing_io_scalararray
-
 @EXPORT = qw( &perltidy );
 
-## eval "use diagnostics";
-##{ eval "use IO::Scalar";      $missing_io_scalar      = $@; }
-##{ eval "use IO::ScalarArray"; $missing_io_scalararray = $@; }
 use IO::File;
 use File::Basename;
 
 BEGIN {
-    ($VERSION=q($Id: PerlTidy.pm,v 1.2 2002/02/10 01:57:53 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ($VERSION=q($Id: PerlTidy.pm,v 1.3 2002/02/12 14:01:10 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 # Preloaded methods go here.
@@ -166,29 +160,6 @@ EOM
     return $fh, ( $ref or $filename );
 }
 
-sub make_temporary_filename {
-
-    # make a temporary filename for syntax checking 
-    # needed when input or output is not from a known file
-    # If POSIX is not installed, user can just skip with -nsyn
-    eval "use POSIX qw(tmpnam)";
-    if ($@) {
-        print STDERR "Couldn't find POSIX.pm : rerun with -nsyn\n";
-        return ( undef, "(missing POSIX)" );
-    }
-    use IO::File;
-    my ( $name, $fh );
-    for ( 0 .. 9 ) {
-        $name = tmpnam();
-        $fh = IO::File->new( $name, O_RDWR | O_CREAT | O_EXCL );
-        if ($fh) {
-            return ( $fh, $name );
-            last;
-        }
-    }
-    return ( undef, $name );
-}
-
 =pod
 
 POD NOTE: Documentation is contained in separately supplied .pod files;
@@ -236,17 +207,76 @@ basic perltidy distribution.
 =cut
 
 {
+    my @temporary_files;
+
+    sub make_temporary_filename {
+
+        # make a temporary filename for syntax checking 
+        # needed when input or output is not from a known file
+        # If POSIX is not installed, user can just skip with -nsyn
+        eval "use POSIX qw(tmpnam)";
+        if ($@) {
+            print STDERR "Couldn't find POSIX.pm : rerun with -nsyn\n";
+            return ( undef, "(missing POSIX)" );
+        }
+        use IO::File;
+        my ( $name, $fh );
+        for ( 0 .. 9 ) {
+            $name = tmpnam();
+            $fh = IO::File->new( $name, O_RDWR | O_CREAT | O_EXCL );
+            if ($fh) {
+                push @temporary_files, [$fh, $name];
+                return ( $fh, $name );
+                last;
+            }
+        }
+        return ( undef, $name );
+    }
+
+    sub delete_temporary_files {
+
+        # remove any temporary files 
+        while ( $_ = pop @temporary_files ) {
+            if ( -e $_->[1] ) {
+                $_->[0]->close;
+                unlink $_->[1];
+            }
+        }
+
+        #$sink_object->unlink_copy()   if $sink_object;
+        #$source_object->unlink_copy() if $source_object;
+    }
+}
+
+{
+    
+    # variables needed by interrupt handler:
     my $source_object;
     my $sink_object;
     my $logger_object;
+    my $tokenizer;
+    my $input_file;
 
-    sub cleanup {
+    # this routine may be called to remove temporary files 
+    # if interrupted.
+    # NOTE: caller must perform actual exit;
+    sub interrupt_handler {
 
-        # remove any temporary files 
-        # may be called if interrupted
-        $sink_object->unlink_copy()      if $sink_object;
-        $source_object->unlink_copy()    if $source_object;
-        $logger_object->unlink_logfile() if $logger_object;
+        print STDERR "perltidy interrupted";
+        if ($tokenizer) {
+            my $input_line_number =
+              PerlTidy::Tokenizer::get_input_line_number();
+            print STDERR " at line $input_line_number";
+        }
+        if ($input_file) {
+            
+            if (ref $input_file) { print STDERR " of reference to:" }
+            else { print STDERR " of file:" }
+            print STDERR " $input_file";
+        }
+        print STDERR "\n";
+        $logger_object->close_log_file() if $logger_object;
+        delete_temporary_files();
     }
 
     sub perltidy {
@@ -257,6 +287,7 @@ basic perltidy distribution.
             stderr      => undef,
             argv        => undef,
             perltidyrc  => undef,
+            formatter   => undef,
         );
 
         my %input_hash = @_;
@@ -279,6 +310,11 @@ EOM
         my $stderr_stream      = $input_hash{'stderr'};
         my $perltidyrc_stream  = $input_hash{'perltidyrc'};
         my $argv               = $input_hash{'argv'};
+        my $user_formatter     = $input_hash{'formatter'};
+
+        # future checks on $user_formatter go here
+        if ($user_formatter) {
+        }
 
         # see if ARGV is overridden
         if ($argv) {
@@ -322,8 +358,10 @@ EOM
             }
         }
 
-        my ( $is_Windows, $Windows_type, $Windows_config_path ) =
-          look_for_Windows();
+        my $rpending_complaint;
+        $$rpending_complaint="";
+        my ( $is_Windows, $Windows_type ) =
+          look_for_Windows($rpending_complaint);
 
         # VMS file names are restricted to a 40.40 format, so we append _tdy
         # instead of .tdy, etc. (but see also sub check_vms_filename)
@@ -339,10 +377,11 @@ EOM
         }
 
         # handle command line options
-        my ( $rOpts, $config_file, $rraw_options, $pending_complaint,
-            $saw_extrude )
-          = process_command_line( $perltidyrc_stream, $is_Windows,
-            $Windows_type, $Windows_config_path );
+        my ( $rOpts, $config_file, $rraw_options, $saw_extrude ) =
+          process_command_line(
+            $perltidyrc_stream,   $is_Windows,       $Windows_type,
+            $rpending_complaint
+          );
 
         PerlTidy::Formatter::check_options($rOpts);
         if ( $rOpts->{'html'} ) {
@@ -374,9 +413,8 @@ EOM
 
         # loop to process all files in argument list
         my $number_of_files = @ARGV;
-        my $input_file;
         my $formatter = undef;
-        my $tokenizer = undef;
+        $tokenizer = undef;
 
         # Set a flag here for any system which does not have a shell to
         # expand wildcard filenames like '*.pl'.  In theory it should also
@@ -569,9 +607,9 @@ EOM
               PerlTidy::Logger->new( $rOpts, $log_file, $warning_file,
                 $saw_extrude );
             write_logfile_header( $rOpts, $logger_object, $config_file,
-                $rraw_options, $Windows_type, $Windows_config_path );
-            if ($pending_complaint) {
-                $logger_object->complain($pending_complaint);
+                $rraw_options, $Windows_type );
+            if ($$rpending_complaint) {
+                $logger_object->complain($$rpending_complaint);
             }
 
             #---------------------------------------------------------------
@@ -583,19 +621,24 @@ EOM
                   PerlTidy::Debugger->new( $fileroot . $dot . "DEBUG" );
             }
 
-            # we have to delete any old formatter because, for safety, 
-            # formatter will check to see that there is only one.
-            $formatter = undef;
-
             #---------------------------------------------------------------
             # create a formatter for this file : html writer or pretty printer
             #---------------------------------------------------------------
-            if ( $rOpts->{'html'} ) {
+            if ($user_formatter) {
+                    $formatter=$user_formatter;
+            }
+            
+            elsif ( $rOpts->{'html'} ) {
+                $formatter = undef;
                 $formatter =
                   PerlTidy::HtmlWriter->new( $fileroot, $output_file );
             }
 
             else {
+                
+                # we have to delete any old formatter because, for safety, 
+                # formatter will check to see that there is only one.
+                $formatter = undef;
                 $formatter = PerlTidy::Formatter->new(
                     logger_object      => $logger_object,
                     diagnostics_object => $diagnostics_object,
@@ -647,59 +690,21 @@ EOM
             $logger_object->finish( $infile_syntax_ok, $formatter )
               if $logger_object;
 
-            cleanup();
+            delete_temporary_files();
 
         }    # end of loop to process all files
 
     }    # end of main program
 }
 
-sub check_vms_filename {
-
-    # given a valid filename (the perltidy input file)
-    # create a modified filename and separator character
-    # suitable for VMS.
-    #
-    # Contributed by Michael Cartmell
-    #
-    my ( $base, $path ) = fileparse( $_[0] );
-
-    # remove explicit ; version
-    $base =~ s/;-?\d*$//
-
-      # remove explicit . version ie two dots in filename NB ^ escapes a dot
-      or $base =~ s/(              # begin capture $1
-                  (?:^|[^^])\. # match a dot not preceded by a caret
-                  (?:          # followed by nothing
-                    |          # or
-                    .*[^^]     # anything ending in a non caret
-                  )
-                )              # end capture $1
-                \.-?\d*$       # match . version number
-              /$1/x;
-
-    # normalise filename, if there are no unescaped dots then append one
-    $base .= '.' unless $base =~ /(?:^|[^^])\./;
-
-    # if we don't already have an extension then we just append the extention
-    my $separator = ( $base =~ /\.$/ ) ? "" : "_";
-    return ( $path . $base, $separator );
-}
-
 sub write_logfile_header {
-    my ( $rOpts, $logger_object, $config_file, $rraw_options, $Windows_type,
-        $Windows_config_path )
+    my ( $rOpts, $logger_object, $config_file, $rraw_options, $Windows_type)
       = @_;
     $logger_object->write_logfile_entry(
 "perltidy version $VERSION log file on a $^O system, OLD_PERL_VERSION=$]\n"
     );
     if ($Windows_type) {
         $logger_object->write_logfile_entry("Windows type is $Windows_type\n");
-    }
-    if ($Windows_config_path) {
-        $Windows_config_path =~ s{/}{\\}g;
-        $logger_object->write_logfile_entry(
-            "System-wide config path is $Windows_config_path\n");
     }
     my $options_string = join ( ' ', @$rraw_options );
 
@@ -730,7 +735,10 @@ sub write_logfile_header {
 
 sub process_command_line {
 
-    my ( $perltidyrc_stream, $is_Windows, $Windows_type, $Windows_config_path )
+    my (
+        $perltidyrc_stream,   $is_Windows,       $Windows_type,
+        $rpending_complaint
+      )
       = @_;
 
     use Getopt::Long;
@@ -775,7 +783,6 @@ sub process_command_line {
     my @option_string     = ();
     my %expansion         = ();
     my $rexpansion        = \%expansion;
-    my $pending_complaint = "";
 
     #  These options are parsed directly by perltidy:
     #    help h
@@ -1202,62 +1209,68 @@ EOM
         }
 
         # look for a config file if we don't have one yet
-        $config_file = find_config_file($Windows_config_path)
+        my @config_files_tested;
+        $config_file =
+          find_config_file( $is_Windows, $Windows_type, \@config_files_tested,
+            $rpending_complaint )
           unless $config_file;
 
+        # open any config file
+        my $fh_config;
         if ($config_file) {
-
-            # open any config file
-            ( my $fh_config, $config_file ) =
+            ( $fh_config, $config_file ) =
               PerlTidy::streamhandle( $config_file, 'r' );
+        }
 
-            if ($fh_config) {
+        if ($saw_dump_profile) {
+            if ($saw_dump_profile) {
+                dump_config_file( $fh_config, $config_file,
+                    \@config_files_tested );
+                exit 1;
+            }
+        }
 
-                if ($saw_dump_profile) {
-                    dump_config_file( $fh_config, $config_file );
-                    exit 1;
+        if ($fh_config) {
+
+            my $rconfig_list =
+              read_config_file( $fh_config, $config_file, \%expansion );
+
+            # process any .perltidyrc parameters right now so we can
+            # localize errors
+            if (@$rconfig_list) {
+                local @ARGV = @$rconfig_list;
+
+                expand_command_abbreviations( \%expansion, \@raw_options,
+                    $config_file );
+
+                if ( !GetOptions( \%Opts, @option_string ) ) {
+                    die
+"Error in this config file: $config_file  \nUse -npro to ignore this file, -h for help'\n";
                 }
 
-                my $rconfig_list =
-                  read_config_file( $fh_config, $config_file, \%expansion );
-
-                # process any .perltidyrc parameters right now so we can
-                # localize errors
-                if (@$rconfig_list) {
-                    local @ARGV = @$rconfig_list;
-
-                    expand_command_abbreviations( \%expansion, \@raw_options,
-                        $config_file );
-
-                    if ( !GetOptions( \%Opts, @option_string ) ) {
-                        die
-"Error in this config file: $config_file  \nUse -npro to ignore this file, -h for help'\n";
+                # Undo any options which cause premature exit.  They are not
+                # appropriate for a config file, and it could be hard to
+                # diagnose the cause of the premature exit.
+                foreach (
+                    qw{
+                    dump-defaults
+                    dump-long-names
+                    dump-options
+                    dump-profile
+                    dump-short-names
+                    dump-token-types
+                    dump-want-left-space
+                    dump-want-right-space
+                    help
+                    stylesheet
+                    version
                     }
-
-                    # Undo any options which cause premature exit.  They are not
-                    # appropriate for a config file, and it could be hard to
-                    # diagnose the cause of the premature exit.
-                    foreach (
-                        qw{
-                        dump-defaults
-                        dump-long-names
-                        dump-options
-                        dump-profile
-                        dump-short-names
-                        dump-token-types
-                        dump-want-left-space
-                        dump-want-right-space
-                        help
-                        stylesheet
-                        version
-                        }
-                      )
-                    {
-                        if ( defined( $Opts{$_} ) ) {
-                            delete $Opts{$_};
-                            print STDERR
-                              "ignoring --$_ in config file: $config_file\n";
-                        }
+                  )
+                {
+                    if ( defined( $Opts{$_} ) ) {
+                        delete $Opts{$_};
+                        print STDERR
+                          "ignoring --$_ in config file: $config_file\n";
                     }
                 }
             }
@@ -1298,27 +1311,23 @@ EOM
         $Opts{'check-syntax'} = 0;
     }
 
-    # Never let Windows 9x/ME systems run syntax check -- this will prevent a
-    # wide variety of problems on these systems.  Don't even think about
-    # changing this!
+    # Never let Windows 9x/Me systems run syntax check -- this will prevent a
+    # wide variety of nasty problems on these systems, because they cannot
+    # reliably run backticks.  Don't even think about changing this!
     if ( $Opts{'check-syntax'}
         && $is_Windows
-        && ( !$Windows_type || $Windows_type =~ /^9/ ) )
+        && ( !$Windows_type || $Windows_type =~ /^(9|Me)/ ) )
     {
         $Opts{'check-syntax'} = 0;
     }
 
     # It's really a bad idea to check syntax as root unless you wrote 
-    # the script yourself.  
-
-    # everybody is root in windows 95/98, so we can't complain about it
-    # Still need to figure out Windows NT and 2000/XP
-    ##unless ( $^O =~ /^(MSWin32|msdos|dos|win32)$/ ) {
+    # the script yourself.  FIXME: not sure if this works with VMS
     unless ($is_Windows) {
 
         if ( $< == 0 && $Opts{'check-syntax'} ) {
             $Opts{'check-syntax'} = 0;
-            $pending_complaint .=
+            $$rpending_complaint .=
 "Syntax check deactivated for safety; you shouldn't run this as root\n";
         }
     }
@@ -1387,8 +1396,16 @@ EOM
         $Opts{'swallow-optional-blank-lines'} = 1;
     }
 
-    return ( \%Opts, $config_file, \@raw_options, $pending_complaint,
-        $saw_extrude );
+    if ( $Opts{'entab-leading-whitespace'} ) {
+         if ( $Opts{'entab-leading-whitespace'} <0 ) {
+              print STDERR "-et=n must use a positive integer; ignoring -et\n";
+              $Opts{'entab-leading-whitespace'} = undef;
+         }
+         # entab leading whitespace has priority over the older 'tabs' option
+         if ($Opts{'tabs'} ) { $Opts{'tabs'} = 0; }
+    }
+
+    return ( \%Opts, $config_file, \@raw_options, $saw_extrude );
 
 }    # end of process_command_line
 
@@ -1501,17 +1518,100 @@ EOM
     }
 }
 
+sub check_vms_filename {
+
+    # given a valid filename (the perltidy input file)
+    # create a modified filename and separator character
+    # suitable for VMS.
+    #
+    # Contributed by Michael Cartmell
+    #
+    my ( $base, $path ) = fileparse( $_[0] );
+
+    # remove explicit ; version
+    $base =~ s/;-?\d*$//
+
+      # remove explicit . version ie two dots in filename NB ^ escapes a dot
+      or $base =~ s/(              # begin capture $1
+                  (?:^|[^^])\. # match a dot not preceded by a caret
+                  (?:          # followed by nothing
+                    |          # or
+                    .*[^^]     # anything ending in a non caret
+                  )
+                )              # end capture $1
+                \.-?\d*$       # match . version number
+              /$1/x;
+
+    # normalise filename, if there are no unescaped dots then append one
+    $base .= '.' unless $base =~ /(?:^|[^^])\./;
+
+    # if we don't already have an extension then we just append the extention
+    my $separator = ( $base =~ /\.$/ ) ? "" : "_";
+    return ( $path . $base, $separator );
+}
+
+# Returns a string that determines what MS OS we are on.
+# Returns win32s,95,98,Me,NT3.51,NT4,2000,XP/.Net
+# Returns nothing if not an MS system
+sub Win_OS_Type {
+
+    my $rpending_complaint = shift;
+    return unless $^O =~ /win32|dos/i;    # is it a MS box?
+
+    # It _should_ have Win32 unless something is really weird
+    return unless eval('require Win32');
+
+    # Use the standard API call to determine the version
+    my ( undef, $major, $minor, $build, $id ) = Win32::GetOSVersion();
+
+    return "win32s" unless $id;           # If id==0 then its a win32s box.
+    my $os = {                            # Magic numbers from MSDN
+            #documentation of GetOSVersion
+        1 => {
+            0  => "95",
+            10 => "98",
+            90 => "Me"
+        },
+        2 => {
+            0  => "2000",
+            1  => "XP/.Net",
+            51 => "NT3.51"
+        }
+    }->{$id}->{$minor};
+
+    # This _really_ shouldnt happen. At least not for quite a while
+    unless (defined $os) {
+        $$rpending_complaint .= <<EOS;
+Error trying to discover Win_OS_Type: $id:$major:$minor Has no name of record!
+We won't be able to look for a system-wide config file.
+EOS
+      }
+
+      # Unfortunately the logic used for the various versions isnt so clever..
+      # so we have to handle an outside case.
+      return ( $os eq "2000" & $major != 5 ) ? "NT4" : $os;
+}
+
 sub look_for_Windows {
 
     # determine Windows sub-type and location of 
     # system-wide configuration files
+    my $rpending_complaint=shift;
+    my $is_Windows = ($^O =~ /win32|dos/i);
+    my $Windows_type=Win_OS_Type($rpending_complaint) if $is_Windows;
+    return ( $is_Windows, $Windows_type);
+}
+
+sub old_look_for_Windows {
+
+    # determine Windows sub-type and location of 
+    # system-wide configuration files
     my ( $Windows_type, $Windows_config_path );
-    ##my $is_Windows = ( $^O =~ /^(MSWin32|msdos|dos|win32)$/ );
-    my $is_Windows = ( $^O =~ /win32|dos/i );
+    my $is_Windows = ( $^O =~ /^(MSWin32|msdos|dos|win32)$/ ); 
     if ($is_Windows) {
 
-        # Note that search order is important
-        # (i.e., win 2000 also has WinNT/profiles/All Users/)
+        # Note that the order of this list is important
+        # (i.e., Win 2000/XP systems also has WinNT/profiles/All Users/)
         my @windows_config_locations = (
             [ "2000/XP", "c:/Documents and Settings/All Users/" ], # 2000 and XP
             [ "NT",      "c:/WinNT/profiles/All Users/" ],         # NT
@@ -1534,13 +1634,21 @@ sub look_for_Windows {
 sub find_config_file {
 
     # look for a .perltidyrc configuration file
-    my $Windows_config_path = shift;
+    my ( $is_Windows, $Windows_type, $rconfig_files_tested,
+        $rpending_complaint ) = @_;
+
+    # sub to check file existance and remember all tests
+    my $exists_config_file = sub{
+          my $config_file = shift;
+          push @{$rconfig_files_tested}, $config_file;
+          return -e $config_file;
+    };
 
     my $config_file;
 
     # look in current directory first
     $config_file = ".perltidyrc";
-    return $config_file if ( -e $config_file );
+    return $config_file if $exists_config_file->( $config_file );
 
     # Default environment vars.
     my @envs = qw(PERLTIDY HOME);
@@ -1553,46 +1661,95 @@ sub find_config_file {
     foreach my $var (@envs) {
         if ( defined( $ENV{$var} ) ) {
             $config_file = "$ENV{$var}/.perltidyrc";
-            return $config_file if -e $config_file;
+            return $config_file if $exists_config_file->( $config_file );
         }
     }
 
     # then look for a system-wide definition
     # where to look varies with OS
-    if ($Windows_config_path) {
+    if ($is_Windows) {
 
-        # FIXME: what do we want? .perltidyrc or just perltidyrc?
-        # or both?
+        if ($Windows_type) {
+            my ( $os, $system, $allusers ) =
+              Win_Config_Locs( $rpending_complaint, $Windows_type);
 
-        $config_file = $Windows_config_path . "perltidyrc";
-        return $config_file if -e $config_file;
+            # Check All Users directory, if there is one.
+            if ($allusers) {
+                $config_file = $allusers . ".perltidyrc";
+                return $config_file if $exists_config_file->($config_file);
+            }
 
-        $config_file = $Windows_config_path . ".perltidyrc";
-        return $config_file if -e $config_file;
+            # Check system directory.
+            $config_file = $system . ".perltidyrc";
+            return $config_file if $exists_config_file->($config_file);
+        }
     }
 
     else {
 
         # Other OSes, probably should be more options...
         $config_file = "/usr/local/etc/perltidyrc";
-        return $config_file if -e $config_file;
+        return $config_file if $exists_config_file->( $config_file );
 
         $config_file = "/etc/perltidyrc";
-        return $config_file if -e $config_file;
+        return $config_file if $exists_config_file->( $config_file );
     }
 
     # Couldn't find a config file
     return;
 }
 
-sub dump_config_file {
-    my $fh          = shift;
-    my $config_file = shift;
-    print STDOUT "# Dump of file '$config_file'\n";
-    while ( $_ = $fh->getline() ) {
-        print;
+# In scalar context returns the OS name (95 98 ME NT3.51 NT4 2000 XP),
+# or undef if its not a win32 OS.  In list context returns OS, System
+# Directory, and All Users Directory.  All Users will be empty on a
+# 9x/Me box.
+sub Win_Config_Locs {
+    my $rpending_complaint = shift;
+    my $os = (@_) ? shift: Win_OS_Type();
+    return unless $os;
+
+    my $system   = "";
+    my $allusers = "";
+
+    if ( $os =~ /9[58]|Me/ ) {
+        $system = "C:/Windows";
     }
-    $fh->close();
+    elsif ( $os =~ /NT|XP|2000/ ) {
+        $system = ( $os =~ /XP/ ) ? "C:/Windows" : "C:/WinNT";
+        $allusers =
+          ( $os =~ /NT/ ) 
+          ? "C:/WinNT/profiles/All Users/"
+          : "C:/Documents and Settings/All Users/";
+    }
+    else {
+
+        # This currently would only happen on a win32s computer.
+        # I dont have one to test So I am unsure how to proceed.
+        # Sorry. :-)
+        $$rpending_complaint .=
+"I dont know a sensible place to look for config files on an $os system.\n";
+        return;
+    }
+    return wantarray ? ( $os, $system, $allusers ) : $os;
+}
+
+sub dump_config_file {
+    my $fh                   = shift;
+    my $config_file          = shift;
+    my $rconfig_files_tested = shift;
+    if ($fh) {
+        print STDOUT "# Dump of file '$config_file'\n";
+        while ( $_ = $fh->getline() ) {
+            print;
+        }
+        $fh->close();
+    }
+    else {
+        print STDOUT "Did not see a config file at any of these places:\n";
+        foreach ( @{$rconfig_files_tested} ) {
+            print STDOUT "$_\n";
+        }
+    }
 }
 
 sub read_config_file {
@@ -1879,6 +2036,7 @@ Basic Options:
  -i=n    use n columns per indentation level (default n=4)
  -t      tabs: use one tab character per indentation level, not recommeded
  -nt     no tabs: use n spaces per indentation level (default)
+ -et=n   entab leading whitespace n spaces per tab; not recommended
  -io     "indent only": just do indentation, no other formatting.
  -sil=n  set starting indentation level to n;  use if auto detection fails
 
@@ -2112,7 +2270,7 @@ sub new {
 
     # in order to check output syntax when standard output is used, 
     # or when it is an object, we have to make a copy of the file
-    if ( ( $input_file eq '-' || ref $fh ) && $rOpts->{'check-syntax'} ) {
+    if ( ( $input_file eq '-' || ref $input_file ) && $rOpts->{'check-syntax'} ) {
         ( $fh_copy, $input_file_copy ) = PerlTidy::make_temporary_filename();
         unless ($fh_copy) {
             print STDERR <<EOM;
@@ -2146,11 +2304,14 @@ sub close_input_file {
     $self->{_fh_copy}->close() if $self->{_fh_copy};
 }
 
-sub unlink_copy {
-    my $self = shift;
-    unlink $self->{_input_file_copy} if $self->{_input_file_copy};
-    $self->{_input_file_copy} = "";
-}
+##sub unlink_copy {
+##    my $self = shift;
+##    if ($self->{_input_file_copy}) {
+##        close $self->{_input_file_copy}; 
+##        unlink $self->{_input_file_copy}; 
+##        $self->{_input_file_copy} = "";
+##    }
+##}
 
 sub get_line {
     my $self    = shift;
@@ -2187,7 +2348,7 @@ sub new {
 
     # in order to check output syntax when standard output is used, 
     # or when it is an object, we have to make a copy of the file
-    if ( $output_file eq '-' || ref $fh ) {
+    if ( $output_file eq '-' || ref $output_file ) {
         if ( $rOpts->{'check-syntax'} ) {
             ( $fh_copy, $output_file_copy ) =
               PerlTidy::make_temporary_filename();
@@ -2221,8 +2382,6 @@ sub write_line {
     my $fh_copy = $self->{_fh_copy};
 
     my $output_file_open = $self->{_output_file_open};
-
-    ##print "BUBBA: writing ($_[0])\n";
 
     $fh->print( $_[0] ) if ( $self->{_output_file_open} );
     print $fh_copy $_[0] if ( $self->{_output_file_copy} );
@@ -2279,11 +2438,14 @@ sub close_tee_file {
     }
 }
 
-sub unlink_copy {
-    my $self = shift;
-    unlink( $self->{_output_file_copy} ) if $self->{_output_file_copy};
-    $self->{_output_file_copy} = "";
-}
+##sub unlink_copy {
+##    my $self = shift;
+##    if ($self->{_output_file_copy}) {
+##        close $self->{_output_file_copy}; 
+##        unlink $self->{_output_file_copy}; 
+##        $self->{_output_file_copy} = "";
+##    }
+##}
 
 #####################################################################
 #
@@ -2379,9 +2541,21 @@ sub new {
 }
 
 sub close_log_file {
+
     my $self = shift;
-    close $self->{_fh};
-    close $self->{_fh_warnings} if ( $self->{_warning_count} );
+    if ($self->{_fh} ) {
+        close $self->{_fh}; 
+        $self->{_fh} = undef;
+        
+        # delete the log file unless it is needed or wanted..
+        unlink( $self->{_log_file} ) if $self->{_log_file};
+        $self->{_log_file} = ""; 
+    }
+
+    if ($self->{_fh_warnings}) { 
+         close $self->{_fh_warnings}; 
+         $self->{_fh_warnings} = undef;
+    }
 }
 
 sub get_warning_count {
@@ -2761,18 +2935,20 @@ sub finish {
         }
     }
     $self->ask_user_for_bug_report( $infile_syntax_ok, $formatter );
+
+    $self->{_log_file} = "" if ($save_logfile);  # prevent unlinking
+
     $self->close_log_file();
 
-    # delete the log file unless it is needed or wanted..
-    # cleanup routine will remove it unless we blank out the name
-    $self->{_log_file} = "" if ($save_logfile);
 }
 
-sub unlink_logfile {
-    my $self = shift;
-    unlink( $self->{_log_file} ) if $self->{_log_file};
-}
-
+##sub unlink_logfile {
+##    my $self = shift;
+##    $self->close_log_file();
+##    unlink( $self->{_log_file} ) if $self->{_log_file};
+##    $self->{_log_file} = ""; 
+##}
+##
 #####################################################################
 #
 # The PerlTidy::HtmlWriter class writes a copy of the input stream in html
@@ -3443,7 +3619,6 @@ use vars qw{
   %postponed_breakpoint
 
   $tabbing
-  $tabstr
   $embedded_tab_count
   $first_embedded_tab_at
   $last_embedded_tab_at
@@ -3775,7 +3950,10 @@ sub new {
       PerlTidy::VerticalAligner->initialize( $rOpts, $file_writer_object,
         $logger_object, $diagnostics_object );
 
-    if ( $rOpts->{'tabs'} ) {
+    if ( $rOpts->{'entab-leading-whitespace'} ) {
+        write_logfile_entry("Leading whitespace will be entabbed with $rOpts->{'entab-leading-whitespace'} spaces per tab\n");
+    }
+    elsif ( $rOpts->{'tabs'} ) {
         write_logfile_entry("Indentation will be with a tab character\n");
     }
     else {
@@ -3783,9 +3961,8 @@ sub new {
             "Indentation will be with $rOpts->{'indent-columns'} spaces\n");
     }
 
-    # This is the start of a formatter referent.
-    # I'll populate it someday when I figure out an easy, automated
-    # way.
+    # This was the start of a formatter referent, but object-oriented
+    # coding has turned out to be too slow here.
     $formatter_self = {};
 
     bless $formatter_self, $class;
@@ -3795,9 +3972,7 @@ sub new {
         confess
 "Attempt to create more than 1 object in $class, which is not a true class yet\n";
     }
-
     return $formatter_self;
-
 }
 
 sub prepare_for_new_input_lines {
@@ -4203,10 +4378,9 @@ sub set_leading_whitespace {
             my $min_gnu_indentation = $standard_increment +
               $gnu_stack[$max_gnu_stack_index]->get_SPACES();
             $available_space = $space_count - $min_gnu_indentation;
-            ##print "BUBBA: min=$min_gnu_indentation avail=$available_space sc=$space_count\n";
             if (
                 $available_space < 0
-                ## BUBBA: TESTING:
+                ## moved
                 ##|| $space_count > $half_maximum_line_length
               )
             {
@@ -4319,7 +4493,6 @@ sub set_leading_whitespace {
     if ( $max_index_to_go > $line_start_index_to_go ) {
         $gnu_position_predictor =
           total_line_length( $line_start_index_to_go, $max_index_to_go );
-        ##print "BUBBA: gnu=$gnu_position_predictor\n"; 
     }
     else {
         $gnu_position_predictor = $space_count +
@@ -4656,7 +4829,7 @@ EOM
     # just prior to writing the line, if desired).
     if ( $rOpts->{'line-up-parentheses'} && $rOpts->{'tabs'} ) {
         print STDERR <<EOM;
-Conflict: -t (tabs) cannot be used with the -lp  option; ignoring -t.
+Conflict: -t (tabs) cannot be used with the -lp  option; ignoring -t; see -et.
 EOM
         $rOpts->{'tabs'} = 0;
     }
@@ -4664,23 +4837,16 @@ EOM
     # Likewise, tabs are not compatable with outdenting..
     if ( $rOpts->{'outdent-keywords'} && $rOpts->{'tabs'} ) {
         print STDERR <<EOM;
-Conflict: -t (tabs) cannot be used with the -okw options; ignoring -t.
+Conflict: -t (tabs) cannot be used with the -okw options; ignoring -t; see -et.
 EOM
         $rOpts->{'tabs'} = 0;
     }
 
     if ( $rOpts->{'outdent-labels'} && $rOpts->{'tabs'} ) {
         print STDERR <<EOM;
-Conflict: -t (tabs) cannot be used with the -ola  option; ignoring -t.
+Conflict: -t (tabs) cannot be used with the -ola  option; ignoring -t; see -et.
 EOM
         $rOpts->{'tabs'} = 0;
-    }
-
-    if ( $rOpts->{'tabs'} ) {
-        $tabstr = "\t";
-    }
-    else {
-        $tabstr = " " x $rOpts->{'indent-columns'};
     }
 
     if ( !$rOpts->{'space-for-semicolon'} ) {
@@ -5948,7 +6114,7 @@ sub set_white_space_flag {
          /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
      Examples:
        *VERSION = \'1.01';
-       ( $VERSION ) = '$Revision: 1.2 $ ' =~ /\$Revision:\s+([^\s]+)/;
+       ( $VERSION ) = '$Revision: 1.3 $ ' =~ /\$Revision:\s+([^\s]+)/;
      We will pass such a line straight through (by changing it
      to a quoted string) unless -npvl is used
     
@@ -5957,7 +6123,7 @@ sub set_white_space_flag {
      block sequence numbers may see a closing sequence number but not
      the corresponding opening sequence number (sidecmt.t).  Example:
 
-    my $VERSION = do { my @r = (q$Revision: 1.2 $ =~ /\d+/g); sprintf
+    my $VERSION = do { my @r = (q$Revision: 1.3 $ =~ /\d+/g); sprintf
     "%d."."%02d" x $#r, @r }; 
 
     Here, the opening brace of 'do {' will not be seen, while the closing
@@ -9054,11 +9220,7 @@ sub pad_array_to_go {
             # look like a function call)
             if ($do_not_break_apart) {
                 $do_not_break_apart = 0
-                  if (
-                    $last_nonblank_type[$dd] !~ /^[kwiU]$/
-                    ## BUBBA: check this
-                    || $next_nonblank_type =~ /^->/
-                  );
+                  if ( $last_nonblank_type[$dd] !~ /^[kwiU]$/);
             }
         }
         return ( $bp_count, $do_not_break_apart );
@@ -10155,7 +10317,7 @@ sub find_token_starting_list {
         # and make this our second guess if possible
         my $number_of_fields_best =
           find_best_table_field_count( \@i_term_begin, \@i_term_end,
-            \@item_lengths );
+            \@item_lengths, $max_width );
         if ( $number_of_fields_best != 0
             && $number_of_fields_best < $number_of_fields_max )
         {
@@ -10529,7 +10691,7 @@ sub find_best_table_field_count {
 
     # Look for complex tables which should be formatted with one term per line.
     # Returns 0 if any number may be used.
-    my ( $ri_term_begin, $ri_term_end, $ritem_lengths ) = @_;
+    my ( $ri_term_begin, $ri_term_end, $ritem_lengths, $max_width ) = @_;
     my $item_count            = @{$ri_term_begin};
     my $complex_item_count    = 0;
     my $number_of_fields_best = $rOpts_maximum_fields_per_table;
@@ -10537,6 +10699,7 @@ sub find_best_table_field_count {
         my $ib = $ri_term_begin->[$_];
         my $ie = $ri_term_end->[$_];
 
+        ##TBD: join types here and check for variations
         ##my $str=join "", @tokens_to_go[$ib..$ie];
 
         if ( $ib eq $ie ) {
@@ -10552,7 +10715,9 @@ sub find_best_table_field_count {
             }
         }
     }
-    if ( $complex_item_count > $item_count / 2 && $number_of_fields_best != 2 )
+
+    # Need more tuning here..
+    if ( $max_width > 12 && $complex_item_count > $item_count / 2 && $number_of_fields_best != 2 )
     {
         $number_of_fields_best = 1;
     }
@@ -15426,9 +15591,9 @@ sub reset_indentation_level {
 
                 || ( ( $last_nonblank_token eq '(' )
                     && $is_indirect_object_taker{ $paren_type[$paren_depth] } )
-                || ( $last_nonblank_type eq 'U'
-                    || $last_nonblank_type eq 'w' )    # possible object
-                ##=~ /^[Uw]$/ )    
+                || ( $last_nonblank_type =~ /^[Uw]$/) # possible object
+##                || ( $last_nonblank_type eq 'U'
+##                    || $last_nonblank_type eq 'w' )    # possible object
               )
             {
                 $type = 'Z';
@@ -20343,13 +20508,3 @@ BEGIN {
     @is_keyword{@Keywords} = (1) x scalar(@Keywords);
 }
 1;
-
-##package main;
-##
-### remove any temporary files if interrupted
-##$SIG{INT} = sub {
-##    print STDERR "perltidy interrupted\n";
-##    PerlTidy::cleanup();
-##    exit -1;
-##};
-##PerlTidy::perltidy();
