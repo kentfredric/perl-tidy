@@ -14,7 +14,7 @@
 	<LI><A HREF="#perltidy change log">Perltidy Change Log</A></LI>
 	<UL>
 
-		<LI><A HREF="#2001 xx xx">2001 xx xx</A></LI>
+		<LI><A HREF="#2001 10 16">2001 10 16</A></LI>
 		<LI><A HREF="#2001 09 03">2001 09 03</A></LI>
 		<LI><A HREF="#2001 07 31">2001 07 31</A></LI>
 		<LI><A HREF="#2001 07 23">2001 07 23 </A></LI>
@@ -40,7 +40,20 @@
  have hit a bug, unusual behavior, annoyance, or have a suggested
  improvement, please send a note to perltidy at users.sourceforge.net.</PRE>
 <P>
-<H2><A NAME="2001 xx xx">2001 xx xx</A></H2>
+<H2><A NAME="2001 10 16">2001 10 16</A></H2>
+<PRE>
+ -Fixed tokenization error in which a method call of the form</PRE>
+<PRE>
+    Module::-&gt;new();
+</PRE>
+<PRE>
+
+  got a space before the '::' like this:</PRE>
+<PRE>
+    Module ::-&gt;new();</PRE>
+<PRE>
+  Thanks to David Holden for reporting this.
+</PRE>
 <PRE>
 
  -Added -html control over pod text, using a new abbreviation 'pd'.  See
@@ -52,9 +65,9 @@
 
  -.css lines are now printed in sorted order.</PRE>
 <PRE>
- -Fixed intrerpolation problem where html files had '$input_file' as title
+ -Fixed interpolation problem where html files had '$input_file' as title
  instead of actual input file name.  Thanks to Simon Perreault for finding
- this and sending a patch.</PRE>
+ this and sending a patch, and also to Tobias Weber.</PRE>
 <PRE>
  -Breaks will now have the ':' placed at the start of a line, 
  one per line by default because this shows logical structure
@@ -241,7 +254,14 @@
  -Corrected and updated 'usage' help routine.  Thanks to Slaven Rezic for 
  noting an error.</PRE>
 <PRE>
- -Paranoia struck.  I added a -T flag when doing perl -c syntax check.
+ -The default for Windows is, for now, not to do a 'perl -c' syntax
+ check (but -syn will activate it).  This is because of problems with
+ command.com.  James Freeman sent me a patch which tries to get around
+ the problems, and it works in many cases, but testing revealed several
+ issues that still need to be resolved.  So for now, the default is no
+ syntax check for Windows.</PRE>
+<PRE>
+ -I added a -T flag when doing perl -c syntax check.
  This is because I test it on a large number of scripts from sources
  unknown, and who knows what might be hidden in initialization blocks?
  Also, deactivated the syntax check if perltidy is run as root.  As a
@@ -256,6 +276,14 @@
 <PRE>
 
  The new version will not let that happen.</PRE>
+<PRE>
+ -I am contemplating (but have not yet implemented) making '-lp' the
+ default indentation, because it is stable now and may be closer to how
+ perl is commonly formatted.  This could be in the next release.  The
+ reason that '-lp' was not the original default is that the coding for
+ it was complex and not ready for the initial release of perltidy.  If
+ anyone has any strong feelings about this, I'd like to hear.  The
+ current default could always be recovered with the '-nlp' flag.</PRE>
 <P>
 <H2><A NAME="2001 09 03">2001 09 03</A></H2>
 <PRE>

@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.53 2001/10/16 14:49:34 perltidy Exp $
+    $Id: perltidy,v 1.54 2001/10/20 14:52:42 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -153,9 +153,8 @@ sub main {
                 # file doesn't exist, maybe we have a wildcard
                 if ($use_glob) {
 
-                    # work around weird glob behavior using grep;
-                    # i.e., glob('p.q') always returns 'p.q'
-                    # even if 'p.q' doesn't exist.
+                    # be sure files exist, because glob('p.q') always
+                    # returns 'p.q' even if 'p.q' doesn't exist.
                     my @files = grep { -e $_ } glob($input_file);
                     if (@files) {
                         unshift @ARGV, @files;
@@ -412,6 +411,12 @@ sub process_command_line {
     my $rop           = \@option_string;
     my $rex           = \%expansion;
 
+    #  These options are parsed directly by perltidy:
+    #    help h
+    #    version v
+    #  However, they are included in the option set so that they will
+    #  be seen in the options dump.
+
     # These long option names have no abbreviations or are treated specially
     @option_string = qw(
       html!
@@ -568,18 +573,8 @@ sub process_command_line {
       long-block-line-count=8
       short-concatenation-item-length=8
       noignore-old-line-breaks
+      check-syntax
     );
-
-    # PATCH: default will be no syntax check for Windows because of 
-    # command.com inability to redirect standard error output.
-    # Windows users can use -syn if their shell allows this.
-    # This may change in future versions.
-    if ( $^O =~ /^(MSWin32|msdos|dos|win32)$/ ) {
-        push @defaults, 'nocheck-syntax';
-    }
-    else {
-        push @defaults, 'check-syntax';
-    }
 
     #---------------------------------------------------------------
     # set the defaults by passing the above list through GetOptions
@@ -703,158 +698,92 @@ sub process_command_line {
     my $i;
 
     #---------------------------------------------------------------
-    # read any .perltidyrc configuration file
+    # Take a first look at the command-line parameters.  Do as many
+    # immediate dumps as possible, which can avoid confusion if the
+    # perltidyrc file has an error.
     #---------------------------------------------------------------
     foreach $i (@ARGV) {
 
         if ( $i =~ /-(npro|noprofile)$/ ) {
             $saw_ignore_profile = 1;
-            last;
+        }
+        elsif ( $i =~ /-(help|h)$/) {
+            usage();
+            exit 1;
+        }
+        elsif ( $i =~ /-(version|v)$/) {
+            show_version();
+            exit 1;
+        }
+        elsif ( $i =~ /-(dump-defaults|ddf)$/) {
+            dump_defaults(@defaults);
+            exit 1;
+        }
+        elsif ( $i =~ /-(dump-long-names|dln)$/) {
+            dump_long_names(@option_string);
+            exit 1;
+        }
+        elsif ( $i =~ /-(dump-short-names|dsn)$/) {
+            dump_short_names( \%expansion );
+            exit 1;
+        }
+        elsif ( $i =~ /-(dump-token-types|dtt)$/) {
+            Perltidy::Tokenizer->dump_token_types(*STDOUT);
+            exit 1;
         }
     }
 
+    #---------------------------------------------------------------
+    # read any .perltidyrc configuration file
+    #---------------------------------------------------------------
     unless ($saw_ignore_profile) {
         ( $config_file, my $rconfig_list ) = read_config_file( \%expansion );
-        @ARGV = ( @$rconfig_list, @ARGV );
+
+        # process any .perltidyrc parameters right now so we can localize errors
+        if (@$rconfig_list) {
+            local @ARGV = @$rconfig_list;
+
+            expand_ARGV_abbreviations( \%expansion, \@raw_options, $config_file );
+
+            if ( !GetOptions( \%Opts, @option_string ) ) {
+                die
+"Error in this config file: $config_file  \nUse -npro to ignore this file, -h for help'\n";
+            }
+
+            # Undo any options which cause premature exit.  They are not
+            # appropriate for a config file, and it could be hard to
+            # diagnose the cause of the premature exit.
+            foreach ( qw{
+                dump-defaults
+                dump-long-names
+                dump-options
+                dump-short-names
+                dump-token-types
+                dump-want-left-space
+                dump-want-right-space
+                help
+                stylesheet
+                version
+                }
+              )
+            {
+                if ( defined( $Opts{$_} ) ) {
+                    undef $Opts{$_};
+                    print STDERR "ignoring --$_ in config file: $config_file\n";
+                }
+            }
+        }
     }
 
-    #---------------------------------------------------------------
-    # Now look at the parameter list @ARGV and set the options hash, %Opts
-    #---------------------------------------------------------------
+    # now process the command line parameters
+    expand_ARGV_abbreviations(\%expansion, \@raw_options, $config_file); 
 
-    # set a limit to prevent an infinite loop;
-    # 10 should be plenty, but it may be increased to allow deeply 
-    # nested expansions.
-    my $max_passes = 10;
-    my @new_argv   = ();
-
-    # keep looping until all expansions have been converted into actual
-    # dash parameters..
-    for ( my $pass_count = 0 ; $pass_count <= $max_passes ; $pass_count++ ) {
-        my @new_argv     = ();
-        my $abbrev_count = 0;
-
-        # loop over each item in @ARGV..
-        foreach $word (@ARGV) {
-
-            # if it is a dash flag (instead of a file name)..
-            if ( $word =~ /^-[-]?([\w\-]+)(.*)/ ) {
-
-                # save the raw input for debug output in case of circular refs
-                if ( $pass_count == 0 ) {
-                    push ( @raw_options, $word );
-                }
-
-                my $abr   = $1;
-                my $flags = $2;
-
-                # if we see this dash item in the expansion hash..
-                if ( $expansion{$abr} ) {
-                    $abbrev_count++;
-
-                    # stuff all of the words that it expands to into the
-                    # new arg list for the next pass
-                    foreach my $abbrev ( @{ $expansion{$abr} } ) {
-                        push ( @new_argv, '--' . $abbrev . $flags );
-                    }
-                }
-
-                # not in expansion hash, must be actual long name
-                else {
-                    push ( @new_argv, $word );
-                }
-            }
-
-            # not a dash item, so just save it for the next pass
-            else {
-                push ( @new_argv, $word );
-            }
-        }    # end of this pass
-
-        # update parameter list @ARGV to the new one
-        @ARGV = @new_argv;
-        last unless ( $abbrev_count > 0 );
-
-        # make sure we are not in an infinite loop
-        if ( $pass_count == $max_passes ) {
-            print STDERR
-"I'm tired. We seem to be in an infinite loop trying to expand aliases.\n";
-            print STDERR "Here are the raw options\n";
-            local $" = ')(';
-            print STDERR "(@raw_options)\n";
-            my $num = @new_argv;
-
-            if ( $num < 50 ) {
-                print STDERR "After $max_passes passes here is ARGV\n";
-                print STDERR "(@new_argv)\n";
-            }
-            else {
-                print STDERR "After $max_passes passes ARGV has $num entries\n";
-            }
-
-            if ($config_file) {
-                die <<"DIE";
-Please check your configuration $config_file for circular-references. 
-To deactivate it, use -npro.
-DIE
-            }
-            else {
-                die <<'DIE';
-Program bug - circular-references in the %expansion hash, probably due to
-a recent program change.
-DIE
-            }
-        }    # end of check for circular references
-    }    # end of loop over all passes
-
-    # now let GetOptions look at @ARGV and our option string to set the
-    # options hash
     if ( !GetOptions( \%Opts, @option_string ) ) {
-        die "try 'perltidy --help'\n";
-    }
-
-    if ( $Opts{help} ) {
-        usage();
-        exit 1;
-    }
-
-    if ( $Opts{'version'} ) {
-        print <<"EOM";
-This is perltidy, v$VERSION 
-
-Copyright 2000-2001, Steven L. Hancock
-
-Perltidy is free software and may be copied under the terms of the GNU
-General Public License, which is included in the distribution files.
-
-Complete documentation for perltidy can be found using 'man perltidy'
-or on the internet at http://perltidy.sourceforge.net.
-EOM
-        exit 1;
-    }
-
-    if ( $Opts{'dump-defaults'} ) {
-        dump_defaults(@defaults);
-        exit 1;
-    }
-
-    if ( $Opts{'dump-long-names'} ) {
-        dump_long_names(@option_string);
-        exit 1;
-    }
-
-    if ( $Opts{'dump-short-names'} ) {
-        dump_short_names( \%expansion );
-        exit 1;
+        die "Error on command line; for help try 'perltidy -h'\n";
     }
 
     if ( $Opts{'dump-options'} ) {
         dump_options( \%Opts );
-        exit 1;
-    }
-
-    if ( $Opts{'dump-token-types'} ) {
-        Perltidy::Tokenizer->dump_token_types(*STDOUT);
         exit 1;
     }
 
@@ -868,23 +797,6 @@ EOM
         $Opts{'check-syntax'} = 0;
     }
 
-    # It's really a bad idea to check syntax as root unless you wrote 
-    # the script yourself.  
-    my $pending_complaint = "";
-
-    # these systems have problems with doing the syntax check
-    unless ( $^O =~ /^(MSWin32|msdos|dos|win32)$/ ) {
-
-        #        $Opts{'check-syntax'} = 0;
-        #    }
-        #    else {
-        if ( $< == 0 ) {
-            $Opts{'check-syntax'} = 0;
-            $pending_complaint =
-"Syntax check deactivated for safety; you shouldn't run this as root\n";
-        }
-    }
-
     # either html output or tidy output, not both
     if ( $Opts{'html'} ) {
         $Opts{'tidy-output'} = 0;
@@ -893,6 +805,20 @@ EOM
     # can't check syntax if no output
     if ( !$Opts{'tidy-output'} ) {
         $Opts{'check-syntax'} = 0;
+    }
+
+    # It's really a bad idea to check syntax as root unless you wrote 
+    # the script yourself.  
+    my $pending_complaint = "";
+
+    # everybody is root in windows 95/98, so we can't complain about it
+    unless ( $^O =~ /^(MSWin32|msdos|dos|win32)$/ ) {
+
+        if ( $< == 0 && $Opts{'check-syntax'} ) {
+            $Opts{'check-syntax'} = 0;
+            $pending_complaint =
+"Syntax check deactivated for safety; you shouldn't run this as root\n";
+        }
     }
 
     # see if user set a non-negative logfile-gap
@@ -962,6 +888,99 @@ EOM
     return ( \%Opts, $config_file, \@raw_options, $pending_complaint );
 
 }    # end of process_command_line
+
+sub expand_ARGV_abbreviations {
+
+    my ($rexpansion, $rraw_options, $config_file) = @_;
+    my ($word);
+
+    # go through @ARGV and expand any abbreviations
+
+    # set a pass limit to prevent an infinite loop;
+    # 10 should be plenty, but it may be increased to allow deeply 
+    # nested expansions.
+    my $max_passes = 10;
+    my @new_argv   = ();
+
+    # keep looping until all expansions have been converted into actual
+    # dash parameters..
+    for ( my $pass_count = 0 ; $pass_count <= $max_passes ; $pass_count++ ) {
+        my @new_argv     = ();
+        my $abbrev_count = 0;
+
+        # loop over each item in @ARGV..
+        foreach $word (@ARGV) {
+
+            # if it is a dash flag (instead of a file name)..
+            if ( $word =~ /^-[-]?([\w\-]+)(.*)/ ) {
+
+                # save the raw input for debug output in case of circular refs
+                if ( $pass_count == 0 ) {
+                    push ( @$rraw_options, $word );
+                }
+
+                my $abr   = $1;
+                my $flags = $2;
+
+                # if we see this dash item in the expansion hash..
+                if ( $rexpansion->{$abr} ) {
+                    $abbrev_count++;
+
+                    # stuff all of the words that it expands to into the
+                    # new arg list for the next pass
+                    foreach my $abbrev ( @{ $rexpansion->{$abr} } ) {
+                        push ( @new_argv, '--' . $abbrev . $flags );
+                    }
+                }
+
+                # not in expansion hash, must be actual long name
+                else {
+                    push ( @new_argv, $word );
+                }
+            }
+
+            # not a dash item, so just save it for the next pass
+            else {
+                push ( @new_argv, $word );
+            }
+        }    # end of this pass
+
+        # update parameter list @ARGV to the new one
+        @ARGV = @new_argv;
+        last unless ( $abbrev_count > 0 );
+
+        # make sure we are not in an infinite loop
+        if ( $pass_count == $max_passes ) {
+            print STDERR
+"I'm tired. We seem to be in an infinite loop trying to expand aliases.\n";
+            print STDERR "Here are the raw options\n";
+            local $" = ')(';
+            print STDERR "(@$rraw_options)\n";
+            my $num = @new_argv;
+
+            if ( $num < 50 ) {
+                print STDERR "After $max_passes passes here is ARGV\n";
+                print STDERR "(@new_argv)\n";
+            }
+            else {
+                print STDERR "After $max_passes passes ARGV has $num entries\n";
+            }
+
+            if ($config_file) {
+                die <<"DIE";
+Please check your configuration $config_file for circular-references. 
+To deactivate it, use -npro.
+DIE
+            }
+            else {
+                die <<'DIE';
+Program bug - circular-references in the %expansion hash, probably due to
+a recent program change.
+DIE
+            }
+        }    # end of check for circular references
+    }    # end of loop over all passes
+}
 
 sub add_option {
     my ( $long_name, $short_name, $flag, $roption_string, $rexpansion ) = @_;
@@ -1208,6 +1227,20 @@ sub dump_options {
     }
 }
 
+sub show_version {
+        print <<"EOM";
+This is perltidy, v$VERSION 
+
+Copyright 2000-2001, Steven L. Hancock
+
+Perltidy is free software and may be copied under the terms of the GNU
+General Public License, which is included in the distribution files.
+
+Complete documentation for perltidy can be found using 'man perltidy'
+or on the internet at http://perltidy.sourceforge.net.
+EOM
+}
+
 sub usage {
 
     print STDOUT <<EOF;
@@ -1427,56 +1460,7 @@ sub check_syntax {
 
 sub do_syntax_check {
     my ( $fname, $flags, $error_redirection ) = @_;
-
-    # TESTING..this does not always work yet..do not use...
-    #    if ( $^O eq 'MSWin32' ) {
-    #        my $msg=do_win95_syntax_check($fname, $flags, $error_redirection); 
-    #        #print "Doing win95 syntax check: result is $msg\n";
-    #        return $msg;
-    #    }
-    #    else {
-    #        return do_unix_syntax_check($fname, $flags, $error_redirection); 
-    #    }
-
-    return do_unix_syntax_check( $fname, $flags, $error_redirection );
-
-}
-
-sub do_unix_syntax_check {
-    my ( $fname, $flags, $error_redirection ) = @_;
     return `perl $flags $fname $error_redirection`;
-}
-
-sub do_win95_syntax_check {
-
-    # Do not use except for testing..
-    # This is an experimental routine and does not always work!
-    # Based on a suggestion by James Freeman
-    my ( $fname, $flags, $error_redirection ) = @_;
-    local $/;
-    unless ( open SCRIPT, "+<$fname" ) {
-        print STDERR "Cannot open $fname for syntax check: $!\n";
-        return "Cannot open $fname for syntax check: $!\n";
-    }
-    my $script = <SCRIPT>;
-    close SCRIPT;
-
-    $script = "{ last; $script;\n }";
-    $script =~ s/(__DATA__|__END__)/}$1/g;
-
-    my $msg = "";
-    { local $^W = 0; no strict; $msg = eval $script; }
-    if ($msg) {
-        print STDERR "MESSAGE is $msg\n";
-    }
-    if ( $@ || $msg ) {
-        $msg .= $@;
-        $msg =~ s/\(eval 1\)/$fname/g;
-        return $msg;
-    }
-    else {
-        return "$fname syntax OK";
-    }
 }
 
 #####################################################################
@@ -4577,9 +4561,9 @@ sub print_line_of_tokens {
         unshift @$rtokens,         '';
         unshift @$rlevels,         $$rlevels[0];
         unshift @$rslevels,        $$rslevels[0];
-        unshift @$rblock_type,     '';                      #$$rslevels[0];
+        unshift @$rblock_type,     '';                     
         unshift @$rtype_sequence,  '';
-        unshift @$rnesting_tokens, $$rnesting_tokens[0];    #$$rslevels[0];
+        unshift @$rnesting_tokens, $$rnesting_tokens[0];  
         unshift @$rci_levels,      $$rci_levels[0];
         unshift @$rnesting_blocks, $$rnesting_blocks[0];
         $jmax = 1;
@@ -4643,7 +4627,7 @@ sub print_line_of_tokens {
     #     /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
     # Examples:
     #   *VERSION = \'1.01';
-    #   ( $VERSION ) = '$Revision: 1.53 $ ' =~ /\$Revision:\s+([^\s]+)/;
+    #   ( $VERSION ) = '$Revision: 1.54 $ ' =~ /\$Revision:\s+([^\s]+)/;
     # We will pass such a line straight through unless -npvl is used
     my $is_VERSION_statement = 0;
 
@@ -5353,6 +5337,7 @@ sub starting_one_line_block {
     # store_token_to_go to put the opening brace in the output stream
     if ( $max_index_to_go < 0 ) {
         warning("program bug: store_token_to_go called incorrectly\n");
+        report_definite_bug();
     }
     else {
 
@@ -5721,6 +5706,7 @@ sub correct_lp_indentation {
 # an alternate source of lines can be written in the correct order
 
 sub flush {
+    destroy_one_line_block();
     output_line_to_go();
     Perltidy::VerticalAligner::flush();
 }
@@ -6953,6 +6939,21 @@ sub scan_list {
         }
         next if ( $type eq 'b' );
         $depth = $nesting_depth_to_go[ $i + 1 ];
+
+        # safety check - be sure we always break after a comment
+        # Shouldn't happen .. an error here probably means that the
+        # nobreak flag did not get turned off correctly during
+        # formatting.
+        if ( $type eq '#' ) {
+            if ($i != $max_index_to_go) {
+                 warning(
+"Non-fatal program bug: backup logic needed to break after a comment\n"
+                 );
+                 report_definite_bug();
+                 $nobreak_to_go[$i] = 0;
+                 set_forced_breakpoint($i);
+            }
+        }
 
         if ($type_sequence) {
 
@@ -8531,6 +8532,7 @@ sub set_continuation_breaks {
 
                 # There is an implied forced break at a terminal opening brace
                 || ( ( $type eq '{' ) && ( $i_test == $imax ) )
+
               )
             {
 
@@ -8801,6 +8803,7 @@ sub insert_additional_breaks {
                 warning(
 "Non-fatal program bug: couldn't set break at $i_break_left\n"
                 );
+                report_definite_bug();
                 return;
             }
             $i_f = $$ri_first[$line_number];
@@ -11204,7 +11207,6 @@ use vars qw{
   %TOKENIZER_DEBUG_FLAG
 
   $indirect_object_taker
-  $keywords_without_list
   $block_list_operator
   $block_operator
   %expecting_operator_token
@@ -13110,9 +13112,10 @@ EOM
                 # paren after keyword..
                 # map1.t
                 elsif ( $last_nonblank_type =~ /^[k]$/
-                    && $is_keyword_taking_list{$last_nonblank_token} )
 
-#                    && $last_nonblank_token !~ /$keywords_without_list/) 
+                    # a paren after these must never be made structural:
+                    # sort|grep|map|eval;
+                    && $is_keyword_taking_list{$last_nonblank_token} )
                 {
                     $type = '{';
                 }
@@ -13547,6 +13550,7 @@ EOM
 
                         # shouldn't happen..
                         warning("Program bug; didn't find here doc target\n");
+                        report_definite_bug();
                     }
                 }
                 else {
@@ -15689,6 +15693,7 @@ scanned and handled and a value of '' is returned.
         warning(
 "Program bug in scan_id: undefined type but scan_state=$id_scan_state\n"
         );
+        report_definite_bug();
     }
 
     if ( $TOKENIZER_DEBUG_FLAG{NSCAN} ) {
@@ -16509,8 +16514,6 @@ BEGIN {
     # these functions allow an identifier in the indirect object slot
     $indirect_object_taker = '^(print|printf|sort|exec|system)$';
 
-    # a paren after these must never be made structural:
-    # $keywords_without_list = '^(sort|grep|map|eval)$';
 
     # I'll build the list of keywords incrementally
     my @Keywords = ();

@@ -182,11 +182,13 @@ prepared to use your ``undo'' key).</P>
 <DT><STRONG><A NAME="item_%2Dsyn%2C_%2D%2Dcheck%2Dsyntax"><STRONG>-syn</STRONG>,   <STRONG>--check-syntax</STRONG></A></STRONG><BR>
 <DD>
 This causes perltidy to run <CODE>perl -c</CODE> to check syntax of input and output.
-This is the default and highly recommended.  The results are written to the
-<EM>.LOG</EM> file, which will be saved if an error is detected in the output script.
-The output script is not checked if the input script has a syntax error.  To
-skip syntax checking, use <STRONG>-nsyn</STRONG> or <STRONG>--nocheck-syntax</STRONG>.  Syntax checking is
-also deactivated by the <STRONG>--quiet</STRONG> flag, discussed above.
+The results are written to the <EM>.LOG</EM> file, which will be saved if an error
+is detected in the output script.  The output script is not checked if the
+input script has a syntax error.  To skip syntax checking, use <STRONG>-nsyn</STRONG> or
+<STRONG>--nocheck-syntax</STRONG>.  Syntax checking is also deactivated by the <STRONG>--quiet</STRONG>
+flag, discussed above.
+<P>The default value is system dependent.  On Unix systems, the default is to
+do a syntax check; on Windows systems, the default is not to do the check.</P>
 <P></P>
 <DT><STRONG><A NAME="item_%2Dlog%2C_%2D%2Dlogfile"><STRONG>-log</STRONG>,    <STRONG>--logfile</STRONG></A></STRONG><BR>
 <DD>
@@ -1081,7 +1083,7 @@ confusing filenames such as <EM>somefile.tdy.tdy.tdy</EM>.
 <P>
 <HR>
 <H1><A NAME="version">VERSION</A></H1>
-<P>This man page documents perltidy version 20011003.</P>
+<P>This man page documents perltidy version 20011016.</P>
 <P>
 <HR>
 <H1><A NAME="author">AUTHOR</A></H1>

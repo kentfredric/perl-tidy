@@ -5,6 +5,41 @@
  improvement, please send a note to perltidy at users.sourceforge.net.  
 
 =head2 2001 xx xx
+ 
+ -Corrected a bug in which a break was not being made after a full-line
+ comment within a short eval/sort/map/grep block.  A flag was not being
+ zeroed.  The syntax error check catches this.  Here is a snippet which
+ illustrates the bug:
+
+        eval {
+            #open Socket to Dispatcher
+            $sock = &OpenSocket;
+        };
+
+ The formatter mistakenly thought that it had found the following 
+ one-line block:
+ 
+        eval {#open Socket to Dispatcher$sock = &OpenSocket; };
+
+ The patch fixes this. Many thanks to Henry Story for reporting this bug.
+
+ -Changes were made to help diagnose and resolve problems in a
+ .perltidyrc file. (1) processing of command parameters has been into
+ two separate batches so that any errors in a .perltidyrc file can be
+ localized.  (2) commands --help, --version, and as many of the
+ --dump-xxx commands are handled immediately, without any command line
+ processing at all.  (3) Perltidy will ignore any commands in the
+ .perltidyrc file which cause immediate exit.  These are:  
+   -h -v -ddf -dln -dop -dsn -dtt -dwls -dwrs -ss.  Thanks to Wolfgang
+ Weisselberg for helpful suggestions regarding these updates.
+
+ -Syntax check reinstated as default for all systems and documentation
+ revised to warn Windows 95/98 users about the problem.  This way
+ Windows 2000 users will get syntax check by default, which seems like a
+ better idea.  Unfortunately $O seems to be MSWin32 for each of these
+ Windows variations.
+
+=head2 2001 10 16
 
  -Fixed tokenization error in which a method call of the form
 
@@ -24,7 +59,7 @@
  
  -.css lines are now printed in sorted order.
 
- -Fixed intrerpolation problem where html files had '$input_file' as title
+ -Fixed interpolation problem where html files had '$input_file' as title
  instead of actual input file name.  Thanks to Simon Perreault for finding
  this and sending a patch, and also to Tobias Weber.
 
@@ -211,11 +246,11 @@
  -The default for Windows is, for now, not to do a 'perl -c' syntax
  check (but -syn will activate it).  This is because of problems with
  command.com.  James Freeman sent me a patch which tries to get around
- the problems, and it works in many cases, but testing revealed some
+ the problems, and it works in many cases, but testing revealed several
  issues that still need to be resolved.  So for now, the default is no
  syntax check for Windows.
 
- -Paranoia struck.  I added a -T flag when doing perl -c syntax check.
+ -I added a -T flag when doing perl -c syntax check.
  This is because I test it on a large number of scripts from sources
  unknown, and who knows what might be hidden in initialization blocks?
  Also, deactivated the syntax check if perltidy is run as root.  As a
@@ -228,6 +263,14 @@
         }
         
  The new version will not let that happen.
+
+ -I am contemplating (but have not yet implemented) making '-lp' the
+ default indentation, because it is stable now and may be closer to how
+ perl is commonly formatted.  This could be in the next release.  The
+ reason that '-lp' was not the original default is that the coding for
+ it was complex and not ready for the initial release of perltidy.  If
+ anyone has any strong feelings about this, I'd like to hear.  The
+ current default could always be recovered with the '-nlp' flag.  
 
 =head2 2001 09 03 
 

@@ -231,7 +231,7 @@ perltidy(1)
 
 =head1 VERSION
 
-This man page documents perltidy version 20011003.
+This man page documents perltidy version 20011016.
 
 =head1 AUTHOR
 

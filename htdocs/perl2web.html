@@ -35,9 +35,10 @@ man page, or go to the home page at <A HREF="http://perltidy.sourceforge.net.">h
 perltidy to write output in html; without it, the html formatting
 parameters described here will all be ignored.  Also please note that at
 present perltidy is either in ``html mode'' or ``beautification mode'', but
-not both, so it does not do any beautification when the <STRONG>-html</STRONG> option
-is used.  This means that any beautification must be done in a
-preliminary separate run without the <STRONG>-html</STRONG> switch.</P>
+not both, so it does not do any indentation or formatting when the
+<STRONG>-html</STRONG> option is used.  The input file is decorated with HTML tags but
+otherwise left unchanged.  Therefore any indenting or reformatting must
+be done in a preliminary separate run without the <STRONG>-html</STRONG> switch.</P>
 <P>This documentation has been split from the rest of the perltidy
 documentation because it is expected that the perltidy -html capability
 will eventually be spun off into a new, independent program, to allow it
@@ -159,7 +160,8 @@ corresponding abbreviation:
       colon                  colon            co
       comma                  comma            cm
       label                  label            j
-      sub definition name    subroutine       m</PRE>
+      sub definition name    subroutine       m
+      pod text               pod-text         pd</PRE>
 <P>A default set of colors has been defined, but they may be changed by providing
 values to any of the following parameters, where <STRONG>n</STRONG> is either a 6 digit 
 hex RGB color value or an ascii name for a color, such as 'red'.</P>
@@ -230,7 +232,7 @@ it frequently.</P>
 <P>
 <HR>
 <H1><A NAME="version">VERSION</A></H1>
-<P>This man page documents perltidy version 20010903.</P>
+<P>This man page documents perltidy version 20011016.</P>
 <P>
 <HR>
 <H1><A NAME="author">AUTHOR</A></H1>

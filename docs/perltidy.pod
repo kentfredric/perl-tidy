@@ -157,15 +157,14 @@ prepared to use your "undo" key).
 
 =item B<-syn>,   B<--check-syntax>      
 
-This causes perltidy to run C<perl -c> to check syntax of input and output.
+This causes perltidy to run C<perl -T -c> to check syntax of input and output.
 The results are written to the F<.LOG> file, which will be saved if an error
 is detected in the output script.  The output script is not checked if the
 input script has a syntax error.  To skip syntax checking, use B<-nsyn> or
 B<--nocheck-syntax>.  Syntax checking is also deactivated by the B<--quiet>
 flag, discussed above.
 
-The default value is system dependent.  On Unix systems, the default is to
-do a syntax check; on Windows systems, the default is not to do the check.
+The default is to do a syntax check.
 
 =item B<-log>,    B<--logfile>           
 
@@ -861,6 +860,11 @@ Here is an example of a F<.perltidyrc> file:
 The parameters in the F<.perltidyrc> file are installed first, so any
 parameters given on the command line will have priority over them.  
 
+To avoid confusion, perltidy ignores any command in the .perltidyrc
+file which would cause some kind of dump and an exit.  These are:
+
+ -h -v -ddf -dln -dop -dsn -dtt -dwls -dwrs -ss
+
 There are several options may be helpful in debugging a F<.perltidyrc>
 file.  First, B<-log> will force a F<.LOG> file to be written, which
 contains the path to the F<.perltidyrc> file, if any, and a listing of
@@ -1173,7 +1177,7 @@ perl2web(1), perlstyle(1)
 
 =head1 VERSION
 
-This man page documents perltidy version 20011003.
+This man page documents perltidy version 20011016.
 
 =head1 AUTHOR
 

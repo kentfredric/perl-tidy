@@ -17,7 +17,6 @@
 		<LI><A HREF="#installation  unix">Installation - Unix</A></LI>
 		<LI><A HREF="#windows me caution">Windows ME Caution</A></LI>
 		<LI><A HREF="#installation  windows">Installation - Windows</A></LI>
-		<LI><A HREF="#windows 95 problem with command.com">Windows 95 problem with command.com</A></LI>
 		<LI><A HREF="#vms notes">VMS Notes</A></LI>
 	</UL>
 
@@ -113,29 +112,6 @@ to invoke Perltidy with perl directly, like this:</P>
  perl \somepath\perltidy -h | more</PRE>
 <P>The documentation that comes with your perl distribution discusses other
 installation options.</P>
-<P>
-<H2><A NAME="windows 95 problem with command.com">Windows 95 problem with command.com</A></H2>
-<P>There is a minor problem that you should be aware of if you are running
-Perltidy (and perl) under Windows 95 with the <EM>command.com</EM>
-shell.  The problem is that <EM>command.com</EM> always sends the standard
-error output to the screen.  This makes it impossible for Perltidy to
-capture the message 'syntax OK' when it runs 'perl -c' with the
-following code:</P>
-<PRE>
-        my $perl_output = &lt;&lt;`END`;
-                perl -c $filename 2&gt;&amp;1
-        END</PRE>
-<P>It also creates an empty file named <EM>&amp;1</EM>.  This means that you will
-have to check for syntax errors yourself.   If you do not want to create
-the empty file <EM>&amp;1</EM>, you can turn off syntax checking with the flag
-<STRONG>-nsyn</STRONG>.  You can then check the syntax of a file manually by issuing the
-command</P>
-<PRE>
- perl -c filename</PRE>
-<P>The best way to solve this problem is probably to use a better shell,
-such as bash - see <A HREF="http://www.cygwin.com.">http://www.cygwin.com.</A>  If anyone knows a way
-to code around this in perl please let me know.</P>
-<P>Windows 2000 does not have this problem.</P>
 <P>
 <H2><A NAME="vms notes">VMS Notes</A></H2>
 <P>Perltidy runs under VMS, thanks to Michael Cartmell.  You will

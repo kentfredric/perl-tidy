@@ -109,14 +109,13 @@ to invoke Perltidy with perl directly, like this:
 The documentation that comes with your perl distribution discusses other
 installation options.
 
-=head2 Windows 95 problem with command.com
+=head2 Windows 95/98 problem with syntax check
 
 There is a minor problem that you should be aware of if you are running
-Perltidy (and perl) under Windows 95 with the F<command.com>
-shell.  The problem is that F<command.com> always sends the standard
-error output to the screen.  This makes it impossible for Perltidy to
-capture the message 'syntax OK' when it runs 'perl -c' with the
-following code:
+perltidy (and perl) under Windows 95/98.  The problem is that
+F<command.com> always sends the standard error output to the screen.
+This makes it impossible for Perltidy to capture the message 'syntax OK'
+when it runs 'perl -c' with the following code:
 
     	my $perl_output = <<`END`;
 		perl -c $filename 2>&1
@@ -130,9 +129,7 @@ command
 
  perl -c filename
 
-The best way to solve this problem is probably to use a better shell,
-such as bash - see http://www.cygwin.com.  If anyone knows a way
-to code around this in perl please let me know.
+There does not seem to be a good way around this problem.
 
 Windows 2000 does not have this problem.
 

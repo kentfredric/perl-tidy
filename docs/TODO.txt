@@ -3,8 +3,22 @@ Perltidy TODO List
 
   Improved Vertical Alignment
 
-    Coding modifications are underway to improve vertical alignment. This
-    should be complete by November.
+    Coding modifications are underway to improve the vertical alignment
+    logic.
+
+  Modularization
+
+    Modularization work is in progress.
+
+  -lp as default
+
+    One of the next versons may set -lp as a default parameter. It really
+    isn't clear in the perlstyle guidelines if this is recommended, but it
+    does seem to be in very common use.
+
+  XML
+
+    The ability to write a tokenized script in XML is under consideration.
 
   Fix numerous little formatting issues
 
@@ -47,8 +61,10 @@ Perltidy TODO List
   HTML writer
 
     The HTML writer does not colorize interpolated identifiers in here
-    documents. This will require the tokenizer outputting interpolation
-    information for the here text, and some code to scan for identifiers.
+    documents or quoted strings. The tokenizer outputs interpolation
+    information for here docs; it still needs to be updated to do this for
+    multiline quotes. Then code needs to be written to scan for and markup
+    identifiers.
 
   Tokenization issues
 
@@ -72,16 +88,6 @@ Perltidy TODO List
     you have to examine the first few tokens of the interior set of to
     braces to see if it is a code block or anonymous hash reference. This
     needs to be done.
-
-  Modularization
-
-    It is planned to release perltidy in modules, hopefully this year.
-    However, the development of the tokenizer and formatter is still very
-    tightly coupled, and there are still some open tokenization issues that
-    need to be resolved before the program is split into pieces. Anyone is
-    welcome, of course, to extract the tokenizer and use it for other
-    projects, but it would be good to let me know so that we can coordinate
-    updates to the tokenizer.
 
   Option to reformat block comments
 

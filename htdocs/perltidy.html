@@ -26,6 +26,7 @@
 		<LI><A HREF="#other controls">Other Controls</A></LI>
 	</UL>
 
+	<LI><A HREF="#switches which may be negated">SWITCHES WHICH MAY BE NEGATED</A></LI>
 	<LI><A HREF="#limitations">LIMITATIONS</A></LI>
 	<LI><A HREF="#files">FILES</A></LI>
 	<LI><A HREF="#see also">SEE ALSO</A></LI>
@@ -181,11 +182,13 @@ prepared to use your ``undo'' key).</P>
 <DT><STRONG><A NAME="item_%2Dsyn%2C_%2D%2Dcheck%2Dsyntax"><STRONG>-syn</STRONG>,   <STRONG>--check-syntax</STRONG></A></STRONG><BR>
 <DD>
 This causes perltidy to run <CODE>perl -c</CODE> to check syntax of input and output.
-This is the default and highly recommended.  The results are written to the
-<EM>.LOG</EM> file, which will be saved if an error is detected in the output script.
-The output script is not checked if the input script has a syntax error.  To
-skip syntax checking, use <STRONG>-nsyn</STRONG> or <STRONG>--nocheck-syntax</STRONG>.  Syntax checking is
-also deactivated by the <STRONG>--quiet</STRONG> flag, discussed above.
+The results are written to the <EM>.LOG</EM> file, which will be saved if an error
+is detected in the output script.  The output script is not checked if the
+input script has a syntax error.  To skip syntax checking, use <STRONG>-nsyn</STRONG> or
+<STRONG>--nocheck-syntax</STRONG>.  Syntax checking is also deactivated by the <STRONG>--quiet</STRONG>
+flag, discussed above.
+<P>The default value is system dependent.  On Unix systems, the default is to
+do a syntax check; on Windows systems, the default is not to do the check.</P>
 <P></P>
 <DT><STRONG><A NAME="item_%2Dlog%2C_%2D%2Dlogfile"><STRONG>-log</STRONG>,    <STRONG>--logfile</STRONG></A></STRONG><BR>
 <DD>
@@ -462,11 +465,11 @@ Setting <STRONG>-asc</STRONG> allows perltidy to add any missing optional semico
 of a line which is followed by a closing curly brace on the next line.  This
 is the default, and may be deactivated with <STRONG>-nasc</STRONG> or <STRONG>--noadd-semicolons</STRONG>.
 <P></P>
-<DT><STRONG><A NAME="item_%2Ddsc%2C_%2D%2Ddelete%2Dsemicolons"><STRONG>-dsc</STRONG>,  <STRONG>--delete-semicolons</STRONG></A></STRONG><BR>
+<DT><STRONG><A NAME="item_%2Ddsm%2C_%2D%2Ddelete%2Dsemicolons"><STRONG>-dsm</STRONG>,  <STRONG>--delete-semicolons</STRONG></A></STRONG><BR>
 <DD>
-Setting <STRONG>-dsc</STRONG> allows perltidy to delete extra semicolons which are
+Setting <STRONG>-dsm</STRONG> allows perltidy to delete extra semicolons which are
 simply empty statements.  This is the default, and may be deactivated
-with <STRONG>-ndsc</STRONG> or <STRONG>--nodelete-semicolons</STRONG>.  (Such semicolons are not
+with <STRONG>-ndsm</STRONG> or <STRONG>--nodelete-semicolons</STRONG>.  (Such semicolons are not
 deleted, however, if they would promote a side comment to a block
 comment).
 <P></P>
@@ -633,11 +636,32 @@ Use the flag <STRONG>-bl</STRONG> to place the opening brace on a new line:
   {                          
       important_function();
   }</PRE>
-<P>This flag applies to all structural blocks, including sub's.</P>
+<P>This flag applies to all structural blocks, including sub's (unless
+the <STRONG>-sbl</STRONG> flag is set -- see next item).</P>
 <P>The default style, <STRONG>-nbl</STRONG>, places an opening brace on the same line as
 the keyword introducing it.  For example,</P>
 <PRE>
   if ( $input_file eq '-' ) {   # -nbl (default)</PRE>
+<P></P>
+<DT><STRONG><A NAME="item_%2Dsbl%2C_%2D%2Dopening%2Dsub%2Dbrace%2Don%2Dnew%2"><STRONG>-sbl</STRONG>,    <STRONG>--opening-sub-brace-on-new-line</STRONG></A></STRONG><BR>
+<DD>
+The flag <STRONG>-sbl</STRONG> can be used to override the value of <STRONG>-bl</STRONG> for
+opening sub braces.  For example,
+<PRE>
+ perltidy -sbl</PRE>
+<P>produces this result:</P>
+<PRE>
+ sub foo
+ {
+    if (!defined($_[0])) {
+        print(&quot;Hello, World\n&quot;);
+    }
+    else {
+        print($_[0], &quot;\n&quot;);
+    }
+ }</PRE>
+<P>This flag is negated with <STRONG>-nsbl</STRONG>.  If <STRONG>-sbl</STRONG> is not specified,
+the value of <STRONG>-bl</STRONG> is used.</P>
 <P></P>
 <DT><STRONG><A NAME="item_%2Dbli%2C_%2D%2Dbrace%2Dleft%2Dand%2Dindent"><STRONG>-bli</STRONG>,    <STRONG>--brace-left-and-indent</STRONG></A></STRONG><BR>
 <DD>
@@ -937,22 +961,26 @@ breaks:</P>
 <P>One-line block rules can conflict with the cuddled-else option.  When
 the cuddled-else option is used, perltidy retains existing one-line
 blocks, even if they do not obey cuddled-else formatting.</P>
+<P>Occasionally, when one-line blocks get broken because they exceed the
+available line length, the formatting will violate the requested brace style.
+If this happens, reformatting the script a second time should correct
+the problem.</P>
 <P></P>
 <DT><STRONG><A NAME="item_Debugging">Debugging</A></STRONG><BR>
 <DD>
 The following flags are available for debugging:
-<P><STRONG>-dump-defaults</STRONG>  will write the default option set to standard output and quit</P>
-<P><STRONG>-dump-options</STRONG>   will write current option set to standard output and quit.</P>
-<P><STRONG>-dump-long-names</STRONG>   will write all command line long names (passed 
+<P><STRONG>--dump-defaults</STRONG> or <STRONG>-ddf</STRONG> will write the default option set to standard output and quit</P>
+<P><STRONG>--dump-options</STRONG> or <STRONG>-dop</STRONG>  will write current option set to standard output and quit.</P>
+<P><STRONG>--dump-long-names</STRONG> or <STRONG>-dln</STRONG>  will write all command line long names (passed 
 to Get_options) to standard output and quit.</P>
-<P><STRONG>-dump-short-names</STRONG>   will write all command line short names 
+<P><STRONG>--dump-short-names</STRONG>  or <STRONG>-dsn</STRONG> will write all command line short names 
 to standard output and quit.</P>
-<P><STRONG>-dump-token-types</STRONG>   will write a list of all token types 
+<P><STRONG>--dump-token-types</STRONG> or <STRONG>-dtt</STRONG>  will write a list of all token types 
 to standard output and quit.</P>
-<P><STRONG>-dump-want-left-space</STRONG>   will write the hash %want_left_space
+<P><STRONG>--dump-want-left-space</STRONG> or <STRONG>-dwls</STRONG>  will write the hash %want_left_space
 to standard output and quit.  See the section on controlling whitespace
 around tokens.</P>
-<P><STRONG>-dump-want-right-space</STRONG>   will write the hash %want_right_space
+<P><STRONG>--dump-want-right-space</STRONG> or <STRONG>-dwrs</STRONG>  will write the hash %want_right_space
 to standard output and quit.  See the section on controlling whitespace
 around tokens.</P>
 <P><STRONG>-DEBUG</STRONG>  will write a file with extension <EM>.DEBUG</EM> for each input file 
@@ -982,6 +1010,18 @@ which may be viewed with a browser.</P>
 <P>Documentation for this option has been moved to a separate man
 page, perl2web(1).</P>
 <P></P></DL>
+<P>
+<HR>
+<H1><A NAME="switches which may be negated">SWITCHES WHICH MAY BE NEGATED</A></H1>
+<P>The following list shows all short parameter names which allow a prefix
+'n' to produce the negated form:</P>
+<PRE>
+    D anl asc aws bbb bbc bbs bli baa syn ce dac dbc dnl
+    dws dp dsm dsc ddf dln dop dsn dtt dwls dwrs f fll
+    hsc html ibc icb icp lp log lal x lsl bl sbl oll pvl
+    q opt sfs sts se st sob t tac tbc tp tsc tqw w</PRE>
+<P>Equivalently, the prefix 'no' on the corresponding long names may be
+used.</P>
 <P>
 <HR>
 <H1><A NAME="limitations">LIMITATIONS</A></H1>
@@ -1043,7 +1083,7 @@ confusing filenames such as <EM>somefile.tdy.tdy.tdy</EM>.
 <P>
 <HR>
 <H1><A NAME="version">VERSION</A></H1>
-<P>This man page documents perltidy version 20010903.</P>
+<P>This man page documents perltidy version 20011016.</P>
 <P>
 <HR>
 <H1><A NAME="author">AUTHOR</A></H1>
