@@ -9,9 +9,10 @@ Please note that the B<-html> flag is the "master switch" which tells
 perltidy to write output in html; without it, the html formatting
 parameters described here will all be ignored.  Also please note that at
 present perltidy is either in "html mode" or "beautification mode", but
-not both, so it does not do any beautification when the B<-html> option
-is used.  This means that any beautification must be done in a
-preliminary separate run without the B<-html> switch.
+not both, so it does not do any indentation or formatting when the
+B<-html> option is used.  The input file is decorated with HTML tags but
+otherwise left unchanged.  Therefore any indenting or reformatting must
+be done in a preliminary separate run without the B<-html> switch.
 
 This documentation has been split from the rest of the perltidy
 documentation because it is expected that the perltidy -html capability

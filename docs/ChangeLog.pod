@@ -6,6 +6,26 @@
 
 =head2 2001 xx xx
 
+ -Added wildcard file expansion for systems with shells which lack this.
+ Now 'perltidy *.pl' should work under MSDOS/Windows.  Thanks to Hugh Myers 
+ for suggesting this.
+
+ -Added new flag -sbl which, if specified, overrides the value of -bl
+ for opening sub braces.  This allows formatting of this type:
+
+ perltidy -sbl 
+
+ sub foo
+ {
+    if (!defined($_[0])) {
+        print("Hello, World\n");
+    }
+    else {
+        print($_[0], "\n");
+    }
+ }
+ Requested by Don Alexander.
+
  -Fixed intrerpolation problem where html files had '$input_file' as title
  instead of actual input file name.  Thanks to Simon Perreault for finding
  this and sending a patch.
@@ -15,6 +35,8 @@
  For example, 
    old: $$< 700 
    new: $$ < 700
+
+ -Added -T flag when doing perl -c syntax check. 
 
 =head2 2001 09 03 
 

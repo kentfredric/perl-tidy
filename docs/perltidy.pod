@@ -660,12 +660,35 @@ Use the flag B<-bl> to place the opening brace on a new line:
       important_function();
   }
 
-This flag applies to all structural blocks, including sub's.
+This flag applies to all structural blocks, including sub's (unless
+the B<-sbl> flag is set -- see next item).
 
 The default style, B<-nbl>, places an opening brace on the same line as
 the keyword introducing it.  For example,
 
   if ( $input_file eq '-' ) {   # -nbl (default)
+
+=item B<-sbl>,    B<--opening-sub-brace-on-new-line>     
+
+The flag B<-sbl> can be used to override the value of B<-bl> for
+opening sub braces.  For example, 
+
+ perltidy -sbl
+
+produces this result:
+
+ sub foo
+ {
+    if (!defined($_[0])) {
+        print("Hello, World\n");
+    }
+    else {
+        print($_[0], "\n");
+    }
+ }
+
+This flag is negated with B<-nsbl>.  If B<-sbl> is not specified,
+the value of B<-bl> is used.
 
 =item B<-bli>,    B<--brace-left-and-indent>     
 

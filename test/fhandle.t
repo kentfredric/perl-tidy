@@ -26,3 +26,9 @@
 
 	# header is a sub call here; perltidy will mark it type 'Z'
         use CGI':all';print header,start_html('x');
+
+        # current rules prevent line break after $handle
+        {
+              print $handle
+              sprintf( "%-${width}s", $list[ $i + ( $j * $lines ) ] );
+        }

@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.44 2001/09/18 15:06:55 perltidy Exp $
+    $Id: perltidy,v 1.45 2001/09/28 23:10:36 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -130,6 +130,13 @@ sub main {
     my $input_file;
     my $formatter = undef;
     my $tokenizer = undef;
+
+    # Set a flag here for any system which does not have a shell to
+    # expand wildcard filenames like '*.pl'.  In theory it should also
+    # be ok to set the flag for any system, but I prefer not to do so
+    # out of robustness concerns.
+    my $use_glob = ( $^O eq 'MSWin32' ); 
+
     while ( $input_file = shift @ARGV ) {
         my $fileroot;
 
@@ -141,8 +148,21 @@ sub main {
         }
         else {
             $fileroot = $input_file;
-
             unless ( -e $input_file ) {
+
+                # file doesn't exist, maybe we have a wildcard
+                if ($use_glob) {
+
+                    # work around a glob bug by using grep;
+                    # i.e., glob('p.q') always returns 'p.q'
+                    # even if 'p.q' doesn't exist.
+                    my @files  = grep {-e $_} glob($input_file);
+                    if (@files) {
+                        unshift @ARGV, @files;
+                        next;
+                    }
+                }
+
                 print "skipping file: $input_file: does not exist\n";
                 next;
             }
@@ -413,6 +433,7 @@ sub process_command_line {
       minimum-space-to-comment=i
       maximum-whitespace-columns=i
       opening-brace-on-new-line!
+      opening-sub-brace-on-new-line!
       outdent-long-lines!
       indent-closing-paren!
       indent-closing-brace!
@@ -452,6 +473,7 @@ sub process_command_line {
       look-for-autoloader!
       look-for-selfloader!
       long-block-line-count=i
+      short-contatenation-item-length=i
     );
 
     # The Perltidy::HtmlWriter will add its own options to the string
@@ -513,6 +535,7 @@ sub process_command_line {
       look-for-autoloader
       look-for-selfloader
       long-block-line-count=8
+      short-contatenation-item-length=8
     );
 
     #---------------------------------------------------------------
@@ -622,6 +645,8 @@ sub process_command_line {
         'cb'                 => [qw(comma-break-flag)],
         'bl'                 => [qw(opening-brace-on-new-line)],
         'nbl'                => [qw(noopening-brace-on-new-line)],
+        'sbl'                => [qw(opening-sub-brace-on-new-line)],
+        'nsbl'               => [qw(noopening-sub-brace-on-new-line)],
         'bar'                => [qw(opening-brace-always-on-right)],
         'icp'                => [qw(indent-closing-paren)],
         'nicp'               => [qw(noindent-closing-paren)],
@@ -675,6 +700,7 @@ sub process_command_line {
         'w'                  => [qw(warning-output)],
         'nw'                 => [qw(nowarning-output)],
         'lbl'                => [qw(long-block-line-count)],
+        'scl'                => [qw(short-contatenation-item-length)],
 
         # 'mangle' originally deleted pod and comments, but to keep it
         # reversible, it no longer does because i have removed:
@@ -980,6 +1006,18 @@ EOM
   'opening-brace-on-new-line' (-bl).  Ignoring -bl. 
 EOM
         $Opts{'opening-brace-on-new-line'} = 0;
+    }
+
+    # it simplifies things if -bl is 0 rather than undefined
+    if (!defined( $Opts{'opening-brace-on-new-line'} ) ) {
+        $Opts{'opening-brace-on-new-line'} = 0;
+    }
+
+    # -sbl defaults to -bl if not defined
+    if ( !defined( $Opts{'opening-sub-brace-on-new-line'} ) )
+    {
+        $Opts{'opening-sub-brace-on-new-line'} =
+          $Opts{'opening-brace-on-new-line'};
     }
 
     # set shortcut flag if no blanks to be written
@@ -1359,8 +1397,10 @@ sub check_syntax {
     # Not all operating systems/shells support redirection of the standard
     # error output.
     my $error_redirection = ( $^O eq 'VMS' ) ? "" : '2>&1';
+    my $flags = "-c -T $dash_x";
 
-    my $perl_output = `perl -c $dash_x $ifname $error_redirection`;
+    #my $perl_output = `perl $flags $ifname $error_redirection`;
+    my $perl_output = do_syntax_check($ifname,$flags,$error_redirection);
     $logger_object->write_logfile_entry("$perl_output\n");
 
     if ( $perl_output =~ /syntax\s*OK/ ) {
@@ -1372,7 +1412,8 @@ sub check_syntax {
         $logger_object->write_logfile_entry(
             "------------------------------------------\n");
 
-        my $perl_output = `perl -c $dash_x $ofname $error_redirection`;
+        #my $perl_output = `perl $flags $ofname $error_redirection`;
+        my $perl_output = do_syntax_check($ofname,$flags,$error_redirection);
         $logger_object->write_logfile_entry("$perl_output\n");
 
         unless ( $perl_output =~ /syntax\s*OK/ ) {
@@ -1399,6 +1440,55 @@ sub check_syntax {
         );
     }
     return $infile_syntax_ok;
+}
+
+sub do_syntax_check {
+    my ($fname, $flags, $error_redirection) = @_;
+
+#    if ( $^O eq 'MSWin32' ) {
+#        my $msg=do_win95_syntax_check($fname, $flags, $error_redirection); 
+#        print "Doing win95 syntax check: result is $msg\n";
+#        return $msg;
+#    }
+#    else {
+#        return do_unix_syntax_check($fname, $flags, $error_redirection); 
+#    }
+
+    return do_unix_syntax_check($fname, $flags, $error_redirection); 
+
+}
+
+sub do_unix_syntax_check {
+    my ($fname, $flags, $error_redirection) = @_;
+    return `perl $flags $fname $error_redirection`;
+}
+
+sub do_win95_syntax_check {
+
+        # This is an experimental routine..do not use yet
+        my ($fname, $flags, $error_redirection) = @_;
+        local $/;
+        unless (open SCRIPT, "+<$fname" ) {
+           print STDERR "Cannot open $fname for syntax check: $!\n";
+           return "Cannot open $fname for syntax check: $!\n";
+        }
+        my $script = <SCRIPT>;
+        close SCRIPT;
+        $script =  "{ last; $script;\n }";
+        $script =~ s/(__DATA__|__END__)/}$1/g;
+        my $msg="";
+        {local $^W=0; no strict; $msg=eval $script;}
+        if ($msg) {
+        print STDERR "MESSAGE is $msg\n";
+        }
+        if ($@||$msg) {
+          $msg .= $@;
+          $msg =~ s/\(eval 1\)/$fname/g;
+          return $msg;
+        }
+        else {
+          return "$fname syntax OK";
+        }
 }
 
 #####################################################################
@@ -2682,6 +2772,7 @@ use vars qw{
   $last_line_had_side_comment
   $want_break_before_comma
   $want_break_before_colon
+  $want_break_before_dot
 
   %FORMATTER_DEBUG_FLAG
   %tightness
@@ -3755,10 +3846,12 @@ EOM
     # implement user break preferences
     $want_break_before_comma = 0;
     $want_break_before_colon = 1;
+    $want_break_before_dot   = 1;
     my $want_break_before_question = 1;
     if ( $rOpts->{'want-break-after'} ) {
         @list = split /\s/, $rOpts->{'want-break-after'};
         foreach my $tok (@list) {
+            if ( $tok eq '.' ) { $want_break_before_dot = 0; }
             if ( $tok eq ':' ) { $want_break_before_colon = 0; }
             if ( $tok eq '?' ) { $want_break_before_question = 0; }
             my $lbs = $left_bond_strength{$tok};
@@ -4536,7 +4629,7 @@ sub print_line_of_tokens {
     #     /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
     # Examples:
     #   *VERSION = \'1.01';
-    #   ( $VERSION ) = '$Revision: 1.44 $ ' =~ /\$Revision:\s+([^\s]+)/;
+    #   ( $VERSION ) = '$Revision: 1.45 $ ' =~ /\$Revision:\s+([^\s]+)/;
     # We will pass such a line straight through unless -npvl is used
     my $is_VERSION_statement = 0;
 
@@ -4755,19 +4848,29 @@ sub print_line_of_tokens {
                 }
             }
 
+            # decide if user requested break before '{'
+            my $want_break =
+
+              # use -bl flag if not a sub block of any type
+              $block_type !~ /^sub/ ? $rOpts->{'opening-brace-on-new-line'}
+
+              # use -sbl flag unless this is an anonymous sub block
+              : $block_type !~
+              /^sub\W*$/ ? $rOpts->{'opening-sub-brace-on-new-line'}
+
+              # do not break for anonymous subs
+              : 0;
+
             # Break before an opening '{' ...
             if (
 
                 # if requested 
-                $rOpts->{'opening-brace-on-new-line'}
+                $want_break
 
                 # and we were unable to start looking for a block,
                 # or the -nbob is in use
                 && ( $index_start_one_line_block == UNDEFINED_INDEX
                     || !$rOpts->{'break-after-opening-brace'} )
-
-                # and this is not an anonymous sub
-                && ( $block_type !~ /^sub\W*$/ )
 
                 # or if it will not be on same line as its keyword, so that
                 # it will be outdented (eval.t, overload.t), and the user
@@ -5785,9 +5888,11 @@ sub send_lines_to_vertical_aligner {
                 # map certain keywords to the same 'if' class to align
                 # long if/elsif sequences. my testfile: elsif.pl
                 my $tok = $tokens_to_go[$i];
-                if ( $tok eq 'elsif' )  { $tok = 'if' }
-                if ( $tok eq 'else' )   { $tok = 'if' }
-                if ( $tok eq 'unless' ) { $tok = 'if' }
+                if ($n == 0) {
+                    if ( $tok eq 'elsif' )  { $tok = 'if' }
+                    if ( $tok eq 'else' )   { $tok = 'if' }
+                    if ( $tok eq 'unless' ) { $tok = 'if' }
+                }
                 $patterns[$j] .= $tok;
             }
         }
@@ -6268,11 +6373,23 @@ sub set_bond_strengths {
     my $bar_bias   = 0;
     my $and_bias   = 0;
     my $or_bias    = 0;
+    my $dot_bias   = 0;
     my $code_bias  = -.01;
+    my $type = 'b';
+    my $last_type; 
+    my $last_nonblank_type='b'; 
 
     # preliminary loop to compute bond strengths
     for ( my $i = 0 ; $i <= $max_index_to_go ; $i++ ) {
-        my $type       = $types_to_go[$i];
+        $last_type = $type;
+        if ($type ne 'b') {$last_nonblank_type = $type}
+        $type       = $types_to_go[$i];
+
+        # strength on both sides of a blank is the same
+        if ($type eq 'b' && $last_type ne 'b') {
+          $bond_strength_to_go[$i] = $bond_strength_to_go[$i-1]; next;
+        }
+
         my $token      = $tokens_to_go[$i];
         my $block_type = $block_type_to_go[$i];
 
@@ -6324,6 +6441,12 @@ sub set_bond_strengths {
         }
         my $bsl = $left_bond_strength{$next_nonblank_type};
 
+        # set terminal bond strength to the nominal value
+        # this will cause good preceding breaks to be retained
+        if ($i_next_nonblank > $max_index_to_go) {
+          $bsl = NOMINAL; 
+        }
+
         if ( !defined($bsl) ) {
 
             if ( $is_digraph{$next_nonblank_type}
@@ -6359,19 +6482,6 @@ sub set_bond_strengths {
         # section 2:
         # special cases
         #---------------------------------------------------------------
-        # good to break before 'if', 'unless', etc
-        if ( $if_brace_follower_pattern
-            && ( $next_nonblank_token =~ /$if_brace_follower_pattern/ ) )
-        {
-            $bond_str = VERY_WEAK;
-        }
-
-        # keywords like 'unless' 'if' make good breaks
-        if ( $do_follower_pattern && ( $next_nonblank_type eq 'k' )
-            && ( $next_nonblank_token =~ /$do_follower_pattern/ ) )
-        {
-            $bond_str = VERY_WEAK / 1.05;
-        }
 
         # allow long lines before final { in an if statement, as in:
         #    if (..........
@@ -6403,9 +6513,21 @@ sub set_bond_strengths {
             $colon_bias += 0.0001;
         }
 
-        #--------------------------------------------------------------------
-        # Possible Future Coding: This needs to be coordinated with
-        # sub set_continuation breaks to take alignment into account
+        # if leading '.' is used, align all but 'short' quotes;
+        # the idea is to not place something like "\n" on a single line.
+        if ( $next_nonblank_type eq '.' ) {
+            if ($want_break_before_dot) {
+                unless ( $last_nonblank_type eq '.'
+                    #&& $type eq 'Q'
+                    && length($token) <=
+                    $rOpts->{'short-contatenation-item-length'} )
+                {
+                    $dot_bias += 0.0001;
+                }
+                $bond_str += $dot_bias;
+            }
+        }
+
         elsif ( $next_nonblank_type eq '&&' ) {
                     $bond_str   += $amp_bias;
                     $amp_bias += 0.0001;
@@ -6414,15 +6536,14 @@ sub set_bond_strengths {
                     $bond_str   += $bar_bias;
                     $bar_bias += 0.0001;
         }
-        elsif ($next_nonblank_type eq 'k' && $next_nonblank_token eq 'and') {
-                    $bond_str   += $and_bias;
-                    $and_bias += 0.0001;
-                }
-        elsif ($next_nonblank_type eq 'k' && $next_nonblank_token eq 'or') {
-                    $bond_str   += $or_bias;
-                    $or_bias += 0.0001;
-                }
-        #--------------------------------------------------------------------
+        elsif ( $next_nonblank_type eq 'k' && $next_nonblank_token eq 'and' ) {
+            $bond_str += $and_bias;
+            $and_bias += 0.0001;
+        }
+        elsif ( $next_nonblank_type eq 'k' && $next_nonblank_token eq 'or' ) {
+            $bond_str += $or_bias;
+            $or_bias  += 0.0001;
+        }
 
         # keep matrix and hash indices together
         # but make them a little below STRONG to allow breaking open
@@ -6465,6 +6586,20 @@ sub set_bond_strengths {
             if ( $token eq 'my' ) {
                 $bond_str = NO_BREAK;
             }
+        }
+
+        # good to break before 'if', 'unless', etc
+        if ( $if_brace_follower_pattern
+            && ( $next_nonblank_token =~ /$if_brace_follower_pattern/ ) )
+        {
+            $bond_str = VERY_WEAK;
+        }
+
+        # keywords like 'unless' 'if' make good breaks
+        if ( $do_follower_pattern && ( $next_nonblank_type eq 'k' )
+            && ( $next_nonblank_token =~ /$do_follower_pattern/ ) )
+        {
+            $bond_str = VERY_WEAK / 1.05;
         }
 
         # try not to break before a comma-arrow
@@ -7806,6 +7941,8 @@ sub recombine_breakpoints {
             my $imid  = $$ri_last[ $n - 1 ];
             my $imidr = $$ri_first[$n];
 
+            #print "RECOMBINE: n=$n imid=$imid if=$if type=$types_to_go[$if] =$tokens_to_go[$if] next_type=$types_to_go[$imidr] next_tok=$tokens_to_go[$imidr]\n";
+
             #----------------------------------------------------------
             # Start of special recombination rules 
             # These are ad-hoc rules which have been found to work ok.
@@ -7902,11 +8039,6 @@ sub recombine_breakpoints {
                 );
             }
 
-            # do not recombine lines with leading &&, ||, or :
-            elsif ( $types_to_go[$imidr] =~ /^(:|\&\&|\|\|)$/) {
-               next;
-            }
-
             # for keywords..
             elsif ( $types_to_go[$imid] eq 'k' ) {
 
@@ -7916,6 +8048,28 @@ sub recombine_breakpoints {
             }
 
             else {
+
+                # do not recombine lines with leading &&, ||, or :
+                next if ( $types_to_go[$imidr] =~ /^(:|\&\&|\|\|)$/); 
+
+                # do not recombine lines with leading '.' 
+                if ( $types_to_go[$imidr] =~ /^(\.)$/ ) {
+=pod
+      ... unless there is just one and we can reduce this to
+      two lines if we do.  For example, this :
+      
+                $bodyA .=
+                  '($dummy, $pat) = &get_next_tex_cmd;' . '$args .= $pat;'
+
+      looks better than this:
+                $bodyA .= '($dummy, $pat) = &get_next_tex_cmd;' 
+                   . '$args .= $pat;'
+=cut
+                    next
+                      unless ( $n == 2
+                        && $n == $nmax
+                        && $types_to_go[$if] ne $types_to_go[$imidr] );
+                }
 
                 # keywords look best at start of lines,
                 # but combine things like "1 while" 
@@ -7929,7 +8083,6 @@ sub recombine_breakpoints {
                   if ( ( $types_to_go[$imidr] eq 'k' )
                     && ( $tokens_to_go[$imidr] =~ /^(and|or)$/ ) );
 
-                next if ( $tokens_to_go[$imidr] =~ /^(\&\&|\|\|)$/ );
             }
 
             # honor hard breakpoints
@@ -8014,6 +8167,8 @@ sub set_continuation_breaks {
     my $last_break_strength = NO_BREAK;
     my $i_last_break = -1;
     my $max_bias = 0.001;
+    my $leading_alignment_token="";
+    my $leading_alignment_type="";
 
     while ( $i_begin <= $imax ) {
         my $lowest_strength = NO_BREAK;
@@ -8093,20 +8248,31 @@ sub set_continuation_breaks {
 
             if ( ( $strength <= $lowest_strength ) && ( $strength < NO_BREAK ) )
             {
+                
+                # break at previous best break if it would have produced
+                # a leading alignment of certain common tokens, and it
+                # is different from the latest candidate break
+                last
+                  if ( $leading_alignment_type
+                    && ($next_nonblank_type ne $leading_alignment_type
+                    || $next_nonblank_token ne $leading_alignment_token )) ;
 
                 $lowest_strength = $strength;
                 $i_lowest        = $i_test;
                 last if $must_break;
 
-                # break to avoid two of certain types on a line
-                last
-                  if ( $line_count > 0 && $i_test<$imax
+                # set flags to remember if a break here will produce a
+                # leading alignment of certain common tokens
+                if ( $line_count > 0 && $i_test<$imax
                     && ($lowest_strength - $last_break_strength <= $max_bias)
-                    && ( $types_to_go[$i_begin] =~ /^(\&\&|\|\||:)$/
+                    && ( $types_to_go[$i_begin] =~ /^(\.|\&\&|\|\||:)$/
                         && $types_to_go[$i_begin] eq $next_nonblank_type)
                     || ( $tokens_to_go[$i_begin] =~ /^(and|or)$/
                         && $tokens_to_go[$i_begin] eq $next_nonblank_token)
-                );
+                ) {
+                   $leading_alignment_token=$next_nonblank_token;
+                   $leading_alignment_type=$next_nonblank_type;
+                }
             }
 
             my $too_long =
@@ -8152,6 +8318,8 @@ sub set_continuation_breaks {
         $i_begin             = $i_lowest + 1;
         $last_break_strength = $lowest_strength;
         $i_last_break = $i_lowest;
+        $leading_alignment_token="";
+        $leading_alignment_type="";
 
         if ( ( $i_begin <= $imax ) && ( $types_to_go[$i_begin] eq 'b' ) ) {
             $i_begin++;
@@ -12383,7 +12551,7 @@ EOM
 
                 # make most lists structural, including
                 # sub call parameter lists and &&, ||, !
-                elsif ( $last_nonblank_type =~ /^([wiZU!]|\|\||\&\&)$/ ) {
+                elsif ( $last_nonblank_type =~ /^([wiZU!?:]|\|\||\&\&)$/ ) {
                     $type = '{';
                 }
 
