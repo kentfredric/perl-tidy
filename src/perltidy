@@ -1,5 +1,4 @@
 #!/usr/bin/env perl
-
 package main;
 
 ##BEGIN:REMOVE BEFORE PACKAGING#############################
@@ -10,14 +9,6 @@ BEGIN {
 use Perl::Tidy;
 
 # remove any temporary files if interrupted
-$SIG{INT} = sub {
-    Perl::Tidy::interrupt_handler();
-    exit -1;
-};
+$SIG{INT} = sub { Perl::Tidy::interrupt_handler(-1) };
 
-Perl::Tidy::perltidy(
-    source      => undef,
-    destination => undef,
-    stderr      => undef,
-    argv        => undef,
-);
+Perl::Tidy::perltidy();

@@ -184,18 +184,40 @@ prepared to use your "undo" key).
 
 =item B<-syn>,   B<--check-syntax>      
 
-This causes perltidy to run C<perl -T -c> to check syntax of input and output.
-The results are written to the F<.LOG> file, which will be saved if an error
-is detected in the output script.  The output script is not checked if the
-input script has a syntax error.  To skip syntax checking, use B<-nsyn> or
-B<--nocheck-syntax>.  Syntax checking is also deactivated by the B<--quiet>
-flag, discussed above.
+The purpose of this flag is to alert you to any situation in which the
+intput file has good syntax but the output file has bad syntax, which
+implies an error by perltidy.
 
-Please note that this flag only controls the invocation of perl for
-checking.  Even if it is deactivated, perltidy will still do extensive
-syntax checking on its own. 
+This flag causes perltidy to run C<perl -c -T> to check syntax of input
+and output.  (To change the flags passed to perl, see the next item,
+B<-pscf>).  The results are written to the F<.LOG> file, which will be
+saved if an error is detected in the output script.  The output script
+is not checked if the input script has a syntax error.  
 
-The default is to do a syntax check.
+If Perl reports errors in the input file, they will not be reported in
+the error output unless the B<-warning-output> flag is given. 
+
+To skip syntax checking, use B<-nsyn> or B<--nocheck-syntax>.  Syntax
+checking is also deactivated by the B<--quiet> flag, discussed above.
+
+The default is to do a syntax check on most operating systems.  An
+exception is Windows 9x/Me systems, which have robustness problems.
+
+B<Please note:> Even if this type of syntax checking is deactivated,
+perltidy will still do extensive syntax checking on its own.
+
+=item B<-pscf=s>, B<-perl-syntax-check-flags=s>
+
+When perl is invoked to check syntax, the normal flags are C<-c -T>.  In
+addition, if the B<-x> flag is given to perltidy, then perl will also be
+passed a B<-x> flag.  It should not normally be necessary to change
+these flags, but it can be done with the B<-pscf=s> flag.  For example,
+if the taint flag, C<-T>, is not wanted, the flag could be set to be just
+B<-pscf=-c>.  
+
+Perltidy will pass your string to perl with the exception that it will
+add a B<-c> and B<-x> if appropriate.  The F<.LOG> file will show
+exactly what flags were passed to perl.
 
 =item B<-log>,    B<--logfile>           
 
@@ -245,10 +267,8 @@ default F<.perltidyrc>.
 
 =item B<-opt>,   B<--show-options>      
 
-Write a list of all options used to the F<.LOG> file.  This is useful for
-debugging command files.  In the list, the status of on/off
-switches is indicated by a 0 for off and a 1 for on.  Please see
-B<--dump-options> for a simpler way to do this.
+Write a list of all options used to the F<.LOG> file.  
+Please see B<--dump-options> for a simpler way to do this.
 
 =item B<-f>,   B<--force-read-binary>      
 
@@ -383,7 +403,7 @@ closing parens may cause perltidy to temporarily revert to its default
 method.
 
 Note: The B<-lp> option may not be used together with the B<-t> tabs option.
-If B<-t> is specified, it will be ignored.
+It may, however, be used with the B<-et=n> tab method.
 
 In addition, any parameter which restricts the ability of perltidy to
 choose newlines will all conflict with B<-lp> and will cause B<-lp> to
@@ -1115,13 +1135,10 @@ math operators C<'+'>, C<'-'>, C<'/'>, and C<'*'>:
   -wbb="+ - / *"
 
 These commands should work well for most of the token types that
-perltidy uses (use B<--dump-token-types> for a list).  However, 
-for a few token types there may be conflicts with hardwired
-logic which cause unexpected results.  An example is the comma,
-which is hardwired to go at the end of lines in certain cases.
-Hopefully, this restriction will be removed in the future.  Another
-example is curly braces, which should be controlled with the
-parameter B<bl> provided for that purpose.
+perltidy uses (use B<--dump-token-types> for a list).  However, for a
+few token types there may be conflicts with hardwired logic which cause
+unexpected results.  One example is curly braces, which should be
+controlled with the parameter B<bl> provided for that purpose.
 
 =back
 
@@ -1186,6 +1203,7 @@ a value of B<0> is equivalent to entering a very large number.
 This parameter specifies the maximum number of consecutive blank lines
 in the output script.  The default is n=1.  If the input file has more
 than n consecutive blank lines, the number will be reduced to n.
+(This obviously does not apply to pod sections, here-documents, and quotes).
 
 =item B<-sob>,  B<--swallow-optional-blank-lines>
 
@@ -1262,13 +1280,18 @@ The negatives of these commands also work, and are the defaults.
 =item Using a F<.perltidyrc> command file
 
 If you use perltidy frequently, you probably won't be happy until you
-create a F<.perltidyrc> file to avoid typing commonly-used
-parameters.  Perltidy will first look in your current directory for a
-command file named F<.perltidyrc>, and if it does not find one, it will
-look in your home directory.  If it does not find one there, it will
-look for a system-wide file F</usr/local/etc/perltidyrc>, and failing to
-find one there it will look for F</etc/perltidyrc>.  Note that the
-system-wide files do not have a leading dot.
+create a F<.perltidyrc> file to avoid typing commonly-used parameters.
+Perltidy will first look in your current directory for a command file
+named F<.perltidyrc>.  If it does not find one, it will continue looking
+for one in other standard locations.  
+
+These other locations are system-dependent, and may be displayed with
+the command C<perltidy -dpro>.  Under Unix systems, it will look for a
+F<.perltidyrc> file in the home directory, and then for a system-wide
+file F</usr/local/etc/perltidyrc>, and then it will look for
+F</etc/perltidyrc>.  Note that these last two system-wide files do not
+have a leading dot.  Further system-dependent information will be found
+in the INSTALL file distributed with perltidy.
 
 This file is free format, and simply a list of parameters, just as they
 would be entered on a command line.  Any number of lines may be used,
@@ -1302,42 +1325,29 @@ file:
 
 =item *
 
-It may be simplest to develop and test configuration files
-with alternative names, and invoke them with B<-pro=filename> on
-the command line.  Then rename the desired file to F<.perltidyrc> 
-when finished.
+A very helpful command is B<--dump-profile> or B<-dpro>.  It writes a
+list of all configuration filenames tested to standard output, and 
+if a file is found, it dumps the content to standard output before
+exiting.  So, to find out where Perltidy looks for its configuration
+files, and which one if any it selects, just enter 
+
+  perltidy -dpro
 
 =item *
 
-B<--dump-profile> or B<-dpro>  will write the name of the current 
-F<.perltidyrc> file and its contents to standard output and quit.
-If no configuration file is found, a list of all filenames
-tested will be written.
+It may be simplest to develop and test configuration files with
+alternative names, and invoke them with B<-pro=filename> on the command
+line.  Then rename the desired file to F<.perltidyrc> when finished.
 
 =item *
 
-The parameters in the F<.perltidyrc>
-file can be switched off with the B<-npro> option.  
+The parameters in the F<.perltidyrc> file can be switched off with 
+the B<-npro> option.
 
 =item *
 
-The parameter B<-log> will force a F<.LOG> file to be written, which
-contains the path to the F<.perltidyrc> file, if any, and a listing of
-its parameter settings.  
-
-=item *
-
-The parameter B<-opt> will force a F<.LOG> file to be
-written with a complete listing of all option flags in use for a run,
-taking into account the default settings, the F<.perltidyrc> file, plus
-any command line options.  
-
-=item *
-
-The
-commands B<-dump-options>, B<-dump-defaults>, B<-dump-long-names>,
-and B<-dump-short-names>, all described below, may all be helpful
-in certain instances.
+The commands B<-dump-options>, B<-dump-defaults>, B<-dump-long-names>,
+and B<-dump-short-names>, all described below, may all be helpful.
 
 =back
 
@@ -1514,7 +1524,8 @@ B<--dump-defaults> or B<-ddf> will write the default option set to standard outp
 B<--dump-profile> or B<-dpro>  will write the name of the current 
 configuration file and its contents to standard output and quit.
 
-B<--dump-options> or B<-dop>  will write current option set to standard output and quit.
+B<--dump-options> or B<-dop>  will write current option set to standard
+output and quit.  
 
 B<--dump-long-names> or B<-dln>  will write all command line long names (passed 
 to Get_options) to standard output and quit.

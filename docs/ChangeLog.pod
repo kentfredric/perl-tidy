@@ -16,12 +16,18 @@
   existing '-t' parameter; see updated man page.  Suggested by Mark
   Olesen.
 
+ -New parameter '--perl-syntax-check-flags=s'  or '-pcsf=s' can be
+  used to change the flags passed to perltidy in a syntax check.
+  See updated man page.  Suggested by Mark Olesen. 
+
  -New parameter '--output-path=s'  or '-opath=s' will cause output
   files to be placed in directory s.  See updated man page.  Thanks for
   Mark Olesen for suggesting this.
 
- -Added command --dump-profile (or -dpro) which will dump to standard output
-  the name of whatever configuration file is in effect, and its contents.
+ -New parameter --dump-profile (or -dpro) will dump to standard output
+  information about the search for a configuration file, the name of
+  whatever configuration file is selected, and its contents.  This should
+  help debugging config files, especially on different Windows systems.
 
  -Corrections added for a leading ':' and for leaving a leading 'tcsh'
   line untouched.  Mark Olesen reported that lines of this form were
@@ -78,30 +84,25 @@
  -Lists of complex items, such as matricies, are now detected and displayed
   with just one item per row:
 
-    OLD (two per row):
-    for (
-        [ 'Shine', 40 ], [ 'Specular', [ 1, 1, 0.3, 0 ] ],
-        [ 'Ambient', [ 0.3, 1, 1, 0 ] ], [ 'Diffuse', [ 1, 0.3, 1, 0 ] ],
-        [ 'Emissive', [ 0, 0, 0 ] ]
-      )
-    {
-    }
+    OLD:
+    $this->{'CURRENT'}{'gfx'}{'MatrixSkew'} = Text::PDF::API::Matrix->new(
+        [ 1, tan( deg2rad($a) ), 0 ], [ tan( deg2rad($b) ), 1, 0 ],
+        [ 0, 0, 1 ]
+    );
 
-    NEW (one per row):
-    for (
-        [ 'Shine', 40 ],
-        [ 'Specular', [ 1,   1,   0.3, 0 ] ],
-        [ 'Ambient',  [ 0.3, 1,   1,   0 ] ],
-        [ 'Diffuse',  [ 1,   0.3, 1,   0 ] ],
-        [ 'Emissive', [ 0,   0,   0 ] ]
-      )
-    {
-    }
+    NEW:
+    $this->{'CURRENT'}{'gfx'}{'MatrixSkew'} = Text::PDF::API::Matrix->new(
+        [ 1,                  tan( deg2rad($a) ), 0 ],
+        [ tan( deg2rad($b) ), 1,                  0 ],
+        [ 0,                  0,                  1 ]
+    );
+
+
+ -An interrupt handler has been added to delete temporary files if
+  perltidy is interrupted.
 
  -Perltidy will now use system-generated temporary filenames when
   necessary, rather than create files with .TMPI and .TMPO extensions.
-  Also, a control-C handler has been added to delete temporary files if
-  perltidy is interrupted.
 
  -Merged patch sent by Yves Orton to handle appropriate configuration file
   locations for different Windows varieties (2000, NT, XP, 95, 98).

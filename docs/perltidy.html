@@ -208,16 +208,34 @@ prepared to use your ``undo'' key).</P>
 <P></P>
 <DT><STRONG><A NAME="item_%2Dsyn%2C_%2D%2Dcheck%2Dsyntax"><STRONG>-syn</STRONG>,   <STRONG>--check-syntax</STRONG></A></STRONG><BR>
 <DD>
-This causes perltidy to run <CODE>perl -T -c</CODE> to check syntax of input and output.
-The results are written to the <EM>.LOG</EM> file, which will be saved if an error
-is detected in the output script.  The output script is not checked if the
-input script has a syntax error.  To skip syntax checking, use <STRONG>-nsyn</STRONG> or
-<STRONG>--nocheck-syntax</STRONG>.  Syntax checking is also deactivated by the <STRONG>--quiet</STRONG>
-flag, discussed above.
-<P>Please note that this flag only controls the invocation of perl for
-checking.  Even if it is deactivated, perltidy will still do extensive
-syntax checking on its own.</P>
-<P>The default is to do a syntax check.</P>
+The purpose of this flag is to alert you to any situation in which the
+intput file has good syntax but the output file has bad syntax, which
+implies an error by perltidy.
+<P>This flag causes perltidy to run <CODE>perl -c -T</CODE> to check syntax of input
+and output.  (To change the flags passed to perl, see the next item,
+<STRONG>-pscf</STRONG>).  The results are written to the <EM>.LOG</EM> file, which will be
+saved if an error is detected in the output script.  The output script
+is not checked if the input script has a syntax error.</P>
+<P>If Perl reports errors in the input file, they will not be reported in
+the error output unless the <STRONG>-warning-output</STRONG> flag is given.</P>
+<P>To skip syntax checking, use <STRONG>-nsyn</STRONG> or <STRONG>--nocheck-syntax</STRONG>.  Syntax
+checking is also deactivated by the <STRONG>--quiet</STRONG> flag, discussed above.</P>
+<P>The default is to do a syntax check on most operating systems.  An
+exception is Windows 9x/Me systems, which have robustness problems.</P>
+<P><STRONG>Please note:</STRONG> Even if this type of syntax checking is deactivated,
+perltidy will still do extensive syntax checking on its own.</P>
+<P></P>
+<DT><STRONG><A NAME="item_%2Dpscf%3Ds%2C_%2Dperl%2Dsyntax%2Dcheck%2Dflags%3D"><STRONG>-pscf=s</STRONG>, <STRONG>-perl-syntax-check-flags=s</STRONG></A></STRONG><BR>
+<DD>
+When perl is invoked to check syntax, the normal flags are <CODE>-c -T</CODE>.  In
+addition, if the <STRONG>-x</STRONG> flag is given to perltidy, then perl will also be
+passed a <STRONG>-x</STRONG> flag.  It should not normally be necessary to change
+these flags, but it can be done with the <STRONG>-pscf=s</STRONG> flag.  For example,
+if the taint flag, <CODE>-T</CODE>, is not wanted, the flag could be set to be just
+<STRONG>-pscf=-c</STRONG>.
+<P>Perltidy will pass your string to perl with the exception that it will
+add a <STRONG>-c</STRONG> and <STRONG>-x</STRONG> if appropriate.  The <EM>.LOG</EM> file will show
+exactly what flags were passed to perl.</P>
 <P></P>
 <DT><STRONG><A NAME="item_%2Dlog%2C_%2D%2Dlogfile"><STRONG>-log</STRONG>,    <STRONG>--logfile</STRONG></A></STRONG><BR>
 <DD>
@@ -262,10 +280,8 @@ default <EM>.perltidyrc</EM>.</P>
 <P></P>
 <DT><STRONG><A NAME="item_%2Dopt%2C_%2D%2Dshow%2Doptions"><STRONG>-opt</STRONG>,   <STRONG>--show-options</STRONG></A></STRONG><BR>
 <DD>
-Write a list of all options used to the <EM>.LOG</EM> file.  This is useful for
-debugging command files.  In the list, the status of on/off
-switches is indicated by a 0 for off and a 1 for on.  Please see
-<STRONG>--dump-options</STRONG> for a simpler way to do this.
+Write a list of all options used to the <EM>.LOG</EM> file.  
+Please see <STRONG>--dump-options</STRONG> for a simpler way to do this.
 <P></P>
 <DT><STRONG><A NAME="item_%2Df%2C_%2D%2Dforce%2Dread%2Dbinary"><STRONG>-f</STRONG>,   <STRONG>--force-read-binary</STRONG></A></STRONG><BR>
 <DD>
@@ -381,7 +397,7 @@ existence of line breaks and/or block comments between the opening and
 closing parens may cause perltidy to temporarily revert to its default
 method.</P>
 <P>Note: The <STRONG>-lp</STRONG> option may not be used together with the <STRONG>-t</STRONG> tabs option.
-If <STRONG>-t</STRONG> is specified, it will be ignored.</P>
+It may, however, be used with the <STRONG>-et=n</STRONG> tab method.</P>
 <P>In addition, any parameter which restricts the ability of perltidy to
 choose newlines will all conflict with <STRONG>-lp</STRONG> and will cause <STRONG>-lp</STRONG> to
 be deactivated.  These include 
@@ -1020,13 +1036,10 @@ math operators <CODE>'+'</CODE>, <CODE>'-'</CODE>, <CODE>'/'</CODE>, and <CODE>'
 <PRE>
   -wbb=&quot;+ - / *&quot;</PRE>
 <P>These commands should work well for most of the token types that
-perltidy uses (use <STRONG>--dump-token-types</STRONG> for a list).  However, 
-for a few token types there may be conflicts with hardwired
-logic which cause unexpected results.  An example is the comma,
-which is hardwired to go at the end of lines in certain cases.
-Hopefully, this restriction will be removed in the future.  Another
-example is curly braces, which should be controlled with the
-parameter <STRONG>bl</STRONG> provided for that purpose.</P>
+perltidy uses (use <STRONG>--dump-token-types</STRONG> for a list).  However, for a
+few token types there may be conflicts with hardwired logic which cause
+unexpected results.  One example is curly braces, which should be
+controlled with the parameter <STRONG>bl</STRONG> provided for that purpose.</P>
 <P></P></DL>
 <P>
 <H2><A NAME="blank line control">Blank Line Control</A></H2>
@@ -1079,6 +1092,7 @@ a value of <STRONG>0</STRONG> is equivalent to entering a very large number.
 This parameter specifies the maximum number of consecutive blank lines
 in the output script.  The default is n=1.  If the input file has more
 than n consecutive blank lines, the number will be reduced to n.
+(This obviously does not apply to pod sections, here-documents, and quotes).
 <P></P>
 <DT><STRONG><A NAME="item_%2Dsob%2C_%2D%2Dswallow%2Doptional%2Dblank%2Dlines"><STRONG>-sob</STRONG>,  <STRONG>--swallow-optional-blank-lines</STRONG></A></STRONG><BR>
 <DD>
@@ -1141,13 +1155,17 @@ not comments).</P>
 <DT><STRONG><A NAME="item_Using_a_%2Eperltidyrc_command_file">Using a <EM>.perltidyrc</EM> command file</A></STRONG><BR>
 <DD>
 If you use perltidy frequently, you probably won't be happy until you
-create a <EM>.perltidyrc</EM> file to avoid typing commonly-used
-parameters.  Perltidy will first look in your current directory for a
-command file named <EM>.perltidyrc</EM>, and if it does not find one, it will
-look in your home directory.  If it does not find one there, it will
-look for a system-wide file <EM>/usr/local/etc/perltidyrc</EM>, and failing to
-find one there it will look for <EM>/etc/perltidyrc</EM>.  Note that the
-system-wide files do not have a leading dot.
+create a <EM>.perltidyrc</EM> file to avoid typing commonly-used parameters.
+Perltidy will first look in your current directory for a command file
+named <EM>.perltidyrc</EM>.  If it does not find one, it will continue looking
+for one in other standard locations.
+<P>These other locations are system-dependent, and may be displayed with
+the command <CODE>perltidy -dpro</CODE>.  Under Unix systems, it will look for a
+<EM>.perltidyrc</EM> file in the home directory, and then for a system-wide
+file <EM>/usr/local/etc/perltidyrc</EM>, and then it will look for
+<EM>/etc/perltidyrc</EM>.  Note that these last two system-wide files do not
+have a leading dot.  Further system-dependent information will be found
+in the INSTALL file distributed with perltidy.</P>
 <P>This file is free format, and simply a list of parameters, just as they
 would be entered on a command line.  Any number of lines may be used,
 with any number of parameters per line, although it may be easiest to
@@ -1173,35 +1191,26 @@ file which would cause some kind of dump and an exit.  These are:</P>
 file:</P>
 <UL>
 <LI>
-It may be simplest to develop and test configuration files
-with alternative names, and invoke them with <STRONG>-pro=filename</STRONG> on
-the command line.  Then rename the desired file to <EM>.perltidyrc</EM> 
-when finished.
+A very helpful command is <STRONG>--dump-profile</STRONG> or <STRONG>-dpro</STRONG>.  It writes a
+list of all configuration filenames tested to standard output, and 
+if a file is found, it dumps the content to standard output before
+exiting.  So, to find out where Perltidy looks for its configuration
+files, and which one if any it selects, just enter
+<PRE>
+  perltidy -dpro</PRE>
 <P></P>
 <LI>
-The parameters in the <EM>.perltidyrc</EM>
-file can be switched off with the <STRONG>-npro</STRONG> option.
+It may be simplest to develop and test configuration files with
+alternative names, and invoke them with <STRONG>-pro=filename</STRONG> on the command
+line.  Then rename the desired file to <EM>.perltidyrc</EM> when finished.
 <P></P>
 <LI>
-<STRONG>--dump-profile</STRONG> or <STRONG>-dpro</STRONG>  will write the name of the current 
-<EM>.perltidyrc</EM> file and its contents to standard output and quit.
+The parameters in the <EM>.perltidyrc</EM> file can be switched off with 
+the <STRONG>-npro</STRONG> option.
 <P></P>
 <LI>
-The parameter <STRONG>-log</STRONG> will force a <EM>.LOG</EM> file to be written, which
-contains the path to the <EM>.perltidyrc</EM> file, if any, and a listing of
-its parameter settings.
-<P></P>
-<LI>
-The parameter <STRONG>-opt</STRONG> will force a <EM>.LOG</EM> file to be
-written with a complete listing of all option flags in use for a run,
-taking into account the default settings, the <EM>.perltidyrc</EM> file, plus
-any command line options.
-<P></P>
-<LI>
-The
-commands <STRONG>-dump-options</STRONG>, <STRONG>-dump-defaults</STRONG>, <STRONG>-dump-long-names</STRONG>,
-and <STRONG>-dump-short-names</STRONG>, all described below, may all be helpful
-in certain instances.
+The commands <STRONG>-dump-options</STRONG>, <STRONG>-dump-defaults</STRONG>, <STRONG>-dump-long-names</STRONG>,
+and <STRONG>-dump-short-names</STRONG>, all described below, may all be helpful.
 <P></P></UL>
 <DT><STRONG><A NAME="item_Creating_a_new_abbreviation">Creating a new abbreviation</A></STRONG><BR>
 <DD>
@@ -1355,7 +1364,8 @@ The following flags are available for debugging:
 <P><STRONG>--dump-defaults</STRONG> or <STRONG>-ddf</STRONG> will write the default option set to standard output and quit</P>
 <P><STRONG>--dump-profile</STRONG> or <STRONG>-dpro</STRONG>  will write the name of the current 
 configuration file and its contents to standard output and quit.</P>
-<P><STRONG>--dump-options</STRONG> or <STRONG>-dop</STRONG>  will write current option set to standard output and quit.</P>
+<P><STRONG>--dump-options</STRONG> or <STRONG>-dop</STRONG>  will write current option set to standard
+output and quit.</P>
 <P><STRONG>--dump-long-names</STRONG> or <STRONG>-dln</STRONG>  will write all command line long names (passed 
 to Get_options) to standard output and quit.</P>
 <P><STRONG>--dump-short-names</STRONG>  or <STRONG>-dsn</STRONG> will write all command line short names 

@@ -51,13 +51,14 @@ use vars qw{
   @EXPORT
 };
 
+@ISA = qw( Exporter );
 @EXPORT = qw( &perltidy );
 
 use IO::File;
 use File::Basename;
 
 BEGIN {
-    ($VERSION=q($Id: Tidy.pm,v 1.1 2002/02/12 15:10:17 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ($VERSION=q($Id: Tidy.pm,v 1.2 2002/02/14 22:56:43 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 # Preloaded methods go here.
@@ -242,26 +243,22 @@ basic perltidy distribution.
                 unlink $_->[1];
             }
         }
-
-        #$sink_object->unlink_copy()   if $sink_object;
-        #$source_object->unlink_copy() if $source_object;
     }
 }
 
 {
 
     # variables needed by interrupt handler:
-    my $source_object;
-    my $sink_object;
     my $logger_object;
     my $tokenizer;
     my $input_file;
 
     # this routine may be called to remove temporary files 
-    # if interrupted.
-    # NOTE: caller must perform actual exit;
+    # if interrupted.  If a parameter is given, it will
+    # call exit with that parameter.
     sub interrupt_handler {
 
+        my $exit_flag=shift;
         print STDERR "perltidy interrupted";
         if ($tokenizer) {
             my $input_line_number =
@@ -277,6 +274,7 @@ basic perltidy distribution.
         print STDERR "\n";
         $logger_object->close_log_file() if $logger_object;
         delete_temporary_files();
+        exit $exit_flag if defined($exit_flag);
     }
 
     sub perltidy {
@@ -360,6 +358,7 @@ EOM
 
         my $rpending_complaint;
         $$rpending_complaint = "";
+
         my ( $is_Windows, $Windows_type ) =
           look_for_Windows($rpending_complaint);
 
@@ -532,7 +531,7 @@ EOM
             }
 
             # the 'source_object' supplies a method to read the input file
-            $source_object = Perl::Tidy::LineSource->new( $input_file, $rOpts );
+            my $source_object = Perl::Tidy::LineSource->new( $input_file, $rOpts );
             next unless ($source_object);
 
             # register this file name with the Diagnostics package
@@ -594,7 +593,7 @@ EOM
 
             # the 'sink_object' knows how to write the output file
             my $tee_file = $fileroot . $dot . "TEE";
-            $sink_object =
+            my $sink_object =
               Perl::Tidy::LineSink->new( $output_file, $tee_file, $rOpts );
 
             #---------------------------------------------------------------
@@ -902,6 +901,7 @@ sub process_command_line {
     $add_option->( 'output-path',                       'opath', '=s' );
     $add_option->( 'paren-tightness',                   'pt',    '=i' );
     $add_option->( 'pass-version-line',                 'pvl',   '!' );
+    $add_option->( 'perl-syntax-check-flags',           'pscf',  '=s' );
     $add_option->( 'profile',                           'pro',   '=s' );
     $add_option->( 'quiet',                             'q',     '!' );
     $add_option->( 'short-concatenation-item-length',   'scl',   '=i' );
@@ -993,6 +993,7 @@ sub process_command_line {
       tidy-output
       trim-qw
     );
+    push @defaults,"perl-syntax-check-flags=-c -T";
 
     #---------------------------------------------------------------
     # set the defaults by passing the above list through GetOptions
@@ -1208,9 +1209,10 @@ EOM
         }
 
         # look for a config file if we don't have one yet
-        my @config_files_tested;
+        my $rconfig_file_chatter;
+        $$rconfig_file_chatter = "";
         $config_file =
-          find_config_file( $is_Windows, $Windows_type, \@config_files_tested,
+          find_config_file( $is_Windows, $Windows_type, $rconfig_file_chatter,
             $rpending_complaint )
           unless $config_file;
 
@@ -1219,12 +1221,16 @@ EOM
         if ($config_file) {
             ( $fh_config, $config_file ) =
               Perl::Tidy::streamhandle( $config_file, 'r' );
+            unless ($fh_config) {
+                $$rconfig_file_chatter .=
+                  "# $config_file exists but cannot be opened\n";
+            }
         }
 
         if ($saw_dump_profile) {
             if ($saw_dump_profile) {
                 dump_config_file( $fh_config, $config_file,
-                    \@config_files_tested );
+                    $rconfig_file_chatter );
                 exit 1;
             }
         }
@@ -1552,7 +1558,8 @@ sub check_vms_filename {
 
 # Returns a string that determines what MS OS we are on.
 # Returns win32s,95,98,Me,NT3.51,NT4,2000,XP/.Net
-# Returns nothing if not an MS system
+# Returns nothing if not an MS system.
+# Contributed by: Yves Orton
 sub Win_OS_Type {
 
     my $rpending_complaint = shift;
@@ -1562,7 +1569,7 @@ sub Win_OS_Type {
     return unless eval('require Win32');
 
     # Use the standard API call to determine the version
-    my ( undef, $major, $minor, $build, $id ) = Win32::GetOSVersion();
+    my ( $undef, $major, $minor, $build, $id ) = Win32::GetOSVersion();
 
     return "win32s" unless $id;           # If id==0 then its a win32s box.
     my $os = {                            # Magic numbers from MSDN
@@ -1634,13 +1641,21 @@ sub old_look_for_Windows {
 sub find_config_file {
 
     # look for a .perltidyrc configuration file
-    my ( $is_Windows, $Windows_type, $rconfig_files_tested,
+    my ( $is_Windows, $Windows_type, $rconfig_file_chatter,
         $rpending_complaint ) = @_;
+
+    $$rconfig_file_chatter .= "# Config file search...system reported as:";
+    if ($is_Windows) {
+        $$rconfig_file_chatter .= " $Windows_type\n";
+    }
+    else {
+        $$rconfig_file_chatter .= " $^O\n";
+    }
 
     # sub to check file existance and remember all tests
     my $exists_config_file = sub {
         my $config_file = shift;
-        push @{$rconfig_files_tested}, $config_file;
+        $$rconfig_file_chatter .= "# Testing: $config_file\n";
         return -e $config_file;
     };
 
@@ -1659,9 +1674,14 @@ sub find_config_file {
 
     # Now go through the enviornment looking...
     foreach my $var (@envs) {
+        $$rconfig_file_chatter .= "# Checking \$ENV{$var}";
         if ( defined( $ENV{$var} ) ) {
+            $$rconfig_file_chatter .= " = $ENV{$var}\n";
             $config_file = "$ENV{$var}/.perltidyrc";
             return $config_file if $exists_config_file->($config_file);
+        }
+        else {
+            $$rconfig_file_chatter .= "\n";
         }
     }
 
@@ -1702,7 +1722,7 @@ sub find_config_file {
 # In scalar context returns the OS name (95 98 ME NT3.51 NT4 2000 XP),
 # or undef if its not a win32 OS.  In list context returns OS, System
 # Directory, and All Users Directory.  All Users will be empty on a
-# 9x/Me box.
+# 9x/Me box.  Contributed by: Yves Orton.
 sub Win_Config_Locs {
     my $rpending_complaint = shift;
     my $os = (@_) ? shift: Win_OS_Type();
@@ -1736,19 +1756,15 @@ sub Win_Config_Locs {
 sub dump_config_file {
     my $fh                   = shift;
     my $config_file          = shift;
-    my $rconfig_files_tested = shift;
+    my $rconfig_file_chatter = shift;
+    print STDOUT "$$rconfig_file_chatter";
     if ($fh) {
-        print STDOUT "# Dump of file '$config_file'\n";
-        while ( $_ = $fh->getline() ) {
-            print;
-        }
+        print STDOUT "# Dump of file: '$config_file'\n";
+        while ( $_ = $fh->getline() ) { print STDOUT }
         $fh->close();
     }
     else {
-        print STDOUT "Did not see a config file at any of these places:\n";
-        foreach ( @{$rconfig_files_tested} ) {
-            print STDOUT "$_\n";
-        }
+        print STDOUT "# ...no config file found\n";
     }
 }
 
@@ -2178,8 +2194,19 @@ sub check_syntax {
     my $infile_syntax_ok = 0;
     my $line_of_dashes   = '-' x 42 . "\n";
 
-    # invoke perl with -x if requested
-    my $dash_x = $rOpts->{'look-for-hash-bang'} ? "-x" : "";
+    my $flags = $rOpts->{'perl-syntax-check-flags'};
+
+    # be sure we invoke perl with -c
+    # note: perl will accept repeated flags like '-c -c'.  It is safest
+    # to append another -c than try to find an interior bundled c, as
+    # in -Tc, because such a 'c' might be in a quoted string, for example.
+    if ($flags !~ /(^-c|\s+-c)/) { $flags .= " -c" }
+
+    # be sure we invoke perl with -x if requested
+    # same comments about repeated parameters applies
+    if ($rOpts->{'look-for-hash-bang'}) {
+        if ($flags !~ /(^-x|\s+-x)/) { $flags .= " -x" }
+    }
 
     # this shouldn't happen unless a termporary file couldn't be made
     if ( $ifname eq '-' ) {
@@ -2189,13 +2216,12 @@ sub check_syntax {
     }
 
     $logger_object->write_logfile_entry(
-        "checking input file syntax with perl -c...\n");
+        "checking input file syntax with perl $flags\n");
     $logger_object->write_logfile_entry($line_of_dashes);
 
     # Not all operating systems/shells support redirection of the standard
     # error output.
     my $error_redirection = ( $^O eq 'VMS' ) ? "" : '2>&1';
-    my $flags = "-c -T $dash_x";
 
     my $perl_output = do_syntax_check( $ifname, $flags, $error_redirection );
     $logger_object->write_logfile_entry("$perl_output\n");
@@ -2204,7 +2230,7 @@ sub check_syntax {
         $infile_syntax_ok = 1;
         $logger_object->write_logfile_entry($line_of_dashes);
         $logger_object->write_logfile_entry(
-            "checking output file syntax with perl -c...\n");
+            "checking output file syntax with perl $flags ...\n");
         $logger_object->write_logfile_entry($line_of_dashes);
 
         my $perl_output =
@@ -2214,7 +2240,7 @@ sub check_syntax {
         unless ( $perl_output =~ /syntax\s*OK/ ) {
             $logger_object->write_logfile_entry($line_of_dashes);
             $logger_object->warning(
-"The output file has a syntax error when tested with perl -c $dash_x $ofname !\n"
+"The output file has a syntax error when tested with perl $flags $ofname !\n"
             );
             $logger_object->warning(
                 "This implies an error in perltidy; the file $ofname is bad\n");
@@ -2222,7 +2248,7 @@ sub check_syntax {
 
             # the perl version number will be helpful for diagnosing the problem
             $logger_object->write_logfile_entry(
-                qx/perl -v $dash_x $ofname $error_redirection/ . "\n" );
+                qx/perl -v $error_redirection/ . "\n" );
         }
     }
     else {
@@ -2230,7 +2256,7 @@ sub check_syntax {
         # Only warn of perl -c syntax errors.  Other messages,
         # such as missing modules, are too common.  They can be
         # seen by running with perltidy -w
-        $logger_object->complain("A syntax check using perl -c gives: \n");
+        $logger_object->complain("A syntax check using perl $flags gives: \n");
         $logger_object->complain($line_of_dashes);
         $logger_object->complain("$perl_output\n");
         $logger_object->complain($line_of_dashes);
@@ -2304,15 +2330,6 @@ sub close_input_file {
     $self->{_fh}->close();
     $self->{_fh_copy}->close() if $self->{_fh_copy};
 }
-
-##sub unlink_copy {
-##    my $self = shift;
-##    if ($self->{_input_file_copy}) {
-##        close $self->{_input_file_copy}; 
-##        unlink $self->{_input_file_copy}; 
-##        $self->{_input_file_copy} = "";
-##    }
-##}
 
 sub get_line {
     my $self    = shift;
@@ -2438,15 +2455,6 @@ sub close_tee_file {
         $self->{_tee_file_opened} = 0;
     }
 }
-
-##sub unlink_copy {
-##    my $self = shift;
-##    if ($self->{_output_file_copy}) {
-##        close $self->{_output_file_copy}; 
-##        unlink $self->{_output_file_copy}; 
-##        $self->{_output_file_copy} = "";
-##    }
-##}
 
 #####################################################################
 #
@@ -2943,13 +2951,6 @@ sub finish {
 
 }
 
-##sub unlink_logfile {
-##    my $self = shift;
-##    $self->close_log_file();
-##    unlink( $self->{_log_file} ) if $self->{_log_file};
-##    $self->{_log_file} = ""; 
-##}
-##
 #####################################################################
 #
 # The Perl::Tidy::HtmlWriter class writes a copy of the input stream in html
@@ -4383,7 +4384,7 @@ sub set_leading_whitespace {
             $available_space = $space_count - $min_gnu_indentation;
             if (
                 $available_space < 0
-                ## moved
+                ## moved below
                 ##|| $space_count > $half_maximum_line_length
               )
             {
@@ -4403,15 +4404,13 @@ sub set_leading_whitespace {
               new_lp_indentation_item( $space_count, $level, $ci_level,
                 $available_space, $align_paren );
 
-            # TESTING -- :
+            ## moved from above
             if ( $available_space > 0
                 && $space_count > $half_maximum_line_length )
             {
                 $gnu_stack[$max_gnu_stack_index]
                   ->tentatively_decrease_AVAILABLE_SPACES($available_space);
             }
-
-            ##print "BUBBA: spaces=$space_count lev=$level ci=$ci_level avail=$available_space align=$align_paren gnu=$gnu_position_predictor\n"; 
         }
     }
 
@@ -6117,7 +6116,7 @@ sub set_white_space_flag {
          /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
      Examples:
        *VERSION = \'1.01';
-       ( $VERSION ) = '$Revision: 1.1 $ ' =~ /\$Revision:\s+([^\s]+)/;
+       ( $VERSION ) = '$Revision: 1.2 $ ' =~ /\$Revision:\s+([^\s]+)/;
      We will pass such a line straight through (by changing it
      to a quoted string) unless -npvl is used
     
@@ -6126,7 +6125,7 @@ sub set_white_space_flag {
      block sequence numbers may see a closing sequence number but not
      the corresponding opening sequence number (sidecmt.t).  Example:
 
-    my $VERSION = do { my @r = (q$Revision: 1.1 $ =~ /\d+/g); sprintf
+    my $VERSION = do { my @r = (q$Revision: 1.2 $ =~ /\d+/g); sprintf
     "%d."."%02d" x $#r, @r }; 
 
     Here, the opening brace of 'do {' will not be seen, while the closing
@@ -8861,9 +8860,7 @@ sub set_bond_strengths {
                 $or_bias  += $delta_bias;
             }
 
-            # BUBBA: testing
-            # Causes trouble with ?:; maybe implement after giving them
-            # levels..
+            # FIXME: needs more testing
             elsif ( $is_keyword_returning_list{$next_nonblank_token} ) {
                 $bond_str = $list_str if ( $bond_str > $list_str );
             }
@@ -9695,7 +9692,7 @@ Some people might prefer the spacey version -- an option could be added.  The
 innermost expression contains a long block '( exists $ids_...  ')'.  
 
 Here is how the logic goes: We will force a break at the 'or' that the
-innermost expression contains, but we will not break apart its opening an
+innermost expression contains, but we will not break apart its opening and
 closing containers because (1) it contains no multi-line sub-containers itself,
 and (2) there is no alignment to be gained by breaking it open like this
 
@@ -10598,9 +10595,9 @@ sub find_token_starting_list {
                 $i_effective_last_comma + 1 ) > 0;
         }
 
-        # FIXME: For an item after a '=>', try to include the length of the thing
-        # before the '=>'.  This is crude and should be improved by actually
-        # looking back token by token.
+        # FIXME: For an item after a '=>', try to include the length of the
+        # thing before the '=>'.  This is crude and should be improved by
+        # actually looking back token by token.
         if ( !$too_long && $i_opening_paren > 0 && $list_type eq '=>' ) {
             my $i_opening_minus = $i_opening_paren - 4;
             if ( $i_opening_minus >= 0 ) {
@@ -10760,8 +10757,6 @@ sub get_maximum_fields_wanted {
 
             $is_odd = 1 - $is_odd;
             my $length = $ritem_lengths->[$j];
-            ##print "j=$j  length=$length\n";
-
             if ( $length > $max_length[$is_odd] ) {
                 $max_length[$is_odd] = $length;
             }
@@ -11264,12 +11259,7 @@ sub recombine_breakpoints {
                 # handle leading "if" and "unless" 
                 elsif ( $tokens_to_go[$imidr] =~ /^(if|unless)$/ ) {
 
-=pod
-
-FIXME: This is experimental..may not be too useful
-
-=cut
-
+                    # FIXME: This is still experimental..may not be too useful
                     next
                       unless (
                         $n == $nmax    # if this is the last line
@@ -11450,7 +11440,7 @@ sub set_continuation_breaks {
             my $strength                 = $bond_strength_to_go[$i_test];
             my $must_break               = 0;
 
-            # BUBBA: TESTING: What if want break after these??
+            # FIXME: TESTING: What if want break after these??
             # force an immediate break at certain operators 
             # with lower level than the start of the line
             if (
@@ -11544,13 +11534,9 @@ sub set_continuation_breaks {
                 # is different from the latest candidate break
                 last
                   if ($leading_alignment_type);
-                ## && $leading_alignment_type ne ':');
 
-                #print "BUBBA: next type=$next_nonblank_type  next tok= $next_nonblank_token starting depth=$nesting_depth_to_go[$i_begin] next depth= $nesting_depth_to_go[$i_next_nonblank]\n"; 
-                ##last
                 # Force at least one breakpoint if old code had good break
                 # It is only called if a breakpoint is required or desired.
-                #print "at tok=$token next=$next_nonblank_token str=$strength i=$i_test i-last=$i_last_break i_low= $i_lowest str= $lowest_strength\n"; 
                 last
                   if (
                     $i_test == $imax                # we are at the end
@@ -11920,7 +11906,7 @@ sub new {
     # Create an 'indentation_item' which describes one level of leading
     # whitespace when the '-lp' indentation is used.  We return
     # a reference to an anonymous array of associated variables.
-    # See constants _xxx for storage scheme.
+    # See above constants for storage scheme.
     my (
         $class,               $spaces,           $level,
         $ci_level,            $available_spaces, $index,
@@ -12506,6 +12492,7 @@ sub initialize {
     $rOpts_maximum_whitespace_columns = $rOpts->{'maximum-whitespace-columns'};
     $rOpts_minimum_space_to_comment   = $rOpts->{'minimum-space-to-comment'};
     $rOpts_maximum_space_to_comment   = $rOpts->{'maximum-space-to-comment'};
+    $rOpts_maximum_line_length        = $rOpts->{'maximum-line-length'};
 
     forget_side_comment();
 
@@ -13271,7 +13258,6 @@ sub check_fit {
                         $pad + $old_line->field_width_growth($j) >
                         $rOpts_maximum_whitespace_columns
                     )
-
                 )
             )
           )
@@ -13538,7 +13524,7 @@ use overload '+' => \&plus,
 
     my $maximum_field_index = $group_lines[0]->get_jmax();
 
-    my $min_ci_gap = $rOpts->{'maximum-line-length'};
+    my $min_ci_gap = $rOpts_maximum_line_length;
     if ( $maximum_field_index > 1 && !$do_not_align ) {
 
         for my $i ( 0 .. $maximum_line_index ) {
@@ -13554,7 +13540,7 @@ use overload '+' => \&plus,
             }
         }
 
-        if ( $min_ci_gap >= $rOpts->{'maximum-line-length'} ) {
+        if ( $min_ci_gap >= $rOpts_maximum_line_length ) {
             $min_ci_gap = 0;
         }
     }
@@ -13730,7 +13716,7 @@ sub write_leader_and_string {
     # when considering the excess.
     my $excess =
       length($str) - $side_comment_length + $leading_space_count -
-      $rOpts->{'maximum-line-length'};
+      $rOpts_maximum_line_length;
 
     # handle long lines:
     if ( $excess > 0 ) {
@@ -15597,8 +15583,6 @@ sub reset_indentation_level {
                 || ( ( $last_nonblank_token eq '(' )
                     && $is_indirect_object_taker{ $paren_type[$paren_depth] } )
                 || ( $last_nonblank_type =~ /^[Uw]$/ )    # possible object
-##                || ( $last_nonblank_type eq 'U'
-##                    || $last_nonblank_type eq 'w' )    # possible object
               )
             {
                 $type = 'Z';
@@ -16756,8 +16740,8 @@ EOM
                             );
                         }
 
-                        # FIXME: could check for error in which next token is not
-                        # a word (number, punctuation, ..)
+                        # FIXME: could check for error in which next token is
+                        # not a word (number, punctuation, ..)
                         else {
                             $is_constant{$current_package}
                               {$next_nonblank_token} = 1;
@@ -19018,7 +19002,7 @@ sub scan_bare_identifier_do {
             #    $tok='eval'; # patch to do braces like eval  - doesn't work
             #    $type = 'k';
             #}
-            # FIXME: This should become a separate type to allow for different
+            # FIXME: This could become a separate type to allow for different
             # future behavior:
             elsif ( $is_block_function{$package}{$sub_name} ) {
                 $type = 'G';

@@ -10,21 +10,15 @@ systems and a zip file, F<.zip> for Windows.  The only differences is
 that the line endings have been changed to <cr><lf> for the Windows
 version.
 
-Besides the source distribution files, a set of test files is available
-in a separate package (but there is no automated test procedure yet).
-These are distributed separately because they will not be of interest to
-the average user.  If you do want the test files, you should untar or
-unzip them at the same directory that you untar or unzip the source files.
-
-Please see the ChangeLog file for notices of any recent updates.
-
-Please see the BUGS file for a list of all known open bugs.
-
 =head1 INSTALLATION
 
 Please see the file INSTALL for installation information.
 
 =head1 WHAT NEXT
+
+Please see the ChangeLog file for notices of any recent updates.
+
+Please see the BUGS file for a list of all known open bugs.
 
 Documentation can be found in the F<docs> directory, and it can also be 
 found at http://perltidy.sourceforge.net

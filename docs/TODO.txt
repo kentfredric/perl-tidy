@@ -4,39 +4,32 @@ Perltidy TODO List
     them.
 
   Fix numerous little formatting issues
-
     There is a vary large number of relatively minor formatting issues that
     need to be addressed. I'm working on them as time permits.
 
   Modularization
-
-    Modularization work is in progress. I hope to have some nice
-    modularization patches sent by Hugh Myers integrated and tested soon.
+    The current version uses a single module. I plan to break out a more
+    modules when the interfaces stop changing.
 
   BUGS
-
     There are still a couple of bugs listed in the BUGS file that need to be
     fixed. These are low priority compared to formatting issues, but need to
     be done.
 
   Improved ?: Formatting
-
     I intend to associate an indentation level with ?: statements in a
     future release. This will make nested ?: statements more readable.
 
   Improved Vertical Alignment
-
     Coding modifications are underway to improve the vertical alignment
     logic.
 
   Improved indentation of parenthesized terms
-
     Further work on indenting parenthesized terms needs to be done. This is
     tricky because it impacts vertical alignment, so the two tasks need to
     be done more or less together.
 
   Documentation
-
     A FAQ is being written to explain some of the more subtle formatting
     issues, and to give examples of different styles.
 
@@ -44,7 +37,6 @@ Perltidy TODO List
     a separate module.
 
   HTML writer
-
     The HTML writer does not colorize interpolated identifiers in here
     documents or quoted strings. The tokenizer outputs interpolation
     information for here docs; it still needs to be updated to do this for
@@ -52,7 +44,6 @@ Perltidy TODO List
     identifiers.
 
   Tokenization issues
-
     There are some subtle issues with distinguishing block types that should
     be addressed to make the tokenizer more correct, even though they do not
     interfere with code beautification. For example, in most cases the type
@@ -77,13 +68,11 @@ Perltidy TODO List
     attributes, to simplify parsing and formatting.
 
   XML
-
     The ability to write a tokenized script in a simple XML format looks
     very useful. This would allow the creation of simple utilities to
     reliably manipulate perl code.
 
   Option to reformat block comments
-
     I'm looking into an option to use Text::Autoformat to reformat comments.
     Thanks to Tim Maher for this suggestion. I made some preliminary tests
     on code from a variety of sources and decided that this is probably best
@@ -95,6 +84,5 @@ Perltidy TODO List
     above, and then write a separate utility to read and process the XML.
 
   Switch/Case formatting
-
     There is a request to have perltidy format switch/case statements.
 

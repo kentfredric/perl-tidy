@@ -11,8 +11,8 @@ need to be addressed.  I'm working on them as time permits.
 
 =head2 Modularization
 
-Modularization work is in progress.  I hope to have some nice
-modularization patches sent by Hugh Myers integrated and tested soon.
+The current version uses a single module.  I plan to break out a more
+modules when the interfaces stop changing.
 
 =head2 BUGS
 

@@ -60,8 +60,9 @@
   files to be placed in directory s.  See updated man page.  Thanks for
   Mark Olesen for suggesting this.</PRE>
 <PRE>
- -Added command --dump-profile (or -dpro) which will dump to standard output
-  the name of whatever configuration file is in effect, and its contents.</PRE>
+ -New parameter --dump-profile (or -dpro) will dump to standard output
+  information about the search for a configuration file, the name of whatever
+  configuration file is selected, and its contents.</PRE>
 <PRE>
  -Corrections added for a leading ':' and for leaving a leading 'tcsh'
   line untouched.  Mark Olesen reported that lines of this form were
@@ -140,10 +141,11 @@
     {
     }</PRE>
 <PRE>
- -Perltidy will now use system-generated temporary filenames when
-  necessary, rather than create files with .TMPI and .TMPO extensions.
-  Also, a control-C handler has been added to delete temporary files if
+ -An interrupt handler has been added to delete temporary files if
   perltidy is interrupted.</PRE>
+<PRE>
+ -Perltidy will now use system-generated temporary filenames when
+  necessary, rather than create files with .TMPI and .TMPO extensions.</PRE>
 <PRE>
  -Merged patch sent by Yves Orton to handle appropriate configuration file
   locations for different Windows varieties (2000, NT, XP, 95, 98).</PRE>

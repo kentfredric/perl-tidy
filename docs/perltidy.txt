@@ -172,18 +172,39 @@ OPTIONS
         prepared to use your "undo" key).
 
     -syn, --check-syntax
-        This causes perltidy to run "perl -T -c" to check syntax of input
-        and output. The results are written to the .LOG file, which will be
-        saved if an error is detected in the output script. The output
-        script is not checked if the input script has a syntax error. To
-        skip syntax checking, use -nsyn or --nocheck-syntax. Syntax checking
-        is also deactivated by the --quiet flag, discussed above.
+        The purpose of this flag is to alert you to any situation in which
+        the intput file has good syntax but the output file has bad syntax,
+        which implies an error by perltidy.
 
-        Please note that this flag only controls the invocation of perl for
-        checking. Even if it is deactivated, perltidy will still do
-        extensive syntax checking on its own.
+        This flag causes perltidy to run "perl -c -T" to check syntax of
+        input and output. (To change the flags passed to perl, see the next
+        item, -pscf). The results are written to the .LOG file, which will
+        be saved if an error is detected in the output script. The output
+        script is not checked if the input script has a syntax error.
 
-        The default is to do a syntax check.
+        If Perl reports errors in the input file, they will not be reported
+        in the error output unless the -warning-output flag is given.
+
+        To skip syntax checking, use -nsyn or --nocheck-syntax. Syntax
+        checking is also deactivated by the --quiet flag, discussed above.
+
+        The default is to do a syntax check on most operating systems. An
+        exception is Windows 9x/Me systems, which have robustness problems.
+
+        Please note: Even if this type of syntax checking is deactivated,
+        perltidy will still do extensive syntax checking on its own.
+
+    -pscf=s, -perl-syntax-check-flags=s
+        When perl is invoked to check syntax, the normal flags are "-c -T".
+        In addition, if the -x flag is given to perltidy, then perl will
+        also be passed a -x flag. It should not normally be necessary to
+        change these flags, but it can be done with the -pscf=s flag. For
+        example, if the taint flag, "-T", is not wanted, the flag could be
+        set to be just -pscf=-c.
+
+        Perltidy will pass your string to perl with the exception that it
+        will add a -c and -x if appropriate. The .LOG file will show exactly
+        what flags were passed to perl.
 
     -log, --logfile
         Save the .LOG file, which has many useful diagnostics. Perltidy
@@ -231,9 +252,7 @@ OPTIONS
         .perltidyrc.
 
     -opt, --show-options
-        Write a list of all options used to the .LOG file. This is useful
-        for debugging command files. In the list, the status of on/off
-        switches is indicated by a 0 for off and a 1 for on. Please see
+        Write a list of all options used to the .LOG file. Please see
         --dump-options for a simpler way to do this.
 
     -f, --force-read-binary
@@ -349,7 +368,7 @@ OPTIONS
         default method.
 
         Note: The -lp option may not be used together with the -t tabs
-        option. If -t is specified, it will be ignored.
+        option. It may, however, be used with the -et=n tab method.
 
         In addition, any parameter which restricts the ability of perltidy
         to choose newlines will all conflict with -lp and will cause -lp to
@@ -1001,11 +1020,8 @@ OPTIONS
         These commands should work well for most of the token types that
         perltidy uses (use --dump-token-types for a list). However, for a
         few token types there may be conflicts with hardwired logic which
-        cause unexpected results. An example is the comma, which is
-        hardwired to go at the end of lines in certain cases. Hopefully,
-        this restriction will be removed in the future. Another example is
-        curly braces, which should be controlled with the parameter bl
-        provided for that purpose.
+        cause unexpected results. One example is curly braces, which should
+        be controlled with the parameter bl provided for that purpose.
 
   Blank Line Control
     Blank lines can improve the readability of a script if they are
@@ -1050,7 +1066,8 @@ OPTIONS
         This parameter specifies the maximum number of consecutive blank
         lines in the output script. The default is n=1. If the input file
         has more than n consecutive blank lines, the number will be reduced
-        to n.
+        to n. (This obviously does not apply to pod sections,
+        here-documents, and quotes).
 
     -sob, --swallow-optional-blank-lines
         All blank lines not required by the above flags, -bbb, -bbs, and
@@ -1115,11 +1132,16 @@ OPTIONS
         If you use perltidy frequently, you probably won't be happy until
         you create a .perltidyrc file to avoid typing commonly-used
         parameters. Perltidy will first look in your current directory for a
-        command file named .perltidyrc, and if it does not find one, it will
-        look in your home directory. If it does not find one there, it will
-        look for a system-wide file /usr/local/etc/perltidyrc, and failing
-        to find one there it will look for /etc/perltidyrc. Note that the
-        system-wide files do not have a leading dot.
+        command file named .perltidyrc. If it does not find one, it will
+        continue looking for one in other standard locations.
+
+        These other locations are system-dependent, and may be displayed
+        with the command "perltidy -dpro". Under Unix systems, it will look
+        for a .perltidyrc file in the home directory, and then for a
+        system-wide file /usr/local/etc/perltidyrc, and then it will look
+        for /etc/perltidyrc. Note that these last two system-wide files do
+        not have a leading dot. Further system-dependent information will be
+        found in the INSTALL file distributed with perltidy.
 
         This file is free format, and simply a list of parameters, just as
         they would be entered on a command line. Any number of lines may be
@@ -1149,6 +1171,14 @@ OPTIONS
         There are several options may be helpful in debugging a .perltidyrc
         file:
 
+        *   A very helpful command is --dump-profile or -dpro. It writes a
+            list of all configuration filenames tested to standard output,
+            and if a file is found, it dumps the content to standard output
+            before exiting. So, to find out where Perltidy looks for its
+            configuration files, and which one if any it selects, just enter
+
+              perltidy -dpro
+
         *   It may be simplest to develop and test configuration files with
             alternative names, and invoke them with -pro=filename on the
             command line. Then rename the desired file to .perltidyrc when
@@ -1157,21 +1187,8 @@ OPTIONS
         *   The parameters in the .perltidyrc file can be switched off with
             the -npro option.
 
-        *   --dump-profile or -dpro will write the name of the current
-            .perltidyrc file and its contents to standard output and quit.
-
-        *   The parameter -log will force a .LOG file to be written, which
-            contains the path to the .perltidyrc file, if any, and a listing
-            of its parameter settings.
-
-        *   The parameter -opt will force a .LOG file to be written with a
-            complete listing of all option flags in use for a run, taking
-            into account the default settings, the .perltidyrc file, plus
-            any command line options.
-
         *   The commands -dump-options, -dump-defaults, -dump-long-names,
-            and -dump-short-names, all described below, may all be helpful
-            in certain instances.
+            and -dump-short-names, all described below, may all be helpful.
 
     Creating a new abbreviation
         A special notation is available for use in a .perltidyrc file for
