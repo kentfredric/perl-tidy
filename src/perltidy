@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.26 2001/08/05 14:30:55 perltidy Exp $
+    $Id: perltidy,v 1.27 2001/08/08 03:20:01 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -4339,7 +4339,7 @@ sub print_line_of_tokens {
     #     /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
     # Examples:
     #   *VERSION = \'1.01';
-    #   ( $VERSION ) = '$Revision: 1.26 $ ' =~ /\$Revision:\s+([^\s]+)/;
+    #   ( $VERSION ) = '$Revision: 1.27 $ ' =~ /\$Revision:\s+([^\s]+)/;
     # We will pass such a line straight through unless -npvl is used
     my $is_VERSION_statement = 0;
 
@@ -7277,7 +7277,8 @@ sub recombine_breakpoints {
             #----------------------------------------------------------
 
             # a terminal '{' should stay where it is
-            next if ( ( $n == $nmax ) && ( $types_to_go[$imidr] eq '{' ) );
+            #next if ( ( $n == $nmax ) && ( $types_to_go[$imidr] eq '{' ) && $tokens_to_go[$imidr] ne '(');
+            next if ( $n == $nmax && $types_to_go[$imidr] eq '{'  );
 
             # an isolated '}' may join with a ';' terminated segment
             if ( $types_to_go[$imid] eq '}' ) {
@@ -7303,15 +7304,22 @@ sub recombine_breakpoints {
                 # but otherwise, do not recombine unless this will leave 
                 # just 1 more line
                 else {
-                    #next unless ($nmax <= 2);
                     next unless ($n+1 >= $nmax );
                 }
             }
 
-            # isolated paren looks bad
+            # opening paren..
+            #elsif ( $tokens_to_go[$imid] eq '(' ) {
             elsif ( $types_to_go[$imid] eq '(' ) {
 
-                next unless ( $imid == $if );
+                # looks bad if only token on line
+                next unless ( $imid == $if);
+
+                    # and isolated 'if (' undesirable
+                    #|| ( $n==1 && $imid - $if <= 2 && $types_to_go[$if] eq 'k'
+                    #    && $tokens_to_go[$if] eq 'if' )
+
+                #);
 
                 # but do not combine with a comma list
                 # ...Updated 20010401 even do this for a comma list
@@ -7368,6 +7376,8 @@ sub recombine_breakpoints {
                 next if ( $tokens_to_go[$imid] =~ /^(last|next|redo|return)$/ );
             }
 
+            else {
+
             # keywords look best at start of lines,
             # but combine things like "1 while" 
             next
@@ -7381,6 +7391,7 @@ sub recombine_breakpoints {
                 && ( $tokens_to_go[$imidr] =~ /^(and|or)$/ ) );
 
             next if ( $tokens_to_go[$imidr] =~ /^(\&\&|\|\|)$/ );
+            }
 
             # honor hard breakpoints
             next if ( $forced_breakpoint_to_go[$imid] > 0 );
@@ -7884,7 +7895,7 @@ use constant IS_FORCED_BREAK         => 7;
 use constant OUTDENT_LONG_LINES      => 8;
 use constant LIST_TYPE               => 9;
 use constant IS_HANGING_SIDE_COMMENT => 10;
-use constant RCOLUMNS                => 11;
+use constant RALIGNMENTS                => 11;
 use constant RSTARTING_COLUMNS       => 12;
 
 my %_index_map;
@@ -7899,7 +7910,7 @@ $_index_map{is_forced_break}         = IS_FORCED_BREAK;
 $_index_map{outdent_long_lines}      = OUTDENT_LONG_LINES;
 $_index_map{list_type}               = LIST_TYPE;
 $_index_map{is_hanging_side_comment} = IS_HANGING_SIDE_COMMENT;
-$_index_map{rcolumns}                = RCOLUMNS;
+$_index_map{rcolumns}                = RALIGNMENTS;
 $_index_map{rstarting_columns}       = RSTARTING_COLUMNS;
 
 my @_default_data = ();
@@ -7914,7 +7925,7 @@ $_default_data[IS_FORCED_BREAK]         = undef;
 $_default_data[OUTDENT_LONG_LINES]      = undef;
 $_default_data[LIST_TYPE]               = undef;
 $_default_data[IS_HANGING_SIDE_COMMENT] = undef;
-$_default_data[RCOLUMNS]                = undef;
+$_default_data[RALIGNMENTS]                = undef;
 $_default_data[RSTARTING_COLUMNS]       = undef;
 
 {
@@ -7960,14 +7971,27 @@ sub get_outdent_long_lines      {  $_[0]->[OUTDENT_LONG_LINES] }
 sub get_list_type               {  $_[0]->[LIST_TYPE] }
 sub get_is_hanging_side_comment {  $_[0]->[IS_HANGING_SIDE_COMMENT] }
 
-# currently unused:
-# sub get_rcolumns                {  $_[0]->[RCOLUMNS] }
+# ------ unused ---------------------------------------------------------------
+# sub get_rcolumns                {  $_[0]->[RALIGNMENTS] }
 # sub get_rstarting_columns       {  $_[0]->[RSTARTING_COLUMNS] }
+# set_column($k, $value)
+# sub set_column { $_[0]->[RALIGNMENTS]->[ $_[1] ] = $_[2] }
+# sub set_rcolumns                { $_[0]->[RALIGNMENTS]                = $_[1] }
+# sub set_rstarting_columns       { $_[0]->[RSTARTING_COLUMNS]       = $_[1] }
+# -----------------------------------------------------------------------------
 
 # get_column($k) returns location of kth column on this line
-sub get_column           {  $_[0]->[RCOLUMNS]->[ $_[1] ] }
+sub get_column           {  $_[0]->[RALIGNMENTS]->[ $_[1] ] }
+sub get_alignments      {  @{$_[0]->[RALIGNMENTS]} }
+sub increment_column { $_[0]->[RALIGNMENTS]->[ $_[1] ] += $_[2] }
+sub set_alignments      {  my $self=shift; @{$self->[RALIGNMENTS]} = @_ }
+
 sub get_starting_column  {  $_[0]->[RSTARTING_COLUMNS]->[ $_[1] ] }
-sub get_all_columns      {  @{$_[0]->[RCOLUMNS]} }
+sub set_starting_column { $_[0]->[RSTARTING_COLUMNS]->[ $_[1] ] = $_[2] }
+sub set_all_starting_columns  {  
+   my $self=shift; 
+   @{$self->[RSTARTING_COLUMNS]} = @_ 
+}
 
 sub current_field_width {
     my $self=shift;
@@ -7997,17 +8021,6 @@ sub starting_field_width {
     }
 }
 
-# set_column($k, $value)
-sub set_column { $_[0]->[RCOLUMNS]->[ $_[1] ] = $_[2] }
-sub increment_column { $_[0]->[RCOLUMNS]->[ $_[1] ] += $_[2] }
-
-sub set_starting_column { $_[0]->[RSTARTING_COLUMNS]->[ $_[1] ] = $_[2] }
-sub set_all_columns      {  my $self=shift; @{$self->[RCOLUMNS]} = @_ }
-sub set_all_starting_columns  {  
-   my $self=shift; 
-   @{$self->[RSTARTING_COLUMNS]} = @_ 
-}
-
 sub increase_field_width {
 
     my $self=shift;
@@ -8030,9 +8043,6 @@ sub set_outdent_long_lines  { $_[0]->[OUTDENT_LONG_LINES]  = $_[1] }
 sub set_list_type           { $_[0]->[LIST_TYPE]           = $_[1] }
 sub set_is_hanging_side_comment { $_[0]->[IS_HANGING_SIDE_COMMENT] = $_[1] }
 
-# currently unused:
-# sub set_rcolumns                { $_[0]->[RCOLUMNS]                = $_[1] }
-# sub set_rstarting_columns       { $_[0]->[RSTARTING_COLUMNS]       = $_[1] }
 
 }
 
@@ -8112,6 +8122,7 @@ sub set_starting_column { $_[0]->[STARTING_COLUMN] = $_[1] }
 sub set_matching_token  { $_[0]->[MATCHING_TOKEN]  = $_[1] }
 sub set_starting_line   { $_[0]->[STARTING_LINE]   = $_[1] }
 sub set_ending_line     { $_[0]->[ENDING_LINE]     = $_[1] }
+sub increment_column    { $_[0]->[COLUMN]         += $_[1] }
 
 }
 
@@ -8563,7 +8574,7 @@ sub eliminate_group_fields {
             0 )    # with side comment
       )
     {
-        my @new_columns           = ();
+        my @new_alignments        = ();
         my @new_starting_columns  = ();
         my @new_fields            = ();
         my @new_matching_patterns = ();
@@ -8587,9 +8598,11 @@ sub eliminate_group_fields {
                 $new_matching_patterns[$j] = $current_pattern;
                 $current_field   = '';
                 $current_pattern = '';
+                #@
                 $new_matching_tokens[$j]   = $$old_rtokens[$k];
-                $new_columns[$j]          = $old_line->get_column($k);
+                $new_alignments[$j]       = $old_line->get_column($k);
                 $new_starting_columns[$j] = $old_line->get_starting_column($k);
+                #@
                 $j++;
             }
             else {
@@ -8609,13 +8622,14 @@ sub eliminate_group_fields {
             $current_pattern .= $$old_rpatterns[$k];
             $new_fields[$j]            = $current_field;
             $new_matching_patterns[$j] = $current_pattern;
-            $new_columns[$j]           = $old_line->get_column($k);
+
+            #@
+            $new_alignments[$j]           = $old_line->get_column($k);
             $new_starting_columns[$j]  = $old_line->get_starting_column($k);
+            #@
             $maximum_field_index = $j;
 
-#            @$rcolumns          = @new_columns;
-#            @$rstarting_columns = @new_starting_columns;
-            $old_line->set_all_columns(@new_columns);
+            $old_line->set_alignments(@new_alignments);
             $old_line->set_all_starting_columns(@new_starting_columns);
 
             $old_line->set_jmax($jmax);
@@ -8849,13 +8863,15 @@ sub check_fit {
     if ( $maximum_line_index >= 0 ) {
         my $padding_so_far    = 0;
         my $padding_available =
-          $rOpts->{'maximum-line-length'} - $old_line->get_column($maximum_field_index);
+          $rOpts->{'maximum-line-length'} - 
+          $old_line->get_column($maximum_field_index);
 
         # save current columns in case this doesn't work
-        my @old_columns = $old_line->get_all_columns();
+        my @old_alignments = $old_line->get_alignments();
 
         for my $j ( 0 .. $jmax ) {
-            my $pad = length( $$rfields[$j] ) - $old_line->current_field_width($j);
+            my $pad = 
+              length( $$rfields[$j] ) - $old_line->current_field_width($j);
 
             if ( $j == 0 ) {
                 $pad += $leading_space_count;
@@ -8911,7 +8927,7 @@ sub check_fit {
             {
 
                 # revert to starting state then flush; things didn't work out
-                $old_line->set_all_columns(@old_columns);
+                $old_line->set_alignments(@old_alignments);
                 flush();
                 last;
             }
@@ -8935,20 +8951,18 @@ sub accept_line {
         my $rfields = $new_line->get_rfields();
         my $j;
 
-        my @new_columns           = ();
+        my @new_alignments        = ();
         my @new_starting_columns  = ();
 
         my $col = $new_line->get_leading_space_count();
 
         for $j ( 0 .. $jmax ) {
             $col += length( $$rfields[$j] );
-            push @new_columns, $col;
+            push @new_alignments, $col;
             push @new_starting_columns, $col;
-            #$new_line->set_column( $j,          $col );
-            #$new_line->set_starting_column( $j, $col );
         }
 
-        $new_line->set_all_columns(@new_columns);
+        $new_line->set_alignments(@new_alignments);
         $new_line->set_all_starting_columns(@new_starting_columns);
 
         $maximum_jmax_seen = $jmax;
@@ -9302,7 +9316,7 @@ sub combine_fields {
         $$rfields[1] = $$rfields[$maximum_field_index];
         my @new_columns           = (0,0);
         $line->set_jmax(1);
-        $line->set_all_columns( @new_columns );
+        $line->set_alignments( @new_columns );
         #$line->set_column( 0, 0 );
         #$line->set_column( 1, 0 );
     }
