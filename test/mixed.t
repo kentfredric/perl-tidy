@@ -1,4 +1,11 @@
 # Mixed commas and comma-arrows; formatter will decide to use old break points 
+{
+    print $sock join (
+        "\015\012" => "GET $path HTTP/1.0",
+        "Host: $netloc", "User-Agent: lwp-trivial/$VERSION", "", ""
+    );
+}
+
 my @Option_spec = (
     'arch=s',
     'binary|b!',

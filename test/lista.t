@@ -1,3 +1,14 @@
+# A list without parens, quite a mess
+print $query->header, $query->start_html( -title => 'A Simple Example' ),
+  $query->startform, "<CENTER><H3>Testing Module Pg</H3></CENTER>",
+  "<P><CENTER><TABLE CELLPADDING=4 CELLSPACING=2 BORDER=1>",
+  "<TR><TD>Enter conninfo string: </TD>", "<TD>",
+  $query->textfield( -name => 'conninfo', -size => 40,
+    -default => 'dbname=template1' ), "</TD>", "</TR>",
+  "<TR><TD>Enter select command: </TD>", "<TD>",
+  $query->textfield( -name => 'cmd', -size => 40 ), "</TD>", "</TR>",
+  "</TABLE></CENTER><P>", "<CENTER>", $query->submit( -value => 'Submit' ),
+  "</CENTER>", $query->endform;
 
 my %matchwords;
 map( $matchwords{ join "", sort split //, $_ } = $_, 'cig',
@@ -36,6 +47,13 @@ my %ENTITIES = (
 } } }
 
 {{
+        my ($this) = DBI::_new_dbh( $drh,
+            {
+                Name     => $dsn,
+                User     => $user,
+                ado_conn => $conn,
+            } );
+
         # This was difficult:
         push (
             @sp,
@@ -65,6 +83,14 @@ $b = @a[0..5]/2.;
 print "b is $b\n";
 
 {
+   # break at all commas:
+    $$d{"month_abb"} = [
+        [
+            "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+        ],
+        [], [ "", "", "", "", "", "", "", "", "Sept" ]
+    ];
     my ( %data, @row, $line, $obj, %new, $first, $last, $daily, $row, $month );
 
     # could use odd number of fields here
@@ -228,3 +254,41 @@ make_node(
     "\$ power to power board cnv1",
     \@nodes
 );
+
+# broken list:
+  @symbol = (
+       (undef) x 8,		# 1st row
+       (undef) x 8,
+       (undef) x 8,		# 2nd row
+       (undef) x 8,
+       undef, undef, '\forall', undef, '\exists', undef, undef, '\???', # 3rd: symbols
+       (undef) x 8,
+       (undef) x 8,     # 4th: numbers and symbols
+       (undef) x 8,
+       '\???', ( map {"\\$_"} 
+		 qw(Alpha Beta Chi Delta Epsilon Phi Gamma 
+		 Eta Iota vartheta Kappa Lambda Mu Nu Omicron 
+		 Pi Theta Rho Sigma Tau Ypsilon varsigma Omega
+		 Xi Psi Zeta)), undef, '\therefore', undef, '\perp', undef,
+       undef, ( map {"\\$_"} 
+	        qw(alpha beta chi delta varepsilon phi gamma
+		   eta iota varphi kappa lambda mu nu omicron
+		   pi theta rho sigma tau ypsilon varpi omega
+		   xi psi zeta)), undef, undef, undef, undef, undef,
+       (undef) x 8,		# 9st row
+       (undef) x 8,
+       (undef) x 8,		# 10nd row
+       (undef) x 8,
+       undef, undef, undef, '\leq', undef, '\infty', undef, undef, # 11th row
+       undef, undef, undef, undef, '\from', undef, '\to', undef,
+       '\circ', '\pm', undef, '\geq', '\times', undef, '\partial', '\bullet', # 12th row
+       undef, '\neq', '\equiv', '\approx', '\dots', '\mid', '\hline', undef,
+       '\Aleph', undef, undef, undef, '\otimes', '\oplus', '\empty', '\cap', # 13th row
+       '\cup', undef, undef, undef, undef, undef, '\in', '\notin',
+       undef, '\nabla', undef, undef, undef, '\prod', undef, '\cdot', # 14th row
+       undef, '\wedge', '\vee', undef, undef, undef, undef, undef,
+       undef, '\<', undef, undef, undef, '\sum', undef, undef, # 15th row
+       (undef) x 8,
+       undef, '\>', '\int', (undef) x 5, # 16th row
+       (undef) x 8,
+      );

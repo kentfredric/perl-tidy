@@ -1,4 +1,3 @@
-
 # the break at this if should be retained even though the line is short
 push @allowed, $_
   if PDL->rpiccan($_) && defined $formats{$_};
@@ -28,6 +27,18 @@ push @allowed, $_
 	print "\n#-\n";
     }
 }
+
+# should break at opening '(' of the 'if' but block length
+# after '&&' is not accurately calculated
+{
+    if ( ref($to)
+        && ( UNIVERSAL::isa( $to, 'GLOB' )
+            || UNIVERSAL::isa( $to, 'IO::Handle' ) ) )
+    {
+        *TO = *$to;
+    }
+}
+
 
     # cannot retain this one-line block
     if (defined &replace_external_references_hook) {&replace_external_references_hook;}
