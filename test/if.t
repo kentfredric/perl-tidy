@@ -35,3 +35,17 @@
             print STDERR "$prompt %--- ignoring $filename" if ($debug);
             print STYLES "$styles\n" if ( $opt{save_styles} );
         }
+
+
+    # Flush before a long if statement to avoid unwanted alignment:
+    if ($EndYear =~ /\D/) { $EndYear = 0; }
+    elsif ($EndYear < 50)  { $EndYear += 2000; }
+    elsif ($EndYear < 100) { $EndYear += 1900; }
+    if    (($Year < 1601)
+        || ($Year > 2899)
+        || ($EndYear < 1601)
+        || ($EndYear > 2899))
+    {
+        &Error_OutOfRange;
+    }
+

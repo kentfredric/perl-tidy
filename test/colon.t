@@ -49,3 +49,10 @@ $leapyear = $year % 4 ? 0
 ( $_ eq '*' ? '.*'
   : ( $_ eq '?' ? '.'
       : ( $_ eq '.' ? '\.' : ( $_ =~ /^\[/ ? $_ : quotemeta($_) ) ) ) );
+
+    return wantarray ? (
+        $pubpre ? (
+            $this->{DELEGATE}{$pubpre}{sysid},
+            $this->{DELEGATE}{$pubpre}{base}
+        ) : ()
+    ) : $pubpre ? 1 : 0;
