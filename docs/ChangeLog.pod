@@ -5,6 +5,100 @@
  improvement, please send a note to perltidy at users.sourceforge.net.  
 
 =head2 2001 xx xx
+ 
+ Added -html control over pod text, using a new abbreviation 'po'.  See
+ updated perl2web man page. The default is to use the color of a comment,
+ but italicized.  Old .css style sheets will need a new line for
+ .po to use this.  The old color was the color of a string, and there
+ was no control.  
+
+ Long lines containing '?:' conditionals will now have the ':' placed
+ at the start of a line, one per line.  For example:
+
+    OLD:
+        $which_search =
+          $opts{"t"} ? 'title'   :
+          $opts{"s"} ? 'subject' : $opts{"a"} ? 'author' : 'title';
+
+    NEW:
+        $which_search =
+          $opts{"t"} ? 'title'
+          : $opts{"s"} ? 'subject'
+          : $opts{"a"} ? 'author'
+          : 'title';
+ 
+ You can use -wba=':' to recover the previous default which placed ':'
+ at the end of a line.  Thanks to Michael Cartmell for helpful
+ discussions and examples.  The thinking is that the ':' is equivalent
+ to an 'else' or 'elsif', which is also at the start of a line.  Also,
+ leading ':'s can be aligned and more easily seen.
+
+ -Long lines with repeated 'and', 'or', '&&', '||'  will now have
+ one such item per line.  For example:
+
+    OLD:
+        if ( $opt_d || $opt_m || $opt_p || $opt_t || $opt_x
+            || ( -e $archive && $opt_r ) )
+        {
+            ( $pAr, $pNames ) = readAr($archive);
+        }
+
+    NEW:
+        if ( $opt_d
+            || $opt_m
+            || $opt_p
+            || $opt_t
+            || $opt_x
+            || ( -e $archive && $opt_r ) )
+        {
+            ( $pAr, $pNames ) = readAr($archive);
+        }
+
+   OLD:
+        if ( $vp->{X0} + 4 <= $x && $vp->{X0} + $vp->{W} - 4 >= $x
+            && $vp->{Y0} + 4 <= $y && $vp->{Y0} + $vp->{H} - 4 >= $y ) 
+
+   NEW:
+        if ( $vp->{X0} + 4 <= $x
+            && $vp->{X0} + $vp->{W} - 4 >= $x
+            && $vp->{Y0} + 4 <= $y
+            && $vp->{Y0} + $vp->{H} - 4 >= $y )
+
+ -Long lines with multiple concatenated tokens will have concatenated
+ terms (see below) placed one per line, except for short items.  For
+ example:
+
+   OLD:
+        $report .=
+          "Device type:" . $ib->family . "  ID:" . $ib->serial . "  CRC:"
+          . $ib->crc . ": " . $ib->model() . "\n";
+
+   NEW:
+        $report .= "Device type:"
+          . $ib->family . "  ID:"
+          . $ib->serial . "  CRC:"
+          . $ib->model()
+          . $ib->crc . ": " . "\n";
+
+ NOTE: concatenated items which are a single token with total number of
+ characters (including " marks) given by
+ --short-concatenated-item-length=n (-scl=n) will not be placed on
+ a new line.  The default value is n=8.  In the above example, the
+ tokens "  ID:", "  CRC:", and "\n" are below this limit.
+
+ -If a line which is short enough to fit on a single line was
+ nevertheless broken in the input file at a 'good' location (see below), 
+ perltidy will try to retain a break.  For example, the following line
+ will be formatted as:
+ 
+    open SUM, "<$file"
+      or die "Cannot open $file ($!)";
+ 
+ if it was broken in the input file, and like this if not:
+
+    open SUM, "<$file" or die "Cannot open $file ($!)";
+
+ NOTE: 'good' location means before 'and','or','if','unless','&&','||'
 
  -Added wildcard file expansion for systems with shells which lack this.
  Now 'perltidy *.pl' should work under MSDOS/Windows.  Thanks to Hugh Myers 
@@ -36,7 +130,7 @@
    old: $$< 700 
    new: $$ < 700
 
- -Added -T flag when doing perl -c syntax check. 
+ -Added -T flag when doing perl -c syntax check, for security.  
 
 =head2 2001 09 03 
 

@@ -145,6 +145,7 @@ corresponding abbreviation:
       comma                  comma            cm
       label                  label            j
       sub definition name    subroutine       m
+      pod text               pod-text         po
 
 A default set of colors has been defined, but they may be changed by providing
 values to any of the following parameters, where B<n> is either a 6 digit 

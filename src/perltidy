@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.45 2001/09/28 23:10:36 perltidy Exp $
+    $Id: perltidy,v 1.46 2001/09/30 23:25:13 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -153,7 +153,7 @@ sub main {
                 # file doesn't exist, maybe we have a wildcard
                 if ($use_glob) {
 
-                    # work around a glob bug by using grep;
+                    # work around weird glob behavior using grep;
                     # i.e., glob('p.q') always returns 'p.q'
                     # even if 'p.q' doesn't exist.
                     my @files  = grep {-e $_} glob($input_file);
@@ -473,7 +473,8 @@ sub process_command_line {
       look-for-autoloader!
       look-for-selfloader!
       long-block-line-count=i
-      short-contatenation-item-length=i
+      short-concatenation-item-length=i
+      ignore-old-line-breaks!
     );
 
     # The Perltidy::HtmlWriter will add its own options to the string
@@ -535,7 +536,8 @@ sub process_command_line {
       look-for-autoloader
       look-for-selfloader
       long-block-line-count=8
-      short-contatenation-item-length=8
+      short-concatenation-item-length=8
+      noignore-old-line-breaks
     );
 
     #---------------------------------------------------------------
@@ -700,7 +702,9 @@ sub process_command_line {
         'w'                  => [qw(warning-output)],
         'nw'                 => [qw(nowarning-output)],
         'lbl'                => [qw(long-block-line-count)],
-        'scl'                => [qw(short-contatenation-item-length)],
+        'scl'                => [qw(short-concatenation-item-length)],
+        'iob'                => [qw(ignore-old-line-breaks)],
+        'niob'               => [qw(noignore-old-line-breaks)],
 
         # 'mangle' originally deleted pod and comments, but to keep it
         # reversible, it no longer does because i have removed:
@@ -2162,7 +2166,7 @@ BEGIN {
         'q'  => 'quote',
         's'  => 'structure',
         'c'  => 'comment',
-        'ws' => 'whitespace',
+        #'ws' => 'whitespace',
         'v'  => 'v-string',
         'cm' => 'comma',
         'w'  => 'bareword',
@@ -2174,7 +2178,8 @@ BEGIN {
         'hh' => 'here-doc-text',
         'k'  => 'keyword',
         'sc' => 'semicolon',
-        'm'  => 'subroutine'
+        'm'  => 'subroutine',
+        'po' => 'pod-text',
     );
 
     # Now we have to map actual token types into one of the above short
@@ -2201,7 +2206,7 @@ BEGIN {
         'h'  => 'h',
         'H'  => 'hh',
         'w'  => 'w',
-        'b'  => 'ws',
+        #'b'  => 'ws',
         ','  => 'cm',
         '=>' => 'cm',
         ';'  => 'sc',
@@ -2210,6 +2215,7 @@ BEGIN {
         '('  => 'p',
         ')'  => 'p',
         'M'  => 'm',
+        'P'  => 'po',
     );
 
     # These token types will all be called identifiers for now
@@ -2318,6 +2324,7 @@ sub check_options {
 
     # set_default_properties( $short_name, default_color, bold?, italic? );
     set_default_properties( 'c',  ForestGreen,   0, 0 );
+    set_default_properties( 'po', ForestGreen,   0, 1 );
     set_default_properties( 'k',  SaddleBrown,   1, 0 );
     set_default_properties( 'q',  IndianRed3,    0, 0 );
     set_default_properties( 'hh', IndianRed3,    0, 1 );
@@ -2650,6 +2657,10 @@ sub write_line {
         my $line_character;
         if    ( $line_type eq 'HERE' )       { $line_character = 'H' }
         elsif ( $line_type eq 'HERE_END' )   { $line_character = 'h' }
+        elsif ( $line_type eq 'FORMAT' )     { $line_character = 'H' }
+        elsif ( $line_type eq 'FORMAT_END' ) { $line_character = 'h' }
+        elsif ( $line_type =~ /^POD/ )       { $line_character = 'P' }
+        elsif ( $line_type eq 'SYSTEM' )     { $line_character = 'c' }
         elsif ( $line_type eq 'END_START' )  { $line_character = 'k' }
         elsif ( $line_type eq 'DATA_START' ) { $line_character = 'k' }
         else { $line_character = 'Q' }
@@ -2770,9 +2781,7 @@ use vars qw{
   $formatter_self
   @ci_stack
   $last_line_had_side_comment
-  $want_break_before_comma
-  $want_break_before_colon
-  $want_break_before_dot
+  %want_break_before
 
   %FORMATTER_DEBUG_FLAG
   %tightness
@@ -3844,16 +3853,10 @@ EOM
     }
 
     # implement user break preferences
-    $want_break_before_comma = 0;
-    $want_break_before_colon = 1;
-    $want_break_before_dot   = 1;
-    my $want_break_before_question = 1;
     if ( $rOpts->{'want-break-after'} ) {
         @list = split /\s/, $rOpts->{'want-break-after'};
         foreach my $tok (@list) {
-            if ( $tok eq '.' ) { $want_break_before_dot = 0; }
-            if ( $tok eq ':' ) { $want_break_before_colon = 0; }
-            if ( $tok eq '?' ) { $want_break_before_question = 0; }
+            if ($tok eq '?') {$tok = ':'}  # patch to coordinate ?/:
             my $lbs = $left_bond_strength{$tok};
             my $rbs = $right_bond_strength{$tok};
             if ( defined($lbs) && defined($rbs) && $lbs < $rbs ) {
@@ -3866,31 +3869,27 @@ EOM
     if ( $rOpts->{'want-break-before'} ) {
         @list = split /\s/, $rOpts->{'want-break-before'};
         foreach my $tok (@list) {
-            if ( $tok eq ',' ) { $want_break_before_comma = 1; }
             my $lbs = $left_bond_strength{$tok};
             my $rbs = $right_bond_strength{$tok};
-
             if ( defined($lbs) && defined($rbs) && $rbs < $lbs ) {
                 ( $right_bond_strength{$tok}, $left_bond_strength{$tok} ) =
                   ( $lbs, $rbs );
             }
         }
+    }
 
-        # swap : ? strengths if we break after a :
-        if (!$want_break_before_colon || !$want_break_before_question) { 
-            if ($want_break_before_question) { 
-                ( $right_bond_strength{'?'}, $left_bond_strength{'?'} ) =
-                ( $left_bond_strength{'?'}, $right_bond_strength{'?'} );
-            }
-            if ($want_break_before_colon) { 
-                ( $right_bond_strength{':'}, $left_bond_strength{':'} ) =
-                ( $left_bond_strength{':'}, $right_bond_strength{':'} );
-            }
-            ($right_bond_strength{':'}, $right_bond_strength{'?'}) = 
-            ($right_bond_strength{'?'}, $right_bond_strength{':'}); 
-            ($left_bond_strength{':'}, $left_bond_strength{'?'}) = 
-            ($left_bond_strength{'?'}, $left_bond_strength{':'}); 
-        }
+    # make note if breaks are before certain key types
+    %want_break_before = ();
+    foreach my $tok ('.',',',':','?','&&','||') {
+        $want_break_before{$tok} = 
+          $left_bond_strength{$tok} < $right_bond_strength{$tok};
+    }
+
+    # Coordinate ?/: breaks, which must be similar
+    if (!$want_break_before{':'}) {
+       $want_break_before{'?'} = $want_break_before{':'};
+       $right_bond_strength{'?'} = $right_bond_strength{':'}+0.01;
+       $left_bond_strength{'?'}  = NO_BREAK;
     }
 
     # Define here tokens which may follow the closing brace of a do statement
@@ -4629,7 +4628,7 @@ sub print_line_of_tokens {
     #     /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
     # Examples:
     #   *VERSION = \'1.01';
-    #   ( $VERSION ) = '$Revision: 1.45 $ ' =~ /\$Revision:\s+([^\s]+)/;
+    #   ( $VERSION ) = '$Revision: 1.46 $ ' =~ /\$Revision:\s+([^\s]+)/;
     # We will pass such a line straight through unless -npvl is used
     my $is_VERSION_statement = 0;
 
@@ -5208,7 +5207,7 @@ sub print_line_of_tokens {
     }
 
     # mark old line breakpoints in current output stream
-    if ( $max_index_to_go >= 0 ) {
+    if ( $max_index_to_go >= 0 && !$rOpts->{'ignore-old-line-breaks'} ) {
         $old_breakpoint_to_go[$max_index_to_go] = 1;
     }
 }
@@ -5763,7 +5762,7 @@ sub output_line_to_go {
         }
 
         pad_array_to_go();
-        scan_list();
+        my $saw_good_break = scan_list();
 
         # let $ri_first and $ri_last be references to lists of 
         # first and last tokens of line fragments to output..
@@ -5776,7 +5775,8 @@ sub output_line_to_go {
             !$rOpts->{'add-newlines'}
 
             # or, we don't already have an interior breakpoint
-            || ( !$forced_breakpoint_count
+            # and we didn't see a good breakpoint
+            || ( !$forced_breakpoint_count && !$saw_good_break
 
                 # and this line is 'short' 
                 && ( total_line_length( $imin, $max_index_to_go ) <=
@@ -6323,6 +6323,18 @@ sub set_bond_strengths {
         @right_bond_strength{@tmp} =
           ( 0.4 * WEAK + 0.6 * VERY_WEAK ) x scalar(@tmp);
 
+        # break BEFORE '&&' and '||' 
+        # set strength of '||' to same as '=' so that chains like
+        # $a = $b || $c || $d   will break before the first '||'
+        $right_bond_strength{'||'} = NOMINAL;
+        #$left_bond_strength{'||'}  = 0.4 * WEAK + 0.6 * VERY_WEAK;
+        $left_bond_strength{'||'}  = $right_bond_strength{'='};
+
+        # set strength of && a little higher than ||
+        $right_bond_strength{'&&'} = NOMINAL;
+        #$left_bond_strength{'&&'}  = 0.5 * WEAK + 0.5 * VERY_WEAK;
+        $left_bond_strength{'&&'}  = $left_bond_strength{'||'} + 0.1;
+
         $left_bond_strength{';'}  = VERY_STRONG;
         $right_bond_strength{';'} = VERY_WEAK;
         $left_bond_strength{'f'}  = VERY_STRONG;
@@ -6333,28 +6345,15 @@ sub set_bond_strengths {
         # 	  $number_of_fields )
         $right_bond_strength{'f'} = 0.3 * WEAK + 0.7 * VERY_WEAK;
 
-        # break BEFORE these so that they start a continuation line:
-        $right_bond_strength{'&&'} = NOMINAL;
-        $left_bond_strength{'&&'}  = 0.5 * WEAK + 0.5 * VERY_WEAK;
-        $right_bond_strength{'||'} = NOMINAL;
-        $left_bond_strength{'||'}  = 0.4 * WEAK + 0.6 * VERY_WEAK;
 
-        # break after a colon
-        # The strengths of these should be somewhere between 
+        # The strengths of ?/: should be somewhere between 
         # an '=' and a quote (NOMINAL),
         # make strength of ':' slightly less than '?' to help
         # break long chains of ? : after the colons
-
-        # TESTING:
-        #$right_bond_strength{':'} = 0.6 * WEAK + 0.4 * NOMINAL;
-        #$left_bond_strength{':'}  = NO_BREAK;
-        #$right_bond_strength{'?'} = 0.4 * WEAK + 0.6 * NOMINAL;
-        #$left_bond_strength{'?'}  = NO_BREAK;
-
-        $left_bond_strength{'?'} = 0.6 * WEAK + 0.4 * NOMINAL;
-        $right_bond_strength{'?'}  = NO_BREAK;
         $left_bond_strength{':'} = 0.4 * WEAK + 0.6 * NOMINAL;
         $right_bond_strength{':'}  = NO_BREAK;
+        $left_bond_strength{'?'} = $left_bond_strength{':'}+0.01;
+        $right_bond_strength{'?'}  = NO_BREAK;
 
         $left_bond_strength{','}  = VERY_STRONG;
         $right_bond_strength{','} = VERY_WEAK;
@@ -6378,6 +6377,7 @@ sub set_bond_strengths {
     my $type = 'b';
     my $last_type; 
     my $last_nonblank_type='b'; 
+    my $delta_bias = 0.0001;
 
     # preliminary loop to compute bond strengths
     for ( my $i = 0 ; $i <= $max_index_to_go ; $i++ ) {
@@ -6504,25 +6504,25 @@ sub set_bond_strengths {
         }
 
         # in long ?: conditionals, bias toward just one set per line (colon.t)
-        if ( $type eq ':' && !$want_break_before_colon) {
+        if ( $type eq ':' && !$want_break_before{$type}) {
             $bond_str   += $colon_bias;
-            $colon_bias += 0.0001;
+            $colon_bias += $delta_bias;
         }
-        if ( $next_nonblank_type eq ':' && $want_break_before_colon) {
+        if ( $next_nonblank_type eq ':' 
+          && $want_break_before{$next_nonblank_type}) {
             $bond_str   += $colon_bias;
-            $colon_bias += 0.0001;
+            $colon_bias += $delta_bias;
         }
 
         # if leading '.' is used, align all but 'short' quotes;
         # the idea is to not place something like "\n" on a single line.
         if ( $next_nonblank_type eq '.' ) {
-            if ($want_break_before_dot) {
+            if ($want_break_before{'.'}) {
                 unless ( $last_nonblank_type eq '.'
-                    #&& $type eq 'Q'
                     && length($token) <=
-                    $rOpts->{'short-contatenation-item-length'} )
+                    $rOpts->{'short-concatenation-item-length'} )
                 {
-                    $dot_bias += 0.0001;
+                    $dot_bias += $delta_bias;
                 }
                 $bond_str += $dot_bias;
             }
@@ -6530,19 +6530,19 @@ sub set_bond_strengths {
 
         elsif ( $next_nonblank_type eq '&&' ) {
                     $bond_str   += $amp_bias;
-                    $amp_bias += 0.0001;
+                    $amp_bias += $delta_bias;
         }
         elsif ( $next_nonblank_type eq '||' ) {
                     $bond_str   += $bar_bias;
-                    $bar_bias += 0.0001;
+                    $bar_bias += $delta_bias;
         }
         elsif ( $next_nonblank_type eq 'k' && $next_nonblank_token eq 'and' ) {
             $bond_str += $and_bias;
-            $and_bias += 0.0001;
+            $and_bias += $delta_bias;
         }
         elsif ( $next_nonblank_type eq 'k' && $next_nonblank_token eq 'or' ) {
             $bond_str += $or_bias;
-            $or_bias  += 0.0001;
+            $or_bias  += $delta_bias;
         }
 
         # keep matrix and hash indices together
@@ -6566,7 +6566,7 @@ sub set_bond_strengths {
         if ( $type eq '}' && $block_type ) {
 
             $bond_str = 0.5 * WEAK + 0.5 * VERY_WEAK + $code_bias;
-            $code_bias += 0.0001;
+            $code_bias += $delta_bias;
         }
 
         if ( $type eq 'k' ) {
@@ -6647,15 +6647,15 @@ sub set_bond_strengths {
             }
         }
 
-        # Never break before a ? or / because perl can mistake it for
-        # the start of a pattern in some cases.
-        # ( prnterr3.t and print2.t )
-        if ( $next_nonblank_type =~ /^[\/\?]$/ ) {
+        # Do not break between a possible filehandle and a ? or / 
+        #BUBBA!
+        if ( $type eq 'Z' && $next_nonblank_type =~ /^[\/\?]$/ ) {
             $bond_str = NO_BREAK;
         }
 
-        # Never break around a possible file handle
-        if ( ( $type eq 'Z' ) || ( $next_nonblank_type eq 'Z' ) ) {
+        # Do not break before a possible file handle
+        #if ( ( $type eq 'Z' ) || ( $next_nonblank_type eq 'Z' ) ) {
+        if ( ( $next_nonblank_type eq 'Z' ) ) {
             $bond_str = NO_BREAK;
         }
 
@@ -6775,6 +6775,7 @@ sub scan_list {
     my @longest_term               = ();
     my @last_equals_index          = ();
     my $old_breakpoint_count       = 0;
+    my $good_old_breakpoint        = 0;
     my $last_old_breakpoint_count  = 0;
     my $saw_comma                  = 0;
     $item_count_stack[$current_depth]       = 0;
@@ -6800,8 +6801,6 @@ sub scan_list {
 
     # loop over all tokens in this batch
     while ( ++$i <= $max_index_to_go ) {
-        $last_old_breakpoint_count = $old_breakpoint_count;
-        $old_breakpoint_count++ if ( $old_breakpoint_to_go[$i] );
         if ( $type ne 'b' ) {
             $i_last_nonblank_token = $i - 1;
             $last_nonblank_type    = $type;
@@ -6816,6 +6815,21 @@ sub scan_list {
         $next_nonblank_type       = $types_to_go[$i_next_nonblank];
         $next_nonblank_token      = $tokens_to_go[$i_next_nonblank];
         $next_nonblank_block_type = $block_type_to_go[$i_next_nonblank];
+
+        $last_old_breakpoint_count = $old_breakpoint_count;
+        if ($old_breakpoint_to_go[$i]) {
+            $old_breakpoint_count++; 
+
+            # if old line broke before certain key types, we take that
+            # as a cue that the user wants to break there
+            if ( ( $next_nonblank_type =~ /^(\&\&|\|\|)$/
+                && $want_break_before{$next_nonblank_type} )
+                || ( $next_nonblank_type eq 'k'
+                    && $next_nonblank_token =~ /^(if|unless|and|or)$/ ) )
+            {
+                $good_old_breakpoint++;
+            }
+        }
         next if ( $type eq 'b' );
         $depth = $nesting_depth_to_go[ $i + 1 ];
 
@@ -7332,6 +7346,16 @@ sub scan_list {
                 && ( !$saw_comma || $i_opening == 0 ) );
         }
     }
+
+    # Return a flag indicating if the input file had some breakpoints,
+    # and they were all good.  If not all of the breakpoints were good,
+    # we take that as a bad omen and do not set the flag.  This flag
+    # will be used to force a break in a line shorter than the allowed
+    # line length.
+    my $saw_good_breakpoint =
+      ( $old_breakpoint_count > 0
+      && $old_breakpoint_count == $good_old_breakpoint );
+    return $saw_good_breakpoint;
 }
 
 sub update_longest_term {
@@ -7821,7 +7845,7 @@ sub set_nobreaks {
 
 sub set_forced_breakpoint {
     my ($i) = @_;
-    if ( $want_break_before_comma && $i >= 0 && $types_to_go[$i] eq ',' ) {
+    if ( $want_break_before{','} && $i >= 0 && $types_to_go[$i] eq ',' ) {
         $i--;
     }
 
@@ -7952,10 +7976,21 @@ sub recombine_breakpoints {
             # a terminal '{' should stay where it is
             next if ( $n == $nmax && $types_to_go[$imidr] eq '{' );
 
+            #----------------------------------------------------------
+            # examine token at $imid
+            #----------------------------------------------------------
+
             # an isolated '}' may join with a ';' terminated segment
             if ( $types_to_go[$imid] eq '}' ) {
                 next
-                  unless ( ( $if == $imid ) && ( $types_to_go[$il] eq ';' ) );
+                  unless ( 
+
+                  # join } and ;
+                  ( ( $if == $imid ) && ( $types_to_go[$il] eq ';' ) )
+
+                  # handle '.' below
+                  || ($types_to_go[$imidr] eq '.')
+                  );
             }
 
             # for lines ending in a comma...
@@ -8003,7 +8038,7 @@ sub recombine_breakpoints {
 
             elsif ( $types_to_go[$imid] eq ')' ) {
 
-                next unless ( $imid == $if );
+                next unless ( $imid == $if || $types_to_go[$imidr] eq '.');
 
                 # override breakpoints if no commas
                 $forced_breakpoint_to_go[$imid] = 0;
@@ -8047,13 +8082,21 @@ sub recombine_breakpoints {
                 next if ( $tokens_to_go[$imid] =~ /^(last|next|redo|return)$/ );
             }
 
-            else {
+            #----------------------------------------------------------
+            # examine token at $imidr
+            #----------------------------------------------------------
+
+            #else {
 
                 # do not recombine lines with leading &&, ||, or :
                 next if ( $types_to_go[$imidr] =~ /^(:|\&\&|\|\|)$/); 
 
                 # do not recombine lines with leading '.' 
                 if ( $types_to_go[$imidr] =~ /^(\.)$/ ) {
+                    my $i_next_nonblank = $imidr+1;
+                    if ($types_to_go[$i_next_nonblank] eq 'b') 
+                      {$i_next_nonblank++}
+
 =pod
       ... unless there is just one and we can reduce this to
       two lines if we do.  For example, this :
@@ -8064,11 +8107,25 @@ sub recombine_breakpoints {
       looks better than this:
                 $bodyA .= '($dummy, $pat) = &get_next_tex_cmd;' 
                    . '$args .= $pat;'
+
+
+      ... or this would strand a short token on the last line, like this
+                . "some long qoute"
+                . "\n";
 =cut
-                    next
-                      unless ( $n == 2
+
+                    next unless (
+
+                        ( $n == 2
                         && $n == $nmax
-                        && $types_to_go[$if] ne $types_to_go[$imidr] );
+                        && $types_to_go[$if] ne $types_to_go[$imidr] )
+
+                        || ( $n == $nmax
+                            || $types_to_go[$i_next_nonblank] eq 'Q' )
+                        && $i_next_nonblank <= $il
+                        && length( $tokens_to_go[$i_next_nonblank] ) <
+                        $rOpts->{'short-concatenation-item-length'}
+                    );
                 }
 
                 # keywords look best at start of lines,
@@ -8083,7 +8140,7 @@ sub recombine_breakpoints {
                   if ( ( $types_to_go[$imidr] eq 'k' )
                     && ( $tokens_to_go[$imidr] =~ /^(and|or)$/ ) );
 
-            }
+            #}
 
             # honor hard breakpoints
             next if ( $forced_breakpoint_to_go[$imid] > 0 );
@@ -8256,6 +8313,19 @@ sub set_continuation_breaks {
                   if ( $leading_alignment_type
                     && ($next_nonblank_type ne $leading_alignment_type
                     || $next_nonblank_token ne $leading_alignment_token )) ;
+
+                #BUBBA: testing 
+                # Try to force at least one breakpoint if this routine is called
+                #  print "at tok=$token str=$strength i=$i_test i-last=$i_last_break i_low= $i_lowest str= $lowest_strength\n"; 
+
+                last
+                  if ( $i_test == $imax      # we are at the end
+                    && $type eq ';'          # and this line ends in a ;
+                    && $i_last_break < 0     # and we haven't made a break
+                    && $i_lowest > 0         # and we saw a possible break
+                    && $i_lowest < $imax-1   # (but not just before this ;)
+                    && $strength-$lowest_strength < 0.5*WEAK  # and it's good
+                    );
 
                 $lowest_strength = $strength;
                 $i_lowest        = $i_test;
@@ -11670,6 +11740,7 @@ The following additional token types are defined:
     U    user-defined function taking parameters
     G    user-defined function taking block parameter (like grep/map/eval)
     M    (unused, but reserved for subroutine definition name)
+    P    (unused, but -html uses it to label pod text)
     t    type indicater such as %,$,@,*,&,sub
     w    bare word (perhaps a subroutine call)
     i    identifier of some type (with leading %, $, @, *, &, sub )

@@ -1027,6 +1027,11 @@ One-line block rules can conflict with the cuddled-else option.  When
 the cuddled-else option is used, perltidy retains existing one-line
 blocks, even if they do not obey cuddled-else formatting.
 
+Occasionally, when one-line blocks get broken because they exceed the
+available line length, the formatting will violate the requested brace style.
+If this happens, reformatting the script a second time should correct
+the problem.
+
 =item  Debugging 
 
 The following flags are available for debugging:

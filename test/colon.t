@@ -8,6 +8,12 @@ $a = ( $b > 0 ) ? {
 $c = $$a{a};
 print "c=$c\n";
 
+{{{
+            ( $feat->strand == -1 )
+              ? ( @range = ( $feat->end, $feat->start, $feat->strand ) )
+              : ( @range = ( $feat->start, $feat->end, $feat->strand ) );
+}}}
+
 # this should be broken with one conditional per line
 *{"${callpkg}::$sym"} =
   $type eq '&' ? \&{"${pkg}::$sym"} :
@@ -29,4 +35,17 @@ print "c=$c\n";
 
 # This example from 'camel 3', p 106, fits on one line so will not
 # be broken
-$leapyear = $year % 4 ? 0 : $year % 100 ? 1 : $year % 400 ? 0 : 1;
+$leapyear = $year % 4 ? 0 
+  : $year % 100 ? 1 : $year % 400 ? 0 : 1;
+
+{{{
+            # Would be nice to alingn ? and : here
+            # or break before '?' instead of after =
+            ( $SO, $SE ) =
+              $opt{H} ? ( $terminal->Tputs('so'), $terminal->Tputs('se') )
+                      : ( $terminal->Tputs('us'), $terminal->Tputs('ue') )
+}}}
+
+( $_ eq '*' ? '.*'
+  : ( $_ eq '?' ? '.'
+      : ( $_ eq '.' ? '\.' : ( $_ =~ /^\[/ ? $_ : quotemeta($_) ) ) ) );
