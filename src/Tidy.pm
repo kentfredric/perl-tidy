@@ -61,7 +61,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.23 2002/08/25 23:34:16 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.24 2002/08/26 00:26:38 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 # Preloaded methods go here.
@@ -5050,7 +5050,7 @@ sub check_options {
 
     if ( $rOpts->{'line-up-parentheses'} ) {
 
-        if ( $rOpts->{'indent-only'}
+        if (   $rOpts->{'indent-only'}
             || !$rOpts->{'add-newlines'}
             || !$rOpts->{'delete-old-newlines'} )
         {
@@ -6040,8 +6040,8 @@ sub set_white_space_flag {
         # retain any space between '-' and bare word
         # example: avoid space between 'USER' and '-' here:
         #   $myhash{USER-NAME}='steve'; 
-        elsif ( $type eq 'm' || $type eq '-') {
-            $ws = WS_OPTIONAL if ($last_type eq 'w');
+        elsif ( $type eq 'm' || $type eq '-' ) {
+            $ws = WS_OPTIONAL if ( $last_type eq 'w' );
         }
 
         # always space before side comment
@@ -6097,9 +6097,9 @@ sub set_white_space_flag {
         #    my $msg = new Fax::Send
         #      -recipients => $to,
         #      -data => $data;
-        if ( $ws == 0  && $j==0 ) { $ws=1 }
+        if ( $ws == 0 && $j == 0 ) { $ws = 1 }
 
-        if ( ( $ws == 0 )
+        if (   ( $ws == 0 )
             && $j > 0
             && $j < $jmax
             && ( $last_type !~ /^[Zh]$/ ) )
@@ -6496,7 +6496,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.23 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.24 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -6738,7 +6738,7 @@ sub set_white_space_flag {
                   && $block_type
                   && $block_type ne 't' );
 
-            if ( $side_comment_follows
+            if (   $side_comment_follows
                 && !$is_opening_BLOCK
                 && !$is_closing_BLOCK )
             {
@@ -6767,7 +6767,7 @@ sub set_white_space_flag {
                 if (   ( $max_index_to_go >= 0 )
                     && ( $last_nonblank_type eq ')' ) )
                 {
-                    if ( $block_type =~ /^(if|else|elsif)$/
+                    if (   $block_type =~ /^(if|else|elsif)$/
                         && ( $tokens_to_go[0] eq '}' )
                         && $rOpts_cuddled_else )
                     {
@@ -7061,7 +7061,8 @@ sub set_white_space_flag {
                         $last_nonblank_token eq '}'
                         && (
                             $is_block_without_semicolon{
-                                $last_nonblank_block_type }
+                                $last_nonblank_block_type
+                            }
                             || $last_nonblank_block_type =~ /^sub\s+\w/
                             || $last_nonblank_block_type =~ /^\w+:$/ )
                     )
@@ -7505,7 +7506,7 @@ sub set_logical_padding {
                     # can look very confusing.
                     if ( $max_line > 2 ) {
                         my $leading_token = $tokens_to_go[$ibeg_next];
-                        my $count=1;
+                        my $count         = 1;
                         foreach my $l ( 2 .. 3 ) {
                             my $ibeg_next_next = $$ri_first[ $line + $l ];
                             next
@@ -7550,17 +7551,15 @@ sub set_logical_padding {
             $inext_next++;
         }
         my $type = $types_to_go[$ipad];
-        
+
         # see if there are multiple continuation lines
-        my $logical_continuation_lines=1;
+        my $logical_continuation_lines = 1;
         if ( $line + 2 <= $max_line ) {
             my $leading_token  = $tokens_to_go[$ibeg_next];
             my $ibeg_next_next = $$ri_first[ $line + 2 ];
-            if (
-                   $tokens_to_go[$ibeg_next_next] eq $leading_token
+            if (   $tokens_to_go[$ibeg_next_next] eq $leading_token
                 && $nesting_depth_to_go[$ibeg_next] eq
-                $nesting_depth_to_go[$ibeg_next_next]
-              )
+                $nesting_depth_to_go[$ibeg_next_next] )
             {
                 $logical_continuation_lines++;
             }
@@ -7576,7 +7575,7 @@ sub set_logical_padding {
 
                 # either we have multiple continuation lines to follow
                 # and we are not padding the first token
-                ($logical_continuation_lines > 1 && $ipad>0)
+                ( $logical_continuation_lines > 1 && $ipad > 0 )
 
                 # or..
                 || (
@@ -7954,7 +7953,7 @@ sub output_line_to_go {
                 my $lc = $nonblank_lines_at_depth[$last_line_leading_level];
                 if ( !defined($lc) ) { $lc = 0 }
 
-                     $want_blank = $rOpts->{'blanks-before-blocks'}
+                $want_blank = $rOpts->{'blanks-before-blocks'}
                   && $lc >= $rOpts->{'long-block-line-count'}
                   && $file_writer_object->get_consecutive_nonblank_lines() >=
                   $rOpts->{'long-block-line-count'}
@@ -8114,7 +8113,7 @@ sub accumulate_block_text {
     my $i = shift;
 
     # accumulate leading text for -csc, ignoring any side comments
-    if ( $accumulating_text_for_block
+    if (   $accumulating_text_for_block
         && !$leading_block_text_length_exceeded
         && $types_to_go[$i] ne '#' )
     {
@@ -9197,7 +9196,7 @@ sub set_vertical_tightness_flags {
         my $token_end = $tokens_to_go[$iend];
         my $iend_next = $$ri_last[ $n + 1 ];
         if (
-            $type_sequence_to_go[$iend]
+               $type_sequence_to_go[$iend]
             && !$block_type_to_go[$iend]
             && $is_opening_token{$token_end}
             && (
@@ -9235,7 +9234,7 @@ sub set_vertical_tightness_flags {
         # see if first token of next line is a closing token...
         # ..and be sure this line does not have a side comment
         my $token_next = $tokens_to_go[$ibeg_next];
-        if ( $type_sequence_to_go[$ibeg_next]
+        if (   $type_sequence_to_go[$ibeg_next]
             && !$block_type_to_go[$ibeg_next]
             && $is_closing_token{$token_next}
             && $types_to_go[$iend] !~ '#' )    # for safety, shouldn't happen!
@@ -10030,7 +10029,7 @@ sub set_bond_strengths {
         #  use strict;
         #  open( MAIL, "a long filename or command");
         #  close MAIL;
-        elsif ( $type eq '{') {
+        elsif ( $type eq '{' ) {
 
             if ( $token eq '(' && $next_nonblank_type eq 'w' ) {
 
@@ -10038,7 +10037,7 @@ sub set_bond_strengths {
                 # or if it is obviously a sub call
                 my $i_next_next_nonblank = $i_next_nonblank + 1;
                 my $next_next_type       = $types_to_go[$i_next_next_nonblank];
-                if ( $next_next_type eq 'b'
+                if (   $next_next_type eq 'b'
                     && $i_next_nonblank < $max_index_to_go )
                 {
                     $i_next_next_nonblank++;
@@ -10047,7 +10046,7 @@ sub set_bond_strengths {
 
                 ##if ( $next_next_type ne '=>' ) {
                 # these are ok: '->xxx', '=>', '('
-                
+
                 # We'll check for an old breakpoint and keep a leading
                 # bareword if it was that way in the input file.  Presumably
                 # it was ok that way.  For example, the following would remain
@@ -10107,7 +10106,7 @@ sub set_bond_strengths {
                 #    print $x++    # do not break after $x
                 #    print HTML"HELLO"   # break ok after HTML
                 (
-                    $next_type ne 'b'
+                       $next_type ne 'b'
                     && defined( $want_left_space{$next_type} )
                     && $want_left_space{$next_type} == WS_NO
                 )
@@ -12882,7 +12881,7 @@ sub set_continuation_breaks {
                 # be outdented
                 # See similar logic in scan_list which catches instances
                 # where a line is just something like ') {'
-                || ( $line_count
+                || (   $line_count
                     && ( $token eq ')' )
                     && ( $next_nonblank_type eq '{' )
                     && ($next_nonblank_block_type)
@@ -12906,7 +12905,7 @@ sub set_continuation_breaks {
             # quit if a break here would put a good terminal token on
             # the next line and we already have a possible break
             if (
-                !$must_break
+                   !$must_break
                 && ( $next_nonblank_type =~ /^[\;\,]$/ )
                 && (
                     (
@@ -12923,7 +12922,7 @@ sub set_continuation_breaks {
             # token.  For example, we do not want to strand a leading
             # '.' which is followed by a long quoted string.
             if (
-                !$must_break
+                   !$must_break
                 && ( $i_test == $i_begin )
                 && ( $i_test < $imax )
                 && ( $token eq $type )
@@ -14879,7 +14878,7 @@ sub decide_if_aligned {
     # a has side comment
     my $rfields             = $group_lines[0]->get_rfields();
     my $maximum_field_index = $group_lines[0]->get_jmax();
-    if ( $do_not_align
+    if (   $do_not_align
         && ( $maximum_line_index > 0 )
         && ( length( $$rfields[$maximum_field_index] ) > 0 ) )
     {
@@ -16605,7 +16604,7 @@ sub get_line {
     $line_of_tokens->{_line_type} = 'CODE';
 
     # remember if we have seen any real code
-    if ( !$tokenizer_self->{_started_tokenizing}
+    if (   !$tokenizer_self->{_started_tokenizing}
         && $input_line !~ /^\s*$/
         && $input_line !~ /^\s*#/ )
     {
@@ -18448,22 +18447,23 @@ EOM
                     # Check for misplaced 'elsif' and 'else', but allow isolated
                     # else or elsif blocks to be formatted.  This is indicated
                     # by a last noblank token of ';'
-                    elsif ( $tok eq 'elsif' || $tok eq 'else') {
-                        if (   $last_nonblank_token ne ';' 
-                            && $last_nonblank_block_type !~ /^(if|elsif)$/ )
+                    elsif ( $tok eq 'elsif' || $tok eq 'else' ) {
+                        if (   $last_nonblank_token ne ';'
+                            && $last_nonblank_block_type !~
+                            /^(if|elsif|unless)$/ )
                         {
                             warning(
-"'$tok' should follow an 'if' or 'elsif' block\n"
+"'$tok' should follow an 'if', 'elsif', or 'unless' block\n"
                             );
                         }
                     }
-
                     elsif ( $tok eq 'continue' ) {
-                        if (   $last_nonblank_token ne ';' 
-                            && $last_nonblank_block_type !~ /^(while|until)$/ )
+                        if (   $last_nonblank_token ne ';'
+                            && $last_nonblank_block_type !~
+                            /^(while|until|for|foreach)$/ )
                         {
                             warning(
-"'$tok' should follow a 'while' or 'until' block\n"
+"'$tok' should follow a 'while', 'until', or 'foreach'  block\n"
                             );
                         }
                     }
@@ -22096,6 +22096,7 @@ __END__
 
 
 
+
 =head1 NAME
 
 Perl::Tidy - main module for the perltidy utility
@@ -22234,6 +22235,7 @@ The perltidy(1) man page describes all of the features of perltidy.  It
 can be found at http://perltidy.sourceforge.net.
 
 =cut
+
 
 
 
