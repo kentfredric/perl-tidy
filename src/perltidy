@@ -61,7 +61,7 @@ use vars qw{
 use IO::File;
 
 BEGIN {
-    ($VERSION=q($Id: perltidy,v 1.84 2002/01/15 05:54:26 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ($VERSION=q($Id: perltidy,v 1.85 2002/01/19 01:41:45 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 # Preloaded methods go here.
@@ -446,8 +446,6 @@ basic perltidy distribution.
             }
 
             cleanup();
-##        $source_object->unlink_copy();
-##        $sink_object->unlink_copy() if $sink_object;
 
             $logger_object->finish( $infile_syntax_ok, $formatter )
               if $logger_object;
@@ -3217,8 +3215,10 @@ use vars qw{
   $rOpts_indent_columns
   $rOpts_line_up_parentheses
   $rOpts_maximum_continuation_indentation
+  $rOpts_maximum_fields_per_table
   $rOpts_maximum_line_length
   $rOpts_block_brace_tightness
+  $rOpts_short_concatenation_item_length
   $rOpts_swallow_optional_blank_lines
 
   $half_maximum_line_length
@@ -3702,7 +3702,6 @@ sub set_leading_whitespace {
 
     # If we come to an opening token after an '=' token of some type,
     # see if it would be helpful to 'break' after the '=' to save space
-    ##if ( $type =~ /^[\{\(]$/ ) {
     if ( $type eq '{' || $type eq '(' ) {
 
         # if we have an '=' after the previous assumed breakpoint
@@ -4538,18 +4537,21 @@ EOM
     );
 
     # frequently used parameters
-    $rOpts_add_newlines                 = $rOpts->{'add-newlines'};
-    $rOpts_add_whitespace               = $rOpts->{'add-whitespace'};
-    $rOpts_block_brace_tightness        = $rOpts->{'block-brace-tightness'};
-    $rOpts_brace_left_and_indent        = $rOpts->{'brace-left-and-indent'};
-    $rOpts_break_after_comma_arrows     = $rOpts->{'break-after-comma-arrows'};
-    $rOpts_continuation_indentation     = $rOpts->{'continuation-indentation'};
-    $rOpts_cuddled_else                 = $rOpts->{'cuddled-else'};
-    $rOpts_delete_old_whitespace        = $rOpts->{'delete-old-whitespace'};
-    $rOpts_fuzzy_line_length            = $rOpts->{'fuzzy-line-length'};
-    $rOpts_indent_columns               = $rOpts->{'indent-columns'};
-    $rOpts_line_up_parentheses          = $rOpts->{'line-up-parentheses'};
-    $rOpts_maximum_line_length          = $rOpts->{'maximum-line-length'};
+    $rOpts_add_newlines             = $rOpts->{'add-newlines'};
+    $rOpts_add_whitespace           = $rOpts->{'add-whitespace'};
+    $rOpts_block_brace_tightness    = $rOpts->{'block-brace-tightness'};
+    $rOpts_brace_left_and_indent    = $rOpts->{'brace-left-and-indent'};
+    $rOpts_break_after_comma_arrows = $rOpts->{'break-after-comma-arrows'};
+    $rOpts_continuation_indentation = $rOpts->{'continuation-indentation'};
+    $rOpts_cuddled_else             = $rOpts->{'cuddled-else'};
+    $rOpts_delete_old_whitespace    = $rOpts->{'delete-old-whitespace'};
+    $rOpts_fuzzy_line_length        = $rOpts->{'fuzzy-line-length'};
+    $rOpts_indent_columns           = $rOpts->{'indent-columns'};
+    $rOpts_line_up_parentheses      = $rOpts->{'line-up-parentheses'};
+    $rOpts_maximum_fields_per_table = $rOpts->{'maximum-fields-per-table'};
+    $rOpts_maximum_line_length      = $rOpts->{'maximum-line-length'};
+    $rOpts_short_concatenation_item_length =
+      $rOpts->{'short-concatenation-item-length'};
     $rOpts_swallow_optional_blank_lines =
       $rOpts->{'swallow-optional-blank-lines'};
     $half_maximum_line_length = $rOpts_maximum_line_length / 2;
@@ -5085,7 +5087,8 @@ sub set_white_space_flag {
                 }
             }
         }    # done with opening braces and brackets
-        my $ws_1 = $ws;    # for debugging
+        my $ws_1 = $ws
+          if FORMATTER_DEBUG_FLAG_WHITE;
 
         #---------------------------------------------------------------
         # section 2:
@@ -5115,7 +5118,8 @@ sub set_white_space_flag {
             }
         }
 
-        my $ws_2 = $ws;    # for debugging
+        my $ws_2 = $ws
+          if FORMATTER_DEBUG_FLAG_WHITE;
 
         #---------------------------------------------------------------
         # section 3:
@@ -5124,7 +5128,8 @@ sub set_white_space_flag {
         if ( !defined($ws) ) {
             $ws = $binary_ws_rules{$last_type}{$type};
         }
-        my $ws_3 = $ws;    # for debugging
+        my $ws_3 = $ws
+          if FORMATTER_DEBUG_FLAG_WHITE;
 
         #---------------------------------------------------------------
         # section 4:
@@ -5213,7 +5218,8 @@ sub set_white_space_flag {
             $ws = WS_OPTIONAL;
         }
 
-        my $ws_4 = $ws;
+        my $ws_4 = $ws
+          if FORMATTER_DEBUG_FLAG_WHITE;
 
         #---------------------------------------------------------------
         # section 5:
@@ -5619,7 +5625,7 @@ sub set_white_space_flag {
          /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
      Examples:
        *VERSION = \'1.01';
-       ( $VERSION ) = '$Revision: 1.84 $ ' =~ /\$Revision:\s+([^\s]+)/;
+       ( $VERSION ) = '$Revision: 1.85 $ ' =~ /\$Revision:\s+([^\s]+)/;
      We will pass such a line straight through (by changing it
      to a quoted string) unless -npvl is used
     
@@ -5628,7 +5634,7 @@ sub set_white_space_flag {
      block sequence numbers may see a closing sequence number but not
      the corresponding opening sequence number (sidecmt.t).  Example:
 
-    my $VERSION = do { my @r = (q$Revision: 1.84 $ =~ /\d+/g); sprintf
+    my $VERSION = do { my @r = (q$Revision: 1.85 $ =~ /\d+/g); sprintf
     "%d."."%02d" x $#r, @r }; 
 
     Here, the opening brace of 'do {' will not be seen, while the closing
@@ -6043,6 +6049,7 @@ sub set_white_space_flag {
                     # we have to actually make it by removing tentative
                     # breaks that were set within it
                     undo_forced_breakpoint_stack(0);
+
                     set_nobreaks( $index_start_one_line_block,
                         $max_index_to_go - 1 );
 
@@ -8318,7 +8325,7 @@ sub set_bond_strengths {
                     $last_nonblank_type eq '.'
                     && (
                         length($token) <=
-                        $rOpts->{'short-concatenation-item-length'} )
+                        $rOpts_short_concatenation_item_length )
                     && ( $token !~ /^[\)\]\}]$/ )
                   )
                 {
@@ -8591,7 +8598,7 @@ sub pad_array_to_go {
     $nesting_depth_to_go[ $max_index_to_go + 1 ] =
       $nesting_depth_to_go[$max_index_to_go];
 
-    ##if ( $types_to_go[$max_index_to_go] =~ /^[R\}\)\]]$/ ) {
+    #    /^[R\}\)\]]$/ 
     if ( $is_closing_type{ $types_to_go[$max_index_to_go] } ) {
         if ( $nesting_depth_to_go[$max_index_to_go] <= 0 ) {
 
@@ -8607,7 +8614,8 @@ sub pad_array_to_go {
             $nesting_depth_to_go[ $max_index_to_go + 1 ] -= 1;
         }
     }
-    ##elsif ( $types_to_go[$max_index_to_go] =~ /^[L\{\(\[]$/ ) {
+
+    #       /^[L\{\(\[]$/
     elsif ( $is_opening_type{ $types_to_go[$max_index_to_go] } ) {
         $nesting_depth_to_go[ $max_index_to_go + 1 ] += 1;
     }
@@ -8634,8 +8642,7 @@ sub pad_array_to_go {
         @identifier_count_stack,     @index_before_arrow,
         @interrupted_list,           @item_count_stack,
         @last_comma_index,           @last_dot_index,
-        @last_nonblank_type,         ##@longest_term,
-        @max_length,                 @maximum_nesting_depth,
+        @last_nonblank_type,         @maximum_nesting_depth,
         @old_breakpoint_count_stack, @opening_structure_index_stack,
         @rand_or_list,               @rfor_semicolon_list,
     );
@@ -8656,7 +8663,6 @@ sub pad_array_to_go {
             $interrupted_list[$depth]              = 1;
             $item_count_stack[$depth]              = 0;
             $last_nonblank_type[$depth]            = "";
-            ##$longest_term[$depth]                  = 0;
             $maximum_nesting_depth[$depth]         = $depth;
             $opening_structure_index_stack[$depth] = -1;
 
@@ -8664,7 +8670,6 @@ sub pad_array_to_go {
             $comma_index[$depth]                = undef;
             $last_comma_index[$depth]           = undef;
             $last_dot_index[$depth]             = undef;
-            $max_length[$depth]                 = undef;
             $old_breakpoint_count_stack[$depth] = undef;
             $rand_or_list[$depth]               = [];
             $rfor_semicolon_list[$depth]        = [];
@@ -8698,7 +8703,6 @@ sub pad_array_to_go {
                 $item_count_stack[$dd],
                 $identifier_count_stack[$dd],
                 $comma_index[$dd],
-                $max_length[$dd],
                 $next_nonblank_type,
                 $container_type[$dd],
                 $interrupted_list[$dd],
@@ -8746,25 +8750,6 @@ sub pad_array_to_go {
             }
         }
     }
-
-##    sub update_longest_term {
-##        my $ii      = shift;
-##        my $depth   = shift;
-##        my $i_comma = $last_comma_index[$depth];
-##        if ( defined($i_comma) ) {
-##            my $length = token_sequence_length( $i_comma + 1, $ii );
-##            if ( $length > $longest_term[$depth] ) {
-##                $longest_term[$depth] = $length;
-##            }
-##        }
-##        else {
-##            my $i_opening = $opening_structure_index_stack[$depth];
-##            if ( $i_opening >= 0 ) {
-##                my $length = token_sequence_length( $i_opening + 1, $ii );
-##                $longest_term[$depth] = $length;
-##            }
-##        }
-##    }
 
     sub is_unbreakable_container {
 
@@ -8987,7 +8972,6 @@ sub pad_array_to_go {
                 $last_comma_index[$depth]       = undef;
                 $last_dot_index[$depth]         = undef;
                 $last_nonblank_type[$depth]     = $last_nonblank_type;
-                ##$longest_term[$depth]           = 0;
                 $maximum_nesting_depth[$depth]  = $depth;
                 $old_breakpoint_count_stack[$depth]    = $old_breakpoint_count;
                 $opening_structure_index_stack[$depth] = $i;
@@ -9067,9 +9051,6 @@ sub pad_array_to_go {
                     $maximum_nesting_depth[$depth] =
                       $maximum_nesting_depth[$current_depth];
                 }
-
-                # get final term length if necessary
-                ##update_longest_term( $i - 1, $current_depth );
 
                 # Patch to break between ') {' if the paren list is broken.
                 # There is similar logic in set_continuation_breaks for
@@ -9438,9 +9419,6 @@ will be a forced break at its 'and'.
             # now just handle any commas
             next unless ( $type eq ',' );
 
-            # keep track of longest item between commas
-            ##update_longest_term( $i, $depth );
-
             $last_dot_index[$depth]   = undef;
             $last_comma_index[$depth] = $i;
 
@@ -9496,31 +9474,6 @@ will be a forced break at its 'and'.
                 {
                     $dont_align[$depth] = 1;
                     next;
-                }
-
-                $max_length[$depth][0] = 0;
-                $max_length[$depth][1] = 0;
-                $max_length[$depth][2] = 0;
-            }
-
-            # save max length of list items to calculate page layout
-            my $i_prev =
-              ( $item_count > 0 ) 
-              ? $comma_index[$depth][ $item_count - 1 ]
-              : $opening_structure_index_stack[$depth];
-
-            if ( !defined($i_prev) ) { $i_prev = -1 }
-            my $length = token_sequence_length( $i_prev + 1, $i );
-
-            # remember first item length alone
-            if ($item_count == 0 ) {
-                    $max_length[$depth][2]=$length;
-            }
-
-            # keep track of remaining maximum lengths
-            else {
-                if ( $length > $max_length[$depth][ $item_count % 2 ] ) {
-                    $max_length[$depth][ $item_count % 2 ] = $length;
                 }
             }
 
@@ -9606,252 +9559,298 @@ sub find_token_starting_list {
     return $i_opening_minus;
 }
 
-sub set_comma_breakpoints_do {
+{ # begin set_comma_breakpoints_do
 
-    # Given a list with some commas, set breakpoints at some
-    # of the commas to allow nice alignment if possible.  This
-    # list is an example:
-    my (
-        $depth,       $i_opening_paren,       $i_closing_paren,
-        $item_count,  $identifier_count,      $rcomma_index,
-        $rmax_length, $next_nonblank_type,    $list_type,
-        $interrupted, $maximum_nesting_depth, $rdo_not_break_apart,
-      )
-      = @_;
+    my %is_keyword_with_special_leading_term;
+    my %is_keyword_with_list;
 
-    # nothing to do if no commas seen
-    return if ( $item_count < 1 );
+    # These keywords have prototypes which allow a special leading item
+    # followed by a list
+    @_ =
+      qw(formline grep kill map printf sprintf push chmod join pack unshift);
+    @is_keyword_with_special_leading_term{@_} = (1) x scalar(@_);
 
-    #---------------------------------------------------------------
-    # Compound List Rule 1: 
-    # Break at every comma for a list containing a broken sublist.
-    # This has higher priority than the Interrupted List Rule.
-    #---------------------------------------------------------------
-    if ( $has_broken_sublist[$depth] ) {
-        for ( my $j = 0 ; $j < $item_count ; $j++ ) {
-            my $i = $$rcomma_index[$j];
-            set_forced_breakpoint($i);
+    # These keywords have prototypes which allow a list
+    push @_, qw(my local our);
+    @is_keyword_with_list{@_} = (1) x scalar(@_);
+
+    sub set_comma_breakpoints_do {
+
+        # Given a list with some commas, set breakpoints at some
+        # of the commas to allow nice alignment if possible.  This
+        # list is an example:
+        my (
+            $depth,              $i_opening_paren,
+            $i_closing_paren,    $item_count,
+            $identifier_count,   $rcomma_index,
+            $next_nonblank_type, $list_type,
+            $interrupted,        $maximum_nesting_depth,
+            $rdo_not_break_apart,
+          )
+          = @_;
+
+        # nothing to do if no commas seen
+        return if ( $item_count < 1 );
+
+        #---------------------------------------------------------------
+        # Compound List Rule 1: 
+        # Break at every comma for a list containing a broken sublist.
+        # This has higher priority than the Interrupted List Rule.
+        #---------------------------------------------------------------
+        if ( $has_broken_sublist[$depth] ) {
+            foreach ( 0 .. $item_count - 1 ) {
+                set_forced_breakpoint( $rcomma_index->[$_] );
+            }
+            return;
         }
-        return;
-    }
 
-    my $i_first_comma = $$rcomma_index[0];
-    my $i_last_comma  = $$rcomma_index[ $item_count - 1 ];
+        my $i_first_comma = $$rcomma_index[0];
+        my $i_last_comma  = $$rcomma_index[ $item_count - 1 ];
 
-    #my ( $a, $b, $c ) = caller();
-    #print "LISTX: in set_list $a $c interupt=$interrupted count=$item_count
-    #i_first = $i_first_comma  i_last=$i_last_comma max=$max_index_to_go\n";
-    #print "depth=$depth has_broken=$has_broken_sublist[$depth] is_multi=$is_multiline opening_paren=($i_opening_paren) \n";
+        #my ( $a, $b, $c ) = caller();
+        #print "LISTX: in set_list $a $c interupt=$interrupted count=$item_count
+        #i_first = $i_first_comma  i_last=$i_last_comma max=$max_index_to_go\n";
+        #print "depth=$depth has_broken=$has_broken_sublist[$depth] is_multi=$is_multiline opening_paren=($i_opening_paren) \n";
 
-    #---------------------------------------------------------------
-    # Interrupted List Rule:
-    # A list is is forced to use old breakpoints if it was interrupted
-    # by side comments or blank lines.
-    #---------------------------------------------------------------
-    if ( $interrupted || $i_opening_paren < 0 ) {
-        write_logfile_entry("list broken: using old breakpoints\n")
-          unless ( $item_count < 6 );
-        copy_old_breakpoints( $i_first_comma, $i_last_comma );
-        return;
-    }
-
-    my $opening_token       = $tokens_to_go[$i_opening_paren];
-    my $opening_environment = $container_environment_to_go[$i_opening_paren];
-
-    #---------------------------------------------------------------
-    # Looks like a list of items.  We have to look at it and size it up.
-    #---------------------------------------------------------------
-
-    return if ( $i_first_comma < 1 );
-    if ( $i_last_comma >= $max_index_to_go ) {
-        $i_last_comma = $$rcomma_index[ --$item_count - 1 ];
-        return if ( $item_count <= 2 );    # not much of a list
-    }
-
-    #-------------------------------------------------------------------
-    # Return if this will fit on one line 
-    #-------------------------------------------------------------------
-
-    my $i_opening_minus = find_token_starting_list($i_opening_paren);
-    return unless excess_line_length( $i_opening_minus, $i_closing_paren ) > 0;
-
-    #-------------------------------------------------------------------
-    # Now we know that this block spans multiple lines; we have to set
-    # at least one breakpoint -- real or fake -- as a signal to break
-    # open any outer containers.
-    #-------------------------------------------------------------------
-    set_fake_breakpoint();
-
-    # now we have to make a distinction between the comma count and item count,
-    # because the item count will be one greater than the comma count if
-    # the last item is not terminated with a comma
-    my $comma_count = $item_count;
-    my $i_b         =
-      ( $types_to_go[ $i_last_comma + 1 ] eq 'b' ) 
-      ? $i_last_comma + 1
-      : $i_last_comma;
-    my $i_e =
-      ( $types_to_go[ $i_closing_paren - 1 ] eq 'b' ) 
-      ? $i_closing_paren - 2
-      : $i_closing_paren - 1;
-    my $i_effective_last_comma = $i_last_comma;
-
-    my $last_item_length = token_sequence_length( $i_b + 1, $i_e );
-    if ( $last_item_length > 0 ) {
-
-        # add 2 to length because other lengths include a comma and a blank
-        $last_item_length += 2;
-
-        my $i_odd = $item_count % 2;
-        if ( $last_item_length > $$rmax_length[$i_odd] ) {
-            $$rmax_length[$i_odd] = $last_item_length;
+        #---------------------------------------------------------------
+        # Interrupted List Rule:
+        # A list is is forced to use old breakpoints if it was interrupted
+        # by side comments or blank lines.
+        #---------------------------------------------------------------
+        if ( $interrupted || $i_opening_paren < 0 ) {
+            write_logfile_entry("list broken: using old breakpoints\n")
+              unless ( $item_count < 6 );
+            copy_old_breakpoints( $i_first_comma, $i_last_comma );
+            return;
         }
-        $item_count++;
-        $i_effective_last_comma = $i_e + 1;
-        if ( $types_to_go[ $i_b + 1 ] =~ /^[iR\]]$/ ) { $identifier_count++ }
-    }
 
-    # be sure we do not extend beyond the current list length
-    if ( $i_effective_last_comma >= $max_index_to_go ) {
-        $i_effective_last_comma = $max_index_to_go - 1;
-    }
+        my $opening_token       = $tokens_to_go[$i_opening_paren];
+        my $opening_environment =
+          $container_environment_to_go[$i_opening_paren];
 
-    # Specify if the list must have an even number of fields or not.  It
-    # is generally safest in perl to assume an even number, because the
-    # list items might be a hash list.  But if we can be sure that it is
-    # not a hash, then we can allow an odd number for more flexibility.
-    my $odd_or_even = 2;    # 1 = odd field count ok, 2 = want even count
-    if ( $list_type =~ /^(my|local|our|printf|sprintf|push)$/ || $next_nonblank_type eq '=' ) {
-        $odd_or_even = 1;
-    }
-    if ( $identifier_count == $comma_count ) { $odd_or_even = 1 }   # seems safe
+        #---------------------------------------------------------------
+        # Looks like a list of items.  We have to look at it and size it up.
+        #---------------------------------------------------------------
 
-##    #-----------------------------------------------------------------
-##    # TESTING: BUBBA:
-##    if ($odd_or_even == 1) {
-##    my $first_term_length = token_sequence_length($i_opening_paren+1,$i_first_comma-1);
-##    my $therest = token_sequence_length($i_first_comma+1,$i_effective_last_comma-1)-($item_count-1)*2;
-##    my $average_remaining_length = ($therest)/($item_count-1);
-##    if ($first_term_length > $average_remaining_length) {
-##    print "BUBBA: first token length is $first_term_length therest=$therest avg=$average_remaining_length ifirst=$i_first_comma  ieff=$i_effective_last_comma items=$item_count\n";
-##    }
-##    }
-##    #-----------------------------------------------------------------
+        return if ( $i_first_comma < 1 );
+        if ( $i_last_comma >= $max_index_to_go ) {
+            $i_last_comma = $$rcomma_index[ --$item_count - 1 ];
+            return if ( $item_count <= 2 );    # not much of a list
+        }
 
-    my $max_length_0 = $$rmax_length[0];  # max length of terms 3,5,7,...
-    my $max_length_1 = $$rmax_length[1];  # max length of terms 2,4,6,...
-    my $max_length_2 = $$rmax_length[2];  # max length of term 1
+        #-------------------------------------------------------------------
+        # Return if this will fit on one line 
+        #-------------------------------------------------------------------
 
-    # BUBBA:
-    # include item 0 length in max values since it was stored
-    # separately
-    my $use_separate_first_term = 0;
-    if ( $max_length_2 > $max_length_0 ) {
+        my $i_opening_minus = find_token_starting_list($i_opening_paren);
+        return
+          unless excess_line_length( $i_opening_minus, $i_closing_paren ) > 0;
+
+        #-------------------------------------------------------------------
+        # Now we know that this block spans multiple lines; we have to set
+        # at least one breakpoint -- real or fake -- as a signal to break
+        # open any outer containers.
+        #-------------------------------------------------------------------
+        set_fake_breakpoint();
+        my $comma_count = $item_count;
+
+        # find max length of list items to calculate page layout
+        my $i_prev;
+        my $first_term_length;
+        my @max_length = ( 0, 0 );
+        my $i      = $i_opening_paren;
+        my $is_odd = 1;
+        for ( my $j = 0 ; $j < $comma_count ; $j++ ) {
+
+            $is_odd = 1 - $is_odd;
+
+            $i_prev = $i;
+            $i      = $$rcomma_index[$j];
+
+            if ( !defined($i_prev) ) { $i_prev = -1 }
+            my $length = token_sequence_length( $i_prev + 1, $i );
+
+            if ( $j == 0 ) {
+                $first_term_length = $length;
+            }
+            else {
+                if ( $length > $max_length[$is_odd] ) {
+                    $max_length[$is_odd] = $length;
+                }
+            }
+        }
+
+        # now we have to make a distinction between the comma count and item count,
+        # because the item count will be one greater than the comma count if
+        # the last item is not terminated with a comma
+        my $i_b =
+          ( $types_to_go[ $i_last_comma + 1 ] eq 'b' ) 
+          ? $i_last_comma + 1
+          : $i_last_comma;
+        my $i_e =
+          ( $types_to_go[ $i_closing_paren - 1 ] eq 'b' ) 
+          ? $i_closing_paren - 2
+          : $i_closing_paren - 1;
+        my $i_effective_last_comma = $i_last_comma;
+
+        my $last_item_length = token_sequence_length( $i_b + 1, $i_e );
+        if ( $last_item_length > 0 ) {
+
+            # add 2 to length because other lengths include a comma and a blank
+            $last_item_length += 2;
+
+            my $i_odd = $item_count % 2;
+
+            if ( $last_item_length > $max_length[$i_odd] ) {
+                $max_length[$i_odd] = $last_item_length;
+            }
+
+            $item_count++;
+            $i_effective_last_comma = $i_e + 1;
+            if ( $types_to_go[ $i_b + 1 ] =~ /^[iR\]]$/ ) {
+                $identifier_count++;
+            }
+        }
+
+        # be sure we do not extend beyond the current list length
+        if ( $i_effective_last_comma >= $max_index_to_go ) {
+            $i_effective_last_comma = $max_index_to_go - 1;
+        }
+
+        # Specify if the list must have an even number of fields or not.  It
+        # is generally safest in perl to assume an even number, because the
+        # list items might be a hash list.  But if we can be sure that it is
+        # not a hash, then we can allow an odd number for more flexibility.
+        my $odd_or_even = 2;    # 1 = odd field count ok, 2 = want even count
+        ##if ( $list_type =~ /^(my|local|our|printf|sprintf|push|map|join|grep|pack)$/
+        if ( $is_keyword_with_list{$list_type} || $next_nonblank_type eq '=' ) {
+            $odd_or_even = 1;
+        }
+        if ( $identifier_count == $comma_count ) {
+            $odd_or_even = 1;
+        }                       # seems safe
 
         # do we have a long first term which should be
         # left on a line by itself?
+        my $use_separate_first_term = (
+            $odd_or_even == 1       # only if we can use 1 field/line
+              && $item_count > 3    # need several items
+              && $first_term_length >
+              2 * $max_length[0] - 2    # need long first term
+              && $first_term_length >
+              2 * $max_length[1] - 2    # need long first term
+        );
 
-        if (
-            $odd_or_even == 1     # only if we can use 1 field/line
-            && $item_count > 3    # need several items
-            && $max_length_2 > 2 * $max_length_0    # long first term
-            && $max_length_2 > 2 * $max_length_1    # long first term
-          )
-        {
+        # BUBBA: TESTING!
+        if ( !$use_separate_first_term ) {
+            if (
+                $is_keyword_with_special_leading_term{$list_type}
+                ##$list_type =~ /^(formline|grep|kill|map|printf|sprintf|push|chmod|join|pack|unshift)$/
+              )
+            {
+                $use_separate_first_term = 1;
+                if ( $item_count < 3 ) {
+                    $$rdo_not_break_apart = 1;
+                }
+                elsif ( $first_term_length < 20 ) {
+                    my $columns = table_columns_available($i_first_comma);
+                    if ( $first_term_length < $columns ) {
+                        $$rdo_not_break_apart = 1;
+                    }
+                }
+            }
+        }
 
-            # yes..set a break and update starting values
+        # if so, 
+        if ($use_separate_first_term) {
+
+            # ..set a break and update starting values
             $use_separate_first_term = 1;
             set_forced_breakpoint($i_first_comma);
             $i_opening_paren = $i_first_comma;
             $i_first_comma   = $$rcomma_index[1];
             $item_count--;
+            return if $comma_count == 1;
         }
 
         # if not, update the max length to include the first term
-        else {
-            $max_length_0 = $max_length_2;
+        elsif ( $first_term_length > $max_length[0] ) {
+            $max_length[0] = $first_term_length;
         }
-    }
 
-    # Field width parameters
-    ##my $pair_width = ( $$rmax_length[0] + $$rmax_length[1] );
-    my $pair_width = ( $max_length_0 + $max_length_1 );
-    my $max_width  =
-      ( $max_length_0 > $max_length_1 ) 
-      ? $max_length_0
-      : $max_length_1;
-##      ( $$rmax_length[0] > $$rmax_length[1] ) 
-##      ? $$rmax_length[0]
-##      : $$rmax_length[1];
+        # Field width parameters
+        my $pair_width = ( $max_length[0] + $max_length[1] );
+        my $max_width  =
+          ( $max_length[0] > $max_length[1] ) ? $max_length[0] : $max_length[1];
 
-    # Number of free columns across the page width for laying out tables
-    my $columns = table_columns_available($i_first_comma);
+        # Number of free columns across the page width for laying out tables
+        my $columns = table_columns_available($i_first_comma);
 
-    # Number of fields which fit this space
-    my $number_of_fields =
-      maximum_number_of_fields( $columns, $odd_or_even, $max_width,
-        $pair_width );
+        # Number of fields which fit this space
+        my $number_of_fields =
+          maximum_number_of_fields( $columns, $odd_or_even, $max_width,
+            $pair_width );
 
-    # ----------------------------------------------------------------------
-    # TBD: if -lp is used and opening paren starts after mid-line, see
-    # if reducing number of fields is useful.
-    # ----------------------------------------------------------------------
+        # ----------------------------------------------------------------------
+        # TBD: if -lp is used and opening paren starts after mid-line, see
+        # if reducing number of fields is useful.
+        # ----------------------------------------------------------------------
 
-    # ----------------------------------------------------------------------
-    # If we are crowded and the -lp option is being used, try to
-    # undo some indentation 
-    # ----------------------------------------------------------------------
+        # ----------------------------------------------------------------------
+        # If we are crowded and the -lp option is being used, try to
+        # undo some indentation 
+        # ----------------------------------------------------------------------
 
-    if ( $number_of_fields < 2 ) {
-        my $available_spaces = get_AVAILABLE_SPACES_to_go($i_first_comma);
-        if ( $available_spaces > 0 ) {
+        if ( $number_of_fields < 2 ) {
+            my $available_spaces = get_AVAILABLE_SPACES_to_go($i_first_comma);
+            if ( $available_spaces > 0 ) {
 
-            # asking for an extra space for safety
-            my $spaces_wanted = 1 + $pair_width - $columns;    # for 2 fields
-            if ( $spaces_wanted > $available_spaces
-                || $rOpts->{'maximum-fields-per-table'} == 1 )
-            {
-                $spaces_wanted = 1 + $max_width - $columns;    # for 1 field
-            }
+                # asking for an extra space for safety
+                my $spaces_wanted = 1 + $pair_width - $columns;   # for 2 fields
+                if ( $spaces_wanted > $available_spaces
+                    || $rOpts_maximum_fields_per_table == 1 )
+                {
+                    $spaces_wanted = 1 + $max_width - $columns;    # for 1 field
+                }
 
-            # ask for space if needed
-            if ( $spaces_wanted > 0 ) {
-                reduce_lp_indentation( $i_first_comma, $spaces_wanted );
+                # ask for space if needed
+                if ( $spaces_wanted > 0 ) {
+                    reduce_lp_indentation( $i_first_comma, $spaces_wanted );
 
-                # redo the math
-                $columns          = table_columns_available($i_first_comma);
-                $number_of_fields =
-                  maximum_number_of_fields( $columns, $odd_or_even, $max_width,
-                    $pair_width );
+                    # redo the math
+                    $columns          = table_columns_available($i_first_comma);
+                    $number_of_fields =
+                      maximum_number_of_fields( $columns, $odd_or_even,
+                        $max_width, $pair_width );
+                }
             }
         }
-    }
 
-    # try for one column if two won't work
-    if ( $number_of_fields <= 0 ) {
-        $number_of_fields = int( $columns / $max_width );
-    }
+        # try for one column if two won't work
+        if ( $number_of_fields <= 0 ) {
+            $number_of_fields = int( $columns / $max_width );
+        }
 
-    #print "LISTX: fields=$number_of_fields columns=$columns max_width==$max_width  w0=${$rmax_length}[0]  w1=${$rmax_length}[1] width=$pair_width\n";
+        #print "LISTX: fields=$number_of_fields columns=$columns max_width==$max_width  w0=${$rmax_length}[0]  w1=${$rmax_length}[1] width=$pair_width\n";
 
-    # The user can place an upper bound on the number of fields,
-    # which can be useful for doing maintenance on tables
-    if ( $number_of_fields > $rOpts->{'maximum-fields-per-table'} ) {
-        $number_of_fields = int $rOpts->{'maximum-fields-per-table'};
-    }
+        # The user can place an upper bound on the number of fields,
+        # which can be useful for doing maintenance on tables
+        if ( $number_of_fields > $rOpts_maximum_fields_per_table ) {
+            $number_of_fields = int $rOpts_maximum_fields_per_table;
+        }
 
-    # How many columns (characters) and lines would this container take 
-    # if no additional whitespace were added?
-    my $packed_columns =
-      token_sequence_length( $i_opening_paren + 1,
-        $i_effective_last_comma + 1 );
-    if ( $columns <= 0 ) { $columns = 1 }    # avoid divide by zero
-    my $packed_lines = 1 + int( $packed_columns / $columns );
+        # How many columns (characters) and lines would this container take 
+        # if no additional whitespace were added?
+        my $packed_columns =
+          token_sequence_length( $i_opening_paren + 1,
+            $i_effective_last_comma + 1 );
+        if ( $columns <= 0 ) { $columns = 1 }    # avoid divide by zero
+        my $packed_lines = 1 + int( $packed_columns / $columns );
 
-    # are we an item contained in an outer list?
-    my $in_hierarchical_list = $next_nonblank_type =~ /^[\}\,]$/;
+        # are we an item contained in an outer list?
+        my $in_hierarchical_list = $next_nonblank_type =~ /^[\}\,]$/;
 
-    if ( $number_of_fields <= 0 ) {
+        if ( $number_of_fields <= 0 ) {
 
 =pod
 
@@ -9896,253 +9895,254 @@ sub set_comma_breakpoints_do {
 
 =cut
 
-        my $i_last_comma    = $$rcomma_index[ $comma_count - 1 ];
-        my $long_last_term  = excess_line_length( 0, $i_last_comma ) <= 0;
-        my $long_first_term =
-          excess_line_length( $i_first_comma + 1, $max_index_to_go ) <= 0;
+            my $i_last_comma    = $$rcomma_index[ $comma_count - 1 ];
+            my $long_last_term  = excess_line_length( 0, $i_last_comma ) <= 0;
+            my $long_first_term =
+              excess_line_length( $i_first_comma + 1, $max_index_to_go ) <= 0;
 
-        # break at every comma ...
-        if (
+            # break at every comma ...
+            if (
 
-            # if user requested
-            $rOpts->{'maximum-fields-per-table'} == 1
+                # if user requested
+                $rOpts_maximum_fields_per_table == 1
 
-            # or if this is a sublist of a larger list
-            || $in_hierarchical_list
+                # or if this is a sublist of a larger list
+                || $in_hierarchical_list
 
-            # or if multiple commas and we dont have a long first or last term
-            || ( $comma_count > 1 && !( $long_last_term || $long_first_term ) )
-          )
-        {
-            for ( my $j = 0 ; $j < $comma_count ; $j++ ) {
-                my $i = $$rcomma_index[$j];
-                set_forced_breakpoint($i);
+                # or if multiple commas and we dont have a long first or last term
+                || ( $comma_count > 1
+                    && !( $long_last_term || $long_first_term ) )
+              )
+            {
+                foreach ( 0 .. $comma_count - 1 ) {
+                    set_forced_breakpoint( $$rcomma_index[$_] );
+                }
             }
-        }
-        elsif ($long_last_term) {
+            elsif ($long_last_term) {
 
-            set_forced_breakpoint($i_last_comma);
-            $$rdo_not_break_apart = 1;
-        }
-        elsif ($long_first_term) {
+                set_forced_breakpoint($i_last_comma);
+                $$rdo_not_break_apart = 1;
+            }
+            elsif ($long_first_term) {
 
-            set_forced_breakpoint($i_first_comma);
+                set_forced_breakpoint($i_first_comma);
+            }
+            else {
+
+                # let breaks be defined by default bond strength logic
+            }
+            return;
+        }
+
+        # --------------------------------------------------------
+        # We have a tentative field count that seems to work.
+        # How many lines will this require?
+        # --------------------------------------------------------
+        my $formatted_lines = $item_count / ($number_of_fields);
+        if ( $formatted_lines != int $formatted_lines ) {
+            $formatted_lines = 1 + int $formatted_lines;
+        }
+
+        # So far we've been trying to fill out to the right margin.  But
+        # compact tables are easier to read, so let's see if we can use fewer 
+        # fields without increasing the number of lines.
+        $number_of_fields =
+          compactify_table( $item_count, $number_of_fields, $formatted_lines,
+            $odd_or_even );
+
+        # How many spaces across the page will we fill?
+        my $columns_per_line =
+          ( int $number_of_fields / 2 ) * $pair_width +
+          ( $number_of_fields % 2 ) * $max_width;
+
+        my $formatted_columns;
+
+        if ( $number_of_fields > 1 ) {
+            $formatted_columns =
+              ( $pair_width * ( int( $item_count / 2 ) ) + ( $item_count % 2 ) *
+                  $max_width );
         }
         else {
-
-            # let breaks be defined by default bond strength logic
+            $formatted_columns = $max_width * $item_count;
         }
-        return;
-    }
 
-    # --------------------------------------------------------
-    # We have a tentative field count that seems to work.
-    # How many lines will this require?
-    # --------------------------------------------------------
-    my $formatted_lines = $item_count / ($number_of_fields);
-    if ( $formatted_lines != int $formatted_lines ) {
-        $formatted_lines = 1 + int $formatted_lines;
-    }
+        my $unused_columns = $formatted_columns - $packed_columns;
 
-    # So far we've been trying to fill out to the right margin.  But
-    # compact tables are easier to read, so let's see if we can use fewer 
-    # fields without increasing the number of lines.
-    $number_of_fields =
-      compactify_table( $item_count, $number_of_fields, $formatted_lines,
-        $odd_or_even );
+        # set some empirical parameters to help decide if we should try to
+        # align; high sparsity does not look good, especially with few lines
+        my $sparsity             = ($unused_columns) / ($formatted_columns);
+        my $max_allowed_sparsity =
+          ( $item_count < 3 ) ? 0.1
+          : ( $packed_lines == 1 ) ? 0.15
+          : ( $packed_lines == 2 ) ? 0.4
+          : 0.7;
 
-    # How many spaces across the page will we fill?
-    my $columns_per_line =
-      ( int $number_of_fields / 2 ) * $pair_width + ( $number_of_fields % 2 ) *
-      $max_width;
+        # Shortcut method 1: for 2 lines, just one comma:
+        if (
+            $rOpts_line_up_parentheses    # -lp
+            && $packed_lines <= 2         # probably can fit in 2 lines
+            && $item_count == 2           # two items, one comma
+            && $opening_environment eq 'BLOCK'    # not a sub-container
+            && $opening_token       eq '('        # is paren list
+          )
+        {
+            my $i_break = $$rcomma_index[0];
+            set_forced_breakpoint($i_break);
+            $$rdo_not_break_apart = 1;
+            return;
+        }
 
-    my $formatted_columns;
+        # Shortcut method 2: for relatively simple 2 liner function calls
+        # which usually look better without aligning commas and opening 
+        # up the container
+        if (
+            $packed_lines <= 2    # probably can fit in 2 lines
+            && ( $identifier_count > 0.5 * $item_count )    # isn't all quotes
+            && $sparsity > 0.15    # would be fairly spaced gaps if aligned
+            && $item_count < 9     # doesn't have too many items
+            && $opening_environment eq 'BLOCK'    # not a sub-container
+            && $opening_token       eq '('        # is paren list
+            && $maximum_nesting_depth <= $depth   # has no sublist
+          )
+        {
 
-    if ( $number_of_fields > 1 ) {
-        $formatted_columns =
-          ( $pair_width * ( int( $item_count / 2 ) ) + ( $item_count % 2 ) *
-              $max_width );
-    }
-    else {
-        $formatted_columns = $max_width * $item_count;
-    }
+            # let breaks be defined by bond strength logic
+            $$rdo_not_break_apart = 1;
+            return;
+        }
 
-    my $unused_columns = $formatted_columns - $packed_columns;
+        # debug stuff
+        FORMATTER_DEBUG_FLAG_SPARSE && do {
 
-    # set some empirical parameters to help decide if we should try to
-    # align; high sparsity does not look good, especially with few lines
-    my $sparsity             = ($unused_columns) / ($formatted_columns);
-    my $max_allowed_sparsity =
-      ( $item_count < 3 ) ? 0.1
-      : ( $packed_lines == 1 ) ? 0.15
-      : ( $packed_lines == 2 ) ? 0.4
-      : 0.7;
-
-    # Shortcut method 1: for 2 lines, just one comma:
-    if (
-        $rOpts_line_up_parentheses    # -lp
-        && $packed_lines <= 2         # probably can fit in 2 lines
-        && $item_count == 2           # two items, one comma
-        && $opening_environment eq 'BLOCK'    # not a sub-container
-        && $opening_token       eq '('        # is paren list
-      )
-    {
-        my $i_break = $$rcomma_index[0];
-        set_forced_breakpoint($i_break);
-        $$rdo_not_break_apart = 1;
-        return;
-    }
-
-    # Shortcut method 2: for relatively simple 2 liner function calls
-    # which usually look better without aligning commas and opening 
-    # up the container
-    if (
-        $packed_lines <= 2    # probably can fit in 2 lines
-        && ( $identifier_count > 0.5 * $item_count )    # isn't all quotes
-        && $sparsity > 0.15    # would be fairly spaced gaps if aligned
-        && $item_count < 9     # doesn't have too many items
-        && $opening_environment eq 'BLOCK'    # not a sub-container
-        && $opening_token       eq '('        # is paren list
-        && $maximum_nesting_depth <= $depth   # has no sublist
-      )
-    {
-
-        # let breaks be defined by bond strength logic
-        $$rdo_not_break_apart = 1;
-        return;
-    }
-
-    # debug stuff
-    FORMATTER_DEBUG_FLAG_SPARSE && do {
-
-        print
+            print
 "SPARSE:cols=$columns commas=$comma_count items:$item_count ids=$identifier_count pairwidth=$pair_width fields=$number_of_fields lines packed: $packed_lines packed_cols=$packed_columns fmtd:$formatted_lines cols /line:$columns_per_line  unused:$unused_columns fmtd:$formatted_columns sparsity=$sparsity allow=$max_allowed_sparsity\n";
 
-    };
+        };
 
-    #---------------------------------------------------------------
-    # Compound List Rule 2: 
-    # If this list is too long for one line, and it is an item of a
-    # larger list, then we must format it, regardless of sparsity
-    # (ian.t).  One reason that we have to do this is to trigger
-    # Compound List Rule 1, above, which causes breaks at all commas of
-    # all outer lists.  In this way, the structure will be properly
-    # displayed.
-    #---------------------------------------------------------------
+        #---------------------------------------------------------------
+        # Compound List Rule 2: 
+        # If this list is too long for one line, and it is an item of a
+        # larger list, then we must format it, regardless of sparsity
+        # (ian.t).  One reason that we have to do this is to trigger
+        # Compound List Rule 1, above, which causes breaks at all commas of
+        # all outer lists.  In this way, the structure will be properly
+        # displayed.
+        #---------------------------------------------------------------
 
-    # Decide if this list is too long for one line unless broken 
-    my $total_columns = table_columns_available($i_opening_paren);
-    my $too_long      = $packed_columns > $total_columns;
+        # Decide if this list is too long for one line unless broken 
+        my $total_columns = table_columns_available($i_opening_paren);
+        my $too_long      = $packed_columns > $total_columns;
 
-    # For a paren list, include the length of the token just before the
-    # '(' because this is likely a sub call, and we would have to
-    # include the sub name on the same line as the list.  This is still
-    # imprecise, but not too bad.  (steve.t)
-    if ( !$too_long && $i_opening_paren > 0 && $opening_token eq '(' ) {
+        # For a paren list, include the length of the token just before the
+        # '(' because this is likely a sub call, and we would have to
+        # include the sub name on the same line as the list.  This is still
+        # imprecise, but not too bad.  (steve.t)
+        if ( !$too_long && $i_opening_paren > 0 && $opening_token eq '(' ) {
 
-        $too_long =
-          excess_line_length( $i_opening_minus, $i_effective_last_comma + 1 ) >
-          0;
-    }
-
-    # FIXME: For an item after a '=>', try to include the length of the thing
-    # before the '=>'.  This is crude and should be improved by actually
-    # looking back token by token.
-    if ( !$too_long && $i_opening_paren > 0 && $list_type eq '=>' ) {
-        my $i_opening_minus = $i_opening_paren - 4;
-        if ( $i_opening_minus >= 0 ) {
             $too_long =
               excess_line_length( $i_opening_minus,
                 $i_effective_last_comma + 1 ) > 0;
         }
-    }
 
-    # EXPERIMENTAL: for -lp, assume that we can get back any needed spaces
-    # by outdenting  ... NOT
-    #    if ($too_long && $opening_token eq '(') {
-    #        my $available_spaces = get_AVAILABLE_SPACES_to_go($i_opening_paren);
-    #        if ( $available_spaces > 0 ) {
-    #            $too_long = ( $packed_columns > ( $columns + $available_spaces ) );
-    #        }
-    #    }
-
-    # Always break lists contained in '[' and '{' if too long for 1 line,
-    # and always break lists which are too long and part of a more complex
-    # structure.
-
-    my $must_format =
-      ( $too_long && ( $in_hierarchical_list || $opening_token ne '(' ) );
-
-    #print "LISTX: next=$next_nonblank_type  avail cols=$columns packed=$packed_columns must format = $must_format too-long=$too_long  opening=$opening_token list_type=$list_type formatted_lines=$formatted_lines  packed=$packed_lines max_sparsity= $max_allowed_sparsity sparsity=$sparsity \n";
-
-    #---------------------------------------------------------------
-    # The main decision:
-    # Now decide if we will align the data into aligned columns.  Do not
-    # attempt to align columns if this is a tiny table or it would be
-    # too spaced.  It seems that the more packed lines we have, the
-    # sparser the list that can be allowed and still look ok.
-    #---------------------------------------------------------------
-
-    if (
-        !$must_format
-        && ( ( $formatted_lines < 3 && $packed_lines < $formatted_lines )
-            || ( $formatted_lines < 2 )
-            || ( $unused_columns > $max_allowed_sparsity * $formatted_columns )
-        )
-      )
-    {
-
-        #---------------------------------------------------------------
-        # too sparse: would look ugly if aligned in a table;
-        #---------------------------------------------------------------
-
-        # use old breakpoints if this is more than 2 lines
-        # (otherwise, the list breakup will be at the mercy of the
-        # standard continuation line break algorithm).
-        if ( $packed_lines > 2 ) {
-            write_logfile_entry("List sparse: using old breakpoints\n");
-            copy_old_breakpoints( $i_first_comma, $i_last_comma );
+        # FIXME: For an item after a '=>', try to include the length of the thing
+        # before the '=>'.  This is crude and should be improved by actually
+        # looking back token by token.
+        if ( !$too_long && $i_opening_paren > 0 && $list_type eq '=>' ) {
+            my $i_opening_minus = $i_opening_paren - 4;
+            if ( $i_opening_minus >= 0 ) {
+                $too_long =
+                  excess_line_length( $i_opening_minus,
+                    $i_effective_last_comma + 1 ) > 0;
+            }
         }
 
-        # let the continuation logic handle it if 2 lines
-        else {
-            $$rdo_not_break_apart = 1;
+        # EXPERIMENTAL: for -lp, assume that we can get back any needed spaces
+        # by outdenting  ... NOT
+        #    if ($too_long && $opening_token eq '(') {
+        #        my $available_spaces = get_AVAILABLE_SPACES_to_go($i_opening_paren);
+        #        if ( $available_spaces > 0 ) {
+        #            $too_long = ( $packed_columns > ( $columns + $available_spaces ) );
+        #        }
+        #    }
+
+        # Always break lists contained in '[' and '{' if too long for 1 line,
+        # and always break lists which are too long and part of a more complex
+        # structure.
+
+        my $must_format =
+          ( $too_long && ( $in_hierarchical_list || $opening_token ne '(' ) );
+
+        #print "LISTX: next=$next_nonblank_type  avail cols=$columns packed=$packed_columns must format = $must_format too-long=$too_long  opening=$opening_token list_type=$list_type formatted_lines=$formatted_lines  packed=$packed_lines max_sparsity= $max_allowed_sparsity sparsity=$sparsity \n";
+
+        #---------------------------------------------------------------
+        # The main decision:
+        # Now decide if we will align the data into aligned columns.  Do not
+        # attempt to align columns if this is a tiny table or it would be
+        # too spaced.  It seems that the more packed lines we have, the
+        # sparser the list that can be allowed and still look ok.
+        #---------------------------------------------------------------
+
+        if (
+            !$must_format
+            && (
+                ( $formatted_lines < 3 && $packed_lines < $formatted_lines )
+                || ( $formatted_lines < 2 )
+                || ( $unused_columns >
+                    $max_allowed_sparsity * $formatted_columns )
+            )
+          )
+        {
+
+            #---------------------------------------------------------------
+            # too sparse: would look ugly if aligned in a table;
+            #---------------------------------------------------------------
+
+            # use old breakpoints if this is more than 2 lines
+            # (otherwise, the list breakup will be at the mercy of the
+            # standard continuation line break algorithm).
+            if ( $packed_lines > 2 ) {
+                write_logfile_entry("List sparse: using old breakpoints\n");
+                copy_old_breakpoints( $i_first_comma, $i_last_comma );
+            }
+
+            # let the continuation logic handle it if 2 lines
+            else {
+                $$rdo_not_break_apart = 1;
+            }
+            return;
         }
-        return;
-    }
 
-    #---------------------------------------------------------------
-    # looks ok, so go ahead and format the table
-    #---------------------------------------------------------------
-    write_logfile_entry(
-        "List: auto formatting with $number_of_fields fields/row\n");
-    my $j;
+        #---------------------------------------------------------------
+        # looks ok, so go ahead and format the table
+        #---------------------------------------------------------------
+        write_logfile_entry(
+            "List: auto formatting with $number_of_fields fields/row\n");
 
-    my $j_first_break =
-      $use_separate_first_term ? $number_of_fields : $number_of_fields - 1;
+        my $j_first_break =
+          $use_separate_first_term ? $number_of_fields : $number_of_fields - 1;
 
-    for (
-        ##$j = $number_of_fields - 1 ;
-        $j = $j_first_break;
-        $j < $comma_count ;
-        $j += $number_of_fields
-      )
-    {
-        my $i = $$rcomma_index[$j];
-        set_forced_breakpoint($i);
-    }
+        for (
+            my $j = $j_first_break ;
+            $j < $comma_count ;
+            $j += $number_of_fields
+          )
+        {
+            my $i = $$rcomma_index[$j];
+            set_forced_breakpoint($i);
+        }
 
-    # Save list diagnostics during development
-    FORMATTER_DEBUG_FLAG_LIST && do {
-        my $pkl = sprintf( "%.1f", $packed_lines );
-        my $fml = sprintf( "%.1f", $formatted_lines );
-        write_diagnostics(<<"EOM");
+        # Save list diagnostics during development
+        FORMATTER_DEBUG_FLAG_LIST && do {
+            my $pkl = sprintf( "%.1f", $packed_lines );
+            my $fml = sprintf( "%.1f", $formatted_lines );
+            write_diagnostics(<<"EOM");
 List:items=$item_count commas=$comma_count ids=$identifier_count cols=$columns fmt_lines=$fml pkd_lines=$pkl brks=$forced_breakpoint_count
   fmt_cols=$formatted_columns pk_cols=$packed_columns unusd=$unused_columns 
 EOM
-    };
+        };
 
-    return;
+        return;
+    }
 }
 
 sub table_columns_available {
@@ -10213,10 +10213,7 @@ sub set_nobreaks {
             );
         };
 
-        my $k;
-        for ( $k = $i ; $k <= $j ; $k++ ) {
-            $nobreak_to_go[$k] = 1;
-        }
+        @nobreak_to_go[ $i .. $j ] = (1) x ( $j - $i + 1 );
     }
 
     # shouldn't happen; non-critical error
@@ -10240,6 +10237,7 @@ sub set_fake_breakpoint {
 
 sub set_forced_breakpoint {
     my $i = shift;
+
     ## BUBBA:
     return unless defined $i && $i >= 0;
 
@@ -10262,13 +10260,6 @@ sub set_forced_breakpoint {
 "FORCE forced_breakpoint $forced_breakpoint_count from $a $c with i=$i_nonblank max=$max_index_to_go tok=$tokens_to_go[$i_nonblank] type=$types_to_go[$i_nonblank] nobr=$nobreak_to_go[$i_nonblank]\n";
         };
 
-        # Note: I thought it would be best not to set these if the nobreak
-        # flag is set (since it has priority), but things really looked
-        # better without doing this check.  The reason is that the really
-        # complex lines which would trigger this should really be split
-        # up.  ( break.t )
-        # if ( $i_nonblank >= 0  && !$nobreak_to_go[$i_nonblank]) {
-        # So just do this:
         if ( $i_nonblank >= 0 && $nobreak_to_go[$i_nonblank] == 0 ) {
             $forced_breakpoint_to_go[$i_nonblank] = 1;
 
@@ -10586,7 +10577,7 @@ sub recombine_breakpoints {
                         )
                         && $i_next_nonblank <= $il
                         && length( $tokens_to_go[$i_next_nonblank] ) <
-                        $rOpts->{'short-concatenation-item-length'}
+                        $rOpts_short_concatenation_item_length
                     )
                   );
             }
@@ -10767,6 +10758,7 @@ sub set_continuation_breaks {
     # keep the line lengths below the maximum desired length.  There is
     # an implied break after the last token, so it need not be included.
     # We'll break at points where the bond strength is lowest.
+
     my $saw_good_break = shift;
     my @i_first        = ();      # the first index to output
     my @i_last         = ();      # the last index to output
@@ -10786,6 +10778,7 @@ sub set_continuation_breaks {
     my $last_break_strength     = NO_BREAK;
     my $i_last_break            = -1;
     my $max_bias                = 0.001;
+    my $tiny_bias               = 0.0001;
     my $leading_alignment_token = "";
     my $leading_alignment_type  = "";
 
@@ -10865,8 +10858,7 @@ sub set_continuation_breaks {
                 # because of a side comment causing a NO_BREAK.  It is easier
                 # to catch this here than when they are set.
                 if ( $strength < NO_BREAK ) {
-                    ##$strength   = $lowest_strength / 2;
-                    $strength   = $lowest_strength - $max_bias / 10;
+                    $strength   = $lowest_strength - $tiny_bias;
                     $must_break = 1;
                 }
             }
@@ -10919,6 +10911,7 @@ sub set_continuation_breaks {
                 # is different from the latest candidate break
                 last
                   if ($leading_alignment_type);
+                ## && $leading_alignment_type ne ':');
 
                 #print "BUBBA: next type=$next_nonblank_type  next tok= $next_nonblank_token starting depth=$nesting_depth_to_go[$i_begin] next depth= $nesting_depth_to_go[$i_next_nonblank]\n"; 
                 ##last
@@ -11816,6 +11809,7 @@ use vars qw(
   $previous_maximum_jmax_seen
   $maximum_line_index
   $group_level
+  $group_maximum_gap
   $last_group_level_written
   $extra_indent_ok
   $zero_count
@@ -11894,6 +11888,7 @@ sub initialize_for_new_group {
     $maximum_alignment_index = -1;      # alignments in current group
     $zero_count              = 0;       # count consecutive lines without tokens
     $current_line            = undef;   # line being matched for alignment
+    $group_maximum_gap       = 0;       # largest gap introduced
 }
 
 # interface to PerlTidy::Diagnostics routines
@@ -12644,6 +12639,11 @@ sub check_fit {
             }
         }
 
+        # remember largest gap of the group, excluding gap to side comment
+        if ( $pad < 0 && $group_maximum_gap < -$pad && $j > 0 && $j < $jmax-1 ) {
+            $group_maximum_gap = -$pad;
+        }
+
         next if !$big_jump && $pad < 0;
 
         # This line will need space; lets see if we want to accept it..
@@ -12680,6 +12680,11 @@ sub check_fit {
         # looks ok, squeeze this field in
         $old_line->increase_field_width( $j, $pad );
         $padding_available -= $pad;
+        
+        # remember largest gap of the group, excluding gap to side comment
+        if ( $pad > $group_maximum_gap && $j > 0 && $j < $jmax-1 ) {
+            $group_maximum_gap = $pad;
+        }
     }
 }
 
@@ -12774,11 +12779,24 @@ sub flush {
 sub decide_if_aligned {
 
     # Do not try to align two lines which are not really similar
+    return unless $maximum_line_index == 1;
+
     my $group_list_type = $group_lines[0]->get_list_type();
-    my $do_not_align    =
-      ( $maximum_line_index < 2
-          && !$group_list_type
-          && ( $previous_maximum_jmax_seen != $previous_minimum_jmax_seen ) );
+
+    my $do_not_align = (
+
+        # always align lists
+        !$group_list_type
+
+          && (
+
+            # don't align two lines with big gap
+            $group_maximum_gap > 12
+
+            # or lines with differing number of alignment tokens
+            || $previous_maximum_jmax_seen != $previous_minimum_jmax_seen
+          )
+    );
 
     # But try to convert them into a simple comment group if the first line 
     # a has side comment
@@ -12791,6 +12809,7 @@ sub decide_if_aligned {
         combine_fields();
         $do_not_align = 0;
     }
+    ##print "BUBBA: do not=$do_not_align max=$maximum_line_index list=($group_list_type)  max=$previous_maximum_jmax_seen min=$previous_minimum_jmax_seen $group_maximum_gap\n";
     return $do_not_align;
 }
 
@@ -13059,8 +13078,8 @@ sub combine_fields {
     for ( $j = 0 ; $j <= $maximum_line_index ; $j++ ) {
         my $line    = $group_lines[$j];
         my $rfields = $line->get_rfields();
-        for ( $k = 1 ; $k < $maximum_field_index ; $k++ ) {
-            $$rfields[0] .= $$rfields[$k];
+        foreach ( 1 .. $maximum_field_index - 1 ) {
+            $$rfields[0] .= $$rfields[$_];
         }
         $$rfields[1] = $$rfields[$maximum_field_index];
 
@@ -13967,12 +13986,6 @@ If you want to keep the line as it is, and are sure it is correct,
 you can use -w=0 to prevent this message.
 ------------------------------------------------------------------
 EOM
-
-        #It is very possible that this is syntax is unambiguous to perl, which
-        #may know what 'bareword' is by parsing any 'use' and 'require' modules
-        #that you have referenced, but perltidy does not currently parse other
-        #modules, so it has not seen any function prototypes that they might
-        #contain.  To prevent this message, use -w=0.
 
     }
 
@@ -14892,6 +14905,10 @@ sub reset_indentation_level {
     # end scanner interfaces
     # ------------------------------------------------------------
 
+    my %is_for_foreach;
+    @_ = qw(for foreach);
+    @is_for_foreach{@_} = (1) x scalar(@_);
+
     # ------------------------------------------------------------
     # begin hash of code for handling most token types
     # ------------------------------------------------------------
@@ -15048,7 +15065,8 @@ sub reset_indentation_level {
             }
 
             $container_type = $paren_type[$paren_depth];
-            if ( $paren_type[$paren_depth] =~ /^(for|foreach)$/ ) {
+            ##if ( $paren_type[$paren_depth] =~ /^(for|foreach)$/ ) {
+            if ( $is_for_foreach{ $paren_type[$paren_depth] } ) {
                 my $num_sc = $paren_semicolon_count[$paren_depth];
                 if ( $num_sc > 0 && $num_sc != 2 ) {
                     warning("Expected 2 ';' in 'for(;;)' but saw $num_sc\n");
@@ -15070,7 +15088,8 @@ sub reset_indentation_level {
             $context        = UNKNOWN_CONTEXT;
             $statement_type = '';
 
-            if ( $paren_type[$paren_depth] =~ /^(for|foreach)$/ )
+            ##if ( $paren_type[$paren_depth] =~ /^(for|foreach)$/ )
+            if ( $is_for_foreach{ $paren_type[$paren_depth] } )
             {    # mark ; in for loop
 
                 # Be careful: we do not want a semicolon such as the
@@ -15534,6 +15553,26 @@ sub reset_indentation_level {
     @_ = qw(redo last next goto);
     @is_redo_last_next_goto{@_} = (1) x scalar(@_);
 
+    my %is_use_require;
+    @_ = qw(use require);
+    @is_use_require{@_} = (1) x scalar(@_);
+
+    my %is_sub_package;
+    @_ = qw(sub package);
+    @is_sub_package{@_} = (1) x scalar(@_);
+
+##    my %is_format_END_DATA
+##    @_ = qw(format __END__ __DATA__ );
+##    @is_format_END_DATA{@_} = (1) x scalar(@_);
+##
+
+    # This hash olds the hash key in $tokenizer_self for these keywords:
+    my %is_format_END_DATA = (
+        'format'   => '_in_format',
+        '__END__'  => '_in_end',
+        '__DATA__' => '_in_data',
+    );
+
     # ref: camel 3 p 147, 
     # but perl may accept undocumented flags
     my %quote_modifiers = (
@@ -15548,7 +15587,7 @@ sub reset_indentation_level {
         'qx' => "",
     );
 
-    # tably showing how many quoted items to look for after quote operator..
+    # tably showing how many quoted things to look for after quote operator..
     # s, y, tr have 2 (pattern and replacement)
     # others have 1 (pattern only)
     my %quote_items = (
@@ -16128,7 +16167,8 @@ EOM
                     next;
                 }
 
-                elsif ( $tok eq 'sub' || $tok eq 'package' ) {
+                ##elsif ( $tok eq 'sub' || $tok eq 'package' ) {
+                elsif ( $is_sub_package{$tok} ) {
                     error_if_expecting_OPERATOR()
                       if ( $expecting == OPERATOR );
                     scan_id();
@@ -16138,21 +16178,9 @@ EOM
                 # It simplifies things to give these type ';', so that when we
                 # start rescanning we will be expecting a token of type TERM.
                 # We will switch to type 'k' before outputting the tokens.
-                elsif ( $tok eq 'format' ) {
+                elsif ( $is_format_END_DATA{$tok} ) {
                     $type = ';';    # make tokenizer look for TERM next
-                    $tokenizer_self->{_in_format} = 1;
-                    last;
-                }
-
-                elsif ( $tok eq '__DATA__' ) {
-                    $tokenizer_self->{_in_data} = $tok;
-                    $type = ';';    # make tokenizer look for TERM next
-                    last;
-                }
-
-                elsif ( $tok eq '__END__' ) {
-                    $tokenizer_self->{_in_end} = $tok;
-                    $type = ';';    # make tokenizer look for TERM next
+                    $tokenizer_self->{ $is_format_END_DATA{$tok} } = 1;
                     last;
                 }
 
@@ -16162,14 +16190,16 @@ EOM
                     # Since for and foreach may not be followed immediately
                     # by an opening paren, we have to remember which keyword
                     # is associated with the next '('
-                    if ( $tok eq 'for' || $tok eq 'foreach' ) {
+                    ##if ( $tok eq 'for' || $tok eq 'foreach' ) {
+                    if ( $is_for_foreach{$tok} ) {
                         if ( new_statement_ok() ) {
                             $want_paren = $tok;
                         }
                     }
 
                     # recognize 'use' statements, which are special
-                    elsif ( $tok eq 'use' || $tok eq 'require' ) {
+                    ##elsif ( $tok eq 'use' || $tok eq 'require' ) {
+                    elsif ( $is_use_require{$tok} ) {
                         $statement_type = $tok;
                         error_if_expecting_OPERATOR()
                           if ( $expecting == OPERATOR );
@@ -16742,14 +16772,14 @@ indentation, but only single continuation-indentation
             # the stength of token bonds
             my $slevel_i = $slevel_in_tokenizer;
 
-            #    $type =~ /^[L\{\(\[]$/ 
+            #    /^[L\{\(\[]$/ 
             if ( $is_opening_type{$type} ) {
                 $slevel_in_tokenizer++;
                 $nesting_token_string .= $tok;
                 $nesting_type_string .= $type;
             }
 
-            #       $type =~ /^[R\}\)\]]$/ 
+            #       /^[R\}\)\]]$/ 
             elsif ( $is_closing_type{$type} ) {
                 $slevel_in_tokenizer--;
                 my $char = chop $nesting_token_string;
@@ -17642,32 +17672,32 @@ sub pre_tokenize {
     # Caller sets $max_tokens_wanted to 0 to get all tokens.
     my ( $str, $max_tokens_wanted ) = @_;
     my @tokens    = ();
-    my @token_map = ();
+    my @token_map = (0);
     my @type      = ();
-    my $i         = 0;
-    $token_map[0] = 0;
-
-    while (1) {
+    do {
 
         # whitespace
-        if ( $str =~ /\G(\s+)/gc ) { $type[$i] = 'b'; }
+        if ( $str =~ /\G(\s+)/gc ) { push @type, 'b'; }
 
         # numbers
         # note that this must come before identifiers
-        elsif ( $str =~ /\G(\d+)/gc ) { $type[$i] = 'd'; }
+        elsif ( $str =~ /\G(\d+)/gc ) { push @type, 'd'; }
 
         # identifiers
-        elsif ( $str =~ /\G(\w+)/gc ) { $type[$i] = 'w'; }
+        elsif ( $str =~ /\G(\w+)/gc ) { push @type, 'w'; }
 
         # punctuation
-        elsif ( $str =~ /\G(\W)/gc ) { $type[$i] = $1; }
+        elsif ( $str =~ /\G(\W)/gc ) { push @type, $1; }
 
-        else { last; }
+        else {
+            return ( \@tokens, \@token_map, \@type );
+        }
 
-        $tokens[$i] = $1;
-        $token_map[ ++$i ] = pos($str);
-        last if ( $i == $max_tokens_wanted );
-    }
+        push @tokens,    $1;
+        push @token_map, pos($str);
+
+    } while ( --$max_tokens_wanted != 0 );
+
     return ( \@tokens, \@token_map, \@type );
 }
 

@@ -23,13 +23,55 @@ map( $matchwords{ join "", sort split //, $_ } = $_, 'cig',
     'so',    'soc',
     'sog',   'xi' );
 
+(
+  $description,   $summary_group,   $shotname,  $materials,
+  $weight,        $surface_to_mass, $date,      $hob,
+  $gage_file,     $range_min,       $range_max, $median_ovp_wt,
+  $median_imp_wt, $avg_weight,      $avg_pct,
+  )
+  = @_;
+
+{
+    (
+      $key,    $date, $check, $desc,    $debit,
+      $credit, $cat,  $com,   $cleared, $total
+      )
+      = split ( /\t/, $result );
+}
+
 # broken list - testing behavior of closing paren
 my %ENTITIES = (
 
     sol => '/'
 );
 
+{
+    printf(
+        "%-5s %-20s %-7s %-9s %-3s %-5s %-7s %-7s %-7s %-4s %s\n",
+        '----',  '-------', '----',  '-------', '--', '----',
+        '-----', '-----',   '-----', '----',    '----'
+    );
+
+    # just above current threshold for separate first term
+    print STDOUT sprintf( "%5s  %s  %-15s  %-43s\n",
+        "-" x 5, "----------", "-" x 15, "-" x 43 );
+
+    # just below current threshold for separate first term
+    $output = sprintf(
+        "%d/%s/%d %d:%d:%d", $time[3], $month[ $time[4] ],
+        $time[5] + 1900,     $time[2], $time[1],
+        $time[0]
+    );
+}
+
 { { {
+
+            push (
+                @{ $$self{states} },
+                '64', '66', '68', '70', '72',  '74',  '76',
+                '78', '80', '82', '84', '86',  '88',  '90',
+                '92', '94', '96', '98', '100', '102', '104'
+            );
 
             # we break after the '(' but dont need to break before the ')'
             $self->log(

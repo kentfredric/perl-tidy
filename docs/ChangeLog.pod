@@ -6,26 +6,40 @@
 
 =head2 2002 xx xx 
 
- -List formatting improved for certain lists with long initial terms, such
- as often occur with 'printf' and 'sprintf'.  A long initial term is now
- placed on a line by itself:
+ -List formatting improved for certain lists with special initial terms, such
+  as occur with 'printf', 'sprintf', 'push', 'pack', 'join', 'chmod'.  The 
+  special initial term is now placed on a line by itself.  For example,
+  perltidy -gnu
 
-    OLD:
-    printf(
-        "%-5s %-20s %-7s %-9s %-3s %-5s %-7s %-7s %-7s %-4s %s\n", '----',
-        '-------', '----',
-        '-------', '--',
-        '----',    '-----',
-        '-----',   '-----',
-        '----',    '----'
-    );
+     OLD:
+        $Addr = pack(
+                     "C4",                hex($SourceAddr[0]),
+                     hex($SourceAddr[1]), hex($SourceAddr[2]),
+                     hex($SourceAddr[3])
+                     );
 
-    NEW:
-    printf(
-        "%-5s %-20s %-7s %-9s %-3s %-5s %-7s %-7s %-7s %-4s %s\n",
-        '----',  '-------', '----',  '-------', '--', '----',
-        '-----', '-----',   '-----', '----',    '----'
-    );
+     NEW:
+        $Addr = pack("C4",
+                     hex($SourceAddr[0]), hex($SourceAddr[1]),
+                     hex($SourceAddr[2]), hex($SourceAddr[3]));
+
+      OLD:
+            push (
+                  @{$$self{states}}, '64', '66', '68',
+                  '70',              '72', '74', '76',
+                  '78',              '80', '82', '84',
+                  '86',              '88', '90', '92',
+                  '94',              '96', '98', '100',
+                  '102',             '104'
+                  );
+
+      NEW:
+            push (
+                  @{$$self{states}},
+                  '64', '66', '68', '70', '72',  '74',  '76',
+                  '78', '80', '82', '84', '86',  '88',  '90',
+                  '92', '94', '96', '98', '100', '102', '104'
+                  );
 
  -Merged VMS filename handling patch sent by Michael Cartmell.  (Invalid
   output filenames were being created in some cases). 

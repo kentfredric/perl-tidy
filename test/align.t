@@ -1,5 +1,49 @@
 # some alignment tests
 
+{
+    s/"//                               || next;
+    s/",([x\d]+),([x\d]+),([x\d]+),.*// || next;
+
+    if ( $menu_type == 2 ) {
+        &print_nl( "a - Select all items.",                                1 );
+        &print_nl( "m - Select based on a case-insensitive string match.", 1 );
+        &print_nl( "c - Clear all selections.",                            1 );
+    }
+
+    $self->{javascriptErrorHandlerBaseWindowName} = "";
+    $self->{linkTag}                              = [];
+    $self->{baseHrefString}                       = "";
+    $self->{baseTargetString}                     = "";
+    $self->{linkStyleSheet}                       = "";
+
+    $worksheet->write( 0, 0, "Index",                                $heading );
+    $worksheet->write( 0, 1, "Index",                                $heading );
+    $worksheet->write( 0, 3, "Style",                                $heading );
+    $worksheet->write( 0, 5, "The style is highlighted in red for ", $heading );
+
+    &logr( "              iptables -A INPUT -j DENY\n", $logr_files_aref );
+    &logr( "\n",                                        $logr_files_aref );
+
+    {
+        s/^([^_-]+)_([^_-]+)_([^_-]+)$/$1-$2-$3/ if (/\s/);
+        s/_/-/g                                  if (/\s.+\s/);
+
+        print '      <p><i><font size="-1">Disclaimer:</font></i></p>', "\n";
+        print '      <p>',                                              "\n";
+        print '      <form method="post" action="">',                   "\n";
+
+        {
+            {
+
+                print "IF "                          if !$applyall;
+                print "<b>[Unconditional Rule]</b> " if $applyall;
+
+            }
+        }
+    }
+}
+
+
 # alignment of { and = works well here: 
 
 while (<DESC>) {
