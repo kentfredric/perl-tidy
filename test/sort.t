@@ -45,3 +45,24 @@ sub numerically {$a <=> $b};
 # The semicolon in this stmt was once mis-tokenized as type 'f'
 for (sort {strcoll($a,$b);} keys %investments) {
 }
+
+foreach my $e ( map { $_->[0] }
+                    sort { $b->[3]      <=> $b->[3] ||
+                           $b->[2]      <=> $a->[2] ||
+                           $a->[1]->[0] cmp $b->[1]->[0] ||
+                           $a->[1]->[1] cmp $b->[1]->[1] }
+                        map { [ $_, $E[$_], $C[$_], $F[$_] ] }
+                            0..$#E ) {
+    printf "%-40s %2d/%2d\n",
+           $E[$e]->[0] . "-" . $E[$e]->[1], $F[$e], $C[$e]
+}
+
+@dictionary_sorted =
+    map { /^\w* (.*)/ }
+       sort
+          map {
+               my $d = lc;          # Convert into lowercase.
+               $d =~ s/[\W_]+//g;   # Remove nonalphanumerics.
+               "$d $_"              # Concatenate new and original words.
+              }
+        @array;

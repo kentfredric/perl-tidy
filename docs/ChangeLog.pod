@@ -5,6 +5,56 @@
  improvement, please send a note to perltidy at users.sourceforge.net.  
 
 =head2 2001 xx xx
+
+ -added a tentative patch which tries to keep any existing breakpoints
+ at lines with leading keywords map,sort,eval,grep. The idea is to
+ improve formatting of sequences of list operations, as in a schwartzian
+ transform.  Example:
+
+    INPUT:
+    my @sorted = map { $_->[0] }
+                 sort { $a->[1] <=> $b->[1] }
+                 map { [ $_, rand ] } @list;
+
+    OLD:
+    my @sorted =
+      map { $_->[0] } sort { $a->[1] <=> $b->[1] } map { [ $_, rand ] } @list;
+
+    NEW:
+    my @sorted = map { $_->[0] }
+      sort { $a->[1] <=> $b->[1] }
+      map { [ $_, rand ] } @list;
+
+  The new alignment is not as nice as the input, but this is an improvement.
+  Thanks to Yves Orton for this suggestion.
+
+ -modified indentation logic so that a line with leading opening paren,
+ brace, or square bracket will never have less indentation than the
+ line with the corresponding opening token.  Here's a simple example:
+
+    OLD:
+        $mw->Button(
+            -text    => "New Document",
+            -command => \&new_document
+          )->pack(
+            -side   => 'bottom',
+            -anchor => 'e'
+        );
+
+    Note how the closing ');' is lined up with the first line, even
+    though it closes a paren in the 'pack' line.  That seems wrong.
+ 
+    NEW:
+        $mw->Button(
+            -text    => "New Document",
+            -command => \&new_document
+          )->pack(
+            -side   => 'bottom',
+            -anchor => 'e'
+          );
+
+   This seems nicer: you can up-arrow with an editor and arrive at the
+   opening 'pack' line.
  
  -corrected minor glitch in which cuddled else (-ce) did not get applied
  to an 'unless' block, which should look like this:

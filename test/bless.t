@@ -8,13 +8,6 @@
         _name => $name, _price => $price, _rebate => $rebate
     }, $pkg;
 
-    grep( do {
-          if ( $i == $depth ) { $_++; }
-          elsif ( $i > $depth ) { $_ = 0; }
-          $i++;
-          0;
-      }, @curr_sec_id );
-
     # note lack of outdent for the '}' because of the continuation
     do {
         $paragraph = <$fileHandle>;

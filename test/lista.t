@@ -4,6 +4,47 @@ my %ENTITIES = (
     sol => '/'
 );
 
+{ { {
+
+            # we break after the '(' but dont need to break before the ')'
+            $self->log(
+                '# Here the miror is ended, I can do what ever I want...');
+
+            # This was difficult
+            &{
+                (
+                  $start_element_handlers->{ $event->data->name }
+                  || $start_element_handlers->{''}
+                  || sub { }
+                  )
+              } ( $event->data, $event );
+            last SWITCH;
+} } }
+
+{{
+        # This was difficult:
+        push (
+            @sp,
+            $t2[
+              ( $t3[ ( $t1[ ( $ch + $n1 ) & MASK ] + $n2 ) & MASK ] - $n2 ) &
+              MASK
+              ] - $n1
+        );
+
+
+        # This was difficult:
+        $type eq 'start_element' && do {
+            &{
+                (
+                  $start_element_handlers->{ $event->data->name }
+                  || $start_element_handlers->{''}
+                  || sub { }
+                  )
+              } ( $event->data, $event );
+            last SWITCH;
+        };
+
+}}
 # this was once mis-tokenized:
 @a = (1,2,3,4,5,6,7);
 $b = @a[0..5]/2.;

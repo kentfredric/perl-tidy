@@ -48,3 +48,13 @@ $Cnested = qq<
 >;
 
 print "$Cnested\n";
+
+{
+
+    # multiline quote for testing behavior of terminal ');'
+    open INFILE_COPY, ">$input_file_copy"
+      or die (
+        "Couldn't open $input_file_copy: $!\n
+                	It is needed to check syntax; deactivate with -nsyn"
+    );
+}

@@ -53,15 +53,6 @@ my $ado_info = [ qw{
               if ( ( $i_test == $imax )
               || ( ( $i_lowest >= 0 ) && $too_long ) );
 
-    # a complex example, with multiple levels and one comma
-    grep( do {
-          if ( $i == $depth ) { $_++; }
-          elsif ( $i > $depth ) { $_ = 0; }
-          $i++;
-          0;
-      },
-      @curr_sec_id );
-
     {
         return $pdl->slice(join ',',(map {
                         $_ eq "X" ? ":" :
