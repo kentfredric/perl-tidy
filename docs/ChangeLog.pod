@@ -4,6 +4,13 @@
  have hit a bug, unusual behavior, annoyance, or have a suggested
  improvement, please send a note to perltidy at users.sourceforge.net.  
 
+ -html updates:
+     - sub definition names are now specially colored, red by default.  
+       The letter 'm' is used to identify them.
+     - keyword 'sub' now has color of other keywords.
+     - restored html keyword color to __END__ and __DATA__, which was 
+       accidentally removed in the previous version.
+
  -A new -se (--standard-error-output) flag has been implemented and
  documented which causes all errors to be written to standard output
  instead of a .ERR file.
@@ -33,6 +40,19 @@
  -New syntax check: after wasting 5 minutes trying to resolve a syntax
   error in which I had an extra terminal ';' in a complex for (;;) statement, 
   I spent a few more minutes adding a check for this in perltidy.  
+
+ -The behavior of --break-before-subs (-bbs) and --break-before-blocks
+ (-bbb) has been modified slightly, hopefully for the better.  Also, a
+ new control parameter, --long-block-line-count=n (-lbl=n) has been
+ introduced to give more control on -bbb.  This was previously a
+ hardwired value.  These are documented in the man page.  The reason for
+ the change is to reduce the number of blank lines that perltidy
+ introduces, and make it less erratic.  I did a lot of experimenting
+ with different schemes for introducing blank lines before code blocks,
+ and decided that there is no really sane way to do it.  I think the new
+ scheme is an improvement, though.  The idea is to avoid long sections
+ without any breaks at all in that code you inherited from Bubba.
+ Thanks to Erik Thaysen for bringing this to my attention.
 
  -The .LOG file is seldom needed, and I get tired of deleting them, so
   they will now only be automatically saved if perltidy thinks that it
@@ -93,12 +113,15 @@
 
  -I discovered a mis-tokenization of $#-.  Some experimenting with Perl
  indicated that it allows just these non-alphanumeric '$#' array maximum
- index varaibles: $#: $#- $#+ so I updated the parser accordingly.  You
- can create an @; array, for example, but you cannot get at its maximum
- index with $#;  . 
+ index varaibles: $#: $#- $#+ so I updated the parser accordingly.  (You
+ can use the @; array, for example, but you cannot get at its maximum
+ index with $#;  ).  Now perltidy can parse something like this correctly:
+           $#=+$#:+ +$#-+$#++$#;#$#:)
 
  -Fixed a rare formatting problem with -lp (and -gnu) which caused
  excessive indentation.
+
+ -Many additional syntax checks have been added.
 
  -Revised method for testing here-doc target strings; the following
  was causing trouble with a regex test because of the '*' characters:
@@ -141,13 +164,6 @@
                      hireDay   => $hireDay
                      };
 
- -html updates:
-     - sub definition names are now specially colored, red by default.  
-       The letter 'm' is used to identify them.
-     - keyword 'sub' now has color of other keywords.
-     - restored html keyword color to __END__ and __DATA__, which was 
-       accidentally removed in the previous version.
-
  -Modifications made to display tables more compactly when possible,
   without adding lines. For example,
   old:
@@ -169,6 +185,8 @@
             for ($i = 0 ; $i < length $key ; $i++)
 
  Thanks to Erik Thaysen for noting this.
+
+ -Discovered a new bug involving during testing!  See BUGS.html.  
 
  -Finally fixed parsing of subroutine attributes (A Perl 5.6 feature).
  However, the attributes and prototypes must still be on the same line

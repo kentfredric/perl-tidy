@@ -27,11 +27,10 @@ DESCRIPTION
     Perltidy -html reads a Perl script and writes an a copy suitable for
     viewing with a web browser.
 
-    The short the section on "EXAMPLES" section should help you get started
-    quickly.
+    For a quick introduction, see the section on "EXAMPLES".
 
-    The the section on "OPTIONS" section describes all of the command line
-    parameters.
+    For a complete description of the command line parameters, see the
+    section on "OPTIONS".
 
 EXAMPLES
       perltidy -html somefile.pl
@@ -132,6 +131,7 @@ OPTIONS
               colon                  colon            co
               comma                  comma            cm
               label                  label            j
+              sub definition name    subroutine       m
 
         A default set of colors has been defined, but they may be changed by
         providing values to any of the following parameters, where n is

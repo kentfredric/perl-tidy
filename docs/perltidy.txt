@@ -31,8 +31,8 @@ EXAMPLES
 
     Execute perltidy on all .pl files in the current directory with the
     default options. The output will be in files with an appended .tdy
-    extension. For any file with an error, there will be files with
-    extensions .ERR and .LOG.
+    extension. For any file with an error, there will be a file with
+    extension .ERR.
 
       perltidy -gnu somefile.pl
 
@@ -102,11 +102,35 @@ OPTIONS
         filename.tdy.
 
     -st, --standard-output
-        Sends the output script to the standard output. For example,
+        Perltidy must be able to operate on an arbitrarily large number of
+        files in a single run, with each output being directed to a
+        different output file. Obviously this would conflict with outputting
+        to the single standard output device, so a special flag, -st, is
+        required to request outputting to the standard output. For example,
 
           perltidy somefile.pl -st >somefile.new.pl
 
-        This option may only be used if there is a single input file.
+        This option may only be used if there is just a single input file.
+        When this option is used, perltidy will have to create a temporary
+        copy of the output file, perltidy.TMPO, to feed to perl for syntax
+        checking, unless allow syntax checking is disabled. This file will
+        be deleted when the job finishes. The default is -nst or
+        -nostandard-output.
+
+    -se, --standard-error-output
+        If perltidy detects an error when processing file somefile.pl, its
+        default behavior is to write error messages to file somefile.pl.ERR.
+        Use -se to cause all error meassages to be sent to the standard
+        error output stream instead. This directive may be negated with
+        -nse. Thus, you may place -se in a .perltidyrc and override it when
+        desired with -nse on the command line.
+
+    -w, --warning-output
+        Setting -w causes perltidy to include any non-critical warning
+        messages be reported as errors. These include messages about
+        possible pod problems, possibly bad starting indentation level, and
+        cautions about indirect object usage. The default, -nw or
+        --nowarning-output, is not to include these warnings.
 
     -q, --quiet
         Deactivate error messages and syntax checking (for running under an
@@ -135,9 +159,9 @@ OPTIONS
 
     -log, --logfile
         Save the .LOG file, which has many useful diagnostics. Perltidy
-        always creates a .LOG file, but by default it is deleted if there
-        are no errors. Setting the -log flag forces the log file to be
-        saved.
+        always creates a .LOG file, but by default it is deleted unless a
+        program bug is suspected. Setting the -log flag forces the log file
+        to be saved.
 
     -g=n, --logfile-gap=n
         Set maximum interval between input code lines in the logfile. This
@@ -170,7 +194,8 @@ OPTIONS
     -opt, --show-options
         Write a list of all options used to the .LOG file. This is useful
         for debugging command files. In the list, the status of on/off
-        switches is indicated by a 0 for off and a 1 for on.
+        switches is indicated by a 0 for off and a 1 for on. Please see
+        --dump-options for a simpler way to do this.
 
     -f, --force-read-binary
         Force perltidy to process binary files. Normally, perltidy skips
@@ -505,13 +530,34 @@ OPTIONS
         blank lines from being introduced.
 
     -bbs, --blanks-before-subs
-        A blank line will be introduced before a sub definition. This is the
-        default. This is negated with -nbbs or --noblanks-before-subs.
+        A blank line will be introduced before a sub definition, unless it
+        is a one-liner or preceded by a comment. A blank line will also be
+        introduced before a package statement and a BEGIN and END block.
+        This is the default. The intention is to help display the structure
+        of a program by setting off certain key sections of code. This is
+        negated with -nbbs or --noblanks-before-subs.
 
     -bbb, --blanks-before-blocks
-        A blank line may be introduced before blocks of coding delimited by
-        for, foreach, while, until, and if. This is the default. This is
-        negated with -nbbb or --noblanks-before-blocks.
+        A blank line will be introduced before blocks of coding delimited by
+        for, foreach, while, until, and if, unless, in the following
+        circumstances:
+
+        *   The block is not preceded by a comment.
+
+        *   The block is not a one-line block.
+
+        *   The number of consecutive non-blank lines at the current
+            indentation depth is at least -lbl (see next section).
+
+        This is the default. The intention of this option is to introduce
+        some space within dense coding. This is negated with -nbbb or
+        --noblanks-before-blocks.
+
+    -lbl=n --long-block-line-count=n
+        This controls how often perltidy is allowed to add blank lines
+        before certain block types (see previous section). The default is
+        12. Entering a value of 0 is equivalent to entering a very large
+        number.
 
     -mbl=n --maximum-consecutive-blank-lines=n
         This parameter specifies the maximum number of consecutive blank
@@ -683,14 +729,14 @@ OPTIONS
         these commands also work, and are the defaults.
 
     Using a .perltidyrc command file
-        An optional command-line file may be used to avoid typing
-        commonly-used parameters. Perltidy will first look in your current
-        directory for a command file named .perltidyrc, and if it does not
-        find one, it will look in your home directory. If it does not find
-        one there, it will look for a system-wide file
-        /usr/local/etc/perltidyrc, and failing to find one there it will
-        look for /etc/perltidyrc. Note that the system-wide files do not
-        have a leading dot.
+        If you use perltidy frequently, you probably won't be happy until
+        you create a .perltidyrc file to avoid typing commonly-used
+        parameters. Perltidy will first look in your current directory for a
+        command file named .perltidyrc, and if it does not find one, it will
+        look in your home directory. If it does not find one there, it will
+        look for a system-wide file /usr/local/etc/perltidyrc, and failing
+        to find one there it will look for /etc/perltidyrc. Note that the
+        system-wide files do not have a leading dot.
 
         This file is free format, and simply a list of parameters, just as
         they would be entered on a command line. Any number of lines may be
@@ -702,6 +748,8 @@ OPTIONS
 
           # This is a simple of a .perltidyrc configuration file
           # This implements a highly spaced style
+          -se    # errors to standard error output
+          -w     # show all warnings
           -bl    # braces on new lines
           -pt=0  # parens not tight at all
           -bt=0  # braces not tight
@@ -954,11 +1002,11 @@ LIMITATIONS
 FILES
     Special files when standard input or standard output are used
         When standard input is used, the log file, if saved, is
-        perltidy.LOG, and any error file is perltidy.ERR. These are saved in
-        the current working directory. If syntax checking is used, a
-        temporary copy of the input file will be created in the current
-        working directory called perltidy.TMPI, but it will be removed when
-        perltidy finishes.
+        perltidy.LOG, and any errors are written to perltidy.ERR unless the
+        -se flag is set. These are saved in the current working directory.
+        If syntax checking is used, a temporary copy of the input file will
+        be created in the current working directory called perltidy.TMPI,
+        but it will be removed when perltidy finishes.
 
         When standard output and syntax checking are used, a temporary copy
         of the output file will be created in the current working directory

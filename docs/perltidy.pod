@@ -202,7 +202,8 @@ If you set the B<-npro> flag, perltidy will not look for this file.
 
 Write a list of all options used to the F<.LOG> file.  This is useful for
 debugging command files.  In the list, the status of on/off
-switches is indicated by a 0 for off and a 1 for on.
+switches is indicated by a 0 for off and a 1 for on.  Please see
+B<--dump-options> for a simpler way to do this.
 
 =item B<-f>,   B<--force-read-binary>      
 
@@ -570,14 +571,45 @@ such blank lines from being introduced.
 
 =item B<-bbs>,  B<--blanks-before-subs>
 
-A blank line will be introduced before a sub definition.  This is the
-default.  This is negated with B<-nbbs> or  B<--noblanks-before-subs>.
+A blank line will be introduced before a B<sub> definition, unless it is a
+one-liner or preceded by a comment.  A blank line will also be introduced
+before a B<package> statement and a B<BEGIN> and B<END> block.  This is the
+default.  The intention is to help display the structure of a program by
+setting off certain key sections of code.  This is negated with B<-nbbs> or
+B<--noblanks-before-subs>.  
 
 =item B<-bbb>,  B<--blanks-before-blocks>
 
-A blank line may be introduced before blocks of coding delimited by
-B<for>, B<foreach>, B<while>, B<until>, and B<if>.  This is the default.
+A blank line will be introduced before blocks of coding delimited by
+B<for>, B<foreach>, B<while>, B<until>, and B<if>, B<unless>, in the following
+circumstances:
+
+=over 4
+
+=item *
+
+The block is not preceded by a comment.
+
+=item *
+
+The block is not a one-line block.
+
+=item *
+
+The number of consecutive non-blank lines at the current indentation depth is at least B<-lbl>
+(see next section).
+
+=back
+
+This is the default.  The intention of this option is to introduce
+some space within dense coding.
 This is negated with B<-nbbb> or  B<--noblanks-before-blocks>.
+
+=item B<-lbl=n> B<--long-block-line-count=n>
+
+This controls how often perltidy is allowed to add blank lines before 
+certain block types (see previous section).  The default is 12.  Entering
+a value of B<0> is equivalent to entering a very large number.
 
 =item B<-mbl=n> B<--maximum-consecutive-blank-lines=n>   
 

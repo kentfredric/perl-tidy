@@ -14,12 +14,12 @@
 	<LI><A HREF="#perltidy todo list">Perltidy TODO List</A></LI>
 	<UL>
 
-		<LI><A HREF="#fix numerous little formatting issues">Fix numerous little formatting issues</A></LI>
 		<LI><A HREF="#improved vertical alignment">Improved Vertical Alignment</A></LI>
+		<LI><A HREF="#fix numerous little formatting issues">Fix numerous little formatting issues</A></LI>
 		<LI><A HREF="#bugs">BUGS</A></LI>
 		<LI><A HREF="#option to reformat block comments">Option to reformat block comments</A></LI>
-		<LI><A HREF="#automated testing">Automated testing</A></LI>
 		<LI><A HREF="#documentation">Documentation</A></LI>
+		<LI><A HREF="#html writer">HTML writer</A></LI>
 		<LI><A HREF="#tokenization issues">Tokenization issues</A></LI>
 		<LI><A HREF="#modularization">Modularization</A></LI>
 	</UL>
@@ -32,16 +32,29 @@
 <H1><A NAME="perltidy todo list">Perltidy TODO List</A></H1>
 <P>This is a ``wish-list'' of features to add and things to do.</P>
 <P>
-<H2><A NAME="fix numerous little formatting issues">Fix numerous little formatting issues</A></H2>
-<P>There is (and always will be) a large backlog of little formatting
-issues in which the formatting could be better.  These are things like
-improving line break choices and improving vertical alignment.  I'm
-working on them as time permits.</P>
-<P>
 <H2><A NAME="improved vertical alignment">Improved Vertical Alignment</A></H2>
 <P>Coding modifications are underway to significantly enhance the vertical
-alignment.  This is an extensive update and will take another month or so,
-since it is summer.</P>
+alignment.  This is the highest priority and will probably be complete
+mid-October.</P>
+<P>
+<H2><A NAME="fix numerous little formatting issues">Fix numerous little formatting issues</A></H2>
+<P>There are a large number of little open formatting issues.</P>
+<P>One item is that at present, the -lp option breaks lists like this:</P>
+<PRE>
+     my $data = pack(
+                      &quot;vvvvvvvvv&quot;, $xWn,     $yWn,     $dxWn,
+                      $dyWn,       $grbit,   $itabCur, $itabFirst,
+                      $ctabsel,    $wTabRatio
+                      );</PRE>
+<P>This is the default because it simplifies editing the list.
+I would like to provide an option which does not break after the '(',
+and before the terminal ), like this:</P>
+<PRE>
+     my $data = pack( &quot;vvvvvvvvv&quot;, $xWn,     $yWn,     $dxWn,
+                      $dyWn,       $grbit,   $itabCur, $itabFirst,
+                      $ctabsel,    $wTabRatio);</PRE>
+<P>This should be easy to implement after the new vertical aligner is
+completed.</P>
 <P>
 <H2><A NAME="bugs">BUGS</A></H2>
 <P>There are still a couple of bugs listed in the BUGS file that need
@@ -55,20 +68,39 @@ that this might best be an interactive tool, something like a spelling checker,
 which would walk through a file looking for groups of comments, and present a
 proposed a reformatting to the user with a Y/N response request.</P>
 <P>
-<H2><A NAME="automated testing">Automated testing</A></H2>
-<P>An automated method for testing many combinations of parameter options 
-on a variety of test files would be very helpful.</P>
-<P>
 <H2><A NAME="documentation">Documentation</A></H2>
 <P>A FAQ or maybe COOKBOOK needs to be written, to explain some of the
-more subtle formatting issues.</P>
+more subtle formatting issues, and to give examples of different
+styles.</P>
+<P>The tokenizer needs extensive documentation before it can be released
+as a separate module.</P>
+<P>
+<H2><A NAME="html writer">HTML writer</A></H2>
+<P>The HTML writer does not colorize interpolated identifiers in here
+documents.  This will require the tokenizer outputting interpolation
+information for the here text, and some code to scan for identifiers.</P>
 <P>
 <H2><A NAME="tokenization issues">Tokenization issues</A></H2>
-<P>It would be nice to introduce some more token types, such as procedure
-calls, so that they can easily be given separate colors in html files.</P>
+<P>Token type 'M' (for Method) has been reserved for subroutine definition
+names.  It needs to be implementd; I've patched around this in the html
+writer for now.  I'm considering new token types for prototypes and
+attributes, to simplify parsing and formatting.</P>
 <P>There are some subtle issues with distinguishing block types that should
-be addressed to make the tokenizer more correct, even though
-they do not interfere with code beautification.</P>
+be addressed to make the tokenizer more correct, even though they do not
+interfere with code beautification.  For example, in most cases the type
+of a brace is known when it is encountered. But given this coding
+</P>
+<PRE>
+
+ sub something {
+     {
+        bla, bla
+     }
+     ..
+ }</PRE>
+<P>you have to examine the first few tokens of the interior set of to
+braces to see if it is a code block or anonymous hash reference.  This
+needs to be done.</P>
 <P>
 <H2><A NAME="modularization">Modularization</A></H2>
 <P>It is planned to release perltidy in modules, hopefully this year.

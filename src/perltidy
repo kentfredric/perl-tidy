@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.36 2001/08/29 04:52:55 perltidy Exp $
+    $Id: perltidy,v 1.37 2001/08/29 23:55:32 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -446,6 +446,7 @@ sub process_command_line {
       pass-version-line!
       look-for-autoloader!
       look-for-selfloader!
+      long-block-line-count=i
     );
 
     # The Perltidy::HtmlWriter will add its own options to the string
@@ -506,6 +507,7 @@ sub process_command_line {
       pass-version-line
       look-for-autoloader
       look-for-selfloader
+      long-block-line-count=12
     );
 
     #---------------------------------------------------------------
@@ -667,6 +669,7 @@ sub process_command_line {
         'nlsl'               => [qw(nolook-for-selfloader)],
         'w'                  => [qw(warning-output)],
         'nw'                 => [qw(nowarning-output)],
+        'lbl'                => [qw(long-block-line-count)],
 
         # 'mangle' originally deleted pod and comments, but to keep it
         # reversible, it no longer does because i have removed:
@@ -2604,6 +2607,7 @@ use vars qw{
   $last_last_nonblank_index_to_go
   $last_last_nonblank_type_to_go
   $last_last_nonblank_token_to_go
+  @line_count_at_depth
 
   $forced_breakpoint_count
   $forced_breakpoint_undo_count
@@ -2626,6 +2630,13 @@ use vars qw{
   $tabbing_disagreement_count
   $input_line_tabbing
   $last_line_leading_type
+
+  $last_last_line_leading_level      
+  $last_last_line_leading_type     
+  $last_line_leading_level        
+  $last_line_leading_block_type  
+  $last_line_leading_type       
+
   $last_nonblank_token
   $last_nonblank_type
   $last_last_nonblank_token
@@ -2824,7 +2835,13 @@ sub new {
     $tabbing_disagreement_count = 0;
     $in_tabbing_disagreement    = 0;
     $input_line_tabbing         = undef;
+
+    $last_last_line_leading_level     = 0; 
+    $last_last_line_leading_type     = "";
+    $last_line_leading_level       = 0; 
+    $last_line_leading_block_type  = "";
     $last_line_leading_type     = '#';
+
     $last_nonblank_token        = ';';
     $last_nonblank_type         = ';';
     $last_last_nonblank_token   = ';';
@@ -3730,6 +3747,11 @@ EOM
         $rOpts->{'maximum-line-length'} = 1000000;
     }
 
+    # make -lbl=0  equal to -lbl=infinite
+    if ( !$rOpts->{'long-block-line-count'} ) {
+        $rOpts->{'long-block-line-count'} = 1000000;
+    }
+
     # hashes used to simplify setting whitespace
     %tightness = (
         '{' => $rOpts->{'brace-tightness'},
@@ -4417,7 +4439,7 @@ sub print_line_of_tokens {
     #     /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
     # Examples:
     #   *VERSION = \'1.01';
-    #   ( $VERSION ) = '$Revision: 1.36 $ ' =~ /\$Revision:\s+([^\s]+)/;
+    #   ( $VERSION ) = '$Revision: 1.37 $ ' =~ /\$Revision:\s+([^\s]+)/;
     # We will pass such a line straight through unless -npvl is used
     my $is_VERSION_statement = 0;
 
@@ -5257,7 +5279,7 @@ sub correct_lp_indentation {
     # tries to patch things up once the actual opening paren locations
     # are known.
     my ( $ri_first, $ri_last ) = @_;
-    my $want_to_flush_vertical_aligner=0;
+    my $do_not_pad=0;
     
 =pod
     We will want to flush the aligner if we see a structure here, because
@@ -5294,8 +5316,9 @@ sub correct_lp_indentation {
                 # looking for indentation item for which we are aligning 
                 # with parens, braces, and brackets 
                 next unless ( $indentation->get_ALIGN_PAREN() );
-                if ($line == 0 && $line < $max_line && $i == $iend) {
-                    $want_to_flush_vertical_aligner = 1;
+
+                if ($line == 1 && $i == $ibeg) {
+                    $do_not_pad = 1;
                 }
 
                 # Ok, let's see what the error is and try to fix it
@@ -5403,7 +5426,7 @@ sub correct_lp_indentation {
             }
         }
     }
-    return $want_to_flush_vertical_aligner;
+    return $do_not_pad;
 }
 
 # flush is called to output any tokens in the pipeline, so that
@@ -5459,37 +5482,114 @@ sub output_line_to_go {
         {
             my $want_blank = 0;
 
-            if ( $tokens_to_go[$imin] =~ /^(unless|if|while|until)$/ ) {
+#            if ( $tokens_to_go[$imin] =~ /^(unless|if|while|until)$/ ) {
+#
+#                # We do not want to add a blank line above a short block.
+#                # If a line doesn't end in a '}', it's probably a long block
+#                $want_blank =    # long blocks only
+#                  ( $rOpts->{'blanks-before-blocks'} )
+#                  && ( '}' ne
+#                    terminal_type( \@types_to_go, \@block_type_to_go, $imin,
+#                        $imax )
+#                    && (
+#                        $file_writer_object->get_consecutive_nonblank_lines() >=
+#                        5 ) );
+#            }
+#
+#            elsif ( $tokens_to_go[$imin] =~ /^(sub\s)/ ) {
+#
+#                # no blank lines before sub declarations and one-liners
+#                $want_blank =
+#                  ( $rOpts->{'blanks-before-subs'} )
+#                  && (
+#                    terminal_type( \@types_to_go, \@block_type_to_go, $imin,
+#                        $imax ) !~ /^[\;\}]$/ );
+#            }
 
-                # We do not want to add a blank line above a short block.
-                # If a line doesn't end in a '}', it's probably a long block
-                $want_blank =    # long blocks only
-                  ( $rOpts->{'blanks-before-blocks'} )
-                  && ( '}' ne
-                    terminal_type( \@types_to_go, \@block_type_to_go, $imin,
-                        $imax )
-                    && (
-                        $file_writer_object->get_consecutive_nonblank_lines() >=
-                        5 ) );
-            }
-            elsif ( $tokens_to_go[$imin] =~ /^(sub\s)/ ) {
+#            else {
+#                $want_blank =
+#                  ( $rOpts->{'blanks-before-blocks'} )
+#                  && ( ( $tokens_to_go[$imin] =~ /^(package\s)/ )
+#                    || ( ( $file_writer_object->get_consecutive_nonblank_lines()
+#                        >= 5 )
+#                        && ( $tokens_to_go[$imin] =~
+#                            /^(END|BEGIN|for|foreach)$/ ) ) );
+#            }
 
-                # no blank lines before sub declarations and one-liners
+            # blank lines before subs except declarations and one-liners
+            if ( $tokens_to_go[$imin] =~ /^(sub\s)/ ) {
                 $want_blank =
                   ( $rOpts->{'blanks-before-subs'} )
                   && (
                     terminal_type( \@types_to_go, \@block_type_to_go, $imin,
                         $imax ) !~ /^[\;\}]$/ );
             }
-            else {
-                $want_blank =
-                  ( $rOpts->{'blanks-before-blocks'} )
-                  && ( ( $tokens_to_go[$imin] =~ /^(package\s)/ )
-                    || ( ( $file_writer_object->get_consecutive_nonblank_lines()
-                        >= 5 )
-                        && ( $tokens_to_go[$imin] =~
-                            /^(END|BEGIN|for|foreach)$/ ) ) );
+
+            # break before all packages
+            elsif ( $tokens_to_go[$imin] =~ /^(package\s)/ ) {
+                $want_blank = ( $rOpts->{'blanks-before-subs'} );
             }
+
+            # break before certain key blocks except one-liners
+            if ( $tokens_to_go[$imin] =~ /^(BEGIN|END)$/ ) {
+                $want_blank =
+                  ( $rOpts->{'blanks-before-subs'} )
+                  && (
+                    terminal_type( \@types_to_go, \@block_type_to_go, $imin,
+                        $imax ) !~ /^[\}]$/ );
+            }
+
+            #elsif ( $tokens_to_go[$imin] =~ /^(BEGIN|END)$/ ) {
+            #    $want_blank =
+            #      $rOpts->{'blanks-before-subs'}
+            #      && $file_writer_object->get_consecutive_nonblank_lines() >= 4;
+            #}
+
+
+            # break before certain block types if we haven't had a break for a while
+            elsif ( $tokens_to_go[$imin] =~ /^(unless|if|while|until|for|foreach)$/
+                && $last_line_leading_level > 0 )
+            {
+                my $lines_at_depth =
+                  $file_writer_object->get_output_line_number() -
+                  $line_count_at_depth[$last_line_leading_level] - 2;
+
+                $want_blank =
+                  $rOpts->{'blanks-before-blocks'}
+                  && $lines_at_depth > $rOpts->{'long-block-line-count'}
+                  && $file_writer_object->get_consecutive_nonblank_lines() >=
+                  $rOpts->{'long-block-line-count'}
+                  && (
+                    terminal_type( \@types_to_go, \@block_type_to_go, $imin,
+                        $imax ) !~ /^[\}]$/ );
+            }
+
+            # break after certain long CODE blocks
+            # DEACTIVATED FOR NOW - (erictest.pl)
+#            elsif ( $last_line_leading_type eq '}'
+#              && $last_line_leading_block_type =~
+#              /^(sub|if|else|elsif|while|until|unless|BEGIN|END|for|foreach)$/
+#              && $last_line_leading_level < $last_last_line_leading_level
+#              && $levels_to_go[$imin] == $last_line_leading_level
+#              && $tokens_to_go[$imin] !~ /^(else|elsif)$/
+#              && $last_last_line_leading_level >= 0 )
+#            {
+#                my $lines_at_depth =
+#                  $file_writer_object->get_output_line_number() -
+#                  $line_count_at_depth[$last_last_line_leading_level] - 2;
+#
+#                if ( $lines_at_depth > $rOpts->{'long-block-line-count'}
+#                    && (
+#                        $file_writer_object->get_consecutive_nonblank_lines() >=
+#                        2 ) )
+#                {
+#
+#                    warning(
+#"BUBBA put break here! $lines_at_depth $last_line_leading_block_type\n"
+#                    );
+#                    $want_blank = 1;
+#                }
+#            }
 
             if ($want_blank) {
 
@@ -5498,7 +5598,18 @@ sub output_line_to_go {
                 $file_writer_object->write_blank_code_line();
             }
         }
-        $last_line_leading_type = $types_to_go[$imin];
+
+        $last_last_line_leading_level      = $last_line_leading_level;
+        $last_last_line_leading_type       = $last_line_leading_type;
+        $last_line_leading_level           = $levels_to_go[$imin];
+        $last_line_leading_block_type      = $block_type_to_go[$imin];
+        $last_line_leading_type            = $types_to_go[$imin];
+        if ($last_line_leading_level > $last_last_line_leading_level
+          && $last_line_leading_level > 0) 
+        {
+              $line_count_at_depth[$last_line_leading_level]=
+                $file_writer_object->get_output_line_number();
+        }
 
         if ( $FORMATTER_DEBUG_FLAG{FLUSH} ) {
             my ( $package, $file, $line ) = caller;
@@ -5546,14 +5657,13 @@ sub output_line_to_go {
         }
 
         # do corrector step if -lp option is used
-        my $want_to_flush_vertical_aligner=0;
+        my $do_not_pad=0;
         if ( $rOpts->{'line-up-parentheses'} ) {
-            $want_to_flush_vertical_aligner=
+            $do_not_pad=
                 correct_lp_indentation( $ri_first, $ri_last );
         }
-
         send_lines_to_vertical_aligner( $ri_first, $ri_last, 
-          $want_to_flush_vertical_aligner );
+          $do_not_pad );
 
     }
     prepare_for_new_input_lines();
@@ -5562,11 +5672,7 @@ sub output_line_to_go {
 sub send_lines_to_vertical_aligner {
 
     my ( $ri_first, $ri_last,
-          $want_to_flush_vertical_aligner ) = @_;
-
-    if ($want_to_flush_vertical_aligner) {
-         Perltidy::VerticalAligner::flush();
-    }
+          $do_not_pad ) = @_;
 
     set_vertical_alignment_markers( $ri_first, $ri_last );
 
@@ -5663,7 +5769,8 @@ sub send_lines_to_vertical_aligner {
         # send this new line down the pipe
         Perltidy::VerticalAligner::append_line( $lev, $indentation, \@fields,
             \@tokens, \@patterns, $forced_breakpoint_to_go[$iend],
-            $outdent_long_lines, $is_semicolon_terminated );
+            $outdent_long_lines, $is_semicolon_terminated, $do_not_pad );
+        $do_not_pad = 0;
     }
 }
 
@@ -6102,6 +6209,10 @@ sub set_bond_strengths {
     # each line ending in a ':', we can add a small number to the bond
     # strength of each ':'
     my $colon_bias = 0;
+    my $amp_bias = 0;
+    my $bar_bias = 0;
+    my $and_bias = 0;
+    my $or_bias = 0;
     my $code_bias  = -.01;
 
     # preliminary loop to compute bond strengths
@@ -6230,6 +6341,24 @@ sub set_bond_strengths {
         # in long ?: conditionals, bias toward just one set per line (colon.t)
         if ( $type eq ':' ) {
             $bond_str   += $colon_bias;
+            $colon_bias += 0.0001;
+        }
+
+        # prefer just one of these per line:
+        elsif ( $type eq '&&' ) {
+            $bond_str   += $amp_bias;
+            $colon_bias += 0.0001;
+        }
+        elsif ( $type eq '||' ) {
+            $bond_str   += $bar_bias;
+            $colon_bias += 0.0001;
+        }
+        elsif ($type eq 'k' && $token eq 'and') {
+            $bond_str   += $and_bias;
+            $colon_bias += 0.0001;
+        }
+        elsif ($type eq 'k' && $token eq 'or') {
+            $bond_str   += $or_bias;
             $colon_bias += 0.0001;
         }
 
@@ -7029,6 +7158,8 @@ sub set_list_breakpoints {
         return;
     }
 
+    my $opening_token = $tokens_to_go[$i_opening_paren];
+
     #---------------------------------------------------------------
     # Compound List Rule 2: 
     # Break at every comma for a list containing multi-line items.
@@ -7244,25 +7375,30 @@ sub set_list_breakpoints {
     # too bad.  (steve.t)
     my $too_long = $packed_columns > $columns;
 
-    if ( defined($i_opening_paren) && $i_opening_paren > 0 ) {
-        if ( $tokens_to_go[$i_opening_paren] eq '(' ) {
+    #if ( defined($i_opening_paren) && $i_opening_paren > 0 ) {
+        #if ( $tokens_to_go[$i_opening_paren] eq '(' ) {
+    if ( $i_opening_paren > 0 && $opening_token eq '(') {
             my $i_opening_minus = $i_opening_paren - 1;
             $too_long =
               total_line_length( $i_opening_minus, $i_effective_last_comma + 1 )
               > $rOpts->{'maximum-line-length'};
-        }
     }
 
     # EXPERIMENTAL: for -lp, assume that we can get back any needed spaces
     # by outdenting
-    if ( $too_long && defined($i_opening_paren) ) {
+    #if ( $too_long && defined($i_opening_paren) ) {
+    if ( $too_long ) {
         my $available_spaces = get_AVAILABLE_SPACES_to_go($i_opening_paren);
         if ( $available_spaces > 0 ) {
             $too_long = ( $packed_columns > ( $columns + $available_spaces ) );
         }
     }
 
-    my $must_format = $too_long && $in_hierarchical_list;
+    # Always break lists contained in '[' and '{' if too long for 1 line,
+    # and always break lists which are too long and part of a more complex
+    # structure.
+    my $must_format = ( $too_long 
+      && ($in_hierarchical_list || $opening_token ne '(') );
 
 #print "LISTX: next=$next_nonblank_type  avail cols=$columns packed=$packed_columns must format = $must_format\n";
 
@@ -8640,7 +8776,8 @@ The log file warns the user if there are any such tabs.
         $level,              $indentation,
         $rfields,            $rtokens,
         $rpatterns,          $is_forced_break,
-        $outdent_long_lines, $is_terminal_statement
+        $outdent_long_lines, $is_terminal_statement,
+        $do_not_pad
       )
       = @_;
 
@@ -8656,6 +8793,9 @@ The log file warns the user if there are any such tabs.
         print
 "APPEND0: entering lines=$maximum_line_index new #fields= $jmax, leading_count=$leading_space_count last_cmt=$last_comment_column force=$is_forced_break\n";
     }
+
+    # patch until new aligner is finished
+    if ($do_not_pad) { flush() }
 
     $last_lines_since_last_side_comment = $lines_since_last_side_comment;
 
@@ -15704,14 +15844,17 @@ BEGIN {
       (1) x scalar(@value_requestor_type);
 
     # For simple syntax checking, it is nice to have a list of operators which
-    # will really be unhappy if followed by something like '>'. This is almost
-    # all of the above except for uncertain items like 'U'
+    # will really be unhappy if not followed by a term.  This includes most
+    # of the above... 
     %really_want_term = %expecting_term_types;
-    undef $really_want_term{'U'};
-    undef $really_want_term{'F'};  # not sure; check all cases
-    undef $really_want_term{'Y'};  # not sure; check all cases
 
-    #These keywords are handled specially in the tokenizer code:
+    # with these exceptions...
+    undef $really_want_term{'U'};  # user sub, depends on prototype
+    undef $really_want_term{'F'};  # file test works on $_ if no following term
+    undef $really_want_term{'Y'};  # indirect object, too risky to check syntax;
+                                   # let perl do it
+
+    # These keywords are handled specially in the tokenizer code:
     my @special_keywords = qw(
       q
       qq

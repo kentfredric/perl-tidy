@@ -72,8 +72,8 @@ perlstyle(1).  Perltidy never changes the input file.</P>
   perltidy *.pl</PRE>
 <P>Execute perltidy on all .pl files in the current directory with the
 default options.  The output will be in files with an appended <EM>.tdy</EM>
-extension.  For any file with an error, there will be files with extensions
-<EM>.ERR</EM> and <EM>.LOG</EM>.</P>
+extension.  For any file with an error, there will be a file with extension
+<EM>.ERR</EM>.</P>
 <PRE>
   perltidy -gnu somefile.pl</PRE>
 <P>Execute perltidy on file <EM>somefile.pl</EM> with a style which approximates the
@@ -134,10 +134,35 @@ redirected to the standard output, the output will go to <EM>filename.tdy</EM>.
 <P></P>
 <DT><STRONG><A NAME="item_%2Dst%2C_%2D%2Dstandard%2Doutput"><STRONG>-st</STRONG>,    <STRONG>--standard-output</STRONG></A></STRONG><BR>
 <DD>
-Sends the output script to the standard output.  For example,
+Perltidy must be able to operate on an arbitrarily large number of files
+in a single run, with each output being directed to a different output
+file.  Obviously this would conflict with outputting to the single
+standard output device, so a special flag, <STRONG>-st</STRONG>, is required to
+request outputting to the standard output.  For example,
 <PRE>
   perltidy somefile.pl -st &gt;somefile.new.pl</PRE>
-<P>This option may only be used if there is a single input file.</P>
+<P>This option may only be used if there is just a single input file.  When
+this option is used, perltidy will have to create a temporary copy of
+the output file, perltidy.TMPO, to feed to perl for syntax checking,
+unless allow syntax checking is disabled.  This file will be deleted
+when the job finishes.  The default is <STRONG>-nst</STRONG> or <STRONG>-nostandard-output</STRONG>.</P>
+<P></P>
+<DT><STRONG><A NAME="item_%2Dse%2C_%2D%2Dstandard%2Derror%2Doutput"><STRONG>-se</STRONG>,    <STRONG>--standard-error-output</STRONG></A></STRONG><BR>
+<DD>
+If perltidy detects an error when processing file <EM>somefile.pl</EM>, its
+default behavior is to write error messages to file <EM>somefile.pl.ERR</EM>.
+Use <STRONG>-se</STRONG> to cause all error meassages to be sent to the standard error
+output stream instead.  This directive may be negated with <STRONG>-nse</STRONG>. 
+Thus, you may place <STRONG>-se</STRONG> in a <EM>.perltidyrc</EM> and override it
+when desired with <STRONG>-nse</STRONG> on the command line.
+<P></P>
+<DT><STRONG><A NAME="item_%2Dw%2C_%2D%2Dwarning%2Doutput"><STRONG>-w</STRONG>,    <STRONG>--warning-output</STRONG></A></STRONG><BR>
+<DD>
+Setting <STRONG>-w</STRONG> causes perltidy to include any non-critical warning
+messages be reported as errors.  These include messages
+about possible pod problems, possibly bad starting indentation level,
+and cautions about indirect object usage.  The default, <STRONG>-nw</STRONG> or
+<STRONG>--nowarning-output</STRONG>, is not to include these warnings.
 <P></P>
 <DT><STRONG><A NAME="item_%2Dq%2C_%2D%2Dquiet"><STRONG>-q</STRONG>,    <STRONG>--quiet</STRONG></A></STRONG><BR>
 <DD>
@@ -165,8 +190,8 @@ also deactivated by the <STRONG>--quiet</STRONG> flag, discussed above.
 <DT><STRONG><A NAME="item_%2Dlog%2C_%2D%2Dlogfile"><STRONG>-log</STRONG>,    <STRONG>--logfile</STRONG></A></STRONG><BR>
 <DD>
 Save the <EM>.LOG</EM> file, which has many useful diagnostics.  Perltidy always
-creates a <EM>.LOG</EM> file, but by default it is deleted if there are no
-errors.  Setting the <STRONG>-log</STRONG> flag forces the log file to be saved.
+creates a <EM>.LOG</EM> file, but by default it is deleted unless a program bug is
+suspected.  Setting the <STRONG>-log</STRONG> flag forces the log file to be saved.
 <P></P>
 <DT><STRONG><A NAME="item_%2Dg%3Dn%2C_%2D%2Dlogfile%2Dgap%3Dn"><STRONG>-g=n</STRONG>, <STRONG>--logfile-gap=n</STRONG></A></STRONG><BR>
 <DD>
@@ -196,7 +221,8 @@ in your home directory.
 <DD>
 Write a list of all options used to the <EM>.LOG</EM> file.  This is useful for
 debugging command files.  In the list, the status of on/off
-switches is indicated by a 0 for off and a 1 for on.
+switches is indicated by a 0 for off and a 1 for on.  Please see
+<STRONG>--dump-options</STRONG> for a simpler way to do this.
 <P></P>
 <DT><STRONG><A NAME="item_%2Df%2C_%2D%2Dforce%2Dread%2Dbinary"><STRONG>-f</STRONG>,   <STRONG>--force-read-binary</STRONG></A></STRONG><BR>
 <DD>
@@ -527,14 +553,37 @@ such blank lines from being introduced.
 <P></P>
 <DT><STRONG><A NAME="item_%2Dbbs%2C_%2D%2Dblanks%2Dbefore%2Dsubs"><STRONG>-bbs</STRONG>,  <STRONG>--blanks-before-subs</STRONG></A></STRONG><BR>
 <DD>
-A blank line will be introduced before a sub definition.  This is the
-default.  This is negated with <STRONG>-nbbs</STRONG> or  <STRONG>--noblanks-before-subs</STRONG>.
+A blank line will be introduced before a <STRONG>sub</STRONG> definition, unless it is a
+one-liner or preceded by a comment.  A blank line will also be introduced
+before a <STRONG>package</STRONG> statement and a <STRONG>BEGIN</STRONG> and <STRONG>END</STRONG> block.  This is the
+default.  The intention is to help display the structure of a program by
+setting off certain key sections of code.  This is negated with <STRONG>-nbbs</STRONG> or
+<STRONG>--noblanks-before-subs</STRONG>.
 <P></P>
 <DT><STRONG><A NAME="item_%2Dbbb%2C_%2D%2Dblanks%2Dbefore%2Dblocks"><STRONG>-bbb</STRONG>,  <STRONG>--blanks-before-blocks</STRONG></A></STRONG><BR>
 <DD>
-A blank line may be introduced before blocks of coding delimited by
-<STRONG>for</STRONG>, <STRONG>foreach</STRONG>, <STRONG>while</STRONG>, <STRONG>until</STRONG>, and <STRONG>if</STRONG>.  This is the default.
-This is negated with <STRONG>-nbbb</STRONG> or  <STRONG>--noblanks-before-blocks</STRONG>.
+A blank line will be introduced before blocks of coding delimited by
+<STRONG>for</STRONG>, <STRONG>foreach</STRONG>, <STRONG>while</STRONG>, <STRONG>until</STRONG>, and <STRONG>if</STRONG>, <STRONG>unless</STRONG>, in the following
+circumstances:
+<UL>
+<LI>
+The block is not preceded by a comment.
+<P></P>
+<LI>
+The block is not a one-line block.
+<P></P>
+<LI>
+The number of consecutive non-blank lines at the current indentation depth is at least <STRONG>-lbl</STRONG>
+(see next section).
+<P></P></UL>
+<P>This is the default.  The intention of this option is to introduce
+some space within dense coding.
+This is negated with <STRONG>-nbbb</STRONG> or  <STRONG>--noblanks-before-blocks</STRONG>.</P>
+<DT><STRONG><A NAME="item_%2Dlbl%3Dn_%2D%2Dlong%2Dblock%2Dline%2Dcount%3Dn"><STRONG>-lbl=n</STRONG> <STRONG>--long-block-line-count=n</STRONG></A></STRONG><BR>
+<DD>
+This controls how often perltidy is allowed to add blank lines before 
+certain block types (see previous section).  The default is 12.  Entering
+a value of <STRONG>0</STRONG> is equivalent to entering a very large number.
 <P></P>
 <DT><STRONG><A NAME="item_%2Dmbl%3Dn_%2D%2Dmaximum%2Dconsecutive%2Dblank%2Dl"><STRONG>-mbl=n</STRONG> <STRONG>--maximum-consecutive-blank-lines=n</STRONG></A></STRONG><BR>
 <DD>
@@ -707,7 +756,8 @@ work, and are the defaults.</P>
 <P></P>
 <DT><STRONG><A NAME="item_Using_a_%2Eperltidyrc_command_file">Using a <EM>.perltidyrc</EM> command file</A></STRONG><BR>
 <DD>
-An optional command-line file may be used to avoid typing commonly-used
+If you use perltidy frequently, you probably won't be happy until you
+create a <EM>.perltidyrc</EM> file to avoid typing commonly-used
 parameters.  Perltidy will first look in your current directory for a
 command file named <EM>.perltidyrc</EM>, and if it does not find one, it will
 look in your home directory.  If it does not find one there, it will
@@ -723,6 +773,8 @@ after a '#' is ignored to the end of a line.</P>
 <PRE>
   # This is a simple of a .perltidyrc configuration file
   # This implements a highly spaced style
+  -se    # errors to standard error output
+  -w     # show all warnings
   -bl    # braces on new lines
   -pt=0  # parens not tight at all
   -bt=0  # braces not tight
@@ -958,11 +1010,12 @@ in any way.  And, of course, it does not modify pod documents.
 <DL>
 <DT><STRONG><A NAME="item_Special_files_when_standard_input_or_standard_outp">Special files when standard input or standard output are used</A></STRONG><BR>
 <DD>
-When standard input is used, the log file, if saved, is <EM>perltidy.LOG</EM>, and
-any error file is <EM>perltidy.ERR</EM>.  These are saved in the current working
-directory.  If syntax checking is used, a temporary copy of the input file will
-be created in the current working directory called <EM>perltidy.TMPI</EM>, but it
-will be removed when perltidy finishes.
+When standard input is used, the log file, if saved, is <EM>perltidy.LOG</EM>,
+and any errors are written to <EM>perltidy.ERR</EM> unless the <STRONG>-se</STRONG> flag is
+set.  These are saved in the current working directory.  If syntax
+checking is used, a temporary copy of the input file will be created in
+the current working directory called <EM>perltidy.TMPI</EM>, but it will be
+removed when perltidy finishes.
 <P>When standard output and syntax checking are used, a temporary copy of the
 output file will be created in the current working directory called
 <EM>perltidy.TMPO</EM>.  It will be removed when perltidy finishes.</P>

@@ -1,5 +1,17 @@
 =head1 Frequently Asked Questions
 
+=head1 I get this message when I try to run perltidy, but my script is a valid
+program.  
+skipping file: somefile.pl: Non-text (override with -f)
+What's wrong?
+
+How reliable is perltidy
+
+Why is is so slow?
+
+perltidy perltidy: time   2m10.451s
+
+
 =head2 Incomplete
 This is a placeholder file for a future FAQ on perltidy
 

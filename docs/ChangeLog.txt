@@ -3,7 +3,191 @@ Perltidy Change Log
      have hit a bug, unusual behavior, annoyance, or have a suggested
      improvement, please send a note to perltidy at users.sourceforge.net.  
 
-     -Made modifications to parse subroutine attributes (A Perl 5.6 feature).  
+     -html updates:
+         - sub definition names are now specially colored, red by default.  
+           The letter 'm' is used to identify them.
+         - keyword 'sub' now has color of other keywords.
+         - restored html keyword color to __END__ and __DATA__, which was 
+           accidentally removed in the previous version.
+
+     -A new -se (--standard-error-output) flag has been implemented and
+     documented which causes all errors to be written to standard output
+     instead of a .ERR file.
+
+     -A new -w (--warning-output) flag has been implemented and documented
+      which causes perltidy to output certain non-critical messages to the
+      error output file, .ERR.  These include complaints about pod usage,
+      for example.  The default is to not include these.
+
+      NOTE: This replaces the undocumented -w=0 or --warning-level flag
+      which was tentatively introduced in the previous version to avoid some
+      unwanted messages.  The new default is the same as the old -w=0, so
+      that is no longer needed. 
+
+      -Improved syntax checking and corrected tokenization of functions such
+      as rand, srand, sqrt, ...  These can accept either an operator or a term
+      to their right.  This has been corrected.
+ 
+     -Corrected tokenization of semicolon: testing of the previous update showed 
+     that the semicolon in the following statement was being mis-tokenized.  That
+     did no harm, other than adding an extra blank space, but has been corrected.
+
+              for (sort {strcoll($a,$b);} keys %investments) {
+                 ...
+              }
+
+     -New syntax check: after wasting 5 minutes trying to resolve a syntax
+      error in which I had an extra terminal ';' in a complex for (;;) statement, 
+      I spent a few more minutes adding a check for this in perltidy.  
+
+     -The behavior of --break-before-subs (-bbs) and --break-before-blocks
+     (-bbb) has been modified slightly, hopefully for the better.  Also, a
+     new control parameter, --long-block-line-count=n (-lbl=n) has been
+     introduced to give more control on -bbb.  This was previously a
+     hardwired value.  These are documented in the man page.  The reason for
+     the change is to reduce the number of blank lines that perltidy
+     introduces, and make it less erratic.  I did a lot of experimenting
+     with different schemes for introducing blank lines before code blocks,
+     and decided that there is no really sane way to do it.  I think the new
+     scheme is an improvement, though.  The idea is to avoid long sections
+     without any breaks at all in that code you inherited from Bubba.
+     Thanks to Erik Thaysen for bringing this to my attention.
+
+     -The .LOG file is seldom needed, and I get tired of deleting them, so
+      they will now only be automatically saved if perltidy thinks that it
+      made an error, which is almost never.  You can still force the logfile
+      to be saved with -log or -g.
+
+     -Improved method for computing number of columns in a table.  The old
+     method always tried for an even number.  The new method allows odd
+     numbers when it is obvious that a list is not a hash initialization
+     list.
+
+       old: my (
+                 $name,       $xsargs, $parobjs, $optypes,
+                 $hasp2child, $pmcode, $hdrcode, $inplacecode,
+                 $globalnew,  $callcopy
+              )
+              = @_;
+
+       new: my (
+                 $name,   $xsargs,  $parobjs,     $optypes,   $hasp2child,
+                 $pmcode, $hdrcode, $inplacecode, $globalnew, $callcopy
+              )
+              = @_;
+
+     -I fiddled with the list threshold adjustment, and some small lists
+     look better now.  Here is the change for one of the lists in test file
+     'sparse.t':
+     old:
+       %units =
+         ("in", "in", "pt", "pt", "pc", "pi", "mm", "mm", "cm", "cm", "\\hsize", "%",
+           "\\vsize", "%", "\\textwidth", "%", "\\textheight", "%");
+
+     new:
+       %units = (
+                  "in",      "in", "pt",          "pt", "pc",           "pi",
+                  "mm",      "mm", "cm",          "cm", "\\hsize",      "%",
+                  "\\vsize", "%",  "\\textwidth", "%",  "\\textheight", "%"
+                  );
+
+     -Improved -lp formatting at '=' sign.  A break was always being added after
+     the '=' sign in a statement such as this, (to be sure there was enough room
+     for the parameters):
+
+     old: my $fee =
+            CalcReserveFee(
+                            $env,          $borrnum,
+                            $biblionumber, $constraint,
+                            $bibitems
+                            );
+ 
+     The updated version doesn't do this unless the space is really needed:
+
+     new: my $fee = CalcReserveFee(
+                                   $env,          $borrnum,
+                                   $biblionumber, $constraint,
+                                   $bibitems
+                                   );
+
+     -I discovered a mis-tokenization of $#-.  Some experimenting with Perl
+     indicated that it allows just these non-alphanumeric '$#' array maximum
+     index varaibles: $#: $#- $#+ so I updated the parser accordingly.  You
+     can use the @; array, for example, but you cannot get at its maximum
+     index with $#;  .  Now we can parse things like this correctly:
+               $#=+$#:+ +$#-+$#++$#;#:)
+
+     -Fixed a rare formatting problem with -lp (and -gnu) which caused
+     excessive indentation.
+
+     -Many additional syntax checks have been added.
+
+     -Revised method for testing here-doc target strings; the following
+     was causing trouble with a regex test because of the '*' characters:
+      print <<"*EOF*";
+      bla bla
+      *EOF*
+     Perl seems to allow almost anything to be a here doc target, so an
+     exact string comparison is now used.
+
+     -Made update to allow underscores in binary numbers, like '0b1100_0000'.
+
+     -Corrected problem with scanning certain module names; a blank space was 
+     being inserted after 'warnings' in the following:
+        use warnings::register;
+     The problem was that warnings (and a couple of other key modules) were 
+     being tokenized as keywords.  They should have just been identifiers.
+
+     -Corrected tokenization of indirect objects after sort, system, and exec,
+     after testing produced an incorrect error message for the following
+     line of code:
+        print sort $sortsubref @list;
+
+     -Corrected minor problem where a line after a format had unwanted
+     extra continuation indentation.  
+
+     -Update for -lp (and -gnu) to not align the leading '=' of a list
+     with a previous '=', since this interferes with alignment of parameters.
+
+      old:  my $hireDay = new Date;
+            my $self    = {
+                         firstName => undef,
+                         lastName  => undef,
+                         hireDay   => $hireDay
+                         };
+    
+      new:  my $hireDay = new Date;
+            my $self = {
+                         firstName => undef,
+                         lastName  => undef,
+                         hireDay   => $hireDay
+                         };
+
+     -Modifications made to display tables more compactly when possible,
+      without adding lines. For example,
+      old:
+                    '1', "I", '2', "II", '3', "III", '4', "IV",
+                    '5', "V", '6', "VI", '7', "VII", '8', "VIII",
+                    '9', "IX"
+      new:
+                    '1', "I",   '2', "II",   '3', "III",
+                    '4', "IV",  '5', "V",    '6', "VI",
+                    '7', "VII", '8', "VIII", '9', "IX"
+
+     -Corrected minor bug in which -pt=2 did not keep the right paren tight
+     around a '++' or '--' token, like this:
+
+                for ($i = 0 ; $i < length $key ; $i++ )
+
+     The formatting for this should be, and now is: 
+
+                for ($i = 0 ; $i < length $key ; $i++)
+
+     Thanks to Erik Thaysen for noting this.
+
+     -Discovered a new bug involving during testing!  See BUGS.html.  
+
+     -Finally fixed parsing of subroutine attributes (A Perl 5.6 feature).
      However, the attributes and prototypes must still be on the same line
      as the sub name.
 
@@ -192,7 +376,7 @@ Perltidy Change Log
   2001 06 08
 
      -fixed problem with parsing command parameters containing quoted
-     strings in .perltidyrc files. (Reported by Roger Esper Llima 2001-06-07).
+     strings in .perltidyrc files. (Reported by Roger Espel Llima 2001-06-07).
 
      -added two command line flags, --want-break-after and 
      --want-break-before, which allow changing whether perltidy
@@ -203,10 +387,10 @@ Perltidy Change Log
      If perltidy does not find a .perltidyrc command line file in
      the current directory, nor in the home directory, it now looks
      for '/usr/local/etc/perltidyrc' and then for '/etc/perltidyrc'.
-     (Suggested by Roger Esper Llima 2001-05-31).
+     (Suggested by Roger Espel Llima 2001-05-31).
 
      -fixed problem in which spaces were trimmed from lines of a multi-line
-     quote. (Reported by Roger Esper Llima 2001-05-30).  This is an 
+     quote. (Reported by Roger Espel Llima 2001-05-30).  This is an 
      uncommon situation, but serious, because it could conceivably change
      the proper function of a script.
 
