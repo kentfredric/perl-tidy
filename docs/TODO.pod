@@ -13,23 +13,16 @@ There are many opportunities for improving vertical alignment.
 An indentation level should be associated with ?: statements.
 This will make nested ?: statements more readable.
 
-=head2 Fix numerous little formatting issues
+=head2 Recursive file processing
 
-There is, and always will be, a large number of other relatively minor
-formatting issues that need to be addressed.
-
-=head2 XML Output
-
-A -xml option would allow the creation of simple utilities to reliably
-manipulate perl code.
+A -r flag might be nice.
 
 =head2 Documentation
 
 A FAQ is needed to explain some of the more subtle formatting
 issues, and to give examples of different styles.
 
-The tokenizer needs extensive documentation before it can be released as
-a separate module.
+The -formatter callback object documentation is incomplete.
 
 =head2 HTML writer
 

@@ -66,6 +66,10 @@ to precisely control the formatting details.
 
 <li> <a href="BUGS.html">Open BUGS</a>.
 
+<li> The 
+<a href="Tidy.html">Perl::Tidy man
+page</a> discusses how to use the Perl::Tidy module.
+
 <li>The license is the <a href="COPYING">GNU General Public License</a>
 
 </ul>
@@ -83,18 +87,17 @@ tested on Unix, Windows, VMS and MacPerl.
 
 <li>Please check the <a href="INSTALL.html">Installation Notes</a>
 
-<li>Download <a href="http://prdownloads.sourceforge.net/perltidy/Perl-Tidy-20021130.tar.gz">
+<li>Download <a href="http://prdownloads.sourceforge.net/perltidy/Perl-Tidy-20030726.tar.gz">
 The latest release (.tgz, Unix-style line endings)</a>
 
-<li>Download <a href="http://prdownloads.sourceforge.net/perltidy/Perl-Tidy-20021130.zip">
+<li>Download <a href="http://prdownloads.sourceforge.net/perltidy/Perl-Tidy-20030726.zip">
 The latest release (.zip, Windows-style line endings)</a>
 
 <li>Download <a href="http://nomis80.org/perltidy/">
 rpm's courtesy of Simon Perreault.</a>
 
-<li>Download <a href="http://prdownloads.sourceforge.net/perltidy/perltidy_20021130-1_all.deb">
-The latest release as a .deb Debian Linux package</a>, courtesy of Aubin Paul and tested on stable (Woody) and
-Unstable (Sid).
+<li>Download <a href="http://prdownloads.sourceforge.net/perltidy/perltidy_20030726-1_all.deb">
+The latest release as a .deb Debian Linux package</a>
 
 <li> If these links are broken, 
 go 

@@ -31,6 +31,8 @@ DOWNLOAD
 
     *   A zip file, .zip, with Windows-style <cr><lf> line endings.
 
+    In addition, the web site has links to debian and RPM packages.
+
 INSTALLATION
     For most standard installations, the standard Makefile.PL method should
     work:

@@ -415,6 +415,18 @@ useful when perltidy is merely being used to help find a brace error in
 a large script).
 <P>Setting this flag is equivalent to setting <STRONG>--freeze-newlines</STRONG> and
 <STRONG>--freeze-whitespace</STRONG>.</P>
+<P></P>
+<DT><STRONG><A NAME="item_%2Dple%2C_%2D%2Dpreserve%2Dline%2Dendings"><STRONG>-ple</STRONG>,  <STRONG>--preserve-line-endings</STRONG></A></STRONG><BR>
+<DD>
+This flag causes perltidy to retain the original dos or unix line separator
+characters of a script when it is processed under dos or unix.  (Normally,
+perltidy writes files with the line separator character of the host machine,
+and the original line separator characters are lost).  This might be
+useful, for example, if a dos script is processed on a unix machine and the
+output then sent back to the dos machine, since it would avoid a dos2unix and
+unix2dos operation.  The flag may not be useful for other operating systems.
+<P>The logic for this option works on a line-by-line basis.  Thus, files
+with mixed unix/dos line endings will remain mixed.</P>
 <P></P></DL>
 <P>
 <H2><A NAME="code indentation control">Code Indentation Control</A></H2>
@@ -466,7 +478,8 @@ hash.  With this option, the above list would become:</P>
                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
     );</PRE>
 <P>If the available line length (see <STRONG>-l=n</STRONG> ) does not permit this much 
-space, perltidy will use less.</P>
+space, perltidy will use less.   For alternate placement of the
+closing paren, see the next section.</P>
 <P>This option has no effect on code BLOCKS, such as if/then/else blocks,
 which always use whatever is specified with <STRONG>-i=n</STRONG>.  Also, the
 existence of line breaks and/or block comments between the opening and
@@ -481,17 +494,47 @@ perltidy to choose newlines will conflict with <STRONG>-lp</STRONG> and will cau
 the careful coordination of an arbitrary number of break points in
 hierarchical lists, and these flags may prevent that.</P>
 <P></P>
+<DT><STRONG><A NAME="item_%2Dcti%3Dn%2C_%2D%2Dclosing%2Dtoken%2Dindentation"><STRONG>-cti=n</STRONG>, <STRONG>--closing-token-indentation</STRONG></A></STRONG><BR>
+<DD>
+The <STRONG>-cti=n</STRONG> flag controls the indentation of a line beginning with 
+a <CODE>)</CODE>, <CODE>]</CODE>, or a non-block <CODE>}</CODE>.  Such a line receives:
+<PRE>
+ -cti = 0 no extra indentation (default)
+ -cti = 1 extra indentation such that the closing token
+        aligns with its opening token.
+ -cti = 2 one extra indentation level if the line looks like:
+        );  or  ];  or  };</PRE>
+<P>The flags <STRONG>-cti=1</STRONG> and <STRONG>-cti=2</STRONG> work well with the <STRONG>-lp</STRONG> flag (previous
+section).
+</P>
+<PRE>
+
+    # perltidy -lp -cti=1
+    @month_of_year = (
+                       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+                     );</PRE>
+<PRE>
+    # perltidy -lp -cti=2
+    @month_of_year = (
+                       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+                       );</PRE>
+<P>These flags are merely hints to the formatter and they may not always be
+followed.  In particular, if -lp is not being used, the indentation for
+<STRONG>cti=1</STRONG> is constrained to be no more than one indentation level.</P>
+<P>If desired, this control can be applied independently to each of the
+closing container token types.  In fact, <STRONG>-cti=n</STRONG> is merely an
+abbreviation for <STRONG>-cpi=n -csbi=n -cbi=n</STRONG>, where:  
+<STRONG>-cpi</STRONG> or <STRONG>-closing-paren-indentation</STRONG> controls <STRONG>)</STRONG>'s,
+<STRONG>-csbi</STRONG> or <STRONG>-closing-square-bracket-indentation</STRONG> controls <STRONG>]</STRONG>'s, 
+<STRONG>-cbi</STRONG> or <STRONG>-closing-brace-indentation</STRONG> controls non-block <STRONG>}</STRONG>'s.</P>
+<P></P>
 <DT><STRONG><A NAME="item_%2Dicp%2C_%2D%2Dindent%2Dclosing%2Dparen"><STRONG>-icp</STRONG>, <STRONG>--indent-closing-paren</STRONG></A></STRONG><BR>
 <DD>
-The <STRONG>-icp</STRONG> option leaves a list-termination line of the form <CODE>);</CODE>, <CODE>};</CODE>,
-or <CODE>];</CODE> indented with the same indentation as the previous line.  The
-previous example with <STRONG>-icp</STRONG> would give,
-<PRE>
-    # perltidy -icp:
-    @month_of_year = (
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-        );</PRE>
+The <STRONG>-icp</STRONG> flag is equivalent to
+<STRONG>-cti=2</STRONG>, described in the previous section.  The <STRONG>-nicp</STRONG> flag is
+equivalent <STRONG>-cti=0</STRONG>.  They are included for backwards compatability.
 <P></P>
 <DT><STRONG><A NAME="item_%2Dicb%2C_%2D%2Dindent%2Dclosing%2Dbrace"><STRONG>-icb</STRONG>, <STRONG>--indent-closing-brace</STRONG></A></STRONG><BR>
 <DD>
@@ -2033,7 +2076,7 @@ dot is added, and the backup file will be <EM>somefile.pl~</EM>  .</P>
 <PRE>
     D anl asc aws b bbb bbc bbs bli boc bok bol bot syn ce csc 
     dac dbc dcsc dnl dws dp dpro dsm dsc ddf dln dop dsn dtt dwls dwrs 
-    f fll frm hsc html ibc icb icp iob isbc lp log lal x lsl pod bl 
+    f fll frm hsc html ibc icb icp iob isbc lp log lal x lsl ple pod bl 
     sbl okw ola oll pvl q opt sbc sfs ssc sts se st sob 
     t tac tbc toc tp tsc tqw w</PRE>
 <P>Equivalently, the prefix 'no' or 'no-' on the corresponding long names may be
@@ -2102,7 +2145,7 @@ purpose of this rule is to prevent generating confusing filenames such as
 <P>
 <HR>
 <H1><A NAME="version">VERSION</A></H1>
-<P>This man page documents perltidy version 20021130.</P>
+<P>This man page documents perltidy version 20030726.</P>
 <P>
 <HR>
 <H1><A NAME="credits">CREDITS</A></H1>
@@ -2124,7 +2167,7 @@ see the CHANGES file.</P>
 <P>
 <HR>
 <H1><A NAME="copyright">COPYRIGHT</A></H1>
-<P>Copyright (c) 2000-2002 by Steve Hancock</P>
+<P>Copyright (c) 2000-2003 by Steve Hancock</P>
 <P>
 <HR>
 <H1><A NAME="license">LICENSE</A></H1>

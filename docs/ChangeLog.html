@@ -14,7 +14,8 @@
 	<LI><A HREF="#perltidy change log">Perltidy Change Log</A></LI>
 	<UL>
 
-		<LI><A HREF="#2002 xx xx">2002 xx xx</A></LI>
+		<LI><A HREF="#2003 xx xx">2003 xx xx</A></LI>
+		<LI><A HREF="#2003 07 26">2003 07 26</A></LI>
 		<LI><A HREF="#2002 11 30">2002 11 30</A></LI>
 		<LI><A HREF="#2002 11 06">2002 11 06</A></LI>
 		<LI><A HREF="#2002 09 22">2002 09 22</A></LI>
@@ -47,12 +48,60 @@
 <P>
 <H1><A NAME="perltidy change log">Perltidy Change Log</A></H1>
 <PRE>
- You can help Perltidy evolve into a better program.  If you
- have hit a bug, unusual behavior, annoyance, or have a
- suggested improvement, please send a note to perltidy at
- users.sourceforge.net.</PRE>
+ You can help Perltidy evolve into a better program.  If you have hit a
+ bug, unusual behavior, annoyance, or have a suggested improvement,
+ please send a note to perltidy at users.sourceforge.net.  All
+ suggestions are welcome.</PRE>
 <P>
-<H2><A NAME="2002 xx xx">2002 xx xx</A></H2>
+<H2><A NAME="2003 xx xx">2003 xx xx</A></H2>
+<PRE>
+ -Added flags B&lt;-cti=n&gt; for finer control of closing token indentation.
+   -cti = 0 no extra indentation (default; same as -nicp)
+   -cti = 1 enough indentation so that the closing token
+        aligns with its opening token.
+   -cti = 2 one extra indentation level if the line has the form 
+          C&lt;);&gt;, C&lt;];&gt;, or &lt;};&gt; (same as -icp).</PRE>
+<PRE>
+   The new option -cti=1 works well with -lp:</PRE>
+<PRE>
+   EXAMPLES:</PRE>
+<PRE>
+    # perltidy -lp -cti=1
+    @month_of_year = (
+                       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+                     );</PRE>
+<PRE>
+    # perltidy -lp -cti=2
+    @month_of_year = (
+                       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+                       );
+  This is backwards compatible with -icp. See revised manual for
+  details.  Suggested by Mike Pennington.</PRE>
+<PRE>
+ -Added flag '--preserve-line-endings' or '-ple' which will retain dos
+    or unix line endings when running under dos or unix.
+  Suggested by Rainer Hochschild.</PRE>
+<PRE>
+ -You may now include 'and', 'or', and 'xor' in the list following
+ '--want-break-after' to get line breaks after those keywords rather than
+ before them.  Suggested by Rainer Hochschild.</PRE>
+<P>
+<H2><A NAME="2003 07 26">2003 07 26</A></H2>
+<PRE>
+ -Corrected cause of warning message with recent versions of Perl:
+    &quot;Possible precedence problem on bitwise &amp; operator at ...&quot;
+  Thanks to Jim Files.</PRE>
+<PRE>
+ -fixed bug with -html with '=for pod2html' sections, in which code/pod
+ output order was incorrect.  Thanks to Tassilo von Parseval.</PRE>
+<PRE>
+ -fixed bug when the -html flag is used, in which the following error
+ message, plus others, appear:
+     did not see &lt;body&gt; in pod2html output
+ This was caused by a change in the format of html output by pod2html
+ VERSION 1.04 (included with perl 5.8).  Thanks to Tassilo von Parseval.</PRE>
 <PRE>
  -Fixed bug where an __END__ statement would be mistaken for a label
  if it is immediately followed by a line with a leading colon. Thanks

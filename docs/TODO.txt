@@ -10,20 +10,14 @@ Perltidy TODO List
     An indentation level should be associated with ?: statements. This will
     make nested ?: statements more readable.
 
-  Fix numerous little formatting issues
-    There is, and always will be, a large number of other relatively minor
-    formatting issues that need to be addressed.
-
-  XML Output
-    A -xml option would allow the creation of simple utilities to reliably
-    manipulate perl code.
+  Recursive file processing
+    A -r flag might be nice.
 
   Documentation
     A FAQ is needed to explain some of the more subtle formatting issues,
     and to give examples of different styles.
 
-    The tokenizer needs extensive documentation before it can be released as
-    a separate module.
+    The -formatter callback object documentation is incomplete.
 
   HTML writer
     The HTML writer does not colorize interpolated identifiers in here

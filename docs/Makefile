@@ -8,6 +8,7 @@ README.html \
 perltidy.txt \
 perltidy.html \
 tutorial.html \
+Tidy.html \
 tutorial.txt \
 stylekey.html \
 BUGS.html \
@@ -41,6 +42,9 @@ perltidy.txt: ../src/perltidy
 
 perltidy.html: ../src/perltidy
 	pod2html ../src/perltidy >perltidy.html
+
+Tidy.html: ../src/Tidy.pm
+	pod2html ../src/Tidy.pm >Tidy.html
 
 stylekey.html: stylekey.pod
 	pod2html stylekey.pod >stylekey.html

@@ -1,9 +1,68 @@
 =head1 Perltidy Change Log
 
- You can help Perltidy evolve into a better program.  If you
- have hit a bug, unusual behavior, annoyance, or have a
- suggested improvement, please send a note to perltidy at
- users.sourceforge.net.  
+ You can help Perltidy evolve into a better program.  If you have hit a
+ bug, unusual behavior, annoyance, or have a suggested improvement,
+ please send a note to perltidy at users.sourceforge.net.  All
+ suggestions are welcome.
+
+=head2 2003 xx xx
+
+ -The default has been changed to not do syntax checking with perl.  
+  Use -syn if you really want it.  Perltidy is very robust now, and I've
+  spent too much time tracking down problems in BEGIN blocks (which get
+  executed with perl -c).  For example, perltidy will never return when
+  trying to beautify this code if -syn is used:
+
+        BEGIN { 1 while { }; }
+
+  A more subtle example is
+
+        BEGIN { use FindBin; }
+
+  which may hang using -syn if a shared file system is unavailable.
+
+ -Changed style -gnu to use -cti=1 instead of -cti=2 (see next item).
+  In most cases it looks better.  To recover the previous format, use
+  '-gnu -cti=2'
+
+ -Added flags B<-cti=n> for finer control of closing token indentation.
+   -cti = 0 no extra indentation (default; same as -nicp)
+   -cti = 1 enough indentation so that the closing token
+        aligns with its opening token.
+   -cti = 2 one extra indentation level if the line has the form 
+          C<);>, C<];>, or <};> (same as -icp).
+
+   The new option -cti=1 works well with -lp:
+
+   EXAMPLES:
+
+    # perltidy -lp -cti=1
+    @month_of_year = (
+                       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+                     );
+
+    # perltidy -lp -cti=2
+    @month_of_year = (
+                       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+                       );
+  This is backwards compatible with -icp. See revised manual for
+  details.  Suggested by Mike Pennington.
+  
+ -Added flag '--preserve-line-endings' or '-ple' to cause the output
+  line ending to be the same as in the input file, for unix, dos, 
+  or mac line endings.  Suggested by Rainer Hochschild.
+
+ -Added flag '--output-line-ending=s' or '-ole=s' where s=dos or win,
+  unix, or mac.  
+
+ -Files with Mac line endings should now be handled properly under unix
+  and dos without being passed through a converter.
+
+ -You may now include 'and', 'or', and 'xor' in the list following
+  '--want-break-after' to get line breaks after those keywords rather than
+  before them.  Suggested by Rainer Hochschild.
 
 =head2 2003 07 26
 

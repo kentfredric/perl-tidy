@@ -42,6 +42,8 @@ A zip file, F<.zip>, with Windows-style <cr><lf> line endings.
 
 =back
 
+In addition, the web site has links to debian and RPM packages.
+
 =head1 INSTALLATION
 
 For most standard installations, the standard Makefile.PL method should work:

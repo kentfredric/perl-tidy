@@ -1,10 +1,57 @@
 Perltidy Change Log
-     You can help Perltidy evolve into a better program.  If you
-     have hit a bug, unusual behavior, annoyance, or have a
-     suggested improvement, please send a note to perltidy at
-     users.sourceforge.net.  
+     You can help Perltidy evolve into a better program.  If you have hit a
+     bug, unusual behavior, annoyance, or have a suggested improvement,
+     please send a note to perltidy at users.sourceforge.net.  All
+     suggestions are welcome.
 
-  2002 xx xx
+  2003 xx xx
+     -Added flags B<-cti=n> for finer control of closing token indentation.
+       -cti = 0 no extra indentation (default; same as -nicp)
+       -cti = 1 enough indentation so that the closing token
+            aligns with its opening token.
+       -cti = 2 one extra indentation level if the line has the form 
+              C<);>, C<];>, or <};> (same as -icp).
+
+       The new option -cti=1 works well with -lp:
+
+       EXAMPLES:
+
+        # perltidy -lp -cti=1
+        @month_of_year = (
+                           'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                           'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+                         );
+
+        # perltidy -lp -cti=2
+        @month_of_year = (
+                           'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                           'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+                           );
+      This is backwards compatible with -icp. See revised manual for
+      details.  Suggested by Mike Pennington.
+
+     -Added flag '--preserve-line-endings' or '-ple' which will retain dos
+        or unix line endings when running under dos or unix.
+      Suggested by Rainer Hochschild.
+
+     -You may now include 'and', 'or', and 'xor' in the list following
+     '--want-break-after' to get line breaks after those keywords rather than
+     before them.  Suggested by Rainer Hochschild.
+
+  2003 07 26
+     -Corrected cause of warning message with recent versions of Perl:
+        "Possible precedence problem on bitwise & operator at ..."
+      Thanks to Jim Files.
+
+     -fixed bug with -html with '=for pod2html' sections, in which code/pod
+     output order was incorrect.  Thanks to Tassilo von Parseval.
+
+     -fixed bug when the -html flag is used, in which the following error
+     message, plus others, appear:
+         did not see <body> in pod2html output
+     This was caused by a change in the format of html output by pod2html
+     VERSION 1.04 (included with perl 5.8).  Thanks to Tassilo von Parseval.
+
      -Fixed bug where an __END__ statement would be mistaken for a label
      if it is immediately followed by a line with a leading colon. Thanks
      to John Bayes.

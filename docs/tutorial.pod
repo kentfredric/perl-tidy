@@ -127,12 +127,14 @@ points.  For example, the above snippet would look like this with
 B<perltidy -l=40>:
 
  croak "Couldn't pop genome file"
-   unless sysread(
-     $impl->{file}, $element,
-     $impl->{group}
-   )
-   and truncate( $impl->{file},
-     $new_end );
+   unless
+   sysread( $impl->{file}, $element,
+     $impl->{group} )
+   and
+   truncate( $impl->{file}, $new_end );
+
+You may be wondering what would happen with, say, B<-l=1>.  Go 
+ahead and try it.
 
 =head2 Tabs or Spaces?
 
@@ -269,9 +271,14 @@ With the B<-lp> flag, this is formatted as:
                            eight => 'VIII',
                            nine  => 'IX',
                            ten   => 'X'
-                           );
+                         );
 
-which is preferred by some.
+which is preferred by some.  (I've actually used B<-lp> and B<-cti=1> to
+format this block.  The B<-cti=1> flag causes the closing paren to align
+vertically with the opening paren, which works well with the B<-lp>
+indentation style).  An advantage of B<-lp> indentation are that it
+displays lists nicely.  A disadvantage is that deeply nested lists can
+require a long line length.
 
 =item B<-bt>,B<-pt>,B<-sbt>:  Container tightness
 
@@ -387,34 +394,6 @@ this line:
     $line = s/^\s*//;
 
 This kind of error can otherwise be hard to find.
-
-=head2 Syntax Checking
-
-Perltidy will normally try to check itself by running C<perl -c> on both
-the input and output files.  If the input file has good syntax but the
-output file has bad syntax, then perltidy made an error.  This is very
-unlikely, but worth checking.  
-
-Here's a diagram showing how this works:
-
-                          OK                            OK
-     check input file ---------->  check output file ---------> ok
-             |                            |
-             | Fail                       | Fail
-             |                            |
-       -w shows errors             perltidy made error
-
-If the input file has an error according to the C<perl -c> check, then
-the output file will not be checked (since we already know that it will
-have an error), and any error messages returned by the C<perl -c> check
-will be discarded (because they usually turn out to be more annoying
-than helpful).  If you want to see them, though, you can use the B<-w>
-flag.  This might be useful if you are debugging a script.
-
-This syntax check will be deactivated for Windows 9x/Me and also when
-input or output are not from identifiable filenames.  Perltidy will, of
-course, still report any syntax errors that it detects by itself in
-these cases.  
 
 =head2 The Log File
 

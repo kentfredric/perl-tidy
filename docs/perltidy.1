@@ -130,7 +130,7 @@
 .\" ========================================================================
 .\"
 .IX Title "PERLTIDY 1"
-.TH PERLTIDY 1 "2003-02-20" "perl v5.6.1" "User Contributed Perl Documentation"
+.TH PERLTIDY 1 "2003-10-04" "perl v5.6.1" "User Contributed Perl Documentation"
 .UC
 .SH "NAME"
 perltidy \- a perl script indenter and reformatter
@@ -520,6 +520,18 @@ a large script).
 .Sp
 Setting this flag is equivalent to setting \fB\-\-freeze\-newlines\fR and
 \&\fB\-\-freeze\-whitespace\fR.
+.IP "\fB\-ple\fR,  \fB\-\-preserve\-line\-endings\fR" 4
+.IX Item "-ple,  --preserve-line-endings"
+This flag causes perltidy to retain the original dos or unix line separator
+characters of a script when it is processed under dos or unix.  (Normally,
+perltidy writes files with the line separator character of the host machine,
+and the original line separator characters are lost).  This might be
+useful, for example, if a dos script is processed on a unix machine and the
+output then sent back to the dos machine, since it would avoid a dos2unix and
+unix2dos operation.  The flag may not be useful for other operating systems.
+.Sp
+The logic for this option works on a line-by-line basis.  Thus, files
+with mixed unix/dos line endings will remain mixed.
 .Sh "Code Indentation Control"
 .IX Subsection "Code Indentation Control"
 .IP "\fB\-ci=n\fR, \fB\-\-continuation\-indentation=n\fR" 4
@@ -576,7 +588,8 @@ hash.  With this option, the above list would become:
 \&    );
 .Ve
 If the available line length (see \fB\-l=n\fR ) does not permit this much 
-space, perltidy will use less.  
+space, perltidy will use less.   For alternate placement of the
+closing paren, see the next section.
 .Sp
 This option has no effect on code \s-1BLOCKS\s0, such as if/then/else blocks,
 which always use whatever is specified with \fB\-i=n\fR.  Also, the
@@ -593,19 +606,50 @@ perltidy to choose newlines will conflict with \fB\-lp\fR and will cause
 \&\fB\-ndnl\fR.  The reason is that the \fB\-lp\fR indentation style can require
 the careful coordination of an arbitrary number of break points in
 hierarchical lists, and these flags may prevent that.
-.IP "\fB\-icp\fR, \fB\-\-indent\-closing\-paren\fR" 4
-.IX Item "-icp, --indent-closing-paren"
-The \fB\-icp\fR option leaves a list-termination line of the form \f(CW\*(C`);\*(C'\fR, \f(CW\*(C`};\*(C'\fR,
-or \f(CW\*(C`];\*(C'\fR indented with the same indentation as the previous line.  The
-previous example with \fB\-icp\fR would give,
+.IP "\fB\-cti=n\fR, \fB\-\-closing\-token\-indentation\fR" 4
+.IX Item "-cti=n, --closing-token-indentation"
+The \fB\-cti=n\fR flag controls the indentation of a line beginning with 
+a \f(CW\*(C`)\*(C'\fR, \f(CW\*(C`]\*(C'\fR, or a non-block \f(CW\*(C`}\*(C'\fR.  Such a line receives:
 .Sp
 .Vb 5
-\&    # perltidy -icp:
-\&    @month_of_year = (
-\&        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-\&        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-\&        );
+\& -cti = 0 no extra indentation (default)
+\& -cti = 1 extra indentation such that the closing token
+\&        aligns with its opening token.
+\& -cti = 2 one extra indentation level if the line looks like:
+\&        );  or  ];  or  };
 .Ve
+The flags \fB\-cti=1\fR and \fB\-cti=2\fR work well with the \fB\-lp\fR flag (previous
+section).
+.Sp
+.Vb 5
+\&    # perltidy -lp -cti=1
+\&    @month_of_year = (
+\&                       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+\&                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+\&                     );
+.Ve
+.Vb 5
+\&    # perltidy -lp -cti=2
+\&    @month_of_year = (
+\&                       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+\&                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+\&                       );
+.Ve
+These flags are merely hints to the formatter and they may not always be
+followed.  In particular, if \-lp is not being used, the indentation for
+\&\fBcti=1\fR is constrained to be no more than one indentation level.
+.Sp
+If desired, this control can be applied independently to each of the
+closing container token types.  In fact, \fB\-cti=n\fR is merely an
+abbreviation for \fB\-cpi=n \-csbi=n \-cbi=n\fR, where:  
+\&\fB\-cpi\fR or \fB\-closing\-paren\-indentation\fR controls \fB)\fR's,
+\&\fB\-csbi\fR or \fB\-closing\-square\-bracket\-indentation\fR controls \fB]\fR's, 
+\&\fB\-cbi\fR or \fB\-closing\-brace\-indentation\fR controls non-block \fB}\fR's. 
+.IP "\fB\-icp\fR, \fB\-\-indent\-closing\-paren\fR" 4
+.IX Item "-icp, --indent-closing-paren"
+The \fB\-icp\fR flag is equivalent to
+\&\fB\-cti=2\fR, described in the previous section.  The \fB\-nicp\fR flag is
+equivalent \fB\-cti=0\fR.  They are included for backwards compatability.
 .IP "\fB\-icb\fR, \fB\-\-indent\-closing\-brace\fR" 4
 .IX Item "-icb, --indent-closing-brace"
 The \fB\-icb\fR option leaves a brace which terminates a code block 
@@ -2295,7 +2339,7 @@ The following list shows all short parameter names which allow a prefix
 .Vb 5
 \&    D anl asc aws b bbb bbc bbs bli boc bok bol bot syn ce csc 
 \&    dac dbc dcsc dnl dws dp dpro dsm dsc ddf dln dop dsn dtt dwls dwrs 
-\&    f fll frm hsc html ibc icb icp iob isbc lp log lal x lsl pod bl 
+\&    f fll frm hsc html ibc icb icp iob isbc lp log lal x lsl ple pod bl 
 \&    sbl okw ola oll pvl q opt sbc sfs ssc sts se st sob 
 \&    t tac tbc toc tp tsc tqw w
 .Ve
@@ -2355,7 +2399,7 @@ purpose of this rule is to prevent generating confusing filenames such as
 \&\fIperlstyle\fR\|(1), \fIPerl::Tidy\fR\|(3)
 .SH "VERSION"
 .IX Header "VERSION"
-This man page documents perltidy version 20021130.
+This man page documents perltidy version 20030726.
 .SH "CREDITS"
 .IX Header "CREDITS"
 Michael Cartmell supplied code for adaptation to \s-1VMS\s0 and helped with
@@ -2379,7 +2423,7 @@ see the \s-1CHANGES\s0 file.
 .Ve
 .SH "COPYRIGHT"
 .IX Header "COPYRIGHT"
-Copyright (c) 2000\-2002 by Steve Hancock
+Copyright (c) 2000\-2003 by Steve Hancock
 .SH "LICENSE"
 .IX Header "LICENSE"
 This package is free software; you can redistribute it and/or modify it
