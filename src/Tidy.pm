@@ -61,7 +61,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ($VERSION=q($Id: Tidy.pm,v 1.4 2002/02/21 15:01:19 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ($VERSION=q($Id: Tidy.pm,v 1.5 2002/02/22 18:06:28 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 # Preloaded methods go here.
@@ -164,29 +164,32 @@ EOM
     return $fh, ( $ref or $filename );
 }
 
-# concatenate a path and file basename
-# use File::Spec->catfile() if possible
 sub catfile {
 
-    BEGIN { eval "require File::Spec";  $missing_file_spec=$@; }
+    # concatenate a path and file basename
+    # returns undef in case of error
 
+    BEGIN { eval "require File::Spec"; $missing_file_spec = $@; }
+
+    # use File::Spec if we can
     unless ($missing_file_spec) {
         return File::Spec->catfile(@_);
     }
 
-    # Not all perl 5.004 systems have File::Spec so we'll make 
+    # Perl 5.004 systems may not have File::Spec so we'll make 
     # a simple try.  We assume File::Basename is available.
     # return undef if not successful.
-    my ($path, $name) = @_;
+    my $name      = pop @_;
+    my $path      = join '/', @_;
     my $test_file = $path . $name;
-    my ($test_name,$test_path) = fileparse($test_file);
-    return $test_file if ($test_name eq $name); 
-    return undef if ($^O eq 'VMS'); 
+    my ( $test_name, $test_path ) = fileparse($test_file);
+    return $test_file if ( $test_name eq $name );
+    return undef if ( $^O eq 'VMS' );
 
-    # this should work for Windows and Unix:
+    # this should work at least for Windows and Unix:
     $test_file = $path . '/' . $name;
-    ($test_name,$test_path) = fileparse($test_file);
-    return $test_file if ($test_name eq $name); 
+    ( $test_name, $test_path ) = fileparse($test_file);
+    return $test_file if ( $test_name eq $name );
     return undef;
 }
 
@@ -480,7 +483,7 @@ EOM
                     }
                     my $path = $new_path;
                     $fileroot = catfile( $path, $base );
-                    unless ( $fileroot ) {
+                    unless ($fileroot) {
                         die <<EOM;
 ------------------------------------------------------------------------
 Problem combining $new_path and $base to make a filename; check -opath
@@ -1539,11 +1542,12 @@ sub check_vms_filename {
     return ( $path . $base, $separator );
 }
 
-# Returns a string that determines what MS OS we are on.
-# Returns win32s,95,98,Me,NT3.51,NT4,2000,XP/.Net
-# Returns nothing if not an MS system.
-# Contributed by: Yves Orton
 sub Win_OS_Type {
+
+    # Returns a string that determines what MS OS we are on.
+    # Returns win32s,95,98,Me,NT3.51,NT4,2000,XP/.Net
+    # Returns nothing if not an MS system.
+    # Contributed by: Yves Orton
 
     my $rpending_complaint = shift;
     return unless $^O =~ /win32|dos/i;    # is it a MS box?
@@ -1609,6 +1613,7 @@ sub find_config_file {
     # sub to check file existance and record all tests
     my $exists_config_file = sub {
         my $config_file = shift;
+        return 0 unless $config_file;
         $$rconfig_file_chatter .= "# Testing: $config_file\n";
         return -f $config_file;
     };
@@ -1640,9 +1645,7 @@ sub find_config_file {
 
             # test ENV as directory:
             $config_file = catfile( $ENV{$var}, ".perltidyrc" );
-            if ($config_file) {
-                return $config_file if $exists_config_file->($config_file);
-            }
+            return $config_file if $exists_config_file->($config_file);
         }
         else {
             $$rconfig_file_chatter .= "\n";
@@ -1659,12 +1662,12 @@ sub find_config_file {
 
             # Check All Users directory, if there is one.
             if ($allusers) {
-                $config_file = catfile($allusers , ".perltidyrc");
+                $config_file = catfile( $allusers, ".perltidyrc" );
                 return $config_file if $exists_config_file->($config_file);
             }
 
             # Check system directory.
-            $config_file = catfile($system , ".perltidyrc");
+            $config_file = catfile( $system, ".perltidyrc" );
             return $config_file if $exists_config_file->($config_file);
         }
     }
@@ -1691,11 +1694,13 @@ sub find_config_file {
     return;
 }
 
-# In scalar context returns the OS name (95 98 ME NT3.51 NT4 2000 XP),
-# or undef if its not a win32 OS.  In list context returns OS, System
-# Directory, and All Users Directory.  All Users will be empty on a
-# 9x/Me box.  Contributed by: Yves Orton.
 sub Win_Config_Locs {
+
+    # In scalar context returns the OS name (95 98 ME NT3.51 NT4 2000 XP),
+    # or undef if its not a win32 OS.  In list context returns OS, System
+    # Directory, and All Users Directory.  All Users will be empty on a
+    # 9x/Me box.  Contributed by: Yves Orton.
+
     my $rpending_complaint = shift;
     my $os = (@_) ? shift: Win_OS_Type();
     return unless $os;
@@ -2201,11 +2206,6 @@ sub check_syntax {
     # error output.
     my $error_redirection = ( $^O eq 'VMS' ) ? "" : '2>&1';
 
-    # Under VMS something like -T will become -t (and an error) so
-    # we will put quotes around the flags.  This seems ok under
-    # Unix and Windows, but we could make this system dependent.
-    $flags = '"' . $flags . '"';
-
     my $perl_output = do_syntax_check( $ifname, $flags, $error_redirection );
     $logger_object->write_logfile_entry("$perl_output\n");
 
@@ -2254,6 +2254,20 @@ sub check_syntax {
 
 sub do_syntax_check {
     my ( $fname, $flags, $error_redirection ) = @_;
+
+    # We have to quote the filename in case it has unusual characters
+    # or spaces.  Example: this filename #CM11.pm# gives trouble.
+    $fname = '"' . $fname . '"';
+
+    # Under VMS something like -T will become -t (and an error) so we
+    # will put quotes around the flags.  Double quotes seem to work on
+    # Unix/Windows/VMS, but this may not work on all systems.  (Single
+    # quotes do not work under Windows).  It could become necessary to
+    # put double quotes around each flag, such as:  -"c"  -"T"
+    # We may eventually need some system-dependent coding here.
+    $flags = '"' . $flags . '"';
+
+    # now wish for luck...
     return qx/perl $flags $fname $error_redirection/;
 }
 
@@ -2284,6 +2298,7 @@ sub new {
         # The reason is that temporary files seem to cause problems on
         # on many systems.
         $rOpts->{'check-syntax'} = 0;
+        $input_file_copy = '-';
         $$rpending_complaint .= <<EOM;
 Note: --syntax check will be skipped because standard input is used
 EOM
@@ -2366,6 +2381,7 @@ sub new {
             # The reason is that temporary files seem to cause problems on
             # on many systems.
             $rOpts->{'check-syntax'} = 0;
+            $output_file_copy = '-';
             $$rpending_complaint .= <<EOM;
 Note: --syntax check will be skipped because standard output is used
 EOM
@@ -6114,7 +6130,7 @@ sub set_white_space_flag {
          /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
      Examples:
        *VERSION = \'1.01';
-       ( $VERSION ) = '$Revision: 1.4 $ ' =~ /\$Revision:\s+([^\s]+)/;
+       ( $VERSION ) = '$Revision: 1.5 $ ' =~ /\$Revision:\s+([^\s]+)/;
      We will pass such a line straight through (by changing it
      to a quoted string) unless -npvl is used
     
@@ -6123,7 +6139,7 @@ sub set_white_space_flag {
      block sequence numbers may see a closing sequence number but not
      the corresponding opening sequence number (sidecmt.t).  Example:
 
-    my $VERSION = do { my @r = (q$Revision: 1.4 $ =~ /\d+/g); sprintf
+    my $VERSION = do { my @r = (q$Revision: 1.5 $ =~ /\d+/g); sprintf
     "%d."."%02d" x $#r, @r }; 
 
     Here, the opening brace of 'do {' will not be seen, while the closing

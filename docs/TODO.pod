@@ -2,20 +2,31 @@
 
 This is a "wish-list" of features to add and things to do.  All of these
 are of interest, but there is no particular schedule for implementing
-them.
+them.  
+
+=head2 XML Output
+
+The ability to write a tokenized script in a simple XML format looks
+very useful.  This would allow the creation of simple utilities to
+reliably manipulate perl code.
+
+This option is probably of greatest interest right now; hopefully the
+next release will have an experimental version.  The output will be
+controlled by a switch B<--format=s>, or simply B<-f=s>, where B<s>
+would be B<html>, B<xml>, or B<tidy>.  The current B<-html> flag would
+be mapped into B<-format=html>.
 
 =head2 Fix numerous little formatting issues
 
-There is a vary large number of relatively minor formatting issues that
-need to be addressed.  I'm working on them as time permits.
+There is, and always will be, a large number of relatively minor
+formatting issues that need to be addressed.  I'm working on them as
+time permits.  Some of the most interesting have to do with
+automatically deciding the best number of columns to use for a table.
 
-=head2 Implement 'Vertical Tightness' parameters
+=head2 Further Modularization
 
-
-=head2 Modularization
-
-The current version uses a single module.  It will be subdivided as
-the interfaces stop changing.
+The current version, which uses just a single module, will be further
+subdivided.
 
 =head2 BUGS
 
@@ -23,24 +34,60 @@ There are still a couple of bugs listed in the BUGS file that need
 to be fixed.  These are low priority compared to formatting
 issues, but need to be done.
 
-=head2 Improved ?: Formatting
+=head2 improved ?: formatting
 
 I intend to associate an indentation level with ?: statements in a
-future release.  This will make nested ?: statements more readable.
+future release.  this will make nested ?: statements more readable.
 
 =head2 Improved Vertical Alignment
 
 Coding modifications are underway to improve the vertical alignment
 logic.
 
+=head2 Implement 'Vertical Tightness' parameters
+
+At present, perltidy usually breaks open container when they
+contain multiple lines.  For example, using perltidy -lp,
+
+        %romanNumerals = (
+                           one   => 'I',
+                           two   => 'II',
+                           three => 'III',
+                           four  => 'IV',
+                           five  => 'V',
+                           six   => 'VI',
+                           seven => 'VII',
+                           eight => 'VIII',
+                           nine  => 'IX',
+                           ten   => 'X'
+        );
+
+Some prefer to keep the container unbroken, if possible, like this:
+
+        %romanNumerals = ( one   => 'I',
+                           two   => 'II',
+                           three => 'III',
+                           four  => 'IV',
+                           five  => 'V',
+                           six   => 'VI',
+                           seven => 'VII',
+                           eight => 'VIII',
+                           nine  => 'IX',
+                           ten   => 'X');
+
+Parameters to control this are being studied.  They could be, for
+example, B<paren-vertical-tightness>,
+B<square-bracket-vertical-tightness>,
+B<brace-vertical-tightness>.  This update requires further development
+of the vertical alignment logic.
+
 =head2 Documentation
 
-A FAQ is being written to explain some of the
-more subtle formatting issues, and to give examples of different
-styles.
+A FAQ is being written to explain some of the more subtle formatting
+issues, and to give examples of different styles.
 
-The tokenizer needs extensive documentation before it can be released
-as a separate module.
+The tokenizer needs extensive documentation before it can be released as
+a separate module.
 
 =head2 HTML writer
 
@@ -75,11 +122,12 @@ names.  It needs to be implementd; I've patched around this in the html
 writer for now.  I'm considering new token types for prototypes and
 attributes, to simplify parsing and formatting.
 
-=head2 XML
+=head2 Outdent block comments as a group
 
-The ability to write a tokenized script in a simple XML format looks
-very useful.  This would allow the creation of simple utilities to
-reliably manipulate perl code.
+At present, the decision to outdent a long block comment, when that
+option is used, is made on a line-by-line basis.  Instead, the decision
+should be made for a sequence of comments as a group, so that the result
+is not ragged.  This is a relatively straightforward update.
 
 =head2 Option to reformat block comments
 

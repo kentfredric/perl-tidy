@@ -12,11 +12,9 @@ version.
 
 =head1 PREREQUISITES
 
-There are very few.  The main requirement is Perl version 5.004 or
-later.  It is known to work under Unix systems, Windows 95 and later,
-and VMS.  It should work with MacPerl.  It does not require any
-non-standard modules to work, but it may use certain modules if
-detected, as follows:
+Perltidy should work under a standard distribution of Perl version 5.004
+or later.  (You can find your version with C<perl -v>). It may use these
+other modules if detected:
 
   Win32    will be used to help identify a Windows system if detected
   HTML::Entities  will be used to encode HTML entities if detected

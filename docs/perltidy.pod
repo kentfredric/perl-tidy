@@ -111,7 +111,7 @@ use two leading dashes for long names, but one may be used.
 
 Most parameters which serve as on/off flags can be negated with a
 leading "n" (for the short name) or a leading "no" (for the long
-name).  For example, the flag to have perl check syntax using <perl -c>
+name).  For example, the flag to have perl check syntax using B<perl -c>
 is B<-syn> or B<--check-syntax>.  The flag to skip this is
 B<-nsyn> or B<--nocheck-syntax>.
 

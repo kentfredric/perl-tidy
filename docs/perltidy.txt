@@ -105,8 +105,8 @@ OPTIONS - OVERVIEW
 
     Most parameters which serve as on/off flags can be negated with a
     leading "n" (for the short name) or a leading "no" (for the long name).
-    For example, the flag to have perl check syntax using <perl -c> is -syn
-    or --check-syntax. The flag to skip this is -nsyn or --nocheck-syntax.
+    For example, the flag to have perl check syntax using perl -c is -syn or
+    --check-syntax. The flag to skip this is -nsyn or --nocheck-syntax.
 
     Options may not be bundled together. In other words, options -q and -g
     may NOT be entered as -qg.
