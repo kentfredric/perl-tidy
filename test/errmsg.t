@@ -7,6 +7,10 @@
 # This line should cause a -sil warning
     if ( !$key || $key < $MAX_SPLIT_DEPTH ) { $pre = '' };
 
+=cut
+This is a pod section starting with =cut
+=cut
+
 # this will create a negative indentation which should be resynched at
 # sub xyzzy
 }

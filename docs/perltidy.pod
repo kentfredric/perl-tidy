@@ -969,7 +969,22 @@ around tokens.
 B<-DEBUG>  will write a file with extension F<.DEBUG> for each input file 
 showing the tokenization of all lines of code.
 
-=item  Writing an HTML file
+=item Working with MakeMaker, AutoLoader and SelfLoader
+
+The first $VERSION line of a file which might be eval'd by MakeMaker
+is passed through unchanged except for indentation.  
+Use B<--nopass-version-line>, or B<-npvl>, to deactivate this feature.
+
+If the AutoLoader module is used, perltidy will continue formatting
+code after seeing an __END__ line.
+Use B<--nolook-for-autoloader>, or B<-nlal>, to deactivate this feature.
+
+Likewise, if the SelfLoader module is used, perltidy will continue formatting
+code after seeing a __DATA__ line.
+Use B<--nolook-for-selfloader>, or B<-nlsl>, to deactivate this feature.
+
+
+=item Writing an HTML file
 
 The flag B<-html> causes perltidy to write an html file with extension
 F<.html>.  
