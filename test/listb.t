@@ -99,6 +99,17 @@ unless(GetOptions(\%opt, # all non-linked options go into %opt
     exit 1;
     }
 
+{{{{
+                # This list, also from latex2html with side comment, long
+                # line, and leading commas doesn't fare as well by these
+                # rules.  It will become a mess.
+		$contents .=  join(''  #,"\n", $par_comment
+			, "\n<P"
+			, (($USING_STYLES && $image_style)? " CLASS=\"$image_style\"" :'')
+			,">", $this_par_img
+			, "</P>\n");
+}}}}
+
 # Another example of a broken list (from aclocal).  This has one column,
 # which is not usually used by the default formatting.
 @obsolete_macros = (

@@ -84,3 +84,14 @@ $VERSION = do {
         return "delete" if ( $oD eq "ref" );     # miss --- ref
         return "ignore" if ( $oD eq "miss" );    # miss --- miss
     }
+
+        # A current problem: The hanging side comment does not line up because
+        # of the indentation level change introduced by the '('
+        push @m, $obj
+          if $obj->id =~ /$regex/i
+          or (
+            ( $] < 5.00303    ### provide sort of
+                    ### compatibility with 5.003
+                || $obj->can('name')
+            ) && $obj->name =~ /$regex/i
+        );

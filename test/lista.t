@@ -118,3 +118,18 @@ $thumbheight, $pub, $createtm,$inserttm,$refcount,$crapb,$crapc,$crapd,$border) 
         0x0F, 0x08, 0x0C, 0x0E, 0x17, 0x11, 0x0B, 0x12,
         0x1D, 0x24, 0x0A, 0x16, 0x09, 0x0D
     );
+
+        # Some functions like push and join would be best if
+        # treated specially.
+        # This might look better with the ";" left on the first line
+        $Dat{Data}{ uc $ARG } = join (
+            ";",
+            (
+                uc $ARG, "-- N/A --", 0,       "1/1/1970",
+                "00:00", 0,           "0.00%", 0,
+                "-",     "-",         "-",     "-",
+                "-",     "-",         "-",     "-",
+                "-",     "-",         "-",     "-"
+            )
+        );
+

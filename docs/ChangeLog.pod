@@ -16,10 +16,9 @@
 
   The following example illustrates both of these points. Thanks to
   Wolfgang Weisselberg for this snippet and a discussion of it.  Note
-  how it is difficult to see the call parameters in the OLD version, but
-  not in the NEW version:
+  how it is easier to see the call parameters in the NEW version:
 
-    OLD using default parameters:
+    OLD:
     assert( __LINE__, ( not defined $check )
         or ref $check
         or $check eq "new"
@@ -124,7 +123,7 @@
  
   -Resolved cause of a difference between perltidy under perl v5.6.1 and
   5.005_03; the problem was different behavior of \G regex position
-  marker!
+  marker(!)
 
 =head2 2001 10 20
  

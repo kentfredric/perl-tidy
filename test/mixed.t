@@ -59,3 +59,7 @@ use constant PI => 4 * atan2 1, 1;
         -fill => 'black',
     );
 
+    # line break test:
+    $last_time_label->configure( -text =>
+          sprintf( "%02d/%02d %02d:%02d:%02d", $month, $day, $hour, $minute,
+            $second ) );

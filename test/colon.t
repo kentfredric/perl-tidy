@@ -169,4 +169,22 @@ print$$<300?"$$<300\n":$$<700?"$$<700\n":$$<2_000?"$$<2,000\n":$$<10_000?"$$ <10
                 $2 eq 'f' ? map( $_ && $_->{entry} || (), @src )
                   : $2 eq 'd' ? map( $_ && $_->rfile->{dir}->path || (), @src )
                   : map( $_ && $_->rpath || (), @src ) );
+
+            # Test case for rule of not exploding containers preceded by ?:
+            push (
+                @opt_exclude_regex,
+                join (
+                    '',
+                    '(\A|/)',
+                    (
+                      map {
+                          ( $_ eq '*' ? '.*'
+                            : ( $_ eq '?' ? '.'
+                                  : ( $_ eq '.' ? '\.'
+                                      : ( $_ =~ /^\[/ ? $_ : quotemeta($_) ) ) )
+                          );
+                      } @a ),
+                    '\Z'
+                  )
+            );
 }}}

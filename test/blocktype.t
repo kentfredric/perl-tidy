@@ -32,3 +32,13 @@ INIT {$a=16; print "2nd init, a=$a\n"}
 BEGIN {$a=18; print "2nd begin, a=$a\n"} 
 CHECK {$a=20; print "2nd check, a=$a\n"} 
 END {$a=23; print "3rd end, a=$a\n"} 
+
+            # FIXME: at present the '{' after the '@' is not set as type BLOCK, even
+            # though it is.  This should be changed eventually after some
+            # associated formatting issues are resolved.
+            my ( $pre, $post ) = @{
+                {
+                    "pp_anonlist" => [ "[", "]" ],
+                    "pp_anonhash" => [ "{", "}" ]
+                }->{ $kid->ppaddr }
+              };
