@@ -573,173 +573,6 @@ FORMATTING OPTIONS
          %bf = map { $_ => -M $_ } grep {/\.deb$/} dirents '.';   # -bbt=1
          %bf = map {$_ => -M $_} grep {/\.deb$/} dirents '.';     # -bbt=2
 
-    Vertical tightness of non-block curly braces, parentheses, and square
-    brackets.
-        The "tightness" of the previous section really referred to what
-        might better be called "horizontal tightness". A separate set of
-        parameters control what shall be called vertical tightness. Here are
-        the main points:
-
-        *   Opening tokens (except for block braces) are controlled by
-            -vt=n, or --vertical-tightness=n, where
-
-             -vt=0 break line after opening token (default). 
-             -vt=1 do not break unless this would produce more than one 
-                     step in indentation in a line.
-             -vt=2 do not break after opening token
-
-        *   You must also use the -lp flag when you use the -vt flag; the
-            reason is explained below.
-
-        *   Closing tokens (except for block braces) are controlled by
-            -vtc=n, or --vertical-tightness-closing=n, where
-
-             -vtc=0 always line break before closing token (default), 
-             -vtc=1 do not break before a closing token which is followed 
-                    by a semicolon or another closing token, and is not in 
-                    a list environment.
-             -vtc=2 never break before a closing token.
-
-            The rules for -vtc=1 are designed to maintain a reasonable
-            balance between tightness and readability in complex lists.
-
-        *   Different controls may be applied to to different token types,
-            and it is also possible to control block braces; see below.
-
-        *   Finally, please note that these vertical tightness flags are
-            merely hints to the formatter, and it cannot always follow them.
-            Things which make it difficult or impossible include comments,
-            blank lines, blocks of code within a list, and possibly the lack
-            of the -lp parameter. Also, these flags may be ignored for very
-            small lists (2 or 3 lines in length).
-
-        Here are some examples:
-
-            # perltidy -lp -vt=0 -vtc=0
-            %romanNumerals = (
-                               one   => 'I',
-                               two   => 'II',
-                               three => 'III',
-                               four  => 'IV',
-            );
-
-            # perltidy -lp -vt=1 -vtc=0
-            %romanNumerals = ( one   => 'I',
-                               two   => 'II',
-                               three => 'III',
-                               four  => 'IV',
-            );
-
-            # perltidy -lp -vt=1 -vtc=1
-            %romanNumerals = ( one   => 'I',
-                               two   => 'II',
-                               three => 'III',
-                               four  => 'IV', );
-
-        The difference between -vt=1 and -vt=2 is shown here:
-
-            # perltidy -lp -vt=1 
-            $init->add(
-                        mysprintf( "(void)find_threadsv(%s);",
-                                   cstring( $threadsv_names[ $op->targ ] )
-                        )
-            );
-
-            # perltidy -lp -vt=2 
-            $init->add( mysprintf( "(void)find_threadsv(%s);",
-                                   cstring( $threadsv_names[ $op->targ ] )
-                        )
-            );
-
-        With -vt=1, the line ending in "add(" does not combine with the next
-        line because the next line is not balanced. This can help with
-        readability, but we use -vt=2 to ignore this rule.
-
-        The tightest, and least readable, code is produced with both "-vt=2"
-        and "-vtc=2":
-
-            # perltidy -lp -vt=2 -vtc=2
-            $init->add( mysprintf( "(void)find_threadsv(%s);",
-                                   cstring( $threadsv_names[ $op->targ ] ) ) );
-
-        Notice how the code in all of these examples collapses vertically as
-        -vt increases, but the indentation remains unchanged. This is
-        because perltidy implements the -vt parameter by first formatting as
-        if -vt=0, and then simply overwriting one output line on top of the
-        next, if possible, to achieve the desired vertical tightness. The
-        -lp indentation style has been designed to allow this vertical
-        collapse to occur, which is why it is required for the -vt
-        parameter.
-
-        The -vt=n and -vtc=n parameters apply to each type of container
-        token. If desired, vertical tightness controls can be applied
-        independently to each of the closing container token types.
-
-        The parameters for controlling parentheses are -pvt=n or
-        --paren-vertical-tightness=n, and -pcvt=n or
-        --paren-vertical-tightness-closing=n.
-
-        Likewise, the parameters for square brackets are -sbvt=n or
-        --square-bracket-vertical-tightness=n, and -sbcvt=n or
-        --square-bracket-vertical-tightness-closing=n.
-
-        Finally, the parameters for controlling non-code block braces are
-        -bvt=n or --brace-vertical-tightness=n, and -bcvt=n or
-        --brace-vertical-tightness-closing=n.
-
-        In fact, the parameter -vt=n is actually just an abbreviation for
-        -pvt=n -bvt=n sbvt=n, and likewise -vtc=n is an abbreviation for
-        -pvtc=n -bvtc=n sbvtc=n.
-
-    -bbvt=n or --block-brace-vertical-tightness=n
-        The -bbvt=n flag is just like the -vt=n flag but applies to opening
-        code block braces.
-
-         -bbvt=0 break after opening block brace (default). 
-         -bbvt=1 do not break unless this would produce more than one 
-                 step in indentation in a line.
-         -bbvt=2 do not break after opening block brace.
-
-        It is necessary to also use either -bl or -bli for this to work,
-        because, as with other vertical tightness controls, it is
-        implemented by simply overwriting a line ending with an opening
-        block brace with the subsequent line. For example:
-
-            # perltidy -bli -bbvt=0
-            if ( open( FILE, "< $File" ) )
-              {
-                while ( $File = <FILE> )
-                  {
-                    $In .= $File;
-                    $count++;
-                  }
-                close(FILE);
-              }
-
-            # perltidy -bli -bbvt=1
-            if ( open( FILE, "< $File" ) )
-              { while ( $File = <FILE> )
-                  { $In .= $File;
-                    $count++;
-                  }
-                close(FILE);
-              }
-
-        By default this applies to blocks associated with keywords if,
-        elsif, else, unless, for, foreach, sub, while, until, and also with
-        a preceding label. This can be changed with the parameter
-        -bbvtl=string, or --block-brace-vertical-tightness-list=string,
-        where string is a space-separated list of block types. For more
-        information on the possible values of this string, see "Specifying
-        Block Types"
-
-        For example, if we want to just apply this style to "if", "elsif",
-        and "else" blocks, we could use "perltidy -bli -bbvt -bbvtl='if
-        elsif else'".
-
-        There is no vertical tightness control for closing block braces;
-        they will normally remain on a separate line.
-
     -sts, --space-terminal-semicolon
         Some programmers prefer a space before all terminal semicolons. The
         default is for no such space, and is indicated with -nsts or
@@ -1224,6 +1057,174 @@ FORMATTING OPTIONS
 
         A conflict occurs if both -bl and -bar are specified.
 
+    Vertical tightness of non-block curly braces, parentheses, and square
+    brackets.
+        The "tightness" of the previous section really referred to what
+        might better be called "horizontal tightness". A separate set of
+        parameters control what shall be called vertical tightness. Here are
+        the main points:
+
+        *   Opening tokens (except for block braces) are controlled by
+            -vt=n, or --vertical-tightness=n, where
+
+             -vt=0 break line after opening token (default). 
+             -vt=1 do not break unless this would produce more than one 
+                     step in indentation in a line.
+             -vt=2 do not break after opening token
+
+        *   You must also use the -lp flag when you use the -vt flag; the
+            reason is explained below.
+
+        *   Closing tokens (except for block braces) are controlled by
+            -vtc=n, or --vertical-tightness-closing=n, where
+
+             -vtc=0 always line break before closing token (default), 
+             -vtc=1 do not break before a closing token which is followed 
+                    by a semicolon or another closing token, and is not in 
+                    a list environment.
+             -vtc=2 never break before a closing token.
+
+            The rules for -vtc=1 are designed to maintain a reasonable
+            balance between tightness and readability in complex lists.
+
+        *   Different controls may be applied to to different token types,
+            and it is also possible to control block braces; see below.
+
+        *   Finally, please note that these vertical tightness flags are
+            merely hints to the formatter, and it cannot always follow them.
+            Things which make it difficult or impossible include comments,
+            blank lines, blocks of code within a list, and possibly the lack
+            of the -lp parameter. Also, these flags may be ignored for very
+            small lists (2 or 3 lines in length).
+
+        Here are some examples:
+
+            # perltidy -lp -vt=0 -vtc=0
+            %romanNumerals = (
+                               one   => 'I',
+                               two   => 'II',
+                               three => 'III',
+                               four  => 'IV',
+            );
+
+            # perltidy -lp -vt=1 -vtc=0
+            %romanNumerals = ( one   => 'I',
+                               two   => 'II',
+                               three => 'III',
+                               four  => 'IV',
+            );
+
+            # perltidy -lp -vt=1 -vtc=1
+            %romanNumerals = ( one   => 'I',
+                               two   => 'II',
+                               three => 'III',
+                               four  => 'IV', );
+
+        The difference between -vt=1 and -vt=2 is shown here:
+
+            # perltidy -lp -vt=1 
+            $init->add(
+                        mysprintf( "(void)find_threadsv(%s);",
+                                   cstring( $threadsv_names[ $op->targ ] )
+                        )
+            );
+
+            # perltidy -lp -vt=2 
+            $init->add( mysprintf( "(void)find_threadsv(%s);",
+                                   cstring( $threadsv_names[ $op->targ ] )
+                        )
+            );
+
+        With -vt=1, the line ending in "add(" does not combine with the next
+        line because the next line is not balanced. This can help with
+        readability, but we use -vt=2 to ignore this rule.
+
+        The tightest, and least readable, code is produced with both "-vt=2"
+        and "-vtc=2":
+
+            # perltidy -lp -vt=2 -vtc=2
+            $init->add( mysprintf( "(void)find_threadsv(%s);",
+                                   cstring( $threadsv_names[ $op->targ ] ) ) );
+
+        Notice how the code in all of these examples collapses vertically as
+        -vt increases, but the indentation remains unchanged. This is
+        because perltidy implements the -vt parameter by first formatting as
+        if -vt=0, and then simply overwriting one output line on top of the
+        next, if possible, to achieve the desired vertical tightness. The
+        -lp indentation style has been designed to allow this vertical
+        collapse to occur, which is why it is required for the -vt
+        parameter.
+
+        The -vt=n and -vtc=n parameters apply to each type of container
+        token. If desired, vertical tightness controls can be applied
+        independently to each of the closing container token types.
+
+        The parameters for controlling parentheses are -pvt=n or
+        --paren-vertical-tightness=n, and -pcvt=n or
+        --paren-vertical-tightness-closing=n.
+
+        Likewise, the parameters for square brackets are -sbvt=n or
+        --square-bracket-vertical-tightness=n, and -sbcvt=n or
+        --square-bracket-vertical-tightness-closing=n.
+
+        Finally, the parameters for controlling non-code block braces are
+        -bvt=n or --brace-vertical-tightness=n, and -bcvt=n or
+        --brace-vertical-tightness-closing=n.
+
+        In fact, the parameter -vt=n is actually just an abbreviation for
+        -pvt=n -bvt=n sbvt=n, and likewise -vtc=n is an abbreviation for
+        -pvtc=n -bvtc=n sbvtc=n.
+
+    -bbvt=n or --block-brace-vertical-tightness=n
+        The -bbvt=n flag is just like the -vt=n flag but applies to opening
+        code block braces.
+
+         -bbvt=0 break after opening block brace (default). 
+         -bbvt=1 do not break unless this would produce more than one 
+                 step in indentation in a line.
+         -bbvt=2 do not break after opening block brace.
+
+        It is necessary to also use either -bl or -bli for this to work,
+        because, as with other vertical tightness controls, it is
+        implemented by simply overwriting a line ending with an opening
+        block brace with the subsequent line. For example:
+
+            # perltidy -bli -bbvt=0
+            if ( open( FILE, "< $File" ) )
+              {
+                while ( $File = <FILE> )
+                  {
+                    $In .= $File;
+                    $count++;
+                  }
+                close(FILE);
+              }
+
+            # perltidy -bli -bbvt=1
+            if ( open( FILE, "< $File" ) )
+              { while ( $File = <FILE> )
+                  { $In .= $File;
+                    $count++;
+                  }
+                close(FILE);
+              }
+
+        By default this applies to blocks associated with keywords if,
+        elsif, else, unless, for, foreach, sub, while, until, and also with
+        a preceding label. This can be changed with the parameter
+        -bbvtl=string, or --block-brace-vertical-tightness-list=string,
+        where string is a space-separated list of block types. For more
+        information on the possible values of this string, see "Specifying
+        Block Types"
+
+        For example, if we want to just apply this style to "if", "elsif",
+        and "else" blocks, we could use "perltidy -bli -bbvt -bbvtl='if
+        elsif else'".
+
+        There is no vertical tightness control for closing block braces;
+        with the exception of one-line blocks, they will normally remain on
+        a separate line.
+
     -wocb=n, --want-old-comma-breaks=n
         The value of n indicates the degree to which perltidy should follow
         line breaks at existing commas.
@@ -1253,7 +1254,7 @@ FORMATTING OPTIONS
 
         The default formatting will flatten this down to one line:
 
-            # perltidy -wocb=1 (default)
+            # perltidy (default)
             my @list = ( 1, 1, 1, 1, 2, 1, 1, 3, 3, 1, 1, 4, 6, 4, 1, );
 
         which hides the structure. Using -wocb=2, plus additional flags to
@@ -1265,6 +1266,10 @@ FORMATTING OPTIONS
                         1, 2, 1,
                         1, 3, 3, 1,
                         1, 4, 6, 4, 1,);
+
+        Probably the best strategy is to first try the default list
+        formatting, and only change -wocb=n if necessary, on a case by case
+        basis.
 
     -dnl, --delete-old-newlines
         By default, perltidy first deletes all old line break locations, and

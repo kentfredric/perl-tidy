@@ -606,163 +606,6 @@ example below.</P>
  %bf = map { $_ =&gt; -M $_ } grep {/\.deb$/} dirents '.';   # -bbt=1
  %bf = map {$_ =&gt; -M $_} grep {/\.deb$/} dirents '.';     # -bbt=2</PRE>
 <P></P>
-<DT><STRONG><A NAME="item_Vertical_tightness_of_non%2Dblock_curly_braces%2C_">Vertical tightness of non-block curly braces, parentheses, and square brackets.</A></STRONG><BR>
-<DD>
-The ``tightness'' of the previous section really referred to what might
-better be called ``horizontal tightness''.  A separate set of parameters
-control what shall be called vertical tightness.  Here are the main
-points:
-<UL>
-<LI>
-Opening tokens (except for block braces) are controlled by <STRONG>-vt=n</STRONG>, or
-<STRONG>--vertical-tightness=n</STRONG>, where
-<PRE>
- -vt=0 break line after opening token (default). 
- -vt=1 do not break unless this would produce more than one 
-         step in indentation in a line.
- -vt=2 do not break after opening token</PRE>
-<P></P>
-<LI>
-You must also use the <STRONG>-lp</STRONG> flag when you use the <STRONG>-vt</STRONG> flag; the
-reason is explained below.
-<P></P>
-<LI>
-Closing tokens (except for block braces) are controlled by <STRONG>-vtc=n</STRONG>, or
-<STRONG>--vertical-tightness-closing=n</STRONG>, where
-<PRE>
- -vtc=0 always line break before closing token (default), 
- -vtc=1 do not break before a closing token which is followed 
-        by a semicolon or another closing token, and is not in 
-        a list environment.
- -vtc=2 never break before a closing token.</PRE>
-<P>The rules for <STRONG>-vtc=1</STRONG> are designed to maintain a reasonable balance
-between tightness and readability in complex lists.</P>
-<P></P>
-<LI>
-Different controls may be applied to to different token types,
-and it is also possible to control block braces; see below.
-<P></P>
-<LI>
-Finally, please note that these vertical tightness flags are merely
-hints to the formatter, and it cannot always follow them.  Things which
-make it difficult or impossible include comments, blank lines, blocks of
-code within a list, and possibly the lack of the <STRONG>-lp</STRONG> parameter.
-Also, these flags may be ignored for very small lists (2 or 3 lines in
-length).
-<P></P></UL>
-<P>Here are some examples:</P>
-<PRE>
-    # perltidy -lp -vt=0 -vtc=0
-    %romanNumerals = (
-                       one   =&gt; 'I',
-                       two   =&gt; 'II',
-                       three =&gt; 'III',
-                       four  =&gt; 'IV',
-    );</PRE>
-<PRE>
-    # perltidy -lp -vt=1 -vtc=0
-    %romanNumerals = ( one   =&gt; 'I',
-                       two   =&gt; 'II',
-                       three =&gt; 'III',
-                       four  =&gt; 'IV',
-    );</PRE>
-<PRE>
-    # perltidy -lp -vt=1 -vtc=1
-    %romanNumerals = ( one   =&gt; 'I',
-                       two   =&gt; 'II',
-                       three =&gt; 'III',
-                       four  =&gt; 'IV', );</PRE>
-<P>The difference between <STRONG>-vt=1</STRONG> and <STRONG>-vt=2</STRONG> is shown here:</P>
-<PRE>
-    # perltidy -lp -vt=1 
-    $init-&gt;add(
-                mysprintf( &quot;(void)find_threadsv(%s);&quot;,
-                           cstring( $threadsv_names[ $op-&gt;targ ] )
-                )
-    );</PRE>
-<PRE>
-    # perltidy -lp -vt=2 
-    $init-&gt;add( mysprintf( &quot;(void)find_threadsv(%s);&quot;,
-                           cstring( $threadsv_names[ $op-&gt;targ ] )
-                )
-    );</PRE>
-<P>With <STRONG>-vt=1</STRONG>, the line ending in <CODE>add(</CODE> does not combine with the next
-line because the next line is not balanced.  This can help with
-readability, but we use <STRONG>-vt=2</STRONG> to ignore this rule.</P>
-<P>The tightest, and least readable, code is produced with both <CODE>-vt=2</CODE> and
-<CODE>-vtc=2</CODE>:</P>
-<PRE>
-    # perltidy -lp -vt=2 -vtc=2
-    $init-&gt;add( mysprintf( &quot;(void)find_threadsv(%s);&quot;,
-                           cstring( $threadsv_names[ $op-&gt;targ ] ) ) );</PRE>
-<P>Notice how the code in all of these examples collapses vertically as
-<STRONG>-vt</STRONG> increases, but the indentation remains unchanged.  This is
-because perltidy implements the <STRONG>-vt</STRONG> parameter by first formatting as
-if <STRONG>-vt=0</STRONG>, and then simply overwriting one output line on top of the
-next, if possible, to achieve the desired vertical tightness.  The
-<STRONG>-lp</STRONG> indentation style has been designed to allow this vertical
-collapse to occur, which is why it is required for the <STRONG>-vt</STRONG> parameter.</P>
-<P>The <STRONG>-vt=n</STRONG> and <STRONG>-vtc=n</STRONG> parameters apply to each type of container
-token.  If desired, vertical tightness controls can be applied
-independently to each of the closing container token types.</P>
-<P>The parameters for controlling parentheses are <STRONG>-pvt=n</STRONG> or
-<STRONG>--paren-vertical-tightness=n</STRONG>, and <STRONG>-pcvt=n</STRONG> or
-<STRONG>--paren-vertical-tightness-closing=n</STRONG>.</P>
-<P>Likewise, the parameters for square brackets are <STRONG>-sbvt=n</STRONG> or
-<STRONG>--square-bracket-vertical-tightness=n</STRONG>, and <STRONG>-sbcvt=n</STRONG> or
-<STRONG>--square-bracket-vertical-tightness-closing=n</STRONG>.</P>
-<P>Finally, the parameters for controlling non-code block braces are
-<STRONG>-bvt=n</STRONG> or <STRONG>--brace-vertical-tightness=n</STRONG>, and <STRONG>-bcvt=n</STRONG> or
-<STRONG>--brace-vertical-tightness-closing=n</STRONG>.</P>
-<P>In fact, the parameter <STRONG>-vt=n</STRONG> is actually just an abbreviation for
-<STRONG>-pvt=n -bvt=n sbvt=n</STRONG>, and likewise <STRONG>-vtc=n</STRONG> is an abbreviation
-for <STRONG>-pvtc=n -bvtc=n sbvtc=n</STRONG>.</P>
-<DT><STRONG><A NAME="item_%2Dbbvt%3Dn_or_%2D%2Dblock%2Dbrace%2Dvertical%2Dti"><STRONG>-bbvt=n</STRONG> or <STRONG>--block-brace-vertical-tightness=n</STRONG></A></STRONG><BR>
-<DD>
-The <STRONG>-bbvt=n</STRONG> flag is just like the <STRONG>-vt=n</STRONG> flag but applies
-to opening code block braces.
-<PRE>
- -bbvt=0 break after opening block brace (default). 
- -bbvt=1 do not break unless this would produce more than one 
-         step in indentation in a line.
- -bbvt=2 do not break after opening block brace.</PRE>
-<P>It is necessary to also use either <STRONG>-bl</STRONG> or <STRONG>-bli</STRONG> for this to work,
-because, as with other vertical tightness controls, it is implemented by
-simply overwriting a line ending with an opening block brace with the
-subsequent line.  For example:</P>
-<PRE>
-    # perltidy -bli -bbvt=0
-    if ( open( FILE, &quot;&lt; $File&quot; ) )
-      {
-        while ( $File = &lt;FILE&gt; )
-          {
-            $In .= $File;
-            $count++;
-          }
-        close(FILE);
-      }</PRE>
-<PRE>
-    # perltidy -bli -bbvt=1
-    if ( open( FILE, &quot;&lt; $File&quot; ) )
-      { while ( $File = &lt;FILE&gt; )
-          { $In .= $File;
-            $count++;
-          }
-        close(FILE);
-      }</PRE>
-<P>By default this applies to blocks associated with keywords <STRONG>if</STRONG>,
-<STRONG>elsif</STRONG>, <STRONG>else</STRONG>, <STRONG>unless</STRONG>, <STRONG>for</STRONG>, <STRONG>foreach</STRONG>, <STRONG>sub</STRONG>, <STRONG>while</STRONG>,
-<STRONG>until</STRONG>, and also with a preceding label.  This can be changed with
-the parameter <STRONG>-bbvtl=string</STRONG>, or
-<STRONG>--block-brace-vertical-tightness-list=string</STRONG>, where <STRONG>string</STRONG> is a
-space-separated list of block types.  For more information on the
-possible values of this string, see <A HREF="#specifying block types">Specifying Block Types</A></P>
-<P>For example, if we want to just apply this style to <CODE>if</CODE>,
-<CODE>elsif</CODE>, and <CODE>else</CODE> blocks, we could use 
-<CODE>perltidy -bli -bbvt -bbvtl='if elsif else'</CODE>.</P>
-<P>There is no vertical tightness control for closing block braces; they
-will normally remain on a separate line.</P>
-<P></P>
 <DT><STRONG><A NAME="item_%2Dsts%2C_%2D%2Dspace%2Dterminal%2Dsemicolon"><STRONG>-sts</STRONG>,   <STRONG>--space-terminal-semicolon</STRONG></A></STRONG><BR>
 <DD>
 Some programmers prefer a space before all terminal semicolons.  The
@@ -1245,6 +1088,164 @@ flag.  In this case, the above example becomes</P>
         }</PRE>
 <P>A conflict occurs if both <STRONG>-bl</STRONG> and <STRONG>-bar</STRONG> are specified.</P>
 <P></P>
+<DT><STRONG><A NAME="item_Vertical_tightness_of_non%2Dblock_curly_braces%2C_">Vertical tightness of non-block curly braces, parentheses, and square brackets.</A></STRONG><BR>
+<DD>
+The ``tightness'' of the previous section really referred to what might
+better be called ``horizontal tightness''.  A separate set of parameters
+control what shall be called vertical tightness.  Here are the main
+points:
+<UL>
+<LI>
+Opening tokens (except for block braces) are controlled by <STRONG>-vt=n</STRONG>, or
+<STRONG>--vertical-tightness=n</STRONG>, where
+<PRE>
+ -vt=0 break line after opening token (default). 
+ -vt=1 do not break unless this would produce more than one 
+         step in indentation in a line.
+ -vt=2 do not break after opening token</PRE>
+<P></P>
+<LI>
+You must also use the <STRONG>-lp</STRONG> flag when you use the <STRONG>-vt</STRONG> flag; the
+reason is explained below.
+<P></P>
+<LI>
+Closing tokens (except for block braces) are controlled by <STRONG>-vtc=n</STRONG>, or
+<STRONG>--vertical-tightness-closing=n</STRONG>, where
+<PRE>
+ -vtc=0 always line break before closing token (default), 
+ -vtc=1 do not break before a closing token which is followed 
+        by a semicolon or another closing token, and is not in 
+        a list environment.
+ -vtc=2 never break before a closing token.</PRE>
+<P>The rules for <STRONG>-vtc=1</STRONG> are designed to maintain a reasonable balance
+between tightness and readability in complex lists.</P>
+<P></P>
+<LI>
+Different controls may be applied to to different token types,
+and it is also possible to control block braces; see below.
+<P></P>
+<LI>
+Finally, please note that these vertical tightness flags are merely
+hints to the formatter, and it cannot always follow them.  Things which
+make it difficult or impossible include comments, blank lines, blocks of
+code within a list, and possibly the lack of the <STRONG>-lp</STRONG> parameter.
+Also, these flags may be ignored for very small lists (2 or 3 lines in
+length).
+<P></P></UL>
+<P>Here are some examples:</P>
+<PRE>
+    # perltidy -lp -vt=0 -vtc=0
+    %romanNumerals = (
+                       one   =&gt; 'I',
+                       two   =&gt; 'II',
+                       three =&gt; 'III',
+                       four  =&gt; 'IV',
+    );</PRE>
+<PRE>
+    # perltidy -lp -vt=1 -vtc=0
+    %romanNumerals = ( one   =&gt; 'I',
+                       two   =&gt; 'II',
+                       three =&gt; 'III',
+                       four  =&gt; 'IV',
+    );</PRE>
+<PRE>
+    # perltidy -lp -vt=1 -vtc=1
+    %romanNumerals = ( one   =&gt; 'I',
+                       two   =&gt; 'II',
+                       three =&gt; 'III',
+                       four  =&gt; 'IV', );</PRE>
+<P>The difference between <STRONG>-vt=1</STRONG> and <STRONG>-vt=2</STRONG> is shown here:</P>
+<PRE>
+    # perltidy -lp -vt=1 
+    $init-&gt;add(
+                mysprintf( &quot;(void)find_threadsv(%s);&quot;,
+                           cstring( $threadsv_names[ $op-&gt;targ ] )
+                )
+    );</PRE>
+<PRE>
+    # perltidy -lp -vt=2 
+    $init-&gt;add( mysprintf( &quot;(void)find_threadsv(%s);&quot;,
+                           cstring( $threadsv_names[ $op-&gt;targ ] )
+                )
+    );</PRE>
+<P>With <STRONG>-vt=1</STRONG>, the line ending in <CODE>add(</CODE> does not combine with the next
+line because the next line is not balanced.  This can help with
+readability, but we use <STRONG>-vt=2</STRONG> to ignore this rule.</P>
+<P>The tightest, and least readable, code is produced with both <CODE>-vt=2</CODE> and
+<CODE>-vtc=2</CODE>:</P>
+<PRE>
+    # perltidy -lp -vt=2 -vtc=2
+    $init-&gt;add( mysprintf( &quot;(void)find_threadsv(%s);&quot;,
+                           cstring( $threadsv_names[ $op-&gt;targ ] ) ) );</PRE>
+<P>Notice how the code in all of these examples collapses vertically as
+<STRONG>-vt</STRONG> increases, but the indentation remains unchanged.  This is
+because perltidy implements the <STRONG>-vt</STRONG> parameter by first formatting as
+if <STRONG>-vt=0</STRONG>, and then simply overwriting one output line on top of the
+next, if possible, to achieve the desired vertical tightness.  The
+<STRONG>-lp</STRONG> indentation style has been designed to allow this vertical
+collapse to occur, which is why it is required for the <STRONG>-vt</STRONG> parameter.</P>
+<P>The <STRONG>-vt=n</STRONG> and <STRONG>-vtc=n</STRONG> parameters apply to each type of container
+token.  If desired, vertical tightness controls can be applied
+independently to each of the closing container token types.</P>
+<P>The parameters for controlling parentheses are <STRONG>-pvt=n</STRONG> or
+<STRONG>--paren-vertical-tightness=n</STRONG>, and <STRONG>-pcvt=n</STRONG> or
+<STRONG>--paren-vertical-tightness-closing=n</STRONG>.</P>
+<P>Likewise, the parameters for square brackets are <STRONG>-sbvt=n</STRONG> or
+<STRONG>--square-bracket-vertical-tightness=n</STRONG>, and <STRONG>-sbcvt=n</STRONG> or
+<STRONG>--square-bracket-vertical-tightness-closing=n</STRONG>.</P>
+<P>Finally, the parameters for controlling non-code block braces are
+<STRONG>-bvt=n</STRONG> or <STRONG>--brace-vertical-tightness=n</STRONG>, and <STRONG>-bcvt=n</STRONG> or
+<STRONG>--brace-vertical-tightness-closing=n</STRONG>.</P>
+<P>In fact, the parameter <STRONG>-vt=n</STRONG> is actually just an abbreviation for
+<STRONG>-pvt=n -bvt=n sbvt=n</STRONG>, and likewise <STRONG>-vtc=n</STRONG> is an abbreviation
+for <STRONG>-pvtc=n -bvtc=n sbvtc=n</STRONG>.</P>
+<DT><STRONG><A NAME="item_%2Dbbvt%3Dn_or_%2D%2Dblock%2Dbrace%2Dvertical%2Dti"><STRONG>-bbvt=n</STRONG> or <STRONG>--block-brace-vertical-tightness=n</STRONG></A></STRONG><BR>
+<DD>
+The <STRONG>-bbvt=n</STRONG> flag is just like the <STRONG>-vt=n</STRONG> flag but applies
+to opening code block braces.
+<PRE>
+ -bbvt=0 break after opening block brace (default). 
+ -bbvt=1 do not break unless this would produce more than one 
+         step in indentation in a line.
+ -bbvt=2 do not break after opening block brace.</PRE>
+<P>It is necessary to also use either <STRONG>-bl</STRONG> or <STRONG>-bli</STRONG> for this to work,
+because, as with other vertical tightness controls, it is implemented by
+simply overwriting a line ending with an opening block brace with the
+subsequent line.  For example:</P>
+<PRE>
+    # perltidy -bli -bbvt=0
+    if ( open( FILE, &quot;&lt; $File&quot; ) )
+      {
+        while ( $File = &lt;FILE&gt; )
+          {
+            $In .= $File;
+            $count++;
+          }
+        close(FILE);
+      }</PRE>
+<PRE>
+    # perltidy -bli -bbvt=1
+    if ( open( FILE, &quot;&lt; $File&quot; ) )
+      { while ( $File = &lt;FILE&gt; )
+          { $In .= $File;
+            $count++;
+          }
+        close(FILE);
+      }</PRE>
+<P>By default this applies to blocks associated with keywords <STRONG>if</STRONG>,
+<STRONG>elsif</STRONG>, <STRONG>else</STRONG>, <STRONG>unless</STRONG>, <STRONG>for</STRONG>, <STRONG>foreach</STRONG>, <STRONG>sub</STRONG>, <STRONG>while</STRONG>,
+<STRONG>until</STRONG>, and also with a preceding label.  This can be changed with
+the parameter <STRONG>-bbvtl=string</STRONG>, or
+<STRONG>--block-brace-vertical-tightness-list=string</STRONG>, where <STRONG>string</STRONG> is a
+space-separated list of block types.  For more information on the
+possible values of this string, see <A HREF="#specifying block types">Specifying Block Types</A></P>
+<P>For example, if we want to just apply this style to <CODE>if</CODE>,
+<CODE>elsif</CODE>, and <CODE>else</CODE> blocks, we could use 
+<CODE>perltidy -bli -bbvt -bbvtl='if elsif else'</CODE>.</P>
+<P>There is no vertical tightness control for closing block braces; with
+the exception of one-line blocks, they will normally remain on a 
+separate line.</P>
+<P></P>
 <DT><STRONG><A NAME="item_%2Dwocb%3Dn%2C_%2D%2Dwant%2Dold%2Dcomma%2Dbreaks%3"><STRONG>-wocb=n</STRONG>,  <STRONG>--want-old-comma-breaks=n</STRONG></A></STRONG><BR>
 <DD>
 The value of <STRONG>n</STRONG> indicates the degree to which perltidy should follow
@@ -1272,7 +1273,7 @@ default method does not work well because of this.</P>
                 1, 4, 6, 4, 1,);</PRE>
 <P>The default formatting will flatten this down to one line:</P>
 <PRE>
-    # perltidy -wocb=1 (default)
+    # perltidy (default)
     my @list = ( 1, 1, 1, 1, 2, 1, 1, 3, 3, 1, 1, 4, 6, 4, 1, );</PRE>
 <P>which hides the structure. Using <STRONG>-wocb=2</STRONG>, plus additional flags
 to retain the original style, yields</P>
@@ -1283,6 +1284,8 @@ to retain the original style, yields</P>
                 1, 2, 1,
                 1, 3, 3, 1,
                 1, 4, 6, 4, 1,);</PRE>
+<P>Probably the best strategy is to first try the default list formatting,
+and only change <STRONG>-wocb=n</STRONG> if necessary, on a case by case basis.</P>
 <P></P>
 <DT><STRONG><A NAME="item_%2Ddnl%2C_%2D%2Ddelete%2Dold%2Dnewlines"><STRONG>-dnl</STRONG>,  <STRONG>--delete-old-newlines</STRONG></A></STRONG><BR>
 <DD>

@@ -741,187 +741,6 @@ example below.
 \& %bf = map { $_ => -M $_ } grep {/\e.deb$/} dirents '.';   # -bbt=1
 \& %bf = map {$_ => -M $_} grep {/\e.deb$/} dirents '.';     # -bbt=2
 .Ve
-.IP "Vertical tightness of non-block curly braces, parentheses, and square brackets." 4
-.IX Item "Vertical tightness of non-block curly braces, parentheses, and square brackets."
-The \*(L"tightness\*(R" of the previous section really referred to what might
-better be called \*(L"horizontal tightness\*(R".  A separate set of parameters
-control what shall be called vertical tightness.  Here are the main
-points:
-.RS 4
-.IP "\(bu" 4
-Opening tokens (except for block braces) are controlled by \fB\-vt=n\fR, or
-\&\fB\-\-vertical\-tightness=n\fR, where
-.Sp
-.Vb 4
-\& -vt=0 break line after opening token (default). 
-\& -vt=1 do not break unless this would produce more than one 
-\&         step in indentation in a line.
-\& -vt=2 do not break after opening token
-.Ve
-.IP "\(bu" 4
-You must also use the \fB\-lp\fR flag when you use the \fB\-vt\fR flag; the
-reason is explained below.
-.IP "\(bu" 4
-Closing tokens (except for block braces) are controlled by \fB\-vtc=n\fR, or
-\&\fB\-\-vertical\-tightness\-closing=n\fR, where
-.Sp
-.Vb 5
-\& -vtc=0 always line break before closing token (default), 
-\& -vtc=1 do not break before a closing token which is followed 
-\&        by a semicolon or another closing token, and is not in 
-\&        a list environment.
-\& -vtc=2 never break before a closing token.
-.Ve
-The rules for \fB\-vtc=1\fR are designed to maintain a reasonable balance
-between tightness and readability in complex lists.
-.IP "\(bu" 4
-Different controls may be applied to to different token types,
-and it is also possible to control block braces; see below.
-.IP "\(bu" 4
-Finally, please note that these vertical tightness flags are merely
-hints to the formatter, and it cannot always follow them.  Things which
-make it difficult or impossible include comments, blank lines, blocks of
-code within a list, and possibly the lack of the \fB\-lp\fR parameter.
-Also, these flags may be ignored for very small lists (2 or 3 lines in
-length).
-.RE
-.RS 4
-.Sp
-Here are some examples: 
-.Sp
-.Vb 7
-\&    # perltidy -lp -vt=0 -vtc=0
-\&    %romanNumerals = (
-\&                       one   => 'I',
-\&                       two   => 'II',
-\&                       three => 'III',
-\&                       four  => 'IV',
-\&    );
-.Ve
-.Vb 6
-\&    # perltidy -lp -vt=1 -vtc=0
-\&    %romanNumerals = ( one   => 'I',
-\&                       two   => 'II',
-\&                       three => 'III',
-\&                       four  => 'IV',
-\&    );
-.Ve
-.Vb 5
-\&    # perltidy -lp -vt=1 -vtc=1
-\&    %romanNumerals = ( one   => 'I',
-\&                       two   => 'II',
-\&                       three => 'III',
-\&                       four  => 'IV', );
-.Ve
-The difference between \fB\-vt=1\fR and \fB\-vt=2\fR is shown here:
-.Sp
-.Vb 6
-\&    # perltidy -lp -vt=1 
-\&    $init->add(
-\&                mysprintf( "(void)find_threadsv(%s);",
-\&                           cstring( $threadsv_names[ $op->targ ] )
-\&                )
-\&    );
-.Ve
-.Vb 5
-\&    # perltidy -lp -vt=2 
-\&    $init->add( mysprintf( "(void)find_threadsv(%s);",
-\&                           cstring( $threadsv_names[ $op->targ ] )
-\&                )
-\&    );
-.Ve
-With \fB\-vt=1\fR, the line ending in \f(CW\*(C`add(\*(C'\fR does not combine with the next
-line because the next line is not balanced.  This can help with
-readability, but we use \fB\-vt=2\fR to ignore this rule.
-.Sp
-The tightest, and least readable, code is produced with both \f(CW\*(C`\-vt=2\*(C'\fR and
-\&\f(CW\*(C`\-vtc=2\*(C'\fR:
-.Sp
-.Vb 3
-\&    # perltidy -lp -vt=2 -vtc=2
-\&    $init->add( mysprintf( "(void)find_threadsv(%s);",
-\&                           cstring( $threadsv_names[ $op->targ ] ) ) );
-.Ve
-Notice how the code in all of these examples collapses vertically as
-\&\fB\-vt\fR increases, but the indentation remains unchanged.  This is
-because perltidy implements the \fB\-vt\fR parameter by first formatting as
-if \fB\-vt=0\fR, and then simply overwriting one output line on top of the
-next, if possible, to achieve the desired vertical tightness.  The
-\&\fB\-lp\fR indentation style has been designed to allow this vertical
-collapse to occur, which is why it is required for the \fB\-vt\fR parameter.
-.Sp
-The \fB\-vt=n\fR and \fB\-vtc=n\fR parameters apply to each type of container
-token.  If desired, vertical tightness controls can be applied
-independently to each of the closing container token types.
-.Sp
-The parameters for controlling parentheses are \fB\-pvt=n\fR or
-\&\fB\-\-paren\-vertical\-tightness=n\fR, and \fB\-pcvt=n\fR or
-\&\fB\-\-paren\-vertical\-tightness\-closing=n\fR.
-.Sp
-Likewise, the parameters for square brackets are \fB\-sbvt=n\fR or
-\&\fB\-\-square\-bracket\-vertical\-tightness=n\fR, and \fB\-sbcvt=n\fR or
-\&\fB\-\-square\-bracket\-vertical\-tightness\-closing=n\fR.
-.Sp
-Finally, the parameters for controlling non-code block braces are
-\&\fB\-bvt=n\fR or \fB\-\-brace\-vertical\-tightness=n\fR, and \fB\-bcvt=n\fR or
-\&\fB\-\-brace\-vertical\-tightness\-closing=n\fR.
-.Sp
-In fact, the parameter \fB\-vt=n\fR is actually just an abbreviation for
-\&\fB\-pvt=n \-bvt=n sbvt=n\fR, and likewise \fB\-vtc=n\fR is an abbreviation
-for \fB\-pvtc=n \-bvtc=n sbvtc=n\fR.
-.RE
-.IP "\fB\-bbvt=n\fR or \fB\-\-block\-brace\-vertical\-tightness=n\fR" 4
-.IX Item "-bbvt=n or --block-brace-vertical-tightness=n"
-The \fB\-bbvt=n\fR flag is just like the \fB\-vt=n\fR flag but applies
-to opening code block braces.
-.Sp
-.Vb 4
-\& -bbvt=0 break after opening block brace (default). 
-\& -bbvt=1 do not break unless this would produce more than one 
-\&         step in indentation in a line.
-\& -bbvt=2 do not break after opening block brace.
-.Ve
-It is necessary to also use either \fB\-bl\fR or \fB\-bli\fR for this to work,
-because, as with other vertical tightness controls, it is implemented by
-simply overwriting a line ending with an opening block brace with the
-subsequent line.  For example:
-.Sp
-.Vb 10
-\&    # perltidy -bli -bbvt=0
-\&    if ( open( FILE, "< $File" ) )
-\&      {
-\&        while ( $File = <FILE> )
-\&          {
-\&            $In .= $File;
-\&            $count++;
-\&          }
-\&        close(FILE);
-\&      }
-.Ve
-.Vb 8
-\&    # perltidy -bli -bbvt=1
-\&    if ( open( FILE, "< $File" ) )
-\&      { while ( $File = <FILE> )
-\&          { $In .= $File;
-\&            $count++;
-\&          }
-\&        close(FILE);
-\&      }
-.Ve
-By default this applies to blocks associated with keywords \fBif\fR,
-\&\fBelsif\fR, \fBelse\fR, \fBunless\fR, \fBfor\fR, \fBforeach\fR, \fBsub\fR, \fBwhile\fR,
-\&\fBuntil\fR, and also with a preceding label.  This can be changed with
-the parameter \fB\-bbvtl=string\fR, or
-\&\fB\-\-block\-brace\-vertical\-tightness\-list=string\fR, where \fBstring\fR is a
-space-separated list of block types.  For more information on the
-possible values of this string, see \*(L"Specifying Block Types\*(R"
-.Sp
-For example, if we want to just apply this style to \f(CW\*(C`if\*(C'\fR,
-\&\f(CW\*(C`elsif\*(C'\fR, and \f(CW\*(C`else\*(C'\fR blocks, we could use 
-\&\f(CW\*(C`perltidy \-bli \-bbvt \-bbvtl='if elsif else'\*(C'\fR.
-.Sp
-There is no vertical tightness control for closing block braces; they
-will normally remain on a separate line.
 .IP "\fB\-sts\fR,   \fB\-\-space\-terminal\-semicolon\fR" 4
 .IX Item "-sts,   --space-terminal-semicolon"
 Some programmers prefer a space before all terminal semicolons.  The
@@ -1444,6 +1263,188 @@ flag.  In this case, the above example becomes
 \&        }
 .Ve
 A conflict occurs if both \fB\-bl\fR and \fB\-bar\fR are specified.
+.IP "Vertical tightness of non-block curly braces, parentheses, and square brackets." 4
+.IX Item "Vertical tightness of non-block curly braces, parentheses, and square brackets."
+The \*(L"tightness\*(R" of the previous section really referred to what might
+better be called \*(L"horizontal tightness\*(R".  A separate set of parameters
+control what shall be called vertical tightness.  Here are the main
+points:
+.RS 4
+.IP "\(bu" 4
+Opening tokens (except for block braces) are controlled by \fB\-vt=n\fR, or
+\&\fB\-\-vertical\-tightness=n\fR, where
+.Sp
+.Vb 4
+\& -vt=0 break line after opening token (default). 
+\& -vt=1 do not break unless this would produce more than one 
+\&         step in indentation in a line.
+\& -vt=2 do not break after opening token
+.Ve
+.IP "\(bu" 4
+You must also use the \fB\-lp\fR flag when you use the \fB\-vt\fR flag; the
+reason is explained below.
+.IP "\(bu" 4
+Closing tokens (except for block braces) are controlled by \fB\-vtc=n\fR, or
+\&\fB\-\-vertical\-tightness\-closing=n\fR, where
+.Sp
+.Vb 5
+\& -vtc=0 always line break before closing token (default), 
+\& -vtc=1 do not break before a closing token which is followed 
+\&        by a semicolon or another closing token, and is not in 
+\&        a list environment.
+\& -vtc=2 never break before a closing token.
+.Ve
+The rules for \fB\-vtc=1\fR are designed to maintain a reasonable balance
+between tightness and readability in complex lists.
+.IP "\(bu" 4
+Different controls may be applied to to different token types,
+and it is also possible to control block braces; see below.
+.IP "\(bu" 4
+Finally, please note that these vertical tightness flags are merely
+hints to the formatter, and it cannot always follow them.  Things which
+make it difficult or impossible include comments, blank lines, blocks of
+code within a list, and possibly the lack of the \fB\-lp\fR parameter.
+Also, these flags may be ignored for very small lists (2 or 3 lines in
+length).
+.RE
+.RS 4
+.Sp
+Here are some examples: 
+.Sp
+.Vb 7
+\&    # perltidy -lp -vt=0 -vtc=0
+\&    %romanNumerals = (
+\&                       one   => 'I',
+\&                       two   => 'II',
+\&                       three => 'III',
+\&                       four  => 'IV',
+\&    );
+.Ve
+.Vb 6
+\&    # perltidy -lp -vt=1 -vtc=0
+\&    %romanNumerals = ( one   => 'I',
+\&                       two   => 'II',
+\&                       three => 'III',
+\&                       four  => 'IV',
+\&    );
+.Ve
+.Vb 5
+\&    # perltidy -lp -vt=1 -vtc=1
+\&    %romanNumerals = ( one   => 'I',
+\&                       two   => 'II',
+\&                       three => 'III',
+\&                       four  => 'IV', );
+.Ve
+The difference between \fB\-vt=1\fR and \fB\-vt=2\fR is shown here:
+.Sp
+.Vb 6
+\&    # perltidy -lp -vt=1 
+\&    $init->add(
+\&                mysprintf( "(void)find_threadsv(%s);",
+\&                           cstring( $threadsv_names[ $op->targ ] )
+\&                )
+\&    );
+.Ve
+.Vb 5
+\&    # perltidy -lp -vt=2 
+\&    $init->add( mysprintf( "(void)find_threadsv(%s);",
+\&                           cstring( $threadsv_names[ $op->targ ] )
+\&                )
+\&    );
+.Ve
+With \fB\-vt=1\fR, the line ending in \f(CW\*(C`add(\*(C'\fR does not combine with the next
+line because the next line is not balanced.  This can help with
+readability, but we use \fB\-vt=2\fR to ignore this rule.
+.Sp
+The tightest, and least readable, code is produced with both \f(CW\*(C`\-vt=2\*(C'\fR and
+\&\f(CW\*(C`\-vtc=2\*(C'\fR:
+.Sp
+.Vb 3
+\&    # perltidy -lp -vt=2 -vtc=2
+\&    $init->add( mysprintf( "(void)find_threadsv(%s);",
+\&                           cstring( $threadsv_names[ $op->targ ] ) ) );
+.Ve
+Notice how the code in all of these examples collapses vertically as
+\&\fB\-vt\fR increases, but the indentation remains unchanged.  This is
+because perltidy implements the \fB\-vt\fR parameter by first formatting as
+if \fB\-vt=0\fR, and then simply overwriting one output line on top of the
+next, if possible, to achieve the desired vertical tightness.  The
+\&\fB\-lp\fR indentation style has been designed to allow this vertical
+collapse to occur, which is why it is required for the \fB\-vt\fR parameter.
+.Sp
+The \fB\-vt=n\fR and \fB\-vtc=n\fR parameters apply to each type of container
+token.  If desired, vertical tightness controls can be applied
+independently to each of the closing container token types.
+.Sp
+The parameters for controlling parentheses are \fB\-pvt=n\fR or
+\&\fB\-\-paren\-vertical\-tightness=n\fR, and \fB\-pcvt=n\fR or
+\&\fB\-\-paren\-vertical\-tightness\-closing=n\fR.
+.Sp
+Likewise, the parameters for square brackets are \fB\-sbvt=n\fR or
+\&\fB\-\-square\-bracket\-vertical\-tightness=n\fR, and \fB\-sbcvt=n\fR or
+\&\fB\-\-square\-bracket\-vertical\-tightness\-closing=n\fR.
+.Sp
+Finally, the parameters for controlling non-code block braces are
+\&\fB\-bvt=n\fR or \fB\-\-brace\-vertical\-tightness=n\fR, and \fB\-bcvt=n\fR or
+\&\fB\-\-brace\-vertical\-tightness\-closing=n\fR.
+.Sp
+In fact, the parameter \fB\-vt=n\fR is actually just an abbreviation for
+\&\fB\-pvt=n \-bvt=n sbvt=n\fR, and likewise \fB\-vtc=n\fR is an abbreviation
+for \fB\-pvtc=n \-bvtc=n sbvtc=n\fR.
+.RE
+.IP "\fB\-bbvt=n\fR or \fB\-\-block\-brace\-vertical\-tightness=n\fR" 4
+.IX Item "-bbvt=n or --block-brace-vertical-tightness=n"
+The \fB\-bbvt=n\fR flag is just like the \fB\-vt=n\fR flag but applies
+to opening code block braces.
+.Sp
+.Vb 4
+\& -bbvt=0 break after opening block brace (default). 
+\& -bbvt=1 do not break unless this would produce more than one 
+\&         step in indentation in a line.
+\& -bbvt=2 do not break after opening block brace.
+.Ve
+It is necessary to also use either \fB\-bl\fR or \fB\-bli\fR for this to work,
+because, as with other vertical tightness controls, it is implemented by
+simply overwriting a line ending with an opening block brace with the
+subsequent line.  For example:
+.Sp
+.Vb 10
+\&    # perltidy -bli -bbvt=0
+\&    if ( open( FILE, "< $File" ) )
+\&      {
+\&        while ( $File = <FILE> )
+\&          {
+\&            $In .= $File;
+\&            $count++;
+\&          }
+\&        close(FILE);
+\&      }
+.Ve
+.Vb 8
+\&    # perltidy -bli -bbvt=1
+\&    if ( open( FILE, "< $File" ) )
+\&      { while ( $File = <FILE> )
+\&          { $In .= $File;
+\&            $count++;
+\&          }
+\&        close(FILE);
+\&      }
+.Ve
+By default this applies to blocks associated with keywords \fBif\fR,
+\&\fBelsif\fR, \fBelse\fR, \fBunless\fR, \fBfor\fR, \fBforeach\fR, \fBsub\fR, \fBwhile\fR,
+\&\fBuntil\fR, and also with a preceding label.  This can be changed with
+the parameter \fB\-bbvtl=string\fR, or
+\&\fB\-\-block\-brace\-vertical\-tightness\-list=string\fR, where \fBstring\fR is a
+space-separated list of block types.  For more information on the
+possible values of this string, see \*(L"Specifying Block Types\*(R"
+.Sp
+For example, if we want to just apply this style to \f(CW\*(C`if\*(C'\fR,
+\&\f(CW\*(C`elsif\*(C'\fR, and \f(CW\*(C`else\*(C'\fR blocks, we could use 
+\&\f(CW\*(C`perltidy \-bli \-bbvt \-bbvtl='if elsif else'\*(C'\fR.
+.Sp
+There is no vertical tightness control for closing block braces; with
+the exception of one-line blocks, they will normally remain on a 
+separate line.
 .IP "\fB\-wocb=n\fR,  \fB\-\-want\-old\-comma\-breaks=n\fR" 4
 .IX Item "-wocb=n,  --want-old-comma-breaks=n"
 The value of \fBn\fR indicates the degree to which perltidy should follow
@@ -1477,7 +1478,7 @@ Consider:
 The default formatting will flatten this down to one line:
 .Sp
 .Vb 2
-\&    # perltidy -wocb=1 (default)
+\&    # perltidy (default)
 \&    my @list = ( 1, 1, 1, 1, 2, 1, 1, 3, 3, 1, 1, 4, 6, 4, 1, );
 .Ve
 which hides the structure. Using \fB\-wocb=2\fR, plus additional flags
@@ -1491,6 +1492,8 @@ to retain the original style, yields
 \&                1, 3, 3, 1,
 \&                1, 4, 6, 4, 1,);
 .Ve
+Probably the best strategy is to first try the default list formatting,
+and only change \fB\-wocb=n\fR if necessary, on a case by case basis.
 .IP "\fB\-dnl\fR,  \fB\-\-delete\-old\-newlines\fR" 4
 .IX Item "-dnl,  --delete-old-newlines"
 By default, perltidy first deletes all old line break locations, and then it

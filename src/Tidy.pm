@@ -61,7 +61,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.14 2002/04/04 06:05:20 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.15 2002/04/08 14:34:39 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 # Preloaded methods go here.
@@ -784,20 +784,13 @@ sub process_command_line {
     # may disappear at any time.  They are mainly for fine-tuning
     # and debugging. 
     #
-    # xsc --> maximum-space-to-comment    # UNUSED
     # fll --> fuzzy-line-length           # a trivial parameter which gets
     #                                       turned off for the extrude option
     #                                       which is mainly for debugging
-    # iob --> ignore-old-line-breaks      # do not follow breaks in old script
-    #                                     #    might be useful in the future
     # chk --> check-multiline-quotes      # check for old bug; to be deleted
-    # mci --> maximum-continuation-indentation  # UNUSED
     # scl --> short-concatenation-item-length   # helps break at '.'
-    # bob --> break-after-opening-brace   # this is the default
-    # bsj --> big-space-jump              # UNUSED
     # recombine                           # for debugging line breaks
     # I   --> DIAGNOSTICS                 # for debugging 
-    #         maximum-whitespace-columns
     ######################################################################
 
     # here is a summary of the Getopt codes:
@@ -827,7 +820,6 @@ sub process_command_line {
     # These long option names have no abbreviations or are treated specially
     @option_string = qw(
       html!
-      maximum-whitespace-columns=i
       noprofile
       npro
       recombine!
@@ -865,7 +857,6 @@ sub process_command_line {
     $add_option->( 'add-newlines',                              'anl',   '!' );
     $add_option->( 'add-semicolons',                            'asc',   '!' );
     $add_option->( 'add-whitespace',                            'aws',   '!' );
-    $add_option->( 'big-space-jump',                            'bsj',   '=i' );
     $add_option->( 'blanks-before-blocks',                      'bbb',   '!' );
     $add_option->( 'blanks-before-comments',                    'bbc',   '!' );
     $add_option->( 'blanks-before-subs',                        'bbs',   '!' );
@@ -873,11 +864,11 @@ sub process_command_line {
     $add_option->( 'block-brace-vertical-tightness',            'bbvt',  '=i' );
     $add_option->( 'block-brace-vertical-tightness-list',       'bbvtl', '=s' );
     $add_option->( 'brace-left-and-indent',                     'bli',   '!' );
+    $add_option->( 'brace-left-and-indent-list',                'blil',  '=s' );
     $add_option->( 'brace-tightness',                           'bt',    '=i' );
     $add_option->( 'brace-vertical-tightness',                  'bvt',   '=i' );
     $add_option->( 'brace-vertical-tightness-closing',          'bvtc',  '=i' );
     $add_option->( 'break-after-comma-arrows',                  'baa',   '!' );
-    $add_option->( 'break-after-opening-brace',                 'bob',   '!' );
     $add_option->( 'check-multiline-quotes',                    'chk',   '!' );
     $add_option->( 'check-syntax',                              'syn',   '!' );
     $add_option->( 'continuation-indentation',                  'ci',    '=i' );
@@ -910,7 +901,6 @@ sub process_command_line {
     $add_option->( 'fuzzy-line-length',                         'fll',   '!' );
     $add_option->( 'hanging-side-comments',                     'hsc',   '!' );
     $add_option->( 'help',                                      'h',     '' );
-    $add_option->( 'ignore-old-line-breaks',                    'iob',   '!' );
     $add_option->( 'indent-block-comments',                     'ibc',   '!' );
     $add_option->( 'indent-spaced-block-comments',              'isbc',  '!' );
     $add_option->( 'indent-closing-brace',                      'icb',   '!' );
@@ -925,10 +915,8 @@ sub process_command_line {
     $add_option->( 'look-for-hash-bang',                        'x',     '!' );
     $add_option->( 'look-for-selfloader',                       'lsl',   '!' );
     $add_option->( 'maximum-consecutive-blank-lines',           'mbl',   '=i' );
-    $add_option->( 'maximum-continuation-indentation',          'mci',   '=i' );
     $add_option->( 'maximum-fields-per-table',                  'mft',   '=i' );
     $add_option->( 'maximum-line-length',                       'l',     '=i' );
-    $add_option->( 'maximum-space-to-comment',                  'xsc',   '=i' );
     $add_option->( 'minimum-space-to-comment',                  'msc',   '=i' );
     $add_option->( 'nowant-left-space',                         'nwls',  '=s' );
     $add_option->( 'nowant-right-space',                        'nwrs',  '=s' );
@@ -999,7 +987,6 @@ sub process_command_line {
       brace-tightness=1
       brace-vertical-tightness-closing=0
       brace-vertical-tightness=0
-      break-after-opening-brace
       check-syntax
       closing-side-comment-interval=6
       closing-side-comment-maximum-text=20
@@ -1017,15 +1004,12 @@ sub process_command_line {
       maximum-consecutive-blank-lines=1
       maximum-fields-per-table=0
       maximum-line-length=80
-      maximum-space-to-comment=32
-      maximum-whitespace-columns=32
       minimum-space-to-comment=4
       nobrace-left-and-indent
       nobreak-after-comma-arrows
       nocuddled-else
       nodelete-old-whitespace
       nohtml
-      noignore-old-line-breaks
       noindent-closing-brace
       noindent-closing-paren
       nologfile
@@ -1449,11 +1433,6 @@ EOM
     # -isbc implies -ibc
     if ( $Opts{'indent-spaced-block-comments'} ) {
         $Opts{'indent-block-comments'} = 1;
-    }
-
-    # -nbob implies -bli
-    if ( !$Opts{'break-after-opening-brace'} ) {
-        $Opts{'brace-left-and-indent'} = 1;
     }
 
     # -bli flag implies -bl
@@ -3861,7 +3840,6 @@ use vars qw{
   $rOpts_fuzzy_line_length
   $rOpts_indent_columns
   $rOpts_line_up_parentheses
-  $rOpts_maximum_continuation_indentation
   $rOpts_maximum_fields_per_table
   $rOpts_maximum_line_length
   $rOpts_short_concatenation_item_length
@@ -3884,6 +3862,7 @@ use vars qw{
   %is_digraph
   %is_trigraph
   $bli_pattern
+  $bli_list_string
   %is_closing_type
   %is_opening_type
   %is_closing_token
@@ -3892,9 +3871,10 @@ use vars qw{
 
 BEGIN {
 
-    # block types for which -bli is active
-    $bli_pattern = '^((if|else|elsif|unless|while|for|foreach|do|\w+:)$|sub)';
-    @_           = qw(
+    # default list of block types for which -bli would apply
+    $bli_list_string = 'if else elsif unless while for foreach do : sub';
+
+    @_ = qw(
       .. :: << >> ** && .. ||  -> => += -= .= %= &= |= ^= *= <>
       <= >= == =~ !~ != ++ -- /= x=
     );
@@ -4310,7 +4290,7 @@ sub set_leading_whitespace {
 
     my ( $level, $ci_level, $in_continued_quote ) = @_;
 
-    # patch for -bli, which adds one continuation indentation for 
+    # modify for -bli, which adds one continuation indentation for 
     # opening braces
     if ( $rOpts_brace_left_and_indent
         && $max_index_to_go == 0
@@ -5023,6 +5003,7 @@ sub check_options {
         }
     }
 
+    make_bli_pattern();
     make_block_brace_vertical_tightness_pattern();
 
     if ( $rOpts->{'line-up-parentheses'} ) {
@@ -5318,14 +5299,31 @@ sub make_closing_side_comment_list_pattern {
         && $rOpts->{'closing-side-comment-list'} )
     {
         $closing_side_comment_list_pattern =
-          make_block_pattern( $rOpts->{'closing-side-comment-list'} );
+          make_block_pattern( '-cscl', $rOpts->{'closing-side-comment-list'} );
     }
+}
+
+sub make_bli_pattern {
+
+    if (
+        defined(
+            $rOpts->{'brace-left-and-indent-list'}
+              && $rOpts->{'brace-left-and-indent-list'}
+        )
+      )
+    {
+        $bli_list_string = $rOpts->{'brace-left-and-indent-list'};
+    }
+
+    $bli_pattern = make_block_pattern( '-blil', $bli_list_string );
 }
 
 sub make_block_brace_vertical_tightness_pattern {
 
     # turn any input list into a regex for recognizing selected block types
-    $block_brace_vertical_tightness_pattern = $bli_pattern;
+    $block_brace_vertical_tightness_pattern =
+      '^((if|else|elsif|unless|while|for|foreach|do|\w+:)$|sub)';
+
     if (
         defined(
             $rOpts->{'block-brace-vertical-tightness-list'}
@@ -5334,7 +5332,8 @@ sub make_block_brace_vertical_tightness_pattern {
       )
     {
         $block_brace_vertical_tightness_pattern =
-          make_block_pattern( $rOpts->{'block-brace-vertical-tightness-list'} );
+          make_block_pattern( '-bbvtl',
+            $rOpts->{'block-brace-vertical-tightness-list'} );
     }
 }
 
@@ -5353,14 +5352,17 @@ sub make_block_pattern {
 
 =cut
 
-    my ( $string, $abbrev ) = @_;
+    my ( $abbrev, $string ) = @_;
     $string =~ s/^\s*//;
     $string =~ s/\s$//;
     my @list = split /\s+/, $string;
-    my $saw_sub = 0;
-    my @words   = ();
+    my @words = ();
+    my %seen;
     for my $i (@list) {
-        if ( $i eq 'sub' ) { $saw_sub = 1 }
+        next if $seen{$i};
+        $seen{$i} = 1;
+        if ( $i eq 'sub' ) {
+        }
         elsif ( $i eq ':' ) {
             push @words, '\w+:';
         }
@@ -5368,15 +5370,14 @@ sub make_block_pattern {
             push @words, $i;
         }
         else {
-            print STDERR "unrecognized block type $i after -cscl, ignoring\n";
+            print STDERR "unrecognized block type $i after $abbrev, ignoring\n";
         }
     }
     my $pattern = '(' . join ( '|', @words ) . ')$';
-    if ($saw_sub) {
+    if ( $seen{'sub'} ) {
         $pattern = '(' . $pattern . '|sub)';
     }
     $pattern = '^' . $pattern;
-
     return $pattern;
 }
 
@@ -6428,7 +6429,7 @@ sub set_white_space_flag {
          /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
      Examples:
        *VERSION = \'1.01';
-       ( $VERSION ) = '$Revision: 1.14 $ ' =~ /\$Revision:\s+([^\s]+)/;
+       ( $VERSION ) = '$Revision: 1.15 $ ' =~ /\$Revision:\s+([^\s]+)/;
      We will pass such a line straight through without breaking
      it unless -npvl is used
     
@@ -6734,9 +6735,7 @@ sub set_white_space_flag {
                     $want_break
 
                     # and we were unable to start looking for a block,
-                    # or the -nbob is in use
-                    && ( $index_start_one_line_block == UNDEFINED_INDEX
-                        || !$rOpts->{'break-after-opening-brace'} )
+                    && $index_start_one_line_block == UNDEFINED_INDEX
 
                     # or if it will not be on same line as its keyword, so that
                     # it will be outdented (eval.t, overload.t), and the user
@@ -6765,13 +6764,8 @@ sub set_white_space_flag {
                 if ($side_comment_follows) { $no_internal_newlines = 1 }
 
                 # now output this line
-                unless ( !$rOpts->{'break-after-opening-brace'}
-                    && $block_type =~ /$bli_pattern/o
-                    && $max_index_to_go == 0 )
-                {
-                    unless ($no_internal_newlines) {
-                        output_line_to_go();
-                    }
+                unless ($no_internal_newlines) {
+                    output_line_to_go();
                 }
             }
 
@@ -7002,8 +6996,7 @@ sub set_white_space_flag {
                         $last_nonblank_token eq '}'
                         && (
                             $is_block_without_semicolon{
-                                $last_nonblank_block_type
-                            }
+                                $last_nonblank_block_type }
                             || $last_nonblank_block_type =~ /^sub\s+\w/
                             || $last_nonblank_block_type =~ /^\w+:$/ )
                     )
@@ -7116,7 +7109,6 @@ sub set_white_space_flag {
         }
 
         # mark old line breakpoints in current output stream
-        ##if ( $max_index_to_go >= 0 && !$rOpts->{'ignore-old-line-breaks'} ) {
         if ( $max_index_to_go >= 0 && $rOpts_want_old_comma_breaks > 0 ) {
             $old_breakpoint_to_go[$max_index_to_go] = 1;
         }
@@ -8911,26 +8903,10 @@ sub set_vertical_tightness_flags {
               )
             {
 
-## BUBBA:
-##                # for 2 line method call without -vt flag, set to valid
-##                # if closing paren is within next 2 lines; otherwise
-##                # aligner will do it if it sees the closing paren.
+                # If -vt flag has not been set, mark this as invalid
+                # and aligner will validate it if it sees the closing paren
+                # within 2 lines.
                 my $valid_flag = $ovt;
-##                unless ($valid_flag) {
-##                    my $i_mate = $mate_index_to_go[$iend];
-##                    if (
-##                        $i_mate >= 0
-##                        && (
-##                            $i_mate <= $iend_next
-##                            || ( $n + 2 <= $n_last_line
-##                                && $i_mate <= $$ri_last[ $n + 2 ] )
-##                        )
-##                      )
-##                    {
-##                        $valid_flag = 1;
-##                    }
-##                }
-
                 @{$rvertical_tightness_flags} =
                   ( 1, $ovt, $type_sequence_to_go[$iend], $valid_flag );
             }
@@ -10837,84 +10813,28 @@ sub find_token_starting_list {
 
         # nothing to do if no commas seen
         return if ( $item_count < 1 );
-
-        #---------------------------------------------------------------
-        # Compound List Rule 1: 
-        # Break at every comma for a list containing a broken sublist.
-        # This has higher priority than the Interrupted List Rule.
-        #---------------------------------------------------------------
-        # BUBBA: FIXME: add option to not break between small items
-        # say up to 8 characters, 3 tokens, no space
-        if ( $has_broken_sublist[$depth] ) {
-            foreach ( 0 .. $item_count - 1 ) {
-                set_forced_breakpoint( $rcomma_index->[$_] );
-            }
-            return;
-        }
-
-        my $i_first_comma = $$rcomma_index[0];
-        my $i_last_comma  = $$rcomma_index[ $item_count - 1 ];
-
-        #my ( $a, $b, $c ) = caller();
-        #print "LISTX: in set_list $a $c interupt=$interrupted count=$item_count
-        #i_first = $i_first_comma  i_last=$i_last_comma max=$max_index_to_go\n";
-        #print "depth=$depth has_broken=$has_broken_sublist[$depth] is_multi=$is_multiline opening_paren=($i_opening_paren) \n";
-
-        #---------------------------------------------------------------
-        # Interrupted List Rule:
-        # A list is is forced to use old breakpoints if it was interrupted
-        # by side comments or blank lines, or requested by user.
-        #---------------------------------------------------------------
-        if ( $rOpts_want_old_comma_breaks > 1
-            || $interrupted
-            || $i_opening_paren < 0 )
-        {
-            copy_old_breakpoints( $i_first_comma, $i_last_comma );
-            return;
-        }
-
-        my $opening_token       = $tokens_to_go[$i_opening_paren];
-        my $opening_environment =
-          $container_environment_to_go[$i_opening_paren];
-
-        #---------------------------------------------------------------
-        # Looks like a list of items.  We have to look at it and size it up.
-        #---------------------------------------------------------------
-
-        return if ( $i_first_comma < 1 );
+        my $i_first_comma     = $$rcomma_index[0];
+        my $i_true_last_comma = $$rcomma_index[ $item_count - 1 ];
+        my $i_last_comma      = $i_true_last_comma;
         if ( $i_last_comma >= $max_index_to_go ) {
             $i_last_comma = $$rcomma_index[ --$item_count - 1 ];
-            return if ( $item_count <= 2 );    # not much of a list
+            return if ( $item_count < 1 );
         }
 
-        #-------------------------------------------------------------------
-        # Return if this will fit on one line 
-        #-------------------------------------------------------------------
-
-        my $i_opening_minus = find_token_starting_list($i_opening_paren);
-        return
-          unless excess_line_length( $i_opening_minus, $i_closing_paren ) > 0;
-
-        #-------------------------------------------------------------------
-        # Now we know that this block spans multiple lines; we have to set
-        # at least one breakpoint -- real or fake -- as a signal to break
-        # open any outer containers.
-        #-------------------------------------------------------------------
-        set_fake_breakpoint();
-
-        # find lengths of all items in the list
+        #---------------------------------------------------------------
+        # find lengths of all items in the list to calculate page layout
+        #---------------------------------------------------------------
         my $comma_count = $item_count;
         my @item_lengths;
         my @i_term_begin;
         my @i_term_end;
         my @i_term_comma;
         my $i_prev_plus;
-
-        # find max length of list items to calculate page layout
         my @max_length = ( 0, 0 );
         my $first_term_length;
         my $i      = $i_opening_paren;
         my $is_odd = 1;
+
         for ( my $j = 0 ; $j < $comma_count ; $j++ ) {
             $is_odd      = 1 - $is_odd;
             $i_prev_plus = $i + 1;
@@ -10930,7 +10850,7 @@ sub find_token_starting_list {
             push @i_term_end,   $i_term_end;
             push @i_term_comma, $i;
 
-            # currently adding 2 to all lengths (for comma and space)
+            # note: currently adding 2 to all lengths (for comma and space)
             my $length =
               2 + token_sequence_length( $i_term_begin, $i_term_end );
             push @item_lengths, $length;
@@ -10984,15 +10904,117 @@ sub find_token_starting_list {
             }
         }
 
+        #---------------------------------------------------------------
+        # End of length calculations
+        #---------------------------------------------------------------
+
+        #---------------------------------------------------------------
+        # Compound List Rule 1: 
+        # Break at (almost) every comma for a list containing a broken
+        # sublist.  This has higher priority than the Interrupted List
+        # Rule.
+        #---------------------------------------------------------------
+        if ( $has_broken_sublist[$depth] ) {
+
+            # Break at every comma except for a comma between two
+            # simple, small terms.  This prevents long vertical
+            # columns of, say, just 0's.
+            my $small_length = 10;    # 2 + actual maximum length wanted
+
+            # We'll insert a break in long runs of small terms to 
+            # allow alignment in uniform tables. 
+            my $skipped_count = 0;
+            my $columns       = table_columns_available($i_first_comma);
+            my $fields        = int( $columns / $small_length );
+            if ( $rOpts_maximum_fields_per_table
+                && $fields > $rOpts_maximum_fields_per_table )
+            {
+                $fields = $rOpts_maximum_fields_per_table;
+            }
+            my $max_skipped_count = $fields - 1;
+
+            my $is_simple_last_term = 0;
+            my $is_simple_next_term = 0;
+            foreach my $j ( 0 .. $item_count ) {
+                $is_simple_last_term = $is_simple_next_term;
+                $is_simple_next_term = 0;
+                if ( $j < $item_count
+                    && $i_term_end[$j] == $i_term_begin[$j]
+                    && $item_lengths[$j] <= $small_length )
+                {
+                    $is_simple_next_term = 1;
+                }
+                next if $j == 0;
+                if ( $is_simple_last_term
+                    && $is_simple_next_term
+                    && $skipped_count < $max_skipped_count )
+                {
+                    $skipped_count++;
+                }
+                else {
+                    $skipped_count = 0;
+                    my $i = $i_term_comma[ $j - 1 ];
+                    last unless defined $i;
+                    set_forced_breakpoint($i);
+                }
+            }
+
+            # always break at the last comma if this list is
+            # interrupted; we wouldn't want to leave a terminal '{', for
+            # example.
+            if ($interrupted) { set_forced_breakpoint($i_true_last_comma) }
+            return;
+        }
+
+        #my ( $a, $b, $c ) = caller();
+        #print "LISTX: in set_list $a $c interupt=$interrupted count=$item_count
+        #i_first = $i_first_comma  i_last=$i_last_comma max=$max_index_to_go\n";
+        #print "depth=$depth has_broken=$has_broken_sublist[$depth] is_multi=$is_multiline opening_paren=($i_opening_paren) \n";
+
+        #---------------------------------------------------------------
+        # Interrupted List Rule:
+        # A list is is forced to use old breakpoints if it was interrupted
+        # by side comments or blank lines, or requested by user.
+        #---------------------------------------------------------------
+        if ( $rOpts_want_old_comma_breaks > 1
+            || $interrupted
+            || $i_opening_paren < 0 )
+        {
+            copy_old_breakpoints( $i_first_comma, $i_true_last_comma );
+            return;
+        }
+
+        #---------------------------------------------------------------
+        # Looks like a list of items.  We have to look at it and size it up.
+        #---------------------------------------------------------------
+
+        my $opening_token       = $tokens_to_go[$i_opening_paren];
+        my $opening_environment =
+          $container_environment_to_go[$i_opening_paren];
+
+        #-------------------------------------------------------------------
+        # Return if this will fit on one line 
+        #-------------------------------------------------------------------
+
+        my $i_opening_minus = find_token_starting_list($i_opening_paren);
+        return
+          unless excess_line_length( $i_opening_minus, $i_closing_paren ) > 0;
+
+        #-------------------------------------------------------------------
+        # Now we know that this block spans multiple lines; we have to set
+        # at least one breakpoint -- real or fake -- as a signal to break
+        # open any outer containers.
+        #-------------------------------------------------------------------
+        set_fake_breakpoint();
+
         # be sure we do not extend beyond the current list length
         if ( $i_effective_last_comma >= $max_index_to_go ) {
             $i_effective_last_comma = $max_index_to_go - 1;
         }
 
-        # Now that the term lengths are known, we can set a flag
-        # indicating if we need to break open to keep -lp items aligned.
-        # This is necessary if any of the list terms exceeds the
-        # available space after the '('. 
+        # Set a flag indicating if we need to break open to keep -lp
+        # items aligned.  This is necessary if any of the list terms
+        # exceeds the available space after the '('. 
         my $need_lp_break_open = $must_break_open;
         if ( $rOpts_line_up_parentheses && !$must_break_open ) {
             my $columns_if_unbroken = $rOpts_maximum_line_length -
@@ -11002,10 +11024,11 @@ sub find_token_starting_list {
               || ( $first_term_length > $columns_if_unbroken );
         }
 
-        # Specify if the list must have an even number of fields or not.  It is
-        # generally safest to assume an even number, because the list items
-        # might be a hash list.  But if we can be sure that it is not a hash,
-        # then we can allow an odd number for more flexibility.
+        # Specify if the list must have an even number of fields or not.
+        # It is generally safest to assume an even number, because the
+        # list items might be a hash list.  But if we can be sure that
+        # it is not a hash, then we can allow an odd number for more
+        # flexibility.
         my $odd_or_even = 2;    # 1 = odd field count ok, 2 = want even count
 
         if ( $identifier_count >= $item_count - 1
@@ -13395,9 +13418,7 @@ use vars qw(
   $rOpts_tabs
   $rOpts_entab_leading_whitespace
 
-  $rOpts_maximum_whitespace_columns
   $rOpts_minimum_space_to_comment
-  $rOpts_maximum_space_to_comment
 
 );
 
@@ -13442,13 +13463,11 @@ sub initialize {
     $cached_line_valid = 0;
 
     # frequently used parameters
-    $rOpts_indent_columns             = $rOpts->{'indent-columns'};
-    $rOpts_tabs                       = $rOpts->{'tabs'};
-    $rOpts_entab_leading_whitespace   = $rOpts->{'entab-leading-whitespace'};
-    $rOpts_maximum_whitespace_columns = $rOpts->{'maximum-whitespace-columns'};
-    $rOpts_minimum_space_to_comment   = $rOpts->{'minimum-space-to-comment'};
-    $rOpts_maximum_space_to_comment   = $rOpts->{'maximum-space-to-comment'};
-    $rOpts_maximum_line_length        = $rOpts->{'maximum-line-length'};
+    $rOpts_indent_columns           = $rOpts->{'indent-columns'};
+    $rOpts_tabs                     = $rOpts->{'tabs'};
+    $rOpts_entab_leading_whitespace = $rOpts->{'entab-leading-whitespace'};
+    $rOpts_minimum_space_to_comment = $rOpts->{'minimum-space-to-comment'};
+    $rOpts_maximum_line_length      = $rOpts->{'maximum-line-length'};
 
     forget_side_comment();
 
@@ -14427,24 +14446,23 @@ sub adjust_side_comment {
         my $avail = $line->get_available_space_on_right();
 
         # try to use the previous comment column
-        ##my $move = $last_comment_column - $line->get_column( $kmax - 2 );
         my $side_comment_column = $line->get_column( $kmax - 2 );
         my $move                = $last_comment_column - $side_comment_column;
 
-        my $sc_line0 = $side_comment_history[0]->[0];
-        my $sc_col0  = $side_comment_history[0]->[1];
-        my $sc_line1 = $side_comment_history[1]->[0];
-        my $sc_col1  = $side_comment_history[1]->[1];
-        my $sc_line2 = $side_comment_history[2]->[0];
-        my $sc_col2  = $side_comment_history[2]->[1];
-
-        # BUBBA: FUTURE LOGIC:
-        # Be sure to ignore 'do not align' and  '} # end comments'
-        # Find first $move > 0 and $move <= $avail as follows:
-        # 1. try sc_col1 if sc_col1 == sc_col0 && (line-sc_line0) < 12
-        # 2. try sc_col2 if (line-sc_line2) < 12
-        # 3. try min possible space, plus up to 8, 
-        # 4. try min possible space
+##        my $sc_line0 = $side_comment_history[0]->[0];
+##        my $sc_col0  = $side_comment_history[0]->[1];
+##        my $sc_line1 = $side_comment_history[1]->[0];
+##        my $sc_col1  = $side_comment_history[1]->[1];
+##        my $sc_line2 = $side_comment_history[2]->[0];
+##        my $sc_col2  = $side_comment_history[2]->[1];
+##
+##        # FUTURE UPDATES:
+##        # Be sure to ignore 'do not align' and  '} # end comments'
+##        # Find first $move > 0 and $move <= $avail as follows:
+##        # 1. try sc_col1 if sc_col1 == sc_col0 && (line-sc_line0) < 12
+##        # 2. try sc_col2 if (line-sc_line2) < 12
+##        # 3. try min possible space, plus up to 8, 
+##        # 4. try min possible space
 
         if ( $kmax > 0 && !$do_not_align ) {
 
@@ -14588,7 +14606,6 @@ sub write_vertically_aligned_line {
           );
 
         # compute spaces of padding before this field
-        ##$line->get_column( $j - 1 ) - ( length($str) + $leading_space_count );
         my $col = $line->get_column( $j - 1 );
         $pad = $col - ( length($str) + $leading_space_count );
 
@@ -17781,6 +17798,14 @@ EOM
                     next;
                 }
 
+                # a bare word immediately followed by :: is not a keyword;
+                # use $tok_kw when testing for keywords to avoid a mistake
+                my $tok_kw = $tok;
+                if ( $$rtokens[ $i + 1 ] eq ':' && $$rtokens[ $i + 2 ] eq ':' )
+                {
+                    $tok_kw .= '::';
+                }
+
                 # handle operator x (now we know it isn't $x=)
                 if ( ( $tok =~ /^x\d*$/ ) && ( $expecting == OPERATOR ) ) {
                     if ( $tok eq 'x' ) {
@@ -17921,7 +17946,7 @@ EOM
                 }
 
                 #      'sub' || 'package' 
-                elsif ( $is_sub_package{$tok} ) {
+                elsif ( $is_sub_package{$tok_kw} ) {
                     error_if_expecting_OPERATOR()
                       if ( $expecting == OPERATOR );
                     scan_id();
@@ -17931,13 +17956,13 @@ EOM
                 # It simplifies things to give these type ';', so that when we
                 # start rescanning we will be expecting a token of type TERM.
                 # We will switch to type 'k' before outputting the tokens.
-                elsif ( $is_format_END_DATA{$tok} ) {
+                elsif ( $is_format_END_DATA{$tok_kw} ) {
                     $type = ';';    # make tokenizer look for TERM next
-                    $tokenizer_self->{ $is_format_END_DATA{$tok} } = 1;
+                    $tokenizer_self->{ $is_format_END_DATA{$tok_kw} } = 1;
                     last;
                 }
 
-                elsif ( $is_keyword{$tok} ) {
+                elsif ( $is_keyword{$tok_kw} ) {
                     $type = 'k';
 
                     # Since for and foreach may not be followed immediately
