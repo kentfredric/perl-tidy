@@ -60,7 +60,7 @@ eval "use diagnostics";
 use IO::File;
 
 BEGIN {
-    ($VERSION=q($Id: perltidy,v 1.73 2001/12/19 01:07:33 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # one line for MakeMaker
+    ($VERSION=q($Id: perltidy,v 1.74 2001/12/19 18:13:30 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 # Preloaded methods go here.
@@ -2912,6 +2912,44 @@ sub write_line {
 #####################################################################
 
 package PerlTidy::Formatter;
+
+BEGIN {
+
+    # Caution: these debug flags produce a lot of output
+    # They should all be 0 except when debugging small scripts
+    use constant FORMATTER_DEBUG_FLAG_BOND    => 0;
+    use constant FORMATTER_DEBUG_FLAG_BREAK   => 0;
+    use constant FORMATTER_DEBUG_FLAG_CI      => 0;
+    use constant FORMATTER_DEBUG_FLAG_EQUALS  => 0;
+    use constant FORMATTER_DEBUG_FLAG_FLUSH   => 0;
+    use constant FORMATTER_DEBUG_FLAG_FORCE   => 0;
+    use constant FORMATTER_DEBUG_FLAG_LIST    => 0;
+    use constant FORMATTER_DEBUG_FLAG_NOBREAK => 0;
+    use constant FORMATTER_DEBUG_FLAG_OUTPUT  => 0;
+    use constant FORMATTER_DEBUG_FLAG_SPARSE  => 0;
+    use constant FORMATTER_DEBUG_FLAG_STORE   => 0;
+    use constant FORMATTER_DEBUG_FLAG_UNDOBP  => 0;
+    use constant FORMATTER_DEBUG_FLAG_WHITE   => 0;
+
+    my $debug_warning = sub {
+        print "FORMATTER_DEBUGGING with key $_[0]\n";
+    };
+
+    FORMATTER_DEBUG_FLAG_BOND    && $debug_warning->('BOND');
+    FORMATTER_DEBUG_FLAG_BREAK   && $debug_warning->('BREAK');
+    FORMATTER_DEBUG_FLAG_CI      && $debug_warning->('CI');
+    FORMATTER_DEBUG_FLAG_EQUALS  && $debug_warning->('EQUALS');
+    FORMATTER_DEBUG_FLAG_FLUSH   && $debug_warning->('FLUSH');
+    FORMATTER_DEBUG_FLAG_FORCE   && $debug_warning->('FORCE');
+    FORMATTER_DEBUG_FLAG_LIST    && $debug_warning->('LIST');
+    FORMATTER_DEBUG_FLAG_NOBREAK && $debug_warning->('NOBREAK');
+    FORMATTER_DEBUG_FLAG_OUTPUT  && $debug_warning->('OUTPUT');
+    FORMATTER_DEBUG_FLAG_SPARSE  && $debug_warning->('SPARSE');
+    FORMATTER_DEBUG_FLAG_STORE   && $debug_warning->('STORE');
+    FORMATTER_DEBUG_FLAG_UNDOBP  && $debug_warning->('UNDOBP');
+    FORMATTER_DEBUG_FLAG_WHITE   && $debug_warning->('WHITE');
+}
+
 use Carp;
 use vars qw{
 
@@ -3039,7 +3077,6 @@ use vars qw{
   $rOpts_line_up_parentheses
   $rOpts_maximum_line_length
 
-  %FORMATTER_DEBUG_FLAG
   %tightness
   %matching_token
   $rOpts
@@ -3298,7 +3335,7 @@ sub prepare_for_new_input_lines {
     $last_last_nonblank_token_to_go = '';
     $forced_breakpoint_count        = 0;
     $forced_breakpoint_undo_count   = 0;
-    $brace_follower_pattern         = "";
+    $brace_follower_pattern         = undef;
     $lengths_to_go[0] = 0;
     $old_line_count_in_batch = 1;
 
@@ -3383,7 +3420,6 @@ sub get_SPACES {
     # return the number of leading spaces associated with an indentation
     # variable $indentation is either a constant number of spaces or an object
     # with a get_SPACES method.
-    ##my ($indentation) = @_;
     my $indentation = shift;
     return ref($indentation) ? $indentation->get_SPACES() : $indentation;
 }
@@ -4305,16 +4341,16 @@ EOM
     # Define here tokens which may follow the closing brace of a do statement
     # on the same line, as in:
     #   } while ( $something);
-    $do_follower_pattern = '^(until|while|unless|if|;|,)$';
+    $do_follower_pattern = qr'^(until|while|unless|if|;|,)$';
 
     # These tokens may follow the closing brace of an if or elsif block.
     # In other words, for cuddled else we want code to look like:
     #   } elsif ( $something) {
     #   } else {
     if ( $rOpts->{'cuddled-else'} ) {
-        $if_brace_follower_pattern = '^(else|elsif)$';
+        $if_brace_follower_pattern = qr'^(else|elsif)$';
     }
-    else { $if_brace_follower_pattern = ""; }
+    else { $if_brace_follower_pattern = undef; }
 
     # TESTING -- deactivated 20010614 because -bl didn't
     # work well with it.
@@ -5029,7 +5065,7 @@ sub set_white_space_flag {
         }
         $white_space_flag[$j] = $ws;
 
-        if ( $FORMATTER_DEBUG_FLAG{WHITE} ) {
+        FORMATTER_DEBUG_FLAG_WHITE && do {
             my $str = substr( $last_token, 0, 15 );
             $str .= ' ' x ( 16 - length($str) );
             if ( !defined($ws_1) ) { $ws_1 = "*" }
@@ -5038,7 +5074,7 @@ sub set_white_space_flag {
             if ( !defined($ws_4) ) { $ws_4 = "*" }
             print
 "WHITE:  i=$j $str $last_type $type $ws_1 : $ws_2 : $ws_3 : $ws_4 : $ws \n";
-        }
+        };
     }
     return \@white_space_flag;
 }
@@ -5231,7 +5267,7 @@ sub print_line_of_tokens {
          /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
      Examples:
        *VERSION = \'1.01';
-       ( $VERSION ) = '$Revision: 1.73 $ ' =~ /\$Revision:\s+([^\s]+)/;
+       ( $VERSION ) = '$Revision: 1.74 $ ' =~ /\$Revision:\s+([^\s]+)/;
      We will pass such a line straight through (by changing it
      to a quoted string) unless -npvl is used
     
@@ -5240,7 +5276,7 @@ sub print_line_of_tokens {
      block sequence numbers may see a closing sequence number but not
      the corresponding opening sequence number (sidecmt.t).  Example:
 
-    my $VERSION = do { my @r = (q$Revision: 1.73 $ =~ /\d+/g); sprintf
+    my $VERSION = do { my @r = (q$Revision: 1.74 $ =~ /\d+/g); sprintf
     "%d."."%02d" x $#r, @r }; 
 
     Here, the opening brace of 'do {' will not be seen, while the closing
@@ -5368,6 +5404,10 @@ sub print_line_of_tokens {
 
         if ( $type eq '#' ) {
 
+            # trim trailing whitespace
+            # (there is no option at present to prevent this)
+            $token =~ s/\s*$//;
+
             if (
                 $rOpts->{'delete-side-comments'}
 
@@ -5393,7 +5433,7 @@ sub print_line_of_tokens {
             unless ( $token =~ /$brace_follower_pattern/ ) {
                 output_line_to_go();
             }
-            $brace_follower_pattern = "";
+            $brace_follower_pattern = undef;
         }
 
         $j_next = ( $$rtoken_type[ $j + 1 ] eq 'b' ) ? $j + 2 : $j + 1;
@@ -5430,11 +5470,9 @@ sub print_line_of_tokens {
             note_embedded_tab();
         }
 
-        # trim blanks from right of side comments and qw quotes
-        # (To avoid trimming qw quotes use -ntqw. There is no way
-        # at present to avoid trimming comments, but it could be an
-        # option)
-        if ( $type =~ /^[#q]$/ ) {
+        # trim blanks from right of qw quotes
+        # (To avoid trimming qw quotes use -ntqw; the tokenizer handles this) 
+        if ( $type eq 'q' ) {
             $token =~ s/\s*$//;
         }
 
@@ -5443,8 +5481,8 @@ sub print_line_of_tokens {
         #--------------------------------------------------------
 
         # insert any needed whitespace
-        if ( ( $max_index_to_go >= 0 )
-            && ( $type ne 'b' )
+        if ( ( $type ne 'b' )
+            && ( $max_index_to_go >= 0 )
             && ( $types_to_go[$max_index_to_go] ne 'b' )
             && $rOpts_add_whitespace )
         {
@@ -5499,7 +5537,8 @@ sub print_line_of_tokens {
             if ( ( $max_index_to_go >= 0 ) && ( $last_nonblank_type eq ')' ) ) {
                 if ( $block_type =~ /^(if|else|elsif)$/
                     && ( $tokens_to_go[0] eq '}' )
-                    && ( $rOpts->{'cuddled-else'} ) )
+                    && $rOpts_cuddled_else )
+                  ##&& ( $rOpts->{'cuddled-else'} ) )
                 {
                     $keyword_on_same_line = 1;
                 }
@@ -5689,12 +5728,12 @@ sub print_line_of_tokens {
                 $brace_follower_pattern = $if_brace_follower_pattern;
             }
             elsif ( $block_type =~ /^(else)$/ ) {
-                $brace_follower_pattern = '^$';
+                $brace_follower_pattern = qr'^$';
             }
 
             # added eval for borris.t
             elsif ( $block_type =~ /^(sort|map|grep|eval)$/ ) {
-                $brace_follower_pattern = "";
+                $brace_follower_pattern = undef;
             }
 
             # anonymous sub
@@ -5704,11 +5743,11 @@ sub print_line_of_tokens {
                 # see tk3.t and PP.pm
                 if ($is_one_line_block) {
                     $brace_follower_pattern =
-                      '^(\,|\;|:|=>|or|and|\&\&|\|\}|\]|\)|)$';
+                      qr'^(\,|\;|:|=>|or|and|\&\&|\|\}|\]|\)|)$';
                 }
                 else {
                     $brace_follower_pattern =
-                      '^(\,|\;|:|=>|or|and|\&\&|\|\}|\)|)$';
+                      qr'^(\,|\;|:|=>|or|and|\&\&|\|\}|\)|)$';
                 }
             }
 
@@ -5718,7 +5757,8 @@ sub print_line_of_tokens {
             # Testfiles: 'Toolbar.pm', 'Menubar.pm', bless.t, '3rules.pl'
             # break1.t
             else {
-                $brace_follower_pattern = '^(\,|\;|:|=>|or|and|\&\&|\|\}|\)|)$';
+                $brace_follower_pattern =
+                  qr'^(\,|\;|:|=>|or|and|\&\&|\|\}|\)|)$';
             }
 
             # See if an elsif block is followed by another elsif or else;
@@ -5760,7 +5800,7 @@ sub print_line_of_tokens {
                 unless ( $next_nonblank_token =~ /$brace_follower_pattern/ ) {
                     output_line_to_go() unless ($no_internal_newlines);
                 }
-                $brace_follower_pattern = "";
+                $brace_follower_pattern = undef;
             }
 
             else {
@@ -5980,7 +6020,8 @@ sub starting_one_line_block {
     else {
 
         # cannot use one-line blocks with cuddled else else/elsif lines
-        if ( ( $tokens_to_go[0] eq '}' ) && ( $rOpts->{'cuddled-else'} ) ) {
+        ##if ( ( $tokens_to_go[0] eq '}' ) && ( $rOpts->{'cuddled-else'} ) ) {
+        if ( ( $tokens_to_go[0] eq '}' ) && $rOpts_cuddled_else ) {
             return 0;
         }
     }
@@ -6149,11 +6190,11 @@ sub store_token_to_go {
     # when considering one-line blocks.
     set_leading_whitespace( $level, $ci_level, $in_continued_quote );
 
-    if ( $FORMATTER_DEBUG_FLAG{STORE} ) {
+    FORMATTER_DEBUG_FLAG_STORE && do {
         my ( $a, $b, $c ) = caller();
         print
 "STORE: from $a $c: storing token $token type $type lev=$level slev=$slevel at $max_index_to_go\n";
-    }
+    };
 }
 
 sub want_blank_line {
@@ -6226,14 +6267,24 @@ sub correct_lp_indentation {
                 my $actual_pos;
                 my $predicted_pos = $indentation->get_SPACES();
                 if ( $i > $ibeg ) {
+
+                    # token is mid-line - use length to previous token
                     $actual_pos = total_line_length( $ibeg, $i - 1 );
                 }
                 elsif ( $line > 0 ) {
+
+                    # handle case where token starts a new line; 
+                    # use length of previous line 
                     my $ibegm = $$ri_first[ $line - 1 ];
                     my $iendm = $$ri_last[ $line - 1 ];
-                    $actual_pos = total_line_length( $ibegm, $iendm ) + 1;
+                    $actual_pos = total_line_length( $ibegm, $iendm );
+
+                    # follow -pt style
+                    ++$actual_pos if $types_to_go[ $iendm + 1 ] eq 'b';
                 }
                 else {
+
+                    # token is first character of first line of batch
                     $actual_pos = $predicted_pos;
                 }
 
@@ -6352,14 +6403,14 @@ sub flush {
 sub output_line_to_go {
 
     # debug stuff; this routine can be called from many points
-    if ( $FORMATTER_DEBUG_FLAG{OUTPUT} ) {
+    FORMATTER_DEBUG_FLAG_OUTPUT && do {
         my ( $a, $b, $c ) = caller;
         write_diagnostics(
 "OUTPUT: output_line_to_go called: $a $c $last_nonblank_type $last_nonblank_token, one_line=$index_start_one_line_block, tokens to write=$max_index_to_go\n"
         );
         my $output_str = join "", @tokens_to_go[ 0 .. $max_index_to_go ];
         write_diagnostics("$output_str\n");
-    }
+    };
 
     # just set a tentative breakpoint if we might be in a one-line block
     if ( $index_start_one_line_block != UNDEFINED_INDEX ) {
@@ -6464,12 +6515,11 @@ sub output_line_to_go {
             $nonblank_lines_at_depth[$last_line_leading_level] = 1;
         }
 
-        # debugging stuff
-        if ( $FORMATTER_DEBUG_FLAG{FLUSH} ) {
+        FORMATTER_DEBUG_FLAG_FLUSH && do {
             my ( $package, $file, $line ) = caller;
             print
 "FLUSH: flushing from $package $file $line, types= $types_to_go[$imin] to $types_to_go[$imax]\n";
-        }
+        };
 
         # add a couple of extra terminal blank tokens
         pad_array_to_go();
@@ -6528,7 +6578,6 @@ sub output_line_to_go {
 
         # do corrector step if -lp option is used
         my $do_not_pad = 0;
-        ##if ( $rOpts->{'line-up-parentheses'} ) {
         if ($rOpts_line_up_parentheses) {
             $do_not_pad = correct_lp_indentation( $ri_first, $ri_last );
         }
@@ -7370,11 +7419,9 @@ sub set_adjusted_indentation {
         my $space_count = leading_spaces_to_go($ibeg);
         if ( $space_count > 0 ) {
             $space_count -= $rOpts_continuation_indentation;
-            ##$space_count -= $rOpts->{'continuation-indentation'};
             $is_outdented_line = 1;
             if ( $space_count < 0 ) { $space_count = 0 }
 
-            ##if ( $rOpts->{'line-up-parentheses'} ) {
             if ($rOpts_line_up_parentheses) {
                 $indentation =
                   new_lp_indentation_item( $space_count, $lev, 0, 0, 0 );
@@ -7396,7 +7443,8 @@ sub set_vertical_alignment_markers {
     # accept vertical alignment.
 
     # nothing to do if we aren't allowed to change whitespace
-    if ( !$rOpts->{'add-whitespace'} ) {
+    ##if ( !$rOpts->{'add-whitespace'} ) {
+    if ( !$rOpts_add_whitespace ) {
         for my $i ( 0 .. $max_index_to_go ) {
             $matching_token_to_go[$i] = '';
         }
@@ -7998,7 +8046,7 @@ sub set_bond_strengths {
 
         # good to break before 'if', 'unless', etc
         if ( $if_brace_follower_pattern
-            && ( $next_nonblank_token =~ /$if_brace_follower_pattern/o ) )
+            && ( $next_nonblank_token =~ /$if_brace_follower_pattern/ ) )
         {
             $bond_str = VERY_WEAK;
         }
@@ -8006,7 +8054,7 @@ sub set_bond_strengths {
         # keywords like 'unless' 'if' make good breaks
         if ( $do_follower_pattern
             && ( $next_nonblank_type eq 'k' )
-            && ( $next_nonblank_token =~ /$do_follower_pattern/o ) )
+            && ( $next_nonblank_token =~ /$do_follower_pattern/ ) )
         {
             $bond_str = VERY_WEAK / 1.05;
         }
@@ -8112,12 +8160,12 @@ sub set_bond_strengths {
 
         $bond_strength_to_go[$i] = $strength;
 
-        if ( $FORMATTER_DEBUG_FLAG{BOND} ) {
+        FORMATTER_DEBUG_FLAG_BOND && do {
             my $str = substr( $token, 0, 15 );
             $str .= ' ' x ( 16 - length($str) );
             print
 "BOND:  i=$i $str $type $next_nonblank_type depth=$total_nesting_depth strength=$bond_str_1 -> $bond_str -> $strength \n";
-        }
+        };
     }
 }
 
@@ -8912,7 +8960,7 @@ will be a forced break at its 'and'.
 
                         }
 
-                        if ( $FORMATTER_DEBUG_FLAG{EQUALS} ) {
+                        FORMATTER_DEBUG_FLAG_EQUALS && do {
                             if ( defined($iequals) ) {
                                 print
 "EQUALS: considering = break iequals=$iequals rec=$recoverable\n";
@@ -8920,7 +8968,7 @@ will be a forced break at its 'and'.
                             else {
                                 print "EQUALS: at = break but '=' undefined\n";
                             }
-                        }
+                        };
 
                         if (
                             defined($iequals)
@@ -8948,10 +8996,10 @@ will be a forced break at its 'and'.
                     # might be left with a big gap.
                     if ( $depth >= 1 ) {
                         $last_equals_index[ $depth - 1 ] = undef;
-                        if ( $FORMATTER_DEBUG_FLAG{EQUALS} ) {
+                        FORMATTER_DEBUG_FLAG_EQUALS && do {
                             print
 "EQUALS: undefining iequals after breaking a container at depth $depth\n";
-                        }
+                        };
                     }
                 }    # end -lp logic
             }    # end logic to open up a container
@@ -8966,10 +9014,10 @@ will be a forced break at its 'and'.
                 # avoid possible -lp problems (see note above)
                 if ( $depth >= 1 ) {
                     $last_equals_index[ $depth - 1 ] = undef;
-                    if ( $FORMATTER_DEBUG_FLAG{EQUALS} ) {
+                    FORMATTER_DEBUG_FLAG_EQUALS && do {
                         print
 "EQUALS: undefining iequals after long block for depth $depth\n";
-                    }
+                    };
                 }
             }
         }
@@ -8991,9 +9039,9 @@ will be a forced break at its 'and'.
         # remember location of any of the assignment operators
         if ( $type =~ /=/ && $type !~ /(==|!=|>=|<=|=~|=>)/ ) {
             $last_equals_index[$depth] = $i;
-            if ( $FORMATTER_DEBUG_FLAG{EQUALS} ) {
+            FORMATTER_DEBUG_FLAG_EQUALS && do {
                 print "EQUALS: found equals at i=$i for depth=$depth\n";
-            }
+            };
         }
 
         # Turn off alignment if we are sure that this is not a list
@@ -9042,10 +9090,10 @@ will be a forced break at its 'and'.
             # '=' might leave a gap when -lp is used.
             if ( $depth >= 1 ) {
                 $last_equals_index[ $depth - 1 ] = undef;
-                if ( $FORMATTER_DEBUG_FLAG{EQUALS} ) {
+                FORMATTER_DEBUG_FLAG_EQUALS && do {
                     print
 "EQUALS: comma-arrow: undef equals at depth above $depth\n";
-                }
+                };
             }
 
             # handle list which mixes '=>'s and ','s:
@@ -9513,9 +9561,8 @@ sub set_comma_breakpoints {
 
     # Shortcut method 1: for 2 lines, just one comma:
     if (
-        $packed_lines <= 2     # probably can fit in 2 lines
-        && $item_count == 2    # two items, one comma
-        ##&& $rOpts->{'line-up-parentheses'}    # -lp
+        $packed_lines <= 2               # probably can fit in 2 lines
+        && $item_count == 2              # two items, one comma
         && $rOpts_line_up_parentheses    # -lp
         && $opening_environment eq 'BLOCK'    # not a sub-container
         && $opening_token       eq '('        # is paren list
@@ -9547,12 +9594,12 @@ sub set_comma_breakpoints {
     }
 
     # debug stuff
-    if ( $FORMATTER_DEBUG_FLAG{SPARSE} ) {
+    FORMATTER_DEBUG_FLAG_SPARSE && do {
 
         print
 "SPARSE:cols=$columns commas=$comma_count items:$item_count ids=$identifier_count pairwidth=$pair_width fields=$number_of_fields lines packed: $packed_lines packed_cols=$packed_columns fmtd:$formatted_lines cols /line:$columns_per_line  unused:$unused_columns fmtd:$formatted_columns sparsity=$sparsity allow=$max_allowed_sparsity\n";
 
-    }
+    };
 
     #---------------------------------------------------------------
     # Compound List Rule 2: 
@@ -9660,14 +9707,14 @@ sub set_comma_breakpoints {
     }
 
     # Save list diagnostics during development
-    if ( $FORMATTER_DEBUG_FLAG{LIST} ) {
+    FORMATTER_DEBUG_FLAG_LIST && do {
         my $pkl = sprintf( "%.1f", $packed_lines );
         my $fml = sprintf( "%.1f", $formatted_lines );
         write_diagnostics(<<"EOM");
 List:items=$item_count commas=$comma_count ids=$identifier_count cols=$columns fmt_lines=$fml pkd_lines=$pkl brks=$forced_breakpoint_count
   fmt_cols=$formatted_columns pk_cols=$packed_columns unusd=$unused_columns 
 EOM
-    }
+    };
 
     return;
 }
@@ -9731,12 +9778,12 @@ sub set_nobreaks {
     my ( $i, $j ) = @_;
     if ( $i >= 0 && $i <= $j && $j <= $max_index_to_go ) {
 
-        if ( $FORMATTER_DEBUG_FLAG{NOBREAK} ) {
+        FORMATTER_DEBUG_FLAG_NOBREAK && do {
             my ( $a, $b, $c ) = caller();
             print(
 "NOBREAK: forced_breakpoint $forced_breakpoint_count from $a $c with i=$i max=$max_index_to_go type=$types_to_go[$i]\n"
             );
-        }
+        };
 
         my $k;
         for ( $k = $i ; $k <= $j ; $k++ ) {
@@ -9746,12 +9793,12 @@ sub set_nobreaks {
 
     # shouldn't happen; non-critical error
     else {
-        if ( $FORMATTER_DEBUG_FLAG{NOBREAK} ) {
+        FORMATTER_DEBUG_FLAG_NOBREAK && do {
             my ( $a, $b, $c ) = caller();
             print(
 "NOBREAK ERROR: from $a $c with i=$i j=$j max=$max_index_to_go\n"
             );
-        }
+        };
     }
 }
 
@@ -9779,11 +9826,11 @@ sub set_forced_breakpoint {
     if ( $i >= 0 && $i <= $max_index_to_go ) {
         my $i_nonblank = ( $types_to_go[$i] ne 'b' ) ? $i : $i - 1;
 
-        if ( $FORMATTER_DEBUG_FLAG{FORCE} ) {
+        FORMATTER_DEBUG_FLAG_FORCE && do {
             my ( $a, $b, $c ) = caller();
             print
 "FORCE forced_breakpoint $forced_breakpoint_count from $a $c with i=$i_nonblank max=$max_index_to_go tok=$tokens_to_go[$i_nonblank] type=$types_to_go[$i_nonblank] nobr=$nobreak_to_go[$i_nonblank]\n";
-        }
+        };
 
         # Note: I thought it would be best not to set these if the nobreak
         # flag is set (since it has priority), but things really looked
@@ -9832,22 +9879,22 @@ sub undo_forced_breakpoint_stack {
             $forced_breakpoint_to_go[$i] = 0;
             $forced_breakpoint_count--;
 
-            if ( $FORMATTER_DEBUG_FLAG{UNDOBP} ) {
+            FORMATTER_DEBUG_FLAG_UNDOBP && do {
                 my ( $a, $b, $c ) = caller();
                 print(
 "UNDOBP: undo forced_breakpoint i=$i $forced_breakpoint_undo_count from $a $c max=$max_index_to_go\n"
                 );
-            }
+            };
         }
 
         # shouldn't happen, but not a critical error
         else {
-            if ( $FORMATTER_DEBUG_FLAG{UNDOBP} ) {
+            FORMATTER_DEBUG_FLAG_UNDOBP && do {
                 my ( $a, $b, $c ) = caller();
                 print(
 "Program Bug: undo_forced_breakpoint from $a $c has i=$i but max=$max_index_to_go"
                 );
-            }
+            };
         }
     }
 }
@@ -10457,10 +10504,10 @@ sub set_continuation_breaks {
                 ) > $rOpts_maximum_line_length
               );
 
-            if ( $FORMATTER_DEBUG_FLAG{BREAK} ) {
-                print
+            FORMATTER_DEBUG_FLAG_BREAK
+              && print
 "BREAK: testing i = $i_test imax=$imax $types_to_go[$i_test] $next_nonblank_type leading sp=($leading_spaces) next length = $lengths_to_go[$i_test+2] too_long=$too_long str=$strength\n";
-            }
+##}
 
             # allow one extra terminal token after exceeding line length
             # if it would strand this token.
@@ -10530,9 +10577,8 @@ sub set_continuation_breaks {
         $next_nonblank_type  = $types_to_go[$i_next_nonblank];
         $next_nonblank_token = $tokens_to_go[$i_next_nonblank];
 
-        if ( $FORMATTER_DEBUG_FLAG{BREAK} ) {
-            print "BREAK: best is i = $i_lowest strength = $lowest_strength\n";
-        }
+        FORMATTER_DEBUG_FLAG_BREAK
+          && print "BREAK: best is i = $i_lowest strength = $lowest_strength\n";
 
         #-------------------------------------------------------
         # ?/: rule 2 : if we break at a '?', then break at its ':'
@@ -11271,6 +11317,23 @@ to flush.
 
 =cut
 
+BEGIN {
+
+    # Caution: these debug flags produce a lot of output
+    # They should all be 0 except when debugging small scripts
+
+    use constant VALIGN_DEBUG_FLAG_APPEND  => 0;
+    use constant VALIGN_DEBUG_FLAG_APPEND0 => 0;
+
+    my $debug_warning = sub {
+        print "VALIGN_DEBUGGING with key $_[0]\n";
+    };
+
+    VALIGN_DEBUG_FLAG_APPEND  && $debug_warning->('APPEND');
+    VALIGN_DEBUG_FLAG_APPEND0 && $debug_warning->('APPEND0');
+
+}
+
 use vars qw(
   $vertical_aligner_self
   $current_line
@@ -11303,7 +11366,6 @@ use vars qw(
   $rOpts_indent_columns
   $rOpts_tabs
 
-  %VALIGN_DEBUG_FLAG
 );
 
 sub initialize {
@@ -11526,10 +11588,10 @@ The log file warns the user if there are any such tabs.
     $previous_minimum_jmax_seen = $minimum_jmax_seen;
     $previous_maximum_jmax_seen = $maximum_jmax_seen;
 
-    if ( $VALIGN_DEBUG_FLAG{APPEND0} ) {
+    VALIGN_DEBUG_FLAG_APPEND0 && do {
         print
 "APPEND0: entering lines=$maximum_line_index new #fields= $jmax, leading_count=$leading_space_count last_cmt=$last_comment_column force=$is_forced_break\n";
-    }
+    };
 
     # patch until new aligner is finished
     if ($do_not_pad) { flush() }
@@ -11702,7 +11764,7 @@ The log file warns the user if there are any such tabs.
     # --------------------------------------------------------------------
     # Step 8. Some old debugging stuff
     # --------------------------------------------------------------------
-    if ( $VALIGN_DEBUG_FLAG{APPEND} ) {
+    VALIGN_DEBUG_FLAG_APPEND && do {
         print "APPEND fields:";
         dump_array(@$rfields);
         print "APPEND tokens:";
@@ -11710,7 +11772,7 @@ The log file warns the user if there are any such tabs.
         print "APPEND patterns:";
         dump_array(@$rpatterns);
         dump_alignments();
-    }
+    };
 }
 
 sub hanging_comment_check {
@@ -12203,14 +12265,14 @@ sub flush {
 
     return unless ( $maximum_line_index >= 0 );
 
-    if ( $VALIGN_DEBUG_FLAG{APPEND0} ) {
+    VALIGN_DEBUG_FLAG_APPEND0 && do {
         my $group_list_type = $group_lines[0]->get_list_type();
         my ( $a, $b, $c ) = caller();
         my $maximum_field_index = $group_lines[0]->get_jmax();
         print
 "APPEND0: Flush called from $a $b $c fields=$maximum_field_index list=$group_list_type lines=$maximum_line_index extra=$extra_indent_ok\n";
 
-    }
+    };
 
     # some small groups are best left unaligned
     my $do_not_align = decide_if_aligned();
@@ -13050,6 +13112,31 @@ sub get_line {
 ########################################################################
 
 package PerlTidy::Tokenizer;
+
+BEGIN {
+
+    # Caution: these debug flags produce a lot of output
+    # They should all be 0 except when debugging small scripts
+
+    use constant TOKENIZER_DEBUG_FLAG_EXPECT   => 0;
+    use constant TOKENIZER_DEBUG_FLAG_GUESS    => 0;
+    use constant TOKENIZER_DEBUG_FLAG_NSCAN    => 0;
+    use constant TOKENIZER_DEBUG_FLAG_QUOTE    => 0;
+    use constant TOKENIZER_DEBUG_FLAG_SCAN_ID  => 0;
+    use constant TOKENIZER_DEBUG_FLAG_TOKENIZE => 0;
+
+    my $debug_warning = sub {
+        print "TOKENIZER_DEBUGGING with key $_[0]\n";
+    };
+
+    TOKENIZER_DEBUG_FLAG_EXPECT   && $debug_warning->('EXPECT');
+    TOKENIZER_DEBUG_FLAG_GUESS    && $debug_warning->('GUESS');
+    TOKENIZER_DEBUG_FLAG_NSCAN    && $debug_warning->('NSCAN');
+    TOKENIZER_DEBUG_FLAG_QUOTE    && $debug_warning->('QUOTE');
+    TOKENIZER_DEBUG_FLAG_SCAN_ID  && $debug_warning->('SCAN_ID');
+    TOKENIZER_DEBUG_FLAG_TOKENIZE && $debug_warning->('TOKENIZE');
+}
+
 use Carp;
 use vars qw{
   $tokenizer_self
@@ -13120,8 +13207,6 @@ use vars qw{
   $in_statement_continuation
   $started_looking_for_here_target_at
   $nearly_matched_here_target_at
-
-  %TOKENIZER_DEBUG_FLAG
 
   $indirect_object_taker
   $block_list_operator
@@ -14689,12 +14774,12 @@ EOM
         # This debug mode forces perltidy to rely exclusively on its guessing
         # algorithms.  This is a simple way to test them.
         my $correct_expecting;
-        if ( $TOKENIZER_DEBUG_FLAG{GUESS} ) {
+        TOKENIZER_DEBUG_FLAG_GUESS && do {
             $correct_expecting = $expecting;
             $expecting         = UNKNOWN;
-        }
+        };
 
-        if ( $TOKENIZER_DEBUG_FLAG{TOKENIZE} ) {
+        TOKENIZER_DEBUG_FLAG_TOKENIZE && do {
             local $" = ')(';
             my @debug_list = (
                 $last_nonblank_token,      $tok,
@@ -14703,7 +14788,7 @@ EOM
                 $paren_type[$paren_depth]
             );
             print "TOKENIZE:(@debug_list)\n";
-        }
+        };
 
         ###############################################################
         # We have the next token, $tok.
@@ -16600,10 +16685,10 @@ that it uses, which are initialized in the BEGIN section.
         );
     }
 
-    if ( $TOKENIZER_DEBUG_FLAG{EXPECT} ) {
+    TOKENIZER_DEBUG_FLAG_EXPECT && do {
         print
 "EXPECT: returns $op_expected for last type $last_nonblank_type token $last_nonblank_token\n";
-    }
+    };
     return $op_expected;
 }
 
@@ -17836,10 +17921,10 @@ scanned and handled and a value of '' is returned.
         report_definite_bug();
     }
 
-    if ( $TOKENIZER_DEBUG_FLAG{NSCAN} ) {
+    TOKENIZER_DEBUG_FLAG_NSCAN && do {
         print
           "NSCAN: returns i=$i, tok=$tok, type=$type, state=$id_scan_state\n";
-    }
+    };
     return ( $i, $tok, $type, $id_scan_state );
 }
 
@@ -18486,13 +18571,13 @@ updated id_scan_state and the next index after the identifier.
         $i   = $i_begin;
     }
 
-    if ( $TOKENIZER_DEBUG_FLAG{SCAN_ID} ) {
+    TOKENIZER_DEBUG_FLAG_SCAN_ID && do {
         my ( $a, $b, $c ) = caller;
         print
 "SCANID: called from $a $b $c with tok, i, state, identifier =$tok_begin, $i_begin, $id_scan_state_begin, $identifier_begin\n";
         print
 "SCANID: returned with tok, i, state, identifier =$tok, $i, $id_scan_state, $identifier\n";
-    }
+    };
     return ( $i, $tok, $type, $id_scan_state, $identifier );
 }
 
@@ -18517,10 +18602,10 @@ sub follow_quoted_string {
     my ( $tok, $end_tok );
     my $i = $i_beg - 1;
 
-    if ( $TOKENIZER_DEBUG_FLAG{QUOTE} ) {
+    TOKENIZER_DEBUG_FLAG_QUOTE && do {
         print
 "QUOTE entering with quote_pos = $quote_pos i=$i beginning_tok =$beginning_tok\n";
-    }
+    };
 
     # get the corresponding end token
     if ( $beginning_tok !~ /^\s*$/ ) {
@@ -19131,72 +19216,6 @@ BEGIN {
     @is_keyword{@Keywords} = (1) x scalar(@Keywords);
 }
 
-BEGIN {
-
-    # Caution: these debug flags produce a lot of output
-    # They should all be 0 except when debugging small scripts
-    %TOKENIZER_DEBUG_FLAG = (
-        EXPECT   => 0,
-        GUESS    => 0,
-        NSCAN    => 0,
-        QUOTE    => 0,
-        SCAN_ID  => 0,
-        TOKENIZE => 0,
-    );
-
-    foreach ( keys %TOKENIZER_DEBUG_FLAG ) {
-        if ( $TOKENIZER_DEBUG_FLAG{$_} ) {
-            print "TOKENIZER DEBUGGING with key $_\n";
-        }
-    }
-}
-
-package PerlTidy::VerticalAligner;
-
-BEGIN {
-
-    # Caution: these debug flags produce a lot of output
-    # They should all be 0 except when debugging small scripts
-    %VALIGN_DEBUG_FLAG = (
-        APPEND  => 0,
-        APPEND0 => 0,
-    );
-
-    foreach ( keys %VALIGN_DEBUG_FLAG ) {
-        if ( $VALIGN_DEBUG_FLAG{$_} ) {
-            print "DEBUGGING with key $_\n";
-        }
-    }
-}
-
-package PerlTidy::Formatter;
-
-BEGIN {
-
-    # Caution: these debug flags produce a lot of output
-    # They should all be 0 except when debugging small scripts
-    %FORMATTER_DEBUG_FLAG = (
-        EQUALS  => 0,
-        BOND    => 0,
-        BREAK   => 0,
-        CI      => 0,
-        FLUSH   => 0,
-        FORCE   => 0,
-        LIST    => 0,
-        NOBREAK => 0,
-        OUTPUT  => 0,
-        SPARSE  => 0,
-        STORE   => 0,
-        UNDOBP  => 0,
-        WHITE   => 0,
-    );
-
-    foreach ( keys %FORMATTER_DEBUG_FLAG ) {
-        if ( $FORMATTER_DEBUG_FLAG{$_} ) {
-            print "FORMATTER_DEBUGGING with key $_\n";
-        }
-    }
-}
 1;
 
 package main;
