@@ -82,14 +82,14 @@ Perltidy Change Log
       Thanks to Peter Masiar for this suggestion.
 
      -Two new commands for outdenting, -olq (outdent-long-quotes) and -olc
-      (outdent-long-comments) have been added.  The original -oll
+      (outdent-long-comments), have been added.  The original -oll
       (outdent-long-lines) remains, and now is an abbreviation for -olq and -olc.
       The new default is just -olq.  This was necessary to avoid inconsistency with
-      the new sticky block comment option
+      the new static block comment option.
 
-     -Sticky block comments:  to provide a way to display commented code
+     -Static block comments:  to provide a way to display commented code
       better, the convention is used that comments with a leading '##' should
-      not be formatted as usual.  Please see '-sbc' (or '--sticky-block-comment')
+      not be formatted as usual.  Please see '-sbc' (or '--static-block-comment')
       for documentation.  It can be deactivated with with -nsbc, but
       should not normally be necessary. Thanks to Peter Masiar for this 
       suggestion.

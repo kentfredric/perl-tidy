@@ -16,7 +16,7 @@
         }
 
   Thanks to Jeremy Mates for reporting this.
-
+ 
  -Added check for multiple definitions of same subroutine.  It is easy
   to introduce this problem when cutting and pasting. Perl does not
   complain about it, but it can lead to disaster.
@@ -83,14 +83,14 @@
   Thanks to Peter Masiar for this suggestion.
 
  -Two new commands for outdenting, -olq (outdent-long-quotes) and -olc
-  (outdent-long-comments) have been added.  The original -oll
+  (outdent-long-comments), have been added.  The original -oll
   (outdent-long-lines) remains, and now is an abbreviation for -olq and -olc.
   The new default is just -olq.  This was necessary to avoid inconsistency with
-  the new sticky block comment option
+  the new static block comment option.
 
- -Sticky block comments:  to provide a way to display commented code
+ -Static block comments:  to provide a way to display commented code
   better, the convention is used that comments with a leading '##' should
-  not be formatted as usual.  Please see '-sbc' (or '--sticky-block-comment')
+  not be formatted as usual.  Please see '-sbc' (or '--static-block-comment')
   for documentation.  It can be deactivated with with -nsbc, but
   should not normally be necessary. Thanks to Peter Masiar for this 
   suggestion.
@@ -201,6 +201,12 @@
   to a '.TEE' file.  Complete control over the treatment of pod and
   comments is still possible, as described in the updated help message 
   and man page.
+
+  -The logic which breaks open 'containers' has been rewritten to be completely
+  symmetric in the following sense: if a line break is placed after an opening
+  {, [, or (, then a break will be placed before the corresponding closing
+  token.  Thus, a container either remains closed or is completely cracked
+  open.
 
   -Correspondence between Input and Output line numbers reported in a 
    .LOG file should now be exact.  They were sometimes off due to the size

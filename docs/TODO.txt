@@ -1,54 +1,32 @@
 Perltidy TODO List
     This is a "wish-list" of features to add and things to do.
 
-  Improved Vertical Alignment
+  Fix numerous little formatting issues
 
-    Coding modifications are underway to improve the vertical alignment
-    logic.
+    There are a large number of little open formatting issues. I'm working
+    on them as time permits.
 
   Modularization
 
-    Modularization work is in progress.
-
-  -lp as default
-
-    One of the next versons may set -lp as a default parameter. It really
-    isn't clear in the perlstyle guidelines if this is recommended, but it
-    does seem to be in very common use.
-
-  XML
-
-    The ability to write a tokenized script in XML is under consideration.
-
-  Fix numerous little formatting issues
-
-    There are a large number of little open formatting issues besides
-    vertical alignment.
-
-    One item is that at present, the -lp option breaks lists like this:
-
-         my $data = pack(
-                          "vvvvvvvvv", $xWn,     $yWn,     $dxWn,
-                          $dyWn,       $grbit,   $itabCur, $itabFirst,
-                          $ctabsel,    $wTabRatio
-                          );
-
-    This is the default because it simplifies editing the list. I would like
-    to provide an option which does not break after the '(', and before the
-    terminal ), like this:
-
-         my $data = pack( "vvvvvvvvv", $xWn,     $yWn,     $dxWn,
-                          $dyWn,       $grbit,   $itabCur, $itabFirst,
-                          $ctabsel,    $wTabRatio);
-
-    This should be easy to implement after the new vertical aligner is
-    completed.
+    Modularization work is in progress. I hope to have modularization
+    patches made by Hugh Myers integrated into the next release.
 
   BUGS
 
     There are still a couple of bugs listed in the BUGS file that need to be
     fixed. These are low priority compared to formatting issues, but need to
     be done.
+
+  Improved Vertical Alignment
+
+    Coding modifications are underway to improve the vertical alignment
+    logic.
+
+  XML
+
+    The ability to write a tokenized script in XML looks very useful. This
+    would allow the creation of simple utilities to reliably manipulate perl
+    code.
 
   Documentation
 
@@ -97,4 +75,7 @@ Perltidy TODO List
     spelling checker, which would walk through a file looking for groups of
     comments, and present a proposed a reformatting to the user with a Y/N
     response request.
+
+    One way to do this would be to first implement the XML feature mentioned
+    above, and then write a utility to read the XML and process it.
 

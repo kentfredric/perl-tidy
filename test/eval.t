@@ -1,3 +1,17 @@
+{{
+
+        # 2 tests for breaks at a '(':
+        eval {
+            $self->dccable->handler->execute_message_handler($infoline);
+            $self->set_of_connections->handler->execute_message_handler(
+                $infoline );
+        };
+        if ($@) {
+            Boucherot::log::error(
+                "Error (" . ref($self) . "::parse_line) <" . $@ . ">" );
+        }
+}}
+
 	    # This is complex.  Two points to note: 
             # 1. no break between '}' and ')' because ')' is a 'brace_follower'.
             # 2. the opening '{' of the if should get outdented to line up
@@ -65,3 +79,17 @@
 
 $res = eval {0};
 $res = eval {1} unless ($res);
+{
+
+    if ( !eval {
+            $p_obj{'lsa'} =
+              new Strassen $p_file{'lsa'}
+              . ( $coord_system eq 'standard' ? "" : "-orig" );
+            %ampeln = %{ $p_obj{'lsa'}->get_hashref_by_cat };
+            1;
+        } )
+    {
+        warn $@;
+        %ampeln = ();
+    }
+}

@@ -1,3 +1,9 @@
+# broken list - testing behavior of closing paren
+my %ENTITIES = (
+
+    sol => '/'
+);
+
 # this was once mis-tokenized:
 @a = (1,2,3,4,5,6,7);
 $b = @a[0..5]/2.;

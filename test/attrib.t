@@ -1,8 +1,9 @@
 # perltidy should parse sub attributes here ok since they are on the
 # same line as the sub name:
 sub be_careful () : locked method {
-        my $self=shift;
-        # ...
+    my $self = shift;
+
+    # ...
 }
 
 # But perltidy will not parse this correctly yet..
