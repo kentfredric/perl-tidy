@@ -7,15 +7,15 @@ BEGIN {
     unshift @INC, '/home/steve/src/perldev/perltidy/src';
 }
 ##END:REMOVE BEFORE PACKAGING###############################
-use PerlTidy;
+use Perl::Tidy;
 
 # remove any temporary files if interrupted
 $SIG{INT} = sub {
-    PerlTidy::interrupt_handler();
+    Perl::Tidy::interrupt_handler();
     exit -1;
 };
 
-PerlTidy::perltidy(
+Perl::Tidy::perltidy(
     source      => undef,
     destination => undef,
     stderr      => undef,
