@@ -8,6 +8,7 @@
     );
 
 	# Another example of potential bad vertical alignment
+        # and this comes out very poor with -gnu
         $f1->pack();
         ( $junk,                     $w[10] )        = radlablist(
           $f1,                       pad( 'Initial', $p ),
@@ -18,6 +19,7 @@
         );
 
 	# and another:
+        # and this also comes out very poor with -gnu
         ( $junk,                         $w[13] )                = radlablist(
           $f1,                           pad( 'Inactive Relief', $p ),
           $b->{ReliefIA}->get_panel_ref, 'sunken  ',

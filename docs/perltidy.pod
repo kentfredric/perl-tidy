@@ -582,7 +582,7 @@ this:
         if ( $bigwasteofspace1 && $bigwasteofspace2
           || $bigwasteofspace3 && $bigwasteofspace4 )
         {
-            do_something();
+            big_waste_of_time();
         }
 
 To force the opening brace to always be on the right, use the B<-bar>
@@ -590,10 +590,10 @@ flag.  In this case, the above example becomes
 
         if ( $bigwasteofspace1 && $bigwasteofspace2
           || $bigwasteofspace3 && $bigwasteofspace4 ) {
-            do_something();
+            big_waste_of_time();
         }
 
-It is an error to specify both B<-bl> and B<-bar>.
+A conflict occurs if both B<-bl> and B<-bar> are specified, so don't do it.
 
 =item B<-dnl>,  B<--delete-old-newlines>
 
@@ -976,7 +976,7 @@ perl2web(1), perlstyle(1)
 
 =head1 VERSION
 
-This man page documents perltidy version 20010610.
+This man page documents perltidy version 20010612.
 
 =head1 AUTHOR
 

@@ -18,13 +18,14 @@ $v[ $_ ] + $mult1 * $cp[ $_ ] + ( $mult2 - $cpl / $tl ) * $cp2[ $_ ];
                 : $_;
         } @_ ) . "\015\012";
 
-# two-levels of non-structural indentation, but only one 'ci' level:
+# two-levels of paren indentation. Would look better if leading quote marks
+# were aligned
     $deps = control_fields(
       ( "Pre-Depends", "Depends",  "Recommends", "Suggests",
       "Conflicts",     "Provides" )
     );
 
-		# This is hard to format:
+	# This is hard to format, and comes out rather ugly
         @opts{
           qw( name field_names field_types field_lengths
           field_decimals )

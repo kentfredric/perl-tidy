@@ -1,9 +1,7 @@
-# This is deeply nested. Note that the deepest nesting of parens, near
-# ->Show, does not produce extra indentation.  This is because, at
-# present, parens do not get structural indentation, rather only
-# continuation indentation.  There may be no really good solution to the
-# problems posed by parens, partly because perl flattens lists, but
-# except for really deep nesting like this, things usually look ok.
+# This is deeply nested. At one time the deepest nesting of parens, near
+# ->Show, did not produce extra indentation  because parens did not
+# get structural indentation, rather only continuation indentation.  
+# This has been fixed
 my $file_menu = $mframe->Menubutton(
 -text => 'File',
 -width => '10',

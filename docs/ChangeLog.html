@@ -14,7 +14,7 @@
 	<LI><A HREF="#perltidy change log">Perltidy Change Log</A></LI>
 	<UL>
 
-		<LI><A HREF="#2001 xx xx">2001 xx xx  </A></LI>
+		<LI><A HREF="#2001 xx xx">2001 xx xx</A></LI>
 		<LI><A HREF="#2001 06 08">2001 06 08</A></LI>
 		<LI><A HREF="#2001 04 06">2001 04 06 </A></LI>
 		<LI><A HREF="#2001 03 28:">2001 03 28:</A></LI>
@@ -36,6 +36,12 @@
 <P>
 <H2><A NAME="2001 xx xx">2001 xx xx</A></H2>
 <PRE>
+ -Corrected an invalid pattern (\R should have been just R), changed
+ $^W =1 to BEGIN {$^W=1} to use warnings in compile phase, and corrected
+ several unnecessary 'my' declarations. Many thanks to Wolfgang Weisselberg,
+ 2001-06-12, for catching these errors.
+</PRE>
+<PRE>
 
  -A '-bar' flag has been added to require braces to always be on the
  right, even for multi-line if and foreach statements.  For example,
@@ -44,36 +50,40 @@
         if ($bigwasteofspace1 &amp;&amp; $bigwasteofspace2
           || $bigwasteofspace3 &amp;&amp; $bigwasteofspace4)
         {
+            bigwastoftime();
         }</PRE>
 <PRE>
  With -bar, the formatting is:</PRE>
 <PRE>
         if ($bigwasteofspace1 &amp;&amp; $bigwasteofspace2
           || $bigwasteofspace3 &amp;&amp; $bigwasteofspace4) {
+            bigwastoftime();
         }
- (Suggested by Eli Fidler 2001-06-11)</PRE>
+ Suggested by Eli Fidler 2001-06-11.</PRE>
 <PRE>
- -Uploaded perltidy to cvs 2001-06-10</PRE>
+ -Uploaded perltidy to sourceforge cvs 2001-06-10.</PRE>
 <PRE>
- -A '-gnu' flag has been added which causes lists to be indented
- with extra indentation in the manner sometimes associated with
- emacs or the GNU suggestions.  (Suggested by Ian Stuart).  NOTE:
- This feature is functional for simple cases but will be under 
- development for some time.  The formatting reverts to the standard
- method when the -gnu coding is incomplete.</PRE>
+ -A '-gnu' flag has been added which causes lists to be indented with
+ extra indentation in the manner sometimes associated with emacs or the
+ GNU suggestions.  It's not perfect yet but it is now quite useful and
+ should improve over time.  Many thanks to Ian Stuart for this
+ suggestion and for much help in testing it. The manual has been updated
+ to discuss this.</PRE>
 <PRE>
  -Subroutine call parameter lists are now formatted as other lists.
- This will improve formatting of tables being passed via subroutine
- calls.  This will also cause full indentation ('-i=n) of continued
- parameter list lines.  
+ This should improve formatting of tables being passed via subroutine
+ calls.  This will also cause full indentation ('-i=n, default n= 4) of
+ continued parameter list lines rather than just the number of spaces
+ given with -ci=n, default n=2.
 </PRE>
 <PRE>
 
  -Added support for hanging side comments.  Perltidy identifies a hanging
  side comment as a comment immediately following a line with a side
  comment or another hanging side comment.  This should work in most
- cases.  It can be deactivated with --no-hanging-side-comments.
- (Suggested by Brad Eisenberg).</PRE>
+ cases.  It can be deactivated with --no-hanging-side-comments (-nhsc).
+ The manual has been updated to discuss this.  Suggested by Brad
+ Eisenberg some time ago, and finally implemented.</PRE>
 <P>
 <H2><A NAME="2001 06 08">2001 06 08</A></H2>
 <PRE>

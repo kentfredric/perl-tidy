@@ -10,8 +10,7 @@
       ( map { $this->{Colors}->slice($_) } @sls1 )
     );
 
-    # This is a current minor glitch: final } does not belong to the leading map
-    # but gets outdented as if it were
+    # This was a problem at one time but seems ok now
     sub aaa {
         map { $_->[0] }
           sort { $a->[1] cmp $b->[1] }

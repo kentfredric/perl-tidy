@@ -565,16 +565,16 @@ this:
         if ( $bigwasteofspace1 &amp;&amp; $bigwasteofspace2
           || $bigwasteofspace3 &amp;&amp; $bigwasteofspace4 )
         {
-            do_something();
+            big_waste_of_time();
         }</PRE>
 <P>To force the opening brace to always be on the right, use the <STRONG>-bar</STRONG>
 flag.  In this case, the above example becomes</P>
 <PRE>
         if ( $bigwasteofspace1 &amp;&amp; $bigwasteofspace2
           || $bigwasteofspace3 &amp;&amp; $bigwasteofspace4 ) {
-            do_something();
+            big_waste_of_time();
         }</PRE>
-<P>It is an error to specify both <STRONG>-bl</STRONG> and <STRONG>-bar</STRONG>.</P>
+<P>A conflict occurs if both <STRONG>-bl</STRONG> and <STRONG>-bar</STRONG> are specified, so don't do it.</P>
 <P></P>
 <DT><STRONG><A NAME="item_%2Ddnl%2C_%2D%2Ddelete%2Dold%2Dnewlines"><STRONG>-dnl</STRONG>,  <STRONG>--delete-old-newlines</STRONG></A></STRONG><BR>
 <DD>
@@ -907,7 +907,7 @@ confusing filenames such as <EM>somefile.tdy.tdy.tdy</EM>.
 <P>
 <HR>
 <H1><A NAME="version">VERSION</A></H1>
-<P>This man page documents perltidy version 20010610.</P>
+<P>This man page documents perltidy version 20010612.</P>
 <P>
 <HR>
 <H1><A NAME="author">AUTHOR</A></H1>

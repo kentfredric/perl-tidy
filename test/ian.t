@@ -1,4 +1,4 @@
-# Perltidy currently collapses this too much
+# This was troublesome at one time
 push @contents, $c->table(
   { -width => '100%' }, 
   $c->Tr(

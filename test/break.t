@@ -1,7 +1,5 @@
-	# This currently gets broken up even though it is a single line
-	# The reason is that the comma after '1.0' triggers a fake forced
-	# breakpoint.  But it looks ok broken up because the nesting
-	# depth is so great.
+        # This used to get broken up because the comma after '1.0'
+        # triggerd a fake forced breakpoint.  
 	return 1 unless ( eval { $t->tagNextrange( sel => '1.0', 'end' ) });
 
 

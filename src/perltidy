@@ -23,7 +23,7 @@
 #    For brief instructions instructions, try 'perltidy -h'.
 #    For more complete documentation, try 'man perltidy'.
 #
-#    This script was formatted with the command:
+#    This script is an example of the default style.  It was formatted with: 
 #
 #      perltidy perltidy
 #
@@ -33,7 +33,7 @@
 ############################################################
 
 require 5.004;
-$^W = 1;    # turn on warnings
+BEGIN { $^W = 1; }    # turn on warnings
 use strict;
 use vars qw{
   $VERSION
@@ -42,9 +42,9 @@ use vars qw{
 use IO::File;
 
 BEGIN {
-    $VERSION = <<'RCS';
-    $Id: perltidy,v 1.2 2001/06/12 02:12:17 perltidy Exp $
-RCS
+    $VERSION = <<'CVS';
+    $Id: perltidy,v 1.3 2001/06/13 04:40:20 perltidy Exp $
+CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
 }
@@ -2843,9 +2843,9 @@ sub set_leading_whitespace {
     }
 
     #-------------------------------------------------------------
-    # handle case of gnu-style indentation
-    # WARNING: this method is under development and only works
-    # in some simple cases.
+    # handle case of gnu-style indentation..
+    # NOTE: this method is under development and does not always work
+    # too well.  But it is usable and getting better.
     #-------------------------------------------------------------
 
     # The continued_quote flag means that this is the first token of a
@@ -3041,7 +3041,6 @@ sub set_leading_whitespace {
 
     # this token might start a new line
     # if this is a non-blank..
-    my $type = $types_to_go[$max_index_to_go];
     if ( $type ne 'b' ) {
 
         # and previous character was structural indentation, comma,
@@ -3883,7 +3882,7 @@ sub set_white_space_flag {
         # section 2:
         # handle space on inside of closing brace pairs
         #---------------------------------------------------------------
-        if ( $type =~ /[\}\)\]\R]/ ) {
+        if ( $type =~ /[\}\)\]R]/ ) {
 
             if ( $j == $j_tight_closing_paren ) {
 
@@ -4105,7 +4104,7 @@ sub print_line_of_tokens {
     if ( $jmax == 0 && $$rtoken_type[0] eq '#'    # only token is a comment
       && $last_line_had_side_comment              # last line had side comment
       && $rOpts->{'hanging-side-comments'}        # user is allowing this
-                                                  # then make it so
+                                                  # hanging side comment
       )
     {
 
@@ -5301,10 +5300,12 @@ sub set_bond_strengths {
         # blanks always have infinite strength to force breaks after real tokens
         $right_bond_strength{'b'} = NO_BREAK;
 
+        my @tmp;
+
         # try not to break on exponentation
-        my @strong = qw" ** .. ... <=> ";
-        @left_bond_strength{@strong}  = (STRONG) x scalar(@strong);
-        @right_bond_strength{@strong} = (STRONG) x scalar(@strong);
+        @tmp = qw" ** .. ... <=> ";
+        @left_bond_strength{@tmp}  = (STRONG) x scalar(@tmp);
+        @right_bond_strength{@tmp} = (STRONG) x scalar(@tmp);
 
         # The comma-arrow has very low precedence but not a good break point
         $left_bond_strength{'=>'}  = NO_BREAK;
@@ -5320,14 +5321,14 @@ sub set_bond_strengths {
         $right_bond_strength{'->'} = VERY_STRONG;
 
         # breaking AFTER these is just ok:
-        my @rbrk = qw" % + - * / x  ";
-        @left_bond_strength{@rbrk}  = (STRONG) x scalar(@rbrk);
-        @right_bond_strength{@rbrk} = (NOMINAL) x scalar(@rbrk);
+        @tmp = qw" % + - * / x  ";
+        @left_bond_strength{@tmp}  = (STRONG) x scalar(@tmp);
+        @right_bond_strength{@tmp} = (NOMINAL) x scalar(@tmp);
 
         # breaking BEFORE these is just ok:
-        my @rbrk = qw" >> << ";
-        @right_bond_strength{@rbrk} = (STRONG) x scalar(@rbrk);
-        @left_bond_strength{@rbrk}  = (NOMINAL) x scalar(@rbrk);
+        @tmp = qw" >> << ";
+        @right_bond_strength{@tmp} = (STRONG) x scalar(@tmp);
+        @left_bond_strength{@tmp}  = (NOMINAL) x scalar(@tmp);
 
         # I prefer breaking before the string concatenation operator
         # because it can be hard to see at the end of a line
@@ -5336,22 +5337,22 @@ sub set_bond_strengths {
         $right_bond_strength{'.'} = STRONG;
         $left_bond_strength{'.'}  = 0.9 * NOMINAL + 0.1 * WEAK;
 
-        my @misc = qw"} ] ) ";
-        @left_bond_strength{@misc}  = (STRONG) x scalar(@misc);
-        @right_bond_strength{@misc} = (NOMINAL) x scalar(@misc);
+        @tmp = qw"} ] ) ";
+        @left_bond_strength{@tmp}  = (STRONG) x scalar(@tmp);
+        @right_bond_strength{@tmp} = (NOMINAL) x scalar(@tmp);
 
         # make these a little weaker than nominal so that they get
         # favored for end-of-line characters
-        my @misc = qw"!= == >= <= =~ !~";
-        @left_bond_strength{@misc}  = (STRONG) x scalar(@misc);
-        @right_bond_strength{@misc} =
-          ( 0.9 * NOMINAL + 0.1 * WEAK ) x scalar(@misc);
+        @tmp = qw"!= == >= <= =~ !~";
+        @left_bond_strength{@tmp}  = (STRONG) x scalar(@tmp);
+        @right_bond_strength{@tmp} =
+          ( 0.9 * NOMINAL + 0.1 * WEAK ) x scalar(@tmp);
 
         # break AFTER these 
-        my @rbrk = qw" < >  | & >= <=";
-        @left_bond_strength{@rbrk}  = (VERY_STRONG) x scalar(@rbrk);
-        @right_bond_strength{@rbrk} =
-          ( 0.8 * NOMINAL + 0.2 * WEAK ) x scalar(@rbrk);
+        @tmp = qw" < >  | & >= <=";
+        @left_bond_strength{@tmp}  = (VERY_STRONG) x scalar(@tmp);
+        @right_bond_strength{@tmp} =
+          ( 0.8 * NOMINAL + 0.2 * WEAK ) x scalar(@tmp);
 
         # breaking either before or after a quote is ok
         # but bias for breaking before a quote
@@ -5371,15 +5372,15 @@ sub set_bond_strengths {
         $right_bond_strength{'G'} = STRONG;
 
         # it is very good to break AFTER various assignment operators
-        my @assignment = qw(
+        @tmp = qw(
           = **= += *= &= <<= &&=
           -= /= |= >>= ||=
           .= %= ^=
           x=
         );
-        @left_bond_strength{@assignment}  = (STRONG) x scalar(@assignment);
-        @right_bond_strength{@assignment} =
-          ( 0.4 * WEAK + 0.6 * VERY_WEAK ) x scalar(@assignment);
+        @left_bond_strength{@tmp}  = (STRONG) x scalar(@tmp);
+        @right_bond_strength{@tmp} =
+          ( 0.4 * WEAK + 0.6 * VERY_WEAK ) x scalar(@tmp);
 
         $left_bond_strength{';'}  = VERY_STRONG;
         $right_bond_strength{';'} = VERY_WEAK;
@@ -5739,13 +5740,14 @@ sub pad_array_to_go {
 
 sub scan_list {
 
-    # Mark breakpoints for any lists that can be vertically aligned.  
-    # The output of this routine is stored in the array 
-    # @forced_breakpoint_to_go, which is used to set final breakpoints.
+    # This routine is responsible for setting line breaks for all lists,
+    # so that hierarchical structure can be displayed and so that list
+    # items can be vertically aligned.  The output of this routine is
+    # stored in the array @forced_breakpoint_to_go, which is used to set
+    # final breakpoints.
 
     my $starting_depth = $nesting_depth_to_go[0];
     my $current_depth  = $starting_depth;
-    my @comma_index    = ();
     my @opening_structure_index_stack = ();
 
     my @breakpoint_stack = ();
@@ -5826,7 +5828,7 @@ sub scan_list {
             # Not all lists of values should be vertically aligned..
             $dont_align[$depth] =
 
-              # code blocks are handled at a higher level
+              # code BLOCKS are handled at a higher level
               ( $block_type ne "" )
 
               # certain paren lists
@@ -5851,6 +5853,30 @@ sub scan_list {
             my $saw_opening_structure =
               ( defined($i_opening) && $i_opening >= 0 );
 
+            # When testing to see if a block will fit on one line, some 
+            # previous token(s) may also need to be on the line; particularly
+            # if this is a sub call.  So we will look back at least one
+            # token. NOTE: This isn't perfect, but not critical, because
+            # if we mis-identify a block, it will be wrapped and therefore
+            # fixed the next time it is formatted.
+            my $i_opening_minus = $i_opening;
+            if ( $saw_opening_structure && $i_opening > 0 ) {
+                my $im1    = $i_opening - 1;
+                my $im2    = $i_opening - 2;
+                my $typem1 = $types_to_go[$im1];
+                if ( $token eq ')' )     { $i_opening_minus = $im1 }
+                elsif ( $typem1 eq 'k' ) { $i_opening_minus = $im1 }
+                elsif ( $typem1 eq 'b' && $im2 >= 0
+                  && $types_to_go[$im2] eq 'k' )
+                {
+                    $i_opening_minus = $im2;
+                }
+            }
+              
+            #my $i_opening_minus =
+            #  ( defined($i_opening) && $i_opening > 0 && $token eq ')' ) ?
+            #  $i_opening - 1 : $i_opening;
+
             # We've set breaks after all comma-arrows.  Now we have to
             # undo them if this can be a one-line block
             # (the only breakpoints set will be due to comma-arrows)
@@ -5868,11 +5894,8 @@ sub scan_list {
               $forced_breakpoint_undo_count )
 
               # and this block is short enough to fit on one line
-              # FIXME: this test is necessary but not sufficient; some previous
-              # token(s) may also need to be on the line; particularly
-              # if this is a sub call.
               # Note: use < because need 1 more space for possible comma
-              && ( total_line_length( $i_opening, $i ) <
+              && ( total_line_length( $i_opening_minus, $i ) <
               $rOpts->{'maximum-line-length'} )
 
               #
@@ -6127,8 +6150,12 @@ sub set_list_breakpoints {
       $rcomma_index, $interrupted, $rmax_length, $next_nonblank_type,
       $is_multiline ) = @_;
 
+
     # nothing to do if no commas seen
     return if ( $item_count < 1 );
+
+    # are we an item contained in an outer list?
+    my $in_hierarchical_list =  $next_nonblank_type =~ /^[\}\,]$/;
 
     my $i_first_comma = $$rcomma_index[0];
     my $i_last_comma  = $$rcomma_index[ $item_count - 1 ];
@@ -6234,8 +6261,31 @@ sub set_list_breakpoints {
         $number_of_fields = int $rOpts->{'maximum-fields-per-table'};
     }
 
-    # FIXME: maybe need to break at all commas in this case?
-    return if ( $number_of_fields <= 0 );
+    if ( $number_of_fields <= 0 ) { 
+
+        #---------------------------------------------------------------
+        # We're in trouble.  There is no simple answer here; we may
+        # have a single long list item, or many.  It's hard to code
+        # out of this.  But it is important to set breakpoints if we are
+        # contained in an outer list, to alert them to break apart.  We 
+        # could look for sublists to format nicely, but that's a lot of 
+        # work.  For now, we will do something simple.
+        #---------------------------------------------------------------
+
+        # break at every comma if user asked for 1 field per table or if
+        # we are an item in a larger list
+        if ($rOpts->{'maximum-fields-per-table'} == 1 || $in_hierarchical_list )
+        {
+            for ( my $j = 0 ; $j < $comma_count ; $j++ ) {
+                my $i = $$rcomma_index[$j];
+                set_forced_breakpoint($i);
+            }
+        }
+
+        # for all others cases, just return and let the continuation line logic
+        # try to figure it out.
+        return;
+    }
 
     my $formatted_lines = $item_count / ($number_of_fields);
     if ( $formatted_lines != int $formatted_lines ) {
@@ -6288,9 +6338,24 @@ sub set_list_breakpoints {
     # all outer lists.  In this way, the structure will be properly
     # displayed.
     #---------------------------------------------------------------
-    my $must_format =
-      ( $next_nonblank_type =~ /^[\}\,]$/ && $packed_columns > $columns );
 
+    # Decide if this list is too long for one line.  For a paren list,
+    # include the length of the token just before the '(' because this
+    # is likely a sub call, and we would have to include the sub name
+    # on the same line as the list.  This is still imprecise, but not
+    # too bad.  (steve.t1)
+    my $too_long = $packed_columns > $columns;
+    if ( defined($i_opening_paren) && $i_opening_paren > 0 ) {
+        if ( $tokens_to_go[$i_opening_paren] eq '(' ) {
+            my $i_opening_minus = $i_opening_paren - 1;
+            $too_long =
+              total_line_length( $i_opening_minus, $i_effective_last_comma + 1 )
+              > $rOpts->{'maximum-line-length'};
+        }
+    }
+
+
+    my $must_format = $too_long && $in_hierarchical_list;
 #print "LISTX: next=$next_nonblank_type  avail cols=$columns packed=$packed_columns must format = $must_format\n";
 
     #---------------------------------------------------------------
@@ -6300,7 +6365,7 @@ sub set_list_breakpoints {
     # too spaced.  It seems that the more packed lines we have, the
     # sparser the list that can be allowed and still look ok.
     #---------------------------------------------------------------
-
+    
     if ( !$must_format
       && ( ( $formatted_lines < 3 && $packed_lines < $formatted_lines )
       || ( $formatted_lines < 2 )
@@ -6551,7 +6616,7 @@ sub recombine_breakpoints {
               && ( $types_to_go[$imidr] eq 'k' )
               && ( $tokens_to_go[$imidr] ne 'while' ) );
 
-            # make major control keywords stand out, like this one here:
+            # make major control keywords stand out, just like this:
             # (recombine.t)
             next
               if ( ( $types_to_go[$imid] eq 'k' )
@@ -6725,10 +6790,10 @@ sub set_continuation_breaks {
 
             if ( $FORMATTER_DEBUG_FLAG{BREAK} ) {
                 print
-"BREAK: testing i = $i_test imax=$imax $types_to_go[$i_test] $next_nonblank_type leading sp=($leading_spaces) \n";
+#"BREAK: testing i = $i_test imax=$imax $types_to_go[$i_test] $next_nonblank_type leading sp=($leading_spaces) \n";
 
 # next length = $lengths_to_go[$i_test+2] too_long=$too_long str=$strength\n"; 
-#print "BREAK: testing i = $i_test imax=$imax $types_to_go[$i_test] $next_nonblank_type leading sp=($leading_spaces) next length = $lengths_to_go[$i_test+2] too_long=$too_long str=$strength\n";
+print "BREAK: testing i = $i_test imax=$imax $types_to_go[$i_test] $next_nonblank_type leading sp=($leading_spaces) next length = $lengths_to_go[$i_test+2] too_long=$too_long str=$strength\n";
             }
 
             # allow one extra terminal token after exceeding line length
@@ -7491,7 +7556,6 @@ The log file warns the user if there are any such tabs.
 
                 # a sudden decrease of over 8 spaces to a new low is too much
                 elsif ( $pad < 0 ) {
-                    my $test_pad = $pad;
                     my $test_pad =
                       length( $$rfields[$j] ) -
                       ( $starting_columns[ $j + 1 ] - $starting_columns[$j] );
@@ -12356,7 +12420,6 @@ sub do_scan_package {
 
     my ( $input_line, $i, $i_beg, $tok, $type, $rtoken_map ) = @_;
     my $package = undef;
-    my $type;
     my $pos_beg = $$rtoken_map[$i_beg];
     pos($input_line) = $pos_beg;
 
