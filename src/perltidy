@@ -2108,6 +2108,13 @@ Use this flag to specify the extra file extension of the content file when html
 frames are used.  The default is "src".
 See L<Specifying File Extensions>.
 
+=item  The B<-hent>, or B<--html-entities> flag
+
+This flag controls the use of Html::Entities for html formatting.  By
+default, the module Html::Entities is used to encode special symbols.
+This may not be the right thing for some browser/language
+combinations.  Use --nohtml-entities or -nhent to prevent this.
+
 =item  Style Sheets
 
 Style sheets make it very convenient to control and adjust the

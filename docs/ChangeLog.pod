@@ -7,10 +7,22 @@
 
 =head2 2002 xx xx
 
+ -Implemented guessing logic for brace types when it is ambiguous.  This
+ has been on the TODO list a long time.  Thanks to Boris Zentner for
+ an example.
+
+ -added flag --html-entities or -hent which controls the use of
+ Html::Entities for html formatting.  Use --nohtml-entities or -nhent to
+ prevent the use of Html::Entities to encode special symbols.  The
+ default is -hent.  Html::Entities when formatting perl text to escape
+ special symbols.  This may or may not be the right thing to do,
+ depending on browser/language combinations.  Thanks to Gurak Bursoy for
+ this suggestion.
+
  -Bareword strings with leading '-', like, '-foo' now count as 1 token
- for horizontal tightness for consistency.  This way $a{'-foo'},
- $a{foo}, and $a{-foo} are now all treated similarly.  Thus, by default,
- OLD: $a{ -foo } will now be NEW: $a{-foo}.  Suggested by Mark Olesen.
+ for horizontal tightness.  This way $a{'-foo'}, $a{foo}, and $a{-foo}
+ are now all treated similarly.  Thus, by default, OLD: $a{ -foo } will
+ now be NEW: $a{-foo}.  Suggested by Mark Olesen.
 
  -added 2 new flags to control spaces between keywords and opening parens:
    -sak=s  or --space-after-keyword=s,  and
@@ -42,7 +54,7 @@
  -Corrected html error in .toc file when -frm -html is used (extra ");
   browsers were tolerant of it.
 
- -Improved alignment of ?/: chains of the form
+ -Improved alignment of chains of binary and ?/: operators. Example:
   OLD:
     $leapyear =
       $year % 4     ? 0
@@ -56,8 +68,10 @@
       : $year % 400 ? 0
       : 1;
 
- -All perl code distributed with perl 5.8 is parsed correctly except
- for one instance (lextest.t) of the known bug.
+ -improved breakpoint choices involving '->'
+
+ -Minor tokenization improvements; all perl code distributed with perl 5.8 is
+  parsed correctly except for one instance (lextest.t) of the known bug.
 
 =head2 2002 11 30
 

@@ -1,3 +1,36 @@
+{
+    # ok
+    defined $uri
+      or $uri =
+      !$prefix || $prefix eq $self->namespace
+      ? (
+         $method_is_data
+           && $^W
+           && warn("URI is not provided as an attribute for ($method)\n"),
+         ''
+      )
+      : die "Can't find namespace for method ($prefix:$method)\n";
+
+    # This is tough - here's the original
+    push @results, map {
+      $colnr=$_;
+      &$colf([ map { ${$_}[$colnr] } @{ $self->{'seqs'} } ])
+        # Basically, &$colf([ map { ... } ]) is calculated; [ ] creates
+        # the reference so that call-by-reference can be done.
+        # In the outer map, $colnr=$_ loops thru all indices in @$rcolsel
+        # In the inner map, $_ loops thru all rows _and_ from each row
+        # the element row[$colnr] is taken. The inner map assembles these
+        # elements into a list which is passed to &$colf.
+    } ref($rcolsel) eq 'CODE'
+        ? @colnums = @colnums
+                     ? @colnums
+                     : grep {
+                             $colnum=$_,
+                             &$rcolsel( [ map ${$_}[$colnum], @{$array} ] )
+                            } 0..$#{$array->[0]}
+        : @$rcolsel;
+
+}
 {{
 # quite difficult:
 	$filecol =

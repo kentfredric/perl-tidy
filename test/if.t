@@ -29,6 +29,10 @@ push @allowed, $_
         $bla;
     }
 
+    # this currently breaks open
+    if ( @yes_colors == 1 && $included{"colorless"} && grep { $excluded{$_} }
+        @COLORS, 'gold' ) {}
+
     foreach (@extn_hints) { print "$_ "; }
     if ($text) { write_text_block( $text, $is_head ); $text = (); $is_head = 0; }
 
