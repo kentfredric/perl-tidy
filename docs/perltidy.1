@@ -130,7 +130,7 @@
 .\" ========================================================================
 .\"
 .IX Title "PERLTIDY 1"
-.TH PERLTIDY 1 "2002-04-07" "perl v5.6.1" "User Contributed Perl Documentation"
+.TH PERLTIDY 1 "2002-04-10" "perl v5.6.1" "User Contributed Perl Documentation"
 .UC
 .SH "NAME"
 perltidy \- a perl script indenter and reformatter
@@ -157,7 +157,7 @@ can be found at
 http://perltidy.sourceforge.net/stylekey.html
 .PP
 Perltidy can produce output on either of two modes, depending on the
-existance of an \fB\-html\fR flag.  Without this flag, the output is passed
+existence of an \fB\-html\fR flag.  Without this flag, the output is passed
 through a formatter.  The default formatting tries to follow the
 recommendations in \fIperlstyle\fR\|(1), but it can be controlled in detail with
 numerous input parameters, which are described in \*(L"\s-1FORMATTING\s0 \s-1OPTIONS\s0\*(R".  
@@ -467,7 +467,7 @@ option.
 .IP "\fB\-syn\fR,   \fB\-\-check\-syntax\fR" 4
 .IX Item "-syn,   --check-syntax"
 The purpose of this flag is to alert you to any situation in which the
-intput file has good syntax but the output file has bad syntax, which
+input file has good syntax but the output file has bad syntax, which
 implies an error by perltidy.
 .Sp
 This flag causes perltidy to run \f(CW\*(C`perl \-c \-T\*(C'\fR to check syntax of input
@@ -837,7 +837,7 @@ this type of input.  Such a list can be obtained by the command
 .el .IP "Trimming whitespace around \f(CWqw\fR quotes" 4
 .IX Item "Trimming whitespace around qw quotes"
 \&\fB\-tqw\fR or \fB\-\-trim\-qw\fR provide the default behavior of trimming
-spaces around multiline \f(CW\*(C`qw\*(C'\fR quotes and indenting them appropriately.
+spaces around multi-line \f(CW\*(C`qw\*(C'\fR quotes and indenting them appropriately.
 .Sp
 \&\fB\-ntqw\fR or \fB\-\-notrim\-qw\fR cause leading and trailing whitespace around
 multi-line \f(CW\*(C`qw\*(C'\fR quotes to be left unchanged.  This option will not
@@ -1148,9 +1148,10 @@ expression to be formed.
 .IX Subsection "Line Break Control"
 .IP "\fB\-fnl\fR,  \fB\-\-freeze\-newlines\fR" 4
 .IX Item "-fnl,  --freeze-newlines"
-If you do not want any changes to the line breaks in your script, set \fB\-fnl\fR,
-and they will remain fixed, and the rest of the commands in this section and
-the Blank Line Control section will be ignored.  You may want to use \fB\-noll\fR
+If you do not want any changes to the line breaks in your script, set
+\&\fB\-fnl\fR, and they will remain fixed, and the rest of the commands in
+this section and sections \*(L"Breaking at Existing Line Breaks\*(R" and
+\&\*(L"Blank Line Control\*(R" will be ignored.  You may want to use \fB\-noll\fR
 with this.
 .IP "\fB\-ce\fR,   \fB\-\-cuddled\-else\fR" 4
 .IX Item "-ce,   --cuddled-else"
@@ -1445,55 +1446,6 @@ For example, if we want to just apply this style to \f(CW\*(C`if\*(C'\fR,
 There is no vertical tightness control for closing block braces; with
 the exception of one-line blocks, they will normally remain on a 
 separate line.
-.IP "\fB\-wocb=n\fR,  \fB\-\-want\-old\-comma\-breaks=n\fR" 4
-.IX Item "-wocb=n,  --want-old-comma-breaks=n"
-The value of \fBn\fR indicates the degree to which perltidy should follow
-line breaks at existing commas.
-.Sp
-.Vb 8
-\&   n=0 do not consider old comma breakpoints at all in list 
-\&       formatting.
-\&   n=1 (default) means perltidy makes a best guess at list
-\&       formatting, and may use old comma breakpoints in some cases.
-\&       At present, old comma breakpoints are used
-\&       for lists interrupted by comments and line breaks,
-\&       and for lists with mixtures of '=>'s and commas.
-\&   n=2 means always use old comma breakpoints in list formatting.
-.Ve
-The default, \fBn=1\fR, works reasonably well in most cases, but if your
-script has nicely formatted tables which get messed up by the default
-method, you can use \fBn=2\fR to preserve this formatting.  The value
-\&\fBn=0\fR would only be used if the input script is a complete mess and the
-default method does not work well because of this.
-.Sp
-Consider:
-.Sp
-.Vb 5
-\&    my @list = (1,
-\&                1, 1,
-\&                1, 2, 1,
-\&                1, 3, 3, 1,
-\&                1, 4, 6, 4, 1,);
-.Ve
-The default formatting will flatten this down to one line:
-.Sp
-.Vb 2
-\&    # perltidy (default)
-\&    my @list = ( 1, 1, 1, 1, 2, 1, 1, 3, 3, 1, 1, 4, 6, 4, 1, );
-.Ve
-which hides the structure. Using \fB\-wocb=2\fR, plus additional flags
-to retain the original style, yields
-.Sp
-.Vb 6
-\&    # perltidy -wocb=2 -lp -pt=2 -vt=1 -vtc=1
-\&    my @list = (1,
-\&                1, 1,
-\&                1, 2, 1,
-\&                1, 3, 3, 1,
-\&                1, 4, 6, 4, 1,);
-.Ve
-Probably the best strategy is to first try the default list formatting,
-and only change \fB\-wocb=n\fR if necessary, on a case by case basis.
 .IP "\fB\-dnl\fR,  \fB\-\-delete\-old\-newlines\fR" 4
 .IX Item "-dnl,  --delete-old-newlines"
 By default, perltidy first deletes all old line break locations, and then it
@@ -1548,6 +1500,73 @@ perltidy uses (use \fB\-\-dump\-token\-types\fR for a list).  However, for a
 few token types there may be conflicts with hardwired logic which cause
 unexpected results.  One example is curly braces, which should be
 controlled with the parameter \fBbl\fR provided for that purpose.
+.Sh "Breaking at Existing Line Breaks"
+.IX Subsection "Breaking at Existing Line Breaks"
+Several parameters are available for controlling the extent to which
+line breaks in the input script influence the output script.
+In most cases, the default values are set so that, if a choice is
+possible, the output style follows the input style.  For example, if a
+short logical container is broken in the input script, then the
+default behavior is for it to remain broken in the output script.
+.PP
+Most of the parameters in this section would only be required for
+a one-time conversion of a script from short container lengths to
+longer container lengths.
+.IP "\fB\-iob\fR,  \fB\-\-ignore\-old\-breakpoints\fR" 4
+.IX Item "-iob,  --ignore-old-breakpoints"
+Use this flag to tell perltidy to ignore existing line breaks
+to the maximum extent possible.  This will tend to produce
+the longest possible lines which do not exceed the line length
+limit.
+.IP "\fB\-bol\fR,  \fB\-\-break\-at\-old\-logical\-breakpoints\fR" 4
+.IX Item "-bol,  --break-at-old-logical-breakpoints"
+By default, if a logical expression is broken at a \f(CW\*(C`&&\*(C'\fR, \f(CW\*(C`||\*(C'\fR, \f(CW\*(C`and\*(C'\fR,
+or \f(CW\*(C`or\*(C'\fR, then the container will remain broken.  Also, breaks
+at internal keywords \f(CW\*(C`if\*(C'\fR and \f(CW\*(C`unless\*(C'\fR will normally be retained.
+To prevent this, use \fB\-nbol\fR.
+.IP "\fB\-bok\fR,  \fB\-\-break\-at\-old\-keyword\-breakpoints\fR" 4
+.IX Item "-bok,  --break-at-old-keyword-breakpoints"
+By default, perltidy will retain a breakpoint before keywords which may
+return lists, such as \f(CW\*(C`sort\*(C'\fR and <map>.  This allows chains of these
+operators to be displayed one per line.  Use \fB\-nbok\fR to prevent
+retaining these breakpoints.
+.IP "\fB\-boa\fR,  \fB\-\-break\-at\-old\-arrow\-breakpoints\fR" 4
+.IX Item "-boa,  --break-at-old-arrow-breakpoints"
+The default behavior for a container with comma\-arrows, '=>', is to
+break after the next comma if the container spans multiple lines, and
+not to break if the container spans one line.  Use \fB\-nboa\fR to tell
+perltidy to ignore the old line breaks and instead to form the longest
+possible one-line containers with comma\-arrows.
+.IP "\fB\-boc\fR,  \fB\-\-break\-at\-old\-comma\-breakpoints\fR" 4
+.IX Item "-boc,  --break-at-old-comma-breakpoints"
+This flag tells perltidy to try to break at all old commas.  Normally,
+perltidy makes a best guess at list formatting, and seldom uses old
+comma breakpoints.  Usually this works well, but consider:
+.Sp
+.Vb 5
+\&    my @list = (1,
+\&                1, 1,
+\&                1, 2, 1,
+\&                1, 3, 3, 1,
+\&                1, 4, 6, 4, 1,);
+.Ve
+The default formatting will flatten this down to one line:
+.Sp
+.Vb 2
+\&    # perltidy (default)
+\&    my @list = ( 1, 1, 1, 1, 2, 1, 1, 3, 3, 1, 1, 4, 6, 4, 1, );
+.Ve
+which hides the structure. Using \fB\-boc\fR, plus additional flags
+to retain the original style, yields
+.Sp
+.Vb 6
+\&    # perltidy -boc -lp -pt=2 -vt=1 -vtc=1
+\&    my @list = (1,
+\&                1, 1,
+\&                1, 2, 1,
+\&                1, 3, 3, 1,
+\&                1, 4, 6, 4, 1,);
+.Ve
 .Sh "Blank Line Control"
 .IX Subsection "Blank Line Control"
 Blank lines can improve the readability of a script if they are carefully
@@ -2105,11 +2124,12 @@ it frequently.
 The following list shows all short parameter names which allow a prefix
 \&'n' to produce the negated form:
 .PP
-.Vb 4
-\&    D anl asc aws bbb bbc bbs bli baa syn ce csc dac dbc dcsc dnl
-\&    dws dp dpro dsm dsc ddf dln dop dsn dtt dwls dwrs f fll
-\&    hsc html ibc icb icp isbc lp log lal x lsl bl sbl okw ola oll
-\&    pvl q opt sbc sfs ssc sts se st sob t tac tbc tp tsc tqw w
+.Vb 5
+\&    D anl asc aws bbb bbc bbs bli boa boc bok bol baa syn ce csc 
+\&    dac dbc dcsc dnl dws dp dpro dsm dsc ddf dln dop dsn dtt dwls dwrs 
+\&    f fll hsc html ibc icb icp isbc lp log lal x lsl bl 
+\&    sbl okw ola oll pvl q opt sbc sfs ssc sts se st sob 
+\&    t tac tbc tp tsc tqw w
 .Ve
 Equivalently, the prefix 'no' on the corresponding long names may be
 used.
@@ -2163,7 +2183,7 @@ confusing filenames such as \fIsomefile.tdy.tdy.tdy\fR.
 \&\fIperlstyle\fR\|(1), \fIPerl::Tidy\fR\|(3)
 .SH "VERSION"
 .IX Header "VERSION"
-This man page documents perltidy version 20020327.
+This man page documents perltidy version 20020408.
 .SH "CREDITS"
 .IX Header "CREDITS"
 Michael Cartmell supplied code for adaptation to \s-1VMS\s0 and helped with

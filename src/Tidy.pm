@@ -61,7 +61,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.15 2002/04/08 14:34:39 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.16 2002/04/11 01:11:32 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 # Preloaded methods go here.
@@ -198,51 +198,51 @@ sub catfile {
     return undef;
 }
 
-=pod
-
-POD NOTE: Documentation is contained in separately supplied .pod files;
-pod is used here only for long comments. 
-
-Here is a map of the flow of data from the input source to the output
-line sink:
-
-LineSource-->Tokenizer-->Formatter-->VerticalAligner-->FileWriter-->
-      input                         groups                 output
-      lines   tokens      lines       of     lines          lines
-                                     lines
-
-The names correspond to the package names responsible for the unit processes.
-
-The overall process is controlled by the "main" package.
-
-LineSource is the stream of input lines
-
-Tokenizer analyzes a line and breaks it into tokens, peeking ahead
-if necessary.  A token is any section of the input line which should be
-manipulated as a single entity during formatting.  For example, a single
-',' character is a token, and so is an entire side comment.  It handles
-the complexities of Perl syntax, such as distinguishing between '<<' as
-a shift operator and as a here-document, or distinguishing between '/'
-as a divide symbol and as a pattern delimiter.  
-
-Formatter inserts and deletes whitespace between tokens, and breaks
-sequences of tokens at appropriate points as output lines.  It bases its
-decisions on the default rules as modified by any command-line options. 
-
-VerticalAligner collects groups of lines together and tries to line up
-certain tokens, such as '=>', '#', and '=' by adding whitespace. 
-
-FileWriter simply writes lines to the output stream.
-
-The Logger package, not shown, records significant events and warning
-messages.  It writes a .LOG file, which may be saved with a
-'-log' or a '-g' flag.
-
-Some comments in this file refer to separate test files, most of which
-are in the test directory which can be downloaded in addition to the
-basic perltidy distribution.
-
-=cut
+# =pod
+# 
+# POD NOTE: Documentation is contained in separately supplied .pod files;
+# pod is used here only for long comments. 
+# 
+# Here is a map of the flow of data from the input source to the output
+# line sink:
+# 
+# LineSource-->Tokenizer-->Formatter-->VerticalAligner-->FileWriter-->
+#       input                         groups                 output
+#       lines   tokens      lines       of     lines          lines
+#                                      lines
+# 
+# The names correspond to the package names responsible for the unit processes.
+# 
+# The overall process is controlled by the "main" package.
+# 
+# LineSource is the stream of input lines
+# 
+# Tokenizer analyzes a line and breaks it into tokens, peeking ahead
+# if necessary.  A token is any section of the input line which should be
+# manipulated as a single entity during formatting.  For example, a single
+# ',' character is a token, and so is an entire side comment.  It handles
+# the complexities of Perl syntax, such as distinguishing between '<<' as
+# a shift operator and as a here-document, or distinguishing between '/'
+# as a divide symbol and as a pattern delimiter.  
+# 
+# Formatter inserts and deletes whitespace between tokens, and breaks
+# sequences of tokens at appropriate points as output lines.  It bases its
+# decisions on the default rules as modified by any command-line options. 
+# 
+# VerticalAligner collects groups of lines together and tries to line up
+# certain tokens, such as '=>', '#', and '=' by adding whitespace. 
+# 
+# FileWriter simply writes lines to the output stream.
+# 
+# The Logger package, not shown, records significant events and warning
+# messages.  It writes a .LOG file, which may be saved with a
+# '-log' or a '-g' flag.
+# 
+# Some comments in this file refer to separate test files, most of which
+# are in the test directory which can be downloaded in addition to the
+# basic perltidy distribution.
+# 
+# =cut
 
 {
 
@@ -868,17 +868,21 @@ sub process_command_line {
     $add_option->( 'brace-tightness',                           'bt',    '=i' );
     $add_option->( 'brace-vertical-tightness',                  'bvt',   '=i' );
     $add_option->( 'brace-vertical-tightness-closing',          'bvtc',  '=i' );
+    $add_option->( 'break-at-old-arrow-breakpoints',            'boa',   '!' );
+    $add_option->( 'break-at-old-comma-breakpoints',            'boc',   '!' );
+    $add_option->( 'break-at-old-keyword-breakpoints',          'bok',   '!' );
+    $add_option->( 'break-at-old-logical-breakpoints',          'bol',   '!' );
     $add_option->( 'break-after-comma-arrows',                  'baa',   '!' );
     $add_option->( 'check-multiline-quotes',                    'chk',   '!' );
     $add_option->( 'check-syntax',                              'syn',   '!' );
-    $add_option->( 'continuation-indentation',                  'ci',    '=i' );
-    $add_option->( 'closing-side-comments',                     'csc',   '!' );
-    $add_option->( 'closing-side-comment-prefix',               'cscp',  '=s' );
-    $add_option->( 'closing-side-comment-list',                 'cscl',  '=s' );
-    $add_option->( 'closing-side-comment-interval',             'csci',  '=i' );
-    $add_option->( 'closing-side-comment-maximum-text',         'csct',  '=i' );
     $add_option->( 'closing-side-comment-else-flag',            'csce',  '=i' );
+    $add_option->( 'closing-side-comment-interval',             'csci',  '=i' );
+    $add_option->( 'closing-side-comment-list',                 'cscl',  '=s' );
+    $add_option->( 'closing-side-comment-maximum-text',         'csct',  '=i' );
+    $add_option->( 'closing-side-comment-prefix',               'cscp',  '=s' );
     $add_option->( 'closing-side-comment-warnings',             'cscw',  '!' );
+    $add_option->( 'closing-side-comments',                     'csc',   '!' );
+    $add_option->( 'continuation-indentation',                  'ci',    '=i' );
     $add_option->( 'cuddled-else',                              'ce',    '!' );
     $add_option->( 'delete-block-comments',                     'dbc',   '!' );
     $add_option->( 'delete-closing-side-comments',              'dcsc',  '!' );
@@ -901,12 +905,12 @@ sub process_command_line {
     $add_option->( 'fuzzy-line-length',                         'fll',   '!' );
     $add_option->( 'hanging-side-comments',                     'hsc',   '!' );
     $add_option->( 'help',                                      'h',     '' );
+    $add_option->( 'ignore-old-line-breaks',                    'iob',   '!' );
     $add_option->( 'indent-block-comments',                     'ibc',   '!' );
-    $add_option->( 'indent-spaced-block-comments',              'isbc',  '!' );
     $add_option->( 'indent-closing-brace',                      'icb',   '!' );
     $add_option->( 'indent-closing-paren',                      'icp',   '!' );
     $add_option->( 'indent-columns',                            'i',     '=i' );
-    $add_option->( 'want-old-comma-breaks',                     'wocb',  '=i' );
+    $add_option->( 'indent-spaced-block-comments',              'isbc',  '!' );
     $add_option->( 'line-up-parentheses',                       'lp',    '!' );
     $add_option->( 'logfile',                                   'log',   '!' );
     $add_option->( 'logfile-gap',                               'g',     ':i' );
@@ -923,11 +927,11 @@ sub process_command_line {
     $add_option->( 'opening-brace-always-on-right',             'bar',   '' );
     $add_option->( 'opening-brace-on-new-line',                 'bl',    '!' );
     $add_option->( 'opening-sub-brace-on-new-line',             'sbl',   '!' );
-    $add_option->( 'outdent-labels',                            'ola',   '!' );
-    $add_option->( 'outdent-keywords',                          'okw',   '!' );
     $add_option->( 'outdent-keyword-list',                      'okwl',  '=s' );
-    $add_option->( 'outdent-long-quotes',                       'olq',   '!' );
+    $add_option->( 'outdent-keywords',                          'okw',   '!' );
+    $add_option->( 'outdent-labels',                            'ola',   '!' );
     $add_option->( 'outdent-long-comments',                     'olc',   '!' );
+    $add_option->( 'outdent-long-quotes',                       'olq',   '!' );
     $add_option->( 'outfile',                                   'o',     '=s' );
     $add_option->( 'output-file-extension',                     'oext',  '=s' );
     $add_option->( 'output-path',                               'opath', '=s' );
@@ -942,16 +946,16 @@ sub process_command_line {
     $add_option->( 'show-options',                              'opt',   '!' );
     $add_option->( 'space-for-semicolon',                       'sfs',   '!' );
     $add_option->( 'space-terminal-semicolon',                  'sts',   '!' );
-    $add_option->( 'static-side-comments',                      'ssc',   '!' );
-    $add_option->( 'static-side-comment-prefix',                'sscp',  '=s' );
     $add_option->( 'square-bracket-tightness',                  'sbt',   '=i' );
     $add_option->( 'square-bracket-vertical-tightness',         'sbvt',  '=i' );
     $add_option->( 'square-bracket-vertical-tightness-closing', 'sbvtc', '=i' );
     $add_option->( 'standard-error-output',                     'se',    '!' );
     $add_option->( 'standard-output',                           'st',    '!' );
     $add_option->( 'starting-indentation-level',                'sil',   '=i' );
-    $add_option->( 'static-block-comments',                     'sbc',   '!' );
     $add_option->( 'static-block-comment-prefix',               'sbcp',  '=s' );
+    $add_option->( 'static-block-comments',                     'sbc',   '!' );
+    $add_option->( 'static-side-comment-prefix',                'sscp',  '=s' );
+    $add_option->( 'static-side-comments',                      'ssc',   '!' );
     $add_option->( 'swallow-optional-blank-lines',              'sob',   '!' );
     $add_option->( 'tabs',                                      't',     '!' );
     $add_option->( 'tee-block-comments',                        'tbc',   '!' );
@@ -987,6 +991,9 @@ sub process_command_line {
       brace-tightness=1
       brace-vertical-tightness-closing=0
       brace-vertical-tightness=0
+      break-at-old-logical-breakpoints
+      break-at-old-arrow-breakpoints
+      break-at-old-keyword-breakpoints
       check-syntax
       closing-side-comment-interval=6
       closing-side-comment-maximum-text=20
@@ -1033,7 +1040,6 @@ sub process_command_line {
       static-block-comments
       trim-qw
       format=tidy
-      want-old-comma-breaks=1
     );
     push @defaults, "perl-syntax-check-flags=-c -T";
 
@@ -1974,17 +1980,17 @@ EOM
 
 sub parse_args {
 
-=pod
-
-Parse a command string containing multiple string with possible
-quotes, into individual commands.  It might look like this, for example:
-
-   -wba=" + - "  -some-thing -wbb='. && ||'
-
-There is no need, at present, to handle escaped quote characters.
-(They are not perltidy tokens, so needn't be in strings).
-
-=cut
+# =pod
+# 
+# Parse a command string containing multiple string with possible
+# quotes, into individual commands.  It might look like this, for example:
+# 
+#    -wba=" + - "  -some-thing -wbb='. && ||'
+# 
+# There is no need, at present, to handle escaped quote characters.
+# (They are not perltidy tokens, so needn't be in strings).
+# 
+# =cut
 
     my ($body) = @_;
     my @body_parts = ();
@@ -2145,9 +2151,7 @@ Whitespace Control
  -sbvtc=n closing square bracket vertical tightness, see -bvtc for n.
  -ci=n   sets continuation indentation=n,  default is n=2 spaces
  -lp     line up parentheses, brackets, and non-BLOCK braces
- -ibc    indent block comments; this is the default
  -sfs    add space before semicolon in for( ; ; )
- -msc=n  minimum spaces to side comment, default 4
  -aws    allow perltidy to add whitespace (default)
  -dws    delete all old non-essential whitespace 
  -icb    indent closing brace of a code block
@@ -2172,38 +2176,18 @@ Line Break Control
  -sbl    opening sub brace on new line.  value of -bl is used if not given.
  -bli    opening brace on new line and indented
  -bar    opening brace always on right, even for long clauses
+ -vt=n   vertical tightness (requires -lp); n controls break after opening
+         token: 0=never  1=no break if next line balanced   2=no break
+ -vtc=n  vertical tightness of closing container; n controls if closing
+         token starts new line: 0=always  1=not unless list  1=never
  -wba=s  want break after tokens in string; i.e. wba=': .'
  -wbb=s  want break before tokens in string
+ -boc    break at old comma breaks: overrides list formatting; see manual
 
-Delete selected text
- -dac    delete all comments AND pod
- -dbc    delete block comments     
- -dsc    delete side comments  
- -dp     delete pod
-
-Send selected text to a '.TEE' file
- -tac    tee all comments AND pod
- -tbc    tee block comments       
- -tsc    tee side comments       
- -tp     tee pod           
-
-Combinations of other parameters
- -gnu     attempt to follow GNU Coding Standards as applied to perl
- -mangle  remove as many newlines as possible (but keep comments and pods)
- -extrude  insert as many newlines as possible
-
-Other controls
- -mft=n  maximum fields per table; default n=40
- -x      do not format lines before hash-bang line (i.e., for VMS)
- -asc    allows perltidy to add a ';' when missing (default)
- -dsm    allows perltidy to delete an unnecessary ';'  (default)
-
- -olq    outdent long quoted strings (default) 
- -olc    outdent a long block comment line
- -ola    outdent statement labels
- -okw    outdent control keywords (redo, next, last, goto, return)
- -okwl=s specify alternative keywords for -okw command
-
+Comment controls
+ -ibc    indent block comments; this is the default
+ -isbc   indent spaced block comments; may indent unless no leading space
+ -msc=n  minimum spaces to side comment, default 4
  -csc    add or update closing side comments after closing BLOCK brace
  -dcsc   delete closing side comments created by a -csc command
  -cscp=s change closing side comment prefix to be other than '## end'
@@ -2218,6 +2202,37 @@ Other controls
  -ssc    use 'static side comments' identified by leading '##' (default)
  -sscp=s change static side comment identifier to be other than '##'
 
+Delete selected text
+ -dac    delete all comments AND pod
+ -dbc    delete block comments     
+ -dsc    delete side comments  
+ -dp     delete pod
+
+Send selected text to a '.TEE' file
+ -tac    tee all comments AND pod
+ -tbc    tee block comments       
+ -tsc    tee side comments       
+ -tp     tee pod           
+
+Outdenting
+ -olq    outdent long quoted strings (default) 
+ -olc    outdent a long block comment line
+ -ola    outdent statement labels
+ -okw    outdent control keywords (redo, next, last, goto, return)
+ -okwl=s specify alternative keywords for -okw command
+
+Other controls
+ -mft=n  maximum fields per table; default n=40
+ -x      do not format lines before hash-bang line (i.e., for VMS)
+ -asc    allows perltidy to add a ';' when missing (default)
+ -dsm    allows perltidy to delete an unnecessary ';'  (default)
+
+Combinations of other parameters
+ -gnu     attempt to follow GNU Coding Standards as applied to perl
+ -mangle  remove as many newlines as possible (but keep comments and pods)
+ -extrude  insert as many newlines as possible
+
+Dump and die, debugging
  -dop    dump options used in this run to standard output and quit
  -ddf    dump default options to standard output and quit
  -dsn    dump all option short names to standard output and quit
@@ -2225,6 +2240,7 @@ Other controls
  -dpro   dump whatever configuration file is in effect to standard output
  -dtt    dump all token types to standard output and quit
 
+HTML
  -html   write an html file (see 'man perl2web' for many options)
          Note: when -html is used, no indentation or formatting are done.
          Hint: try perltidy -html -css=mystyle.css filename.pl
@@ -2233,8 +2249,8 @@ Other controls
          -pre only writes out <pre>..</pre> code section
 
 A prefix of "n" negates short form toggle switches, and a prefix of "no"
-negates the long forms.  For example, -nt or --notabs mean to indent with
-spaces rather than tabs.   Do not bundle switches together.
+negates the long forms.  For example, -nasc means don't add missing
+semicolons.  
 
 If you are unable to see this entire text, try "perltidy -h | more"
 For more detailed information, and additional options, try "man perltidy",
@@ -3112,11 +3128,11 @@ sub new {
 
     # XHTML doctype:
 
-=pod
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-=cut
+# =pod
+# <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+#     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+# <html xmlns="http://www.w3.org/1999/xhtml">
+# =cut
 
     unless ( $rOpts->{'html-pre-only'} ) {
         $html_fh->print( <<"HTML_START");
@@ -3832,6 +3848,10 @@ use vars qw{
   $rOpts_block_brace_vertical_tightness
   $rOpts_brace_left_and_indent
   $rOpts_break_after_comma_arrows
+  $rOpts_break_at_old_logical_breakpoints
+  $rOpts_break_at_old_keyword_breakpoints
+  $rOpts_break_at_old_comma_breakpoints
+  $rOpts_break_at_old_arrow_breakpoints
   $rOpts_closing_side_comment_else_flag
   $rOpts_closing_side_comment_maximum_text
   $rOpts_continuation_indentation
@@ -3844,7 +3864,7 @@ use vars qw{
   $rOpts_maximum_line_length
   $rOpts_short_concatenation_item_length
   $rOpts_swallow_optional_blank_lines
-  $rOpts_want_old_comma_breaks
+  $rOpts_ignore_old_line_breaks
 
   $half_maximum_line_length
 
@@ -4534,8 +4554,24 @@ sub set_leading_whitespace {
             my $min_gnu_indentation =
               $gnu_stack[$max_gnu_stack_index]->get_SPACES();
 
-            if ( $last_nonblank_token =~ /^[\{\[]$/ ) {
-                $min_gnu_indentation += $tightness{$last_nonblank_token};
+            ##BUB: This needs some tune-up
+            $available_space = $space_count - $min_gnu_indentation;
+            if ($available_space >= $standard_increment) {
+                $min_gnu_indentation += $standard_increment;
+            }
+            elsif ($available_space > 1) {
+                $min_gnu_indentation += $available_space+1;
+            }
+            elsif ( $last_nonblank_token =~ /^[\{\[\(]$/ ) {
+                    ##                    $min_gnu_indentation += $tightness{$last_nonblank_token};
+                if ( ($tightness{$last_nonblank_token} < 2)
+                   )
+                {
+                    $min_gnu_indentation += 2;
+                }
+                else {
+                    $min_gnu_indentation += 1;
+                }
             }
             else {
                 $min_gnu_indentation += $standard_increment;
@@ -5228,6 +5264,14 @@ EOM
       $rOpts->{'block-brace-vertical-tightness'};
     $rOpts_brace_left_and_indent    = $rOpts->{'brace-left-and-indent'};
     $rOpts_break_after_comma_arrows = $rOpts->{'break-after-comma-arrows'};
+    $rOpts_break_at_old_comma_breakpoints = 
+      $rOpts->{'break-at-old-comma-breakpoints'};
+    $rOpts_break_at_old_arrow_breakpoints = 
+      $rOpts->{'break-at-old-arrow-breakpoints'};
+    $rOpts_break_at_old_keyword_breakpoints = 
+      $rOpts->{'break-at-old-keyword-breakpoints'};
+    $rOpts_break_at_old_logical_breakpoints = 
+      $rOpts->{'break-at-old-logical-breakpoints'};
     $rOpts_closing_side_comment_else_flag =
       $rOpts->{'closing-side-comment-else-flag'};
     $rOpts_closing_side_comment_maximum_text =
@@ -5244,7 +5288,7 @@ EOM
       $rOpts->{'short-concatenation-item-length'};
     $rOpts_swallow_optional_blank_lines =
       $rOpts->{'swallow-optional-blank-lines'};
-    $rOpts_want_old_comma_breaks = $rOpts->{'want-old-comma-breaks'};
+    $rOpts_ignore_old_line_breaks= $rOpts->{'ignore-old-line-breaks'};
     $half_maximum_line_length    = $rOpts_maximum_line_length / 2;
 
     # Note that both opening and closing tokens can access the opening
@@ -5339,18 +5383,18 @@ sub make_block_brace_vertical_tightness_pattern {
 
 sub make_block_pattern {
 
-=pod
-
-   given a string of block-type keywords, return a regex to match them
-   The only tricky part is that labels are indicated with a single ':'
-   and the 'sub' token text may have additional text after it (name of sub).
-
-   Example:
-
-    input string: "if else elsif unless while for foreach do : sub";
-    pattern:  '^((if|else|elsif|unless|while|for|foreach|do|\w+:)$|sub)';
-
-=cut
+# =pod
+# 
+#    given a string of block-type keywords, return a regex to match them
+#    The only tricky part is that labels are indicated with a single ':'
+#    and the 'sub' token text may have additional text after it (name of sub).
+# 
+#    Example:
+# 
+#     input string: "if else elsif unless while for foreach do : sub";
+#     pattern:  '^((if|else|elsif|unless|while|for|foreach|do|\w+:)$|sub)';
+# 
+# =cut
 
     my ( $abbrev, $string ) = @_;
     $string =~ s/^\s*//;
@@ -5615,26 +5659,26 @@ EOM
 
 sub set_white_space_flag {
 
-=pod
-
-     This routine examines each pair of nonblank tokens and
-     sets values for array @white_space_flag. 
-
-     $white_space_flag[$j] is a flag indicating whether a white space 
-     BEFORE token $j is needed, with the following values:
-
-             -1 do not want a space before token $j
-              0 optional space or $j is a whitespace
-              1 want a space before token $j
-
-
-    The values for the first token will be defined based
-    upon the contents of the "to_go" output array.  
-
-    Note: retain debug print statements because they are usually
-    required after adding new token types.
-
-=cut
+# =pod
+# 
+#      This routine examines each pair of nonblank tokens and
+#      sets values for array @white_space_flag. 
+# 
+#      $white_space_flag[$j] is a flag indicating whether a white space 
+#      BEFORE token $j is needed, with the following values:
+# 
+#              -1 do not want a space before token $j
+#               0 optional space or $j is a whitespace
+#               1 want a space before token $j
+# 
+# 
+#     The values for the first token will be defined based
+#     upon the contents of the "to_go" output array.  
+# 
+#     Note: retain debug print statements because they are usually
+#     required after adding new token types.
+# 
+# =cut
 
     BEGIN {
 
@@ -6420,20 +6464,20 @@ sub set_white_space_flag {
             || ( ( $python_indentation_level == 0 ) && $$rtoken_type[0] eq 'Q' )
           );
 
-=pod
-
-     Patch needed for MakeMaker.  Do not break a statement
-     in which $VERSION may be calculated.  See MakeMaker.pm;
-     this is based on the coding in it.
-     The first line of a file that matches this will be eval'd:
-         /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
-     Examples:
-       *VERSION = \'1.01';
-       ( $VERSION ) = '$Revision: 1.15 $ ' =~ /\$Revision:\s+([^\s]+)/;
-     We will pass such a line straight through without breaking
-     it unless -npvl is used
-    
-=cut
+# =pod
+# 
+#      Patch needed for MakeMaker.  Do not break a statement
+#      in which $VERSION may be calculated.  See MakeMaker.pm;
+#      this is based on the coding in it.
+#      The first line of a file that matches this will be eval'd:
+#          /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
+#      Examples:
+#        *VERSION = \'1.01';
+#        ( $VERSION ) = '$Revision: 1.16 $ ' =~ /\$Revision:\s+([^\s]+)/;
+#      We will pass such a line straight through without breaking
+#      it unless -npvl is used
+#     
+# =cut
 
         my $is_VERSION_statement = 0;
 
@@ -6996,7 +7040,8 @@ sub set_white_space_flag {
                         $last_nonblank_token eq '}'
                         && (
                             $is_block_without_semicolon{
-                                $last_nonblank_block_type }
+                                $last_nonblank_block_type
+                            }
                             || $last_nonblank_block_type =~ /^sub\s+\w/
                             || $last_nonblank_block_type =~ /^\w+:$/ )
                     )
@@ -7109,7 +7154,7 @@ sub set_white_space_flag {
         }
 
         # mark old line breakpoints in current output stream
-        if ( $max_index_to_go >= 0 && $rOpts_want_old_comma_breaks > 0 ) {
+        if ( $max_index_to_go >= 0 && !$rOpts_ignore_old_line_breaks ) {
             $old_breakpoint_to_go[$max_index_to_go] = 1;
         }
     }
@@ -7315,24 +7360,24 @@ sub write_unindented_line {
 
 sub undo_lp_ci {
 
-=pod
-
-If there is a single, long parameter within parens, like this:
-
-        $self->command( "/msg "
-              . $infoline->chan
-              . " You said $1, but did you know that it's square was "
-              . $1 * $1 . " ?" );
-
-we can remove the continuation indentation of the 2nd and higher lines
-to achieve this effect, which is more pleasing:
-
-        $self->command("/msg "
-                       . $infoline->chan
-                       . " You said $1, but did you know that it's square was "
-                       . $1 * $1 . " ?");
-
-=cut
+# =pod
+# 
+# If there is a single, long parameter within parens, like this:
+# 
+#         $self->command( "/msg "
+#               . $infoline->chan
+#               . " You said $1, but did you know that it's square was "
+#               . $1 * $1 . " ?" );
+# 
+# we can remove the continuation indentation of the 2nd and higher lines
+# to achieve this effect, which is more pleasing:
+# 
+#         $self->command("/msg "
+#                        . $infoline->chan
+#                        . " You said $1, but did you know that it's square was "
+#                        . $1 * $1 . " ?");
+# 
+# =cut
 
     my ( $line_open, $i_start, $closing_index, $ri_first, $ri_last ) = @_;
     my $max_line = @$ri_first - 1;
@@ -7376,25 +7421,25 @@ sub correct_lp_indentation {
     my ( $ri_first, $ri_last ) = @_;
     my $do_not_pad = 0;
 
-=pod
-
-    Note on flag '$do_not_pad':
-    We want to avoid a situation like this, where the aligner inserts
-    whitespace before the '=' to align it with a previous '=', because
-    otherwise the parens might become mis-aligned in a situation like
-    this, where the '=' has become aligned with the previous line,
-    pushing the opening '(' forward beyond where we want it.
-    
-    $mkFloor::currentRoom = '';
-    $mkFloor::c_entry     = $c->Entry(
-                                   -width        => '10',
-                                   -relief       => 'sunken',
-                                   ...
-                                   );
-
-    We leave it to the aligner to decide how to do this.
-
-=cut
+# =pod
+# 
+#     Note on flag '$do_not_pad':
+#     We want to avoid a situation like this, where the aligner inserts
+#     whitespace before the '=' to align it with a previous '=', because
+#     otherwise the parens might become mis-aligned in a situation like
+#     this, where the '=' has become aligned with the previous line,
+#     pushing the opening '(' forward beyond where we want it.
+#     
+#     $mkFloor::currentRoom = '';
+#     $mkFloor::c_entry     = $c->Entry(
+#                                    -width        => '10',
+#                                    -relief       => 'sunken',
+#                                    ...
+#                                    );
+# 
+#     We leave it to the aligner to decide how to do this.
+# 
+# =cut
 
     # first remove continuation indentation if appropriate
     my $max_line = @$ri_first - 1;
@@ -7453,7 +7498,9 @@ sub correct_lp_indentation {
                     $actual_pos = total_line_length( $ibegm, $iendm );
 
                     # follow -pt style
-                    ++$actual_pos if $types_to_go[ $iendm + 1 ] eq 'b';
+                    # BUB
+                    ++$actual_pos
+                      if ($types_to_go[ $iendm + 1 ] eq 'b')
                 }
                 else {
 
@@ -7717,11 +7764,15 @@ sub output_line_to_go {
         # set all forced breakpoints for good list formatting
         my $saw_good_break = 0;
         my $is_long_line   = excess_line_length( $imin, $max_index_to_go ) > 0;
+        
         if (
             $max_index_to_go > 0
-            && ( $is_long_line
+            && (
+                $is_long_line
                 || $old_line_count_in_batch > 1
-                || is_unbalanced_batch() )
+                || is_unbalanced_batch()
+                || $rOpts_break_after_comma_arrows
+            )
           )
         {
             $saw_good_break = scan_list();
@@ -9867,7 +9918,7 @@ sub pad_array_to_go {
         @last_comma_index,              @last_dot_index,
         @last_nonblank_type,            @old_breakpoint_count_stack,
         @opening_structure_index_stack, @rand_or_list,
-        @rfor_semicolon_list,
+        @rfor_semicolon_list,           @has_old_logical_breakpoints,
     );
 
     # routine to define essential variables when we go 'up' to
@@ -9893,6 +9944,7 @@ sub pad_array_to_go {
             $last_comma_index[$depth]           = undef;
             $last_dot_index[$depth]             = undef;
             $old_breakpoint_count_stack[$depth] = undef;
+            $has_old_logical_breakpoints[$depth] = 0;
             $rand_or_list[$depth]               = [];
             $rfor_semicolon_list[$depth]        = [];
 
@@ -9966,7 +10018,7 @@ sub pad_array_to_go {
         if ( $item_count_stack[$dd] == 0
             && $is_logical_container{ $container_type[$dd] } )
         {
-            foreach ( @{ $rand_or_list[$dd] } ) {
+            while ( $_=pop @{ $rand_or_list[$dd] } ) {
                 set_forced_breakpoint($_);
             }
         }
@@ -10010,7 +10062,10 @@ sub pad_array_to_go {
         check_for_new_minimum_depth($current_depth);
 
         my $is_long_line = excess_line_length( 0, $max_index_to_go ) > 0;
-        my $want_previous_breakpoint = 0;
+        my $want_previous_breakpoint = -1;
+
+        my $i_line_end = -1;
+        my $i_line_start = -1;
 
         # loop over all tokens in this batch
         while ( ++$i <= $max_index_to_go ) {
@@ -10031,50 +10086,61 @@ sub pad_array_to_go {
             $next_nonblank_block_type = $block_type_to_go[$i_next_nonblank];
 
             # set break if flag was set
-            if ($want_previous_breakpoint) {
-                set_forced_breakpoint( $i - 1 );
-                $want_previous_breakpoint = 0;
+            if ($want_previous_breakpoint >=0) {
+                set_forced_breakpoint( $want_previous_breakpoint );
+                $want_previous_breakpoint = -1;
             }
 
             $last_old_breakpoint_count = $old_breakpoint_count;
-            if ( $old_breakpoint_to_go[$i] ) {
+            if ( $old_breakpoint_to_go[$i] )
+            {
+                $i_line_end = $i;
+                $i_line_start = $i_next_nonblank;
+
                 $old_breakpoint_count++;
 
                 # if old line broke before certain key types, we take that
                 # as a cue that the user wants to break there
-                if (
-                    (
-                        $next_nonblank_type =~ /^(\&\&|\|\|)$/
-                        && $want_break_before{$next_nonblank_type}
-                    )
-                    || (
-                        $next_nonblank_type eq 'k'
-
-                        #   /^(if|unless|and|or)$/ 
-                        && $is_if_unless_and_or{$next_nonblank_token}
-                    )
-                  )
-                {
-                    $good_old_breakpoint++;
+                if ($rOpts_break_at_old_logical_breakpoints) {
+                    if ( $next_nonblank_type =~ /^(\&\&|\|\|)$/ ) {
+                        $good_old_breakpoint++;
+                    }
+                    elsif ( $next_nonblank_type eq 'k'
+                        && $is_if_unless_and_or{$next_nonblank_token} )
+                    {
+                        $good_old_breakpoint++;
+                    }
+                    elsif ( $type =~ /^(\&\&|\|\|)$/ ) {
+                        $good_old_breakpoint++;
+                    }
+                    elsif ( $type eq 'k' && $is_if_unless_and_or{$token} ) {
+                        $good_old_breakpoint++;
+                    }
+                    elsif ( $type eq '}' ) {
+                        $good_old_breakpoint++;
+                    }
                 }
 
                 # Break before certain keywords if user broke there and
                 # this is a 'safe' break point. The idea is to retain
                 # any preferred breaks for sequential list operations,
                 # like a schwartzian transform. 
-                if (
-                    $next_nonblank_type eq 'k'
-                    && $is_keyword_returning_list{$next_nonblank_token}
-                    && ( $type =~ /^[=\)\]\}Riw]$/
-                        || $type eq 'k' && $is_keyword_returning_list{$token} )
-                  )
-                {
+                if ($rOpts_break_at_old_logical_breakpoints) {
+                    if (
+                        $next_nonblank_type eq 'k'
+                        && $is_keyword_returning_list{$next_nonblank_token}
+                        && ( $type =~ /^[=\)\]\}Riw]$/
+                            || $type eq 'k'
+                            && $is_keyword_returning_list{$token} )
+                      )
+                    {
 
-                    # we actually have to set this break next time through
-                    # the loop because if we are at a closing token (such 
-                    # as '}') which forms a one-line block, this break might 
-                    # get undone.
-                    $want_previous_breakpoint = 1;
+                        # we actually have to set this break next time through
+                        # the loop because if we are at a closing token (such 
+                        # as '}') which forms a one-line block, this break might 
+                        # get undone.
+                        $want_previous_breakpoint = $i;
+                    }
                 }
             }
             next if ( $type eq 'b' );
@@ -10116,13 +10182,23 @@ sub pad_array_to_go {
 
             # remember locations of '||'  and '&&' for possible breaks if we
             # decide this is a long logical expression.
-            if    ( $type eq '||' ) { push @{ $rand_or_list[$depth] }, $i }
-            elsif ( $type eq '&&' ) { push @{ $rand_or_list[$depth] }, $i }
+            if ( $type eq '||' ) {
+                push @{ $rand_or_list[$depth] }, $i;
+                ++$has_old_logical_breakpoints[$depth]
+                  if ( $i == $i_line_start || $i == $i_line_end );
+            }
+            elsif ( $type eq '&&' ) { 
+                push @{ $rand_or_list[$depth] }, $i;
+                ++$has_old_logical_breakpoints[$depth]
+                  if ($i == $i_line_start || $i == $i_line_end);
+            }
             elsif ( $type eq 'f' )  {
                 push @{ $rfor_semicolon_list[$depth] }, $i;
             }
             elsif ( $type eq 'k' && $token eq 'and' ) {
                 push @{ $rand_or_list[$depth] }, $i;
+                ++$has_old_logical_breakpoints[$depth]
+                  if ($i == $i_line_start || $i == $i_line_end);
             }
 
             # break immediately at 'or's which are probably not in a logical
@@ -10131,6 +10207,8 @@ sub pad_array_to_go {
             if ( $type eq 'k' && $token eq 'or' ) {
                 if ( $is_logical_container{ $container_type[$depth] } ) {
                     push @{ $rand_or_list[$depth] }, $i;
+                    ++$has_old_logical_breakpoints[$depth]
+                      if ( $i == $i_line_start || $i == $i_line_end );
                 }
                 else {
                     if ($is_long_line) { set_forced_breakpoint($i) }
@@ -10316,9 +10394,12 @@ sub pad_array_to_go {
                     # if the opening structure is in this batch
                     && $saw_opening_structure
 
-                    # and on the same old line 
+                    # and either on the same old line 
                     && ( $old_breakpoint_count_stack[$current_depth] ==
-                        $last_old_breakpoint_count )
+                        $last_old_breakpoint_count
+
+                        # or user wants to form long blocks with arrows
+                        || !$rOpts_break_at_old_arrow_breakpoints )
 
                     # and we made some breakpoints between the opening and closing
                     && ( $breakpoint_undo_stack[$current_depth] <
@@ -10345,89 +10426,89 @@ sub pad_array_to_go {
                   || $is_long_term
                   || $has_comma_breakpoints;
 
-=pod
-
-Having come to the closing ')', '}', or ']', now we have to decide if we
-should 'open up' the structure by placing breaks at the opening and
-closing containers.  This is a tricky decision.  Here are some of the 
-basic considerations:
-
--If this is a BLOCK container, then any breakpoints will have already
-been set (and according to user preferences), so we need do nothing here.
-
--If we have a comma-separated list for which we can align the list items,
-then we need to do so because otherwise the vertical aligner cannot
-currently do the alignment.
-
--If this container does itself contain a container which has been broken
-open, then it should be broken open to properly show the structure.
-
--If there is nothing to align, and no other reason to break apart,
-then do not do it.
-
-We will not break open the parens of a long but 'simple' logical expression.
-For example:
-
-This is an example of a simple logical expression and its formatting:
-
-    if ( $bigwasteofspace1 && $bigwasteofspace2
-        || $bigwasteofspace3 && $bigwasteofspace4 )
-
-Most people would prefer this than the 'spacey' version:
-
-    if ( 
-        $bigwasteofspace1 && $bigwasteofspace2
-        || $bigwasteofspace3 && $bigwasteofspace4 
-    )
-
-To illustrate the rules for breaking logical expressions, consider:
-
-            FULLY DENSE:
-            if ( $opt_excl
-                and ( exists $ids_excl_uc{$id_uc}
-                    or grep $id_uc =~ /$_/, @ids_excl_uc ))
-
-This is on the verge of being difficult to read.  The current default is to
-open it up like this:
-
-            DEFAULT:
-            if (
-                $opt_excl
-                and ( exists $ids_excl_uc{$id_uc}
-                    or grep $id_uc =~ /$_/, @ids_excl_uc )
-              )
-
-This is a compromise which tries to avoid being too dense and to spacey.
-A more spaced version would be:
-
-            SPACEY:
-            if (
-                $opt_excl
-                and ( 
-                    exists $ids_excl_uc{$id_uc}
-                    or grep $id_uc =~ /$_/, @ids_excl_uc 
-                )
-              )
-
-Some people might prefer the spacey version -- an option could be added.  The
-innermost expression contains a long block '( exists $ids_...  ')'.  
-
-Here is how the logic goes: We will force a break at the 'or' that the
-innermost expression contains, but we will not break apart its opening and
-closing containers because (1) it contains no multi-line sub-containers itself,
-and (2) there is no alignment to be gained by breaking it open like this
-
-            and ( 
-                exists $ids_excl_uc{$id_uc}
-                or grep $id_uc =~ /$_/, @ids_excl_uc 
-            )
-
-(although this looks perfectly ok and might be good for long expressions).  The
-outer 'if' container, though, contains a broken sub-container, so it will be
-broken open to avoid too much density.  Also, since it contains no 'or's, there
-will be a forced break at its 'and'.
-
-=cut
+# =pod
+# 
+# Having come to the closing ')', '}', or ']', now we have to decide if we
+# should 'open up' the structure by placing breaks at the opening and
+# closing containers.  This is a tricky decision.  Here are some of the 
+# basic considerations:
+# 
+# -If this is a BLOCK container, then any breakpoints will have already
+# been set (and according to user preferences), so we need do nothing here.
+# 
+# -If we have a comma-separated list for which we can align the list items,
+# then we need to do so because otherwise the vertical aligner cannot
+# currently do the alignment.
+# 
+# -If this container does itself contain a container which has been broken
+# open, then it should be broken open to properly show the structure.
+# 
+# -If there is nothing to align, and no other reason to break apart,
+# then do not do it.
+# 
+# We will not break open the parens of a long but 'simple' logical expression.
+# For example:
+# 
+# This is an example of a simple logical expression and its formatting:
+# 
+#     if ( $bigwasteofspace1 && $bigwasteofspace2
+#         || $bigwasteofspace3 && $bigwasteofspace4 )
+# 
+# Most people would prefer this than the 'spacey' version:
+# 
+#     if ( 
+#         $bigwasteofspace1 && $bigwasteofspace2
+#         || $bigwasteofspace3 && $bigwasteofspace4 
+#     )
+# 
+# To illustrate the rules for breaking logical expressions, consider:
+# 
+#             FULLY DENSE:
+#             if ( $opt_excl
+#                 and ( exists $ids_excl_uc{$id_uc}
+#                     or grep $id_uc =~ /$_/, @ids_excl_uc ))
+# 
+# This is on the verge of being difficult to read.  The current default is to
+# open it up like this:
+# 
+#             DEFAULT:
+#             if (
+#                 $opt_excl
+#                 and ( exists $ids_excl_uc{$id_uc}
+#                     or grep $id_uc =~ /$_/, @ids_excl_uc )
+#               )
+# 
+# This is a compromise which tries to avoid being too dense and to spacey.
+# A more spaced version would be:
+# 
+#             SPACEY:
+#             if (
+#                 $opt_excl
+#                 and ( 
+#                     exists $ids_excl_uc{$id_uc}
+#                     or grep $id_uc =~ /$_/, @ids_excl_uc 
+#                 )
+#               )
+# 
+# Some people might prefer the spacey version -- an option could be added.  The
+# innermost expression contains a long block '( exists $ids_...  ')'.  
+# 
+# Here is how the logic goes: We will force a break at the 'or' that the
+# innermost expression contains, but we will not break apart its opening and
+# closing containers because (1) it contains no multi-line sub-containers itself,
+# and (2) there is no alignment to be gained by breaking it open like this
+# 
+#             and ( 
+#                 exists $ids_excl_uc{$id_uc}
+#                 or grep $id_uc =~ /$_/, @ids_excl_uc 
+#             )
+# 
+# (although this looks perfectly ok and might be good for long expressions).  The
+# outer 'if' container, though, contains a broken sub-container, so it will be
+# broken open to avoid too much density.  Also, since it contains no 'or's, there
+# will be a forced break at its 'and'.
+# 
+# =cut
 
                 # set some flags telling something about this container..
                 my $is_simple_logical_expression = 0;
@@ -10461,9 +10542,6 @@ will be a forced break at its 'and'.
                     $has_comma_breakpoints = 1
                       unless $rOpts_line_up_parentheses;
                 }
-
-                $rand_or_list[$current_depth]        = [];
-                $rfor_semicolon_list[$current_depth] = [];
 
                 if (
 
@@ -10594,6 +10672,14 @@ will be a forced break at its 'and'.
                     }
                 }    # end logic to open up a container
 
+                # Break open a logical container open if it was already open
+                elsif ( $is_simple_logical_expression
+                    && $has_old_logical_breakpoints[$current_depth]
+                    && $rOpts_break_at_old_logical_breakpoints )
+                {
+                    set_logical_breakpoints($current_depth);
+                }
+                
                 # Handle long container which does not get opened up
                 elsif ($is_long_term) {
 
@@ -10601,6 +10687,11 @@ will be a forced break at its 'and'.
                     # they are complex
                     set_fake_breakpoint();
                 }
+
+                $has_old_logical_breakpoints[$current_depth]  = 0;
+                $rand_or_list[$current_depth]        = [];
+                $rfor_semicolon_list[$current_depth] = [];
+
             }
 
             #------------------------------------------------------------
@@ -10720,7 +10811,9 @@ will be a forced break at its 'and'.
             $interrupted_list[$dd] = 1;
             $has_broken_sublist[$dd] = 1 if ( $dd < $current_depth );
             set_comma_breakpoints($dd);
-            set_logical_breakpoints($dd) if $good_old_breakpoint > 0;
+            set_logical_breakpoints($dd)    ##if $good_old_breakpoint > 0;
+              if ( $has_old_logical_breakpoints[$dd]
+                && $rOpts_break_at_old_logical_breakpoints );
             set_for_semicolon_breakpoints($dd);
 
             # break open container...
@@ -10746,6 +10839,9 @@ will be a forced break at its 'and'.
           ( $old_breakpoint_count > 0
               && $old_breakpoint_count == $good_old_breakpoint );
 
+        # Set just one good old breakpoint in an attempt to trigger some good
+        # line breaks.  In general, old logical breaks must be assumed to be
+        # unreliable.
         return $saw_good_breakpoint;
     }
 }    # end scan_list
@@ -10976,7 +11072,7 @@ sub find_token_starting_list {
         # A list is is forced to use old breakpoints if it was interrupted
         # by side comments or blank lines, or requested by user.
         #---------------------------------------------------------------
-        if ( $rOpts_want_old_comma_breaks > 1
+        if ($rOpts_break_at_old_comma_breakpoints
             || $interrupted
             || $i_opening_paren < 0 )
         {
@@ -11202,48 +11298,48 @@ sub find_token_starting_list {
 
         if ( $number_of_fields <= 0 ) {
 
-=pod
-
-        #---------------------------------------------------------------
-        # We're in trouble.  We can't find a single field width that works.
-        # There is no simple answer here; we may have a single long list
-        # item, or many.  
-        #---------------------------------------------------------------
-
-        In many cases, it may be best to not force a break if there is just one
-        comma, because the standard continuation break logic will do a better
-        job without it.  
-
-        In the common case that all but one of the terms can fit
-        on a single line, it may look better not to break open the
-        containing parens.  Consider, for example
-
-            $color =
-              join ( '/',
-                sort { $color_value{$::a} <=> $color_value{$::b}; }
-                keys %colors );
-
-        which will look like this with the container broken:
-
-            $color = join (
-                '/',
-                sort { $color_value{$::a} <=> $color_value{$::b}; } keys %colors
-            );
-
-        Here is an example of this rule for a long last term:
-
-            log_message( 0, 256, 128,
-                "Number of routes in adj-RIB-in to be considered: $peercount" );
-
-        And here is an example with a long first term:
-
-        $s = sprintf(
-"%2d wallclock secs (%$f usr %$f sys + %$f cusr %$f csys = %$f CPU)",
-            $r, $pu, $ps, $cu, $cs, $tt
-          )
-          if $style eq 'all';
-
-=cut
+# =pod
+# 
+#         #---------------------------------------------------------------
+#         # We're in trouble.  We can't find a single field width that works.
+#         # There is no simple answer here; we may have a single long list
+#         # item, or many.  
+#         #---------------------------------------------------------------
+# 
+#         In many cases, it may be best to not force a break if there is just one
+#         comma, because the standard continuation break logic will do a better
+#         job without it.  
+# 
+#         In the common case that all but one of the terms can fit
+#         on a single line, it may look better not to break open the
+#         containing parens.  Consider, for example
+# 
+#             $color =
+#               join ( '/',
+#                 sort { $color_value{$::a} <=> $color_value{$::b}; }
+#                 keys %colors );
+# 
+#         which will look like this with the container broken:
+# 
+#             $color = join (
+#                 '/',
+#                 sort { $color_value{$::a} <=> $color_value{$::b}; } keys %colors
+#             );
+# 
+#         Here is an example of this rule for a long last term:
+# 
+#             log_message( 0, 256, 128,
+#                 "Number of routes in adj-RIB-in to be considered: $peercount" );
+# 
+#         And here is an example with a long first term:
+# 
+#         $s = sprintf(
+# "%2d wallclock secs (%$f usr %$f sys + %$f cusr %$f csys = %$f CPU)",
+#             $r, $pu, $ps, $cu, $cs, $tt
+#           )
+#           if $style eq 'all';
+# 
+# =cut
 
             my $i_last_comma    = $$rcomma_index[ $comma_count - 1 ];
             my $long_last_term  = excess_line_length( 0, $i_last_comma ) <= 0;
@@ -12165,25 +12261,25 @@ sub undo_forced_breakpoint_stack {
                         # 'or' after an 'if' or 'unless'.  We should consider the
                         # possible vertical alignment, and visual clutter.
 
-=pod
-
-    This looks best with the 'and' on the same line as the 'if':
-
-        $a = 1
-          if $seconds and $nu < 2;
-
-    But this looks better as shown:
-
-        $a = 1
-          if !$this->{Parents}{$_}
-          or $this->{Parents}{$_} eq $_;
-
-    Eventually, it would be nice to look for similarities (such as 'this' or
-    'Parents'), but for now I'm using a simple rule that says that the 
-    resulting line length must not be more than half the maximum line length
-    (making it 80/2 = 40 characters by default).
-
-=cut
+# =pod
+# 
+#     This looks best with the 'and' on the same line as the 'if':
+# 
+#         $a = 1
+#           if $seconds and $nu < 2;
+# 
+#     But this looks better as shown:
+# 
+#         $a = 1
+#           if !$this->{Parents}{$_}
+#           or $this->{Parents}{$_} eq $_;
+# 
+#     Eventually, it would be nice to look for similarities (such as 'this' or
+#     'Parents'), but for now I'm using a simple rule that says that the 
+#     resulting line length must not be more than half the maximum line length
+#     (making it 80/2 = 40 characters by default).
+# 
+# =cut
 
                         next
                           unless (
@@ -12496,7 +12592,7 @@ sub set_continuation_breaks {
                     $i_test == $imax                # we are at the end
                     && !$forced_breakpoint_count    #
                     && $saw_good_break              # old line had good break
-                    && $type =~ /^[#;]$/            # and this line ends in
+                    && $type =~ /^[#;\{]$/          # and this line ends in
                                                     # ';' or side comment
                     && $i_last_break < 0        # and we haven't made a break
                     && $i_lowest > 0            # and we saw a possible break
@@ -13340,24 +13436,24 @@ package Perl::Tidy::VerticalAligner::Alignment;
 
 package Perl::Tidy::VerticalAligner;
 
-=pod
-
-The Perl::Tidy::VerticalAligner package collects output lines and attempts to line
-up certain common tokens, such as => and #, which are identified
-by the calling routine.
-
-There are two main routines: append_line and flush.  Append acts as a storage
-buffer, collecting lines into a group which can be vertically aligned.
-When alignment is no longer possible or desirable, it dumps the group
-to flush.
-
-    append_line -----> flush
-
-    collects          writes
-    vertical          one
-    groups            group
-
-=cut
+# =pod
+# 
+# The Perl::Tidy::VerticalAligner package collects output lines and attempts to line
+# up certain common tokens, such as => and #, which are identified
+# by the calling routine.
+# 
+# There are two main routines: append_line and flush.  Append acts as a storage
+# buffer, collecting lines into a group which can be vertically aligned.
+# When alignment is no longer possible or desirable, it dumps the group
+# to flush.
+# 
+#     append_line -----> flush
+# 
+#     collects          writes
+#     vertical          one
+#     groups            group
+# 
+# =cut
 
 BEGIN {
 
@@ -13585,60 +13681,60 @@ sub forget_side_comment {
 
 sub append_line {
 
-=pod
-
-sub append is called to place one line in the current vertical group.
-
-The input parameters are:
-    $level = indentation level of this line
-    $rfields = reference to array of fields
-    $rpatterns = reference to array of patterns, one per field
-    $rtokens   = reference to array of tokens starting fields 1,2,..
-
-Here is an example of what this package does.  In this example,
-we are trying to line up both the '=>' and the '#'.  
-
-        '18' => 'grave',    #   \`
-        '19' => 'acute',    #   `'
-        '20' => 'caron',    #   \v
-<-tabs-><f1-><--field 2 ---><-f3->
-|            |              |    |
-|            |              |    |
-col1        col2         col3 col4 
-
-The calling routine has already broken the entire line into 3 fields as
-indicated.  (So the work of identifying promising common tokens has
-already been done).
-
-In this example, there will be 2 tokens being matched: '=>' and '#'.
-They are the leading parts of fields 2 and 3, but we do need to know
-what they are so that we can dump a group of lines when these tokens
-change.
-
-The fields contain the actual characters of each field.  The patterns
-are like the fields, but they contain mainly token types instead
-of tokens, so they have fewer characters.  They are used to be
-sure we are matching fields of similar type.
-
-In this example, there will be 4 column indexes being adjusted.  The
-first one is always at zero.  The interior columns are at the start of
-the matching tokens, and the last one tracks the maximum line length.
-
-Basically, each time a new line comes in, it joins the current vertical
-group if possible.  Otherwise it causes the current group to be dumped
-and a new group is started.
-
-For each new group member, the column locations are increased, as
-necessary, to make room for the new fields.  When the group is finally
-output, these column numbers are used to compute the amount of spaces of
-padding needed for each field.
-
-Programming note: the fields are assumed not to have any tab characters.
-Tabs have been previously removed except for tabs in quoted strings and
-side comments.  Tabs in these fields can mess up the column counting.
-The log file warns the user if there are any such tabs.
-
-=cut
+# =pod
+# 
+# sub append is called to place one line in the current vertical group.
+# 
+# The input parameters are:
+#     $level = indentation level of this line
+#     $rfields = reference to array of fields
+#     $rpatterns = reference to array of patterns, one per field
+#     $rtokens   = reference to array of tokens starting fields 1,2,..
+# 
+# Here is an example of what this package does.  In this example,
+# we are trying to line up both the '=>' and the '#'.  
+# 
+#         '18' => 'grave',    #   \`
+#         '19' => 'acute',    #   `'
+#         '20' => 'caron',    #   \v
+# <-tabs-><f1-><--field 2 ---><-f3->
+# |            |              |    |
+# |            |              |    |
+# col1        col2         col3 col4 
+# 
+# The calling routine has already broken the entire line into 3 fields as
+# indicated.  (So the work of identifying promising common tokens has
+# already been done).
+# 
+# In this example, there will be 2 tokens being matched: '=>' and '#'.
+# They are the leading parts of fields 2 and 3, but we do need to know
+# what they are so that we can dump a group of lines when these tokens
+# change.
+# 
+# The fields contain the actual characters of each field.  The patterns
+# are like the fields, but they contain mainly token types instead
+# of tokens, so they have fewer characters.  They are used to be
+# sure we are matching fields of similar type.
+# 
+# In this example, there will be 4 column indexes being adjusted.  The
+# first one is always at zero.  The interior columns are at the start of
+# the matching tokens, and the last one tracks the maximum line length.
+# 
+# Basically, each time a new line comes in, it joins the current vertical
+# group if possible.  Otherwise it causes the current group to be dumped
+# and a new group is started.
+# 
+# For each new group member, the column locations are increased, as
+# necessary, to make room for the new fields.  When the group is finally
+# output, these column numbers are used to compute the amount of spaces of
+# padding needed for each field.
+# 
+# Programming note: the fields are assumed not to have any tab characters.
+# Tabs have been previously removed except for tabs in quoted strings and
+# side comments.  Tabs in these fields can mess up the column counting.
+# The log file warns the user if there are any such tabs.
+# 
+# =cut
 
     my (
         $level,                     $level_end,
@@ -14320,11 +14416,11 @@ sub dump_array {
     print "(@_)\n";
 }
 
-=pod
-
-flush() sends the current Perl::Tidy::VerticalAligner group down the pipeline to Perl::Tidy::FileWriter.
-
-=cut
+# =pod
+# 
+# flush() sends the current Perl::Tidy::VerticalAligner group down the pipeline to Perl::Tidy::FileWriter.
+# 
+# =cut
 
 # This is the external flush, which also empties the cache
 sub flush {
@@ -14519,34 +14615,34 @@ sub adjust_side_comment {
 sub improve_continuation_indentation {
     my ( $do_not_align, $group_leader_length ) = @_;
 
-=pod 
-
-See if we can increase the continuation indentation
-to move all continuation lines closer to the next field
-(unless it is a comment).
-
-'$min_ci_gap'is the extra indentation that we may need to introduce.
-We will only introduce this to fields which already have some ci.
-Without this variable, we would occasionally get something like this
-(Complex.pm):
-
-use overload '+' => \&plus,
-  '-'            => \&minus,
-  '*'            => \&multiply,
-  ...
-  'tan'          => \&tan,
-  'atan2'        => \&atan2,
-
-Whereas with this variable, we can shift variables over to get this:
-
-use overload '+' => \&plus,
-         '-'     => \&minus,
-         '*'     => \&multiply,
-         ...
-         'tan'   => \&tan,
-         'atan2' => \&atan2,
-
-=cut
+# =pod 
+# 
+# See if we can increase the continuation indentation
+# to move all continuation lines closer to the next field
+# (unless it is a comment).
+# 
+# '$min_ci_gap'is the extra indentation that we may need to introduce.
+# We will only introduce this to fields which already have some ci.
+# Without this variable, we would occasionally get something like this
+# (Complex.pm):
+# 
+# use overload '+' => \&plus,
+#   '-'            => \&minus,
+#   '*'            => \&multiply,
+#   ...
+#   'tan'          => \&tan,
+#   'atan2'        => \&atan2,
+# 
+# Whereas with this variable, we can shift variables over to get this:
+# 
+# use overload '+' => \&plus,
+#          '-'     => \&minus,
+#          '*'     => \&multiply,
+#          ...
+#          'tan'   => \&tan,
+#          'atan2' => \&atan2,
+# 
+# =cut
 
     my $maximum_field_index = $group_lines[0]->get_jmax();
 
@@ -16234,21 +16330,21 @@ sub find_starting_indentation_level {
     reset_indentation_level($starting_level);
 }
 
-=pod
-
-Find indentation level given a input line.  At the same time, try to
-figure out the input tabbing scheme.
-
-There are two types of calls:
-
-Type 1: $structural_indentation_level < 0 
- In this case we have to guess $input_tabstr to figure out the level.
-
-Type 2: $structural_indentation_level >= 0
- In this case the level of this line is known, and this routine can
- update the tabbing string, if still unknown, to make the level correct.
-
-=cut
+# =pod
+# 
+# Find indentation level given a input line.  At the same time, try to
+# figure out the input tabbing scheme.
+# 
+# There are two types of calls:
+# 
+# Type 1: $structural_indentation_level < 0 
+#  In this case we have to guess $input_tabstr to figure out the level.
+# 
+# Type 2: $structural_indentation_level >= 0
+#  In this case the level of this line is known, and this routine can
+#  update the tabbing string, if still unknown, to make the level correct.
+# 
+# =cut
 
 sub find_indentation_level {
     my ( $line, $structural_indentation_level ) = @_;
@@ -16755,36 +16851,36 @@ sub reset_indentation_level {
                 $type = $last_nonblank_type;
             }
 
-=pod
+# =pod
+# 
+#                 We exclude parens as structural after a ',' because it
+#                 causes subtle problems with continuation indentation for
+#                 something like this, where the first 'or' will not get
+#                 indented.
+# 
+#                     assert(
+#                         __LINE__,
+#                         ( not defined $check )
+#                           or ref $check
+#                           or $check eq "new"
+#                           or $check eq "old",
+#                     );
+# 
+#                 Likewise, we exclude parens where a statement can start
+#                 because of problems with continuation indentation, like
+#                 these:
+# 
+#                     ($firstline =~ /^#\!.*perl/)
+#                     and (print $File::Find::name, "\n")
+#                       and (return 1);
+# 
+#                     (ref($usage_fref) =~ /CODE/) 
+#                     ? &$usage_fref
+#                       : (&blast_usage, &blast_params, &blast_general_params);
+# 
+# =cut
 
-                We exclude parens as structural after a ',' because it
-                causes subtle problems with continuation indentation for
-                something like this, where the first 'or' will not get
-                indented.
-
-                    assert(
-                        __LINE__,
-                        ( not defined $check )
-                          or ref $check
-                          or $check eq "new"
-                          or $check eq "old",
-                    );
-
-                Likewise, we exclude parens where a statement can start
-                because of problems with continuation indentation, like
-                these:
-
-                    ($firstline =~ /^#\!.*perl/)
-                    and (print $File::Find::name, "\n")
-                      and (return 1);
-
-                    (ref($usage_fref) =~ /CODE/) 
-                    ? &$usage_fref
-                      : (&blast_usage, &blast_params, &blast_general_params);
-
-=cut
-
-            elsif ( $last_nonblank_type ne ',' && !new_statement_ok() ) {
+            else {
                 $type = '{';
             }
 
@@ -17300,6 +17396,10 @@ sub reset_indentation_level {
     @_ = qw(if elsif unless while and or not && !  || for foreach);
     @is_logical_container{@_} = (1) x scalar(@_);
 
+    my %is_binary_type;
+    @_ = qw(|| &&);
+    @is_binary_type{@_} = (1) x scalar(@_);
+
     # 'L' is token for opening { at hash key
     my %is_opening_type;
     @_ = qw" L { ( [ ";
@@ -17364,99 +17464,99 @@ sub reset_indentation_level {
 
     sub tokenize_this_line {
 
-=pod 
-
-This routine breaks a line of perl code into tokens which are of use in
-indentation and reformatting.  One of my goals has been to define tokens
-such that a newline may be inserted between any pair of tokens without
-changing or invalidating the program. This version comes close to this,
-although there are necessarily a few exceptions which must be caught by
-the formatter.  Many of these involve the treatment of bare words.
-
-The tokens and their types are returned in arrays.  See previous
-routine for their names.
-
-See also the array "valid_token_types" in the BEGIN section for an
-up-to-date list.
-
-To simplify things, token types are either a single character, or they
-are identical to the tokens themselves.
-
-As a debugging aid, the -D flag creates a file containing a side-by-side
-comparison of the input string and its tokenization for each line of a file.
-This is an invaluable debugging aid.
-
-In addition to tokens, and some associated quantities, the tokenizer
-also returns flags indication any special line types.  These include
-quotes, here_docs, formats.
-
------------------------------------------------------------------------
-
-How to add NEW_TOKENS:
-
-New token types will undoubtedly be needed in the future both to keep up
-with changes in perl and to help adapt the tokenizer to other applications.
-
-Here are some notes on the minimal steps.  I wrote these notes while
-adding the 'v' token type for v-strings, which are things like version
-numbers 5.6.0, and ip addresses, and will use that as an example.  ( You
-can use your editor to search for the string "NEW_TOKENS" to find the
-appropriate sections to change):
-
-*. Try to talk somebody else into doing it!  If not, ..
-
-*. Make a backup of your current version in case things don't work out!
-
-*. Think of a new, unused character for the token type, and add to
-the array @valid_token_types in the BEGIN section of this package.
-For example, I used 'v' for v-strings.
-
-*. Implement coding to recognize the $type of the token in this routine.
-This is the hardest part, and is best done by immitating or modifying
-some of the existing coding.  For example, to recognize v-strings, I
-patched 'sub scan_bare_identifier' to recognize v-strings beginning with
-'v' and 'sub scan_number' to recognize v-strings without the leading 'v'.
-
-*. Update sub operator_expected.  This update is critically important but
-the coding is trivial.  Look at the comments in that routine for help.
-For v-strings, which should behave like numbers, I just added 'v' to the
-regex used to handle numbers and strings (types 'n' and 'Q').
-
-*. Implement a 'bond strength' rule in sub set_bond_strengths in
-Perl::Tidy::Formatter for breaking lines around this token type.  You can
-skip this step and take the default at first, then adjust later to get
-desired results.  For adding type 'v', I looked at sub bond_strength and
-saw that number type 'n' was using default strengths, so I didn't do
-anything.  I may tune it up someday if I don't like the way line
-breaks with v-strings look.
-
-*. Implement a 'whitespace' rule in sub set_white_space_flag in
-Perl::Tidy::Formatter.  For adding type 'v', I looked at this routine
-and saw that type 'n' used spaces on both sides, so I just added 'v'
-to the array @spaces_both_sides. 
-
-*. Update HtmlWriter package so that users can colorize the token as
-desired.  This is quite easy; see comments identified by 'NEW_TOKENS' in
-that package.  For v-strings, I initially chose to use a default color
-equal to the default for numbers, but it might be nice to change that
-eventually.
-
-*. Update comments in Perl::Tidy::Tokenizer::dump_token_types.  
-
-*. Run lots and lots of debug tests.  Start with special files designed
-to test the new token type.  Run with the -D flag to create a .DEBUG
-file which shows the tokenization.  When these work ok, test as many old
-scripts as possible.  Start with all of the '.t' files in the 'test'
-directory of the distribution file.  Compare .tdy output with previous
-version and updated version to see the differences.  Then include as
-many more files as possible. My own technique has been to collect a huge
-number of perl scripts (thousands!) into one directory and run perltidy
-*, then run diff between the output of the previous version and the
-current version.
-
------------------------------------------------------------------------
-
-=cut
+# =pod 
+# 
+# This routine breaks a line of perl code into tokens which are of use in
+# indentation and reformatting.  One of my goals has been to define tokens
+# such that a newline may be inserted between any pair of tokens without
+# changing or invalidating the program. This version comes close to this,
+# although there are necessarily a few exceptions which must be caught by
+# the formatter.  Many of these involve the treatment of bare words.
+# 
+# The tokens and their types are returned in arrays.  See previous
+# routine for their names.
+# 
+# See also the array "valid_token_types" in the BEGIN section for an
+# up-to-date list.
+# 
+# To simplify things, token types are either a single character, or they
+# are identical to the tokens themselves.
+# 
+# As a debugging aid, the -D flag creates a file containing a side-by-side
+# comparison of the input string and its tokenization for each line of a file.
+# This is an invaluable debugging aid.
+# 
+# In addition to tokens, and some associated quantities, the tokenizer
+# also returns flags indication any special line types.  These include
+# quotes, here_docs, formats.
+# 
+# -----------------------------------------------------------------------
+# 
+# How to add NEW_TOKENS:
+# 
+# New token types will undoubtedly be needed in the future both to keep up
+# with changes in perl and to help adapt the tokenizer to other applications.
+# 
+# Here are some notes on the minimal steps.  I wrote these notes while
+# adding the 'v' token type for v-strings, which are things like version
+# numbers 5.6.0, and ip addresses, and will use that as an example.  ( You
+# can use your editor to search for the string "NEW_TOKENS" to find the
+# appropriate sections to change):
+# 
+# *. Try to talk somebody else into doing it!  If not, ..
+# 
+# *. Make a backup of your current version in case things don't work out!
+# 
+# *. Think of a new, unused character for the token type, and add to
+# the array @valid_token_types in the BEGIN section of this package.
+# For example, I used 'v' for v-strings.
+# 
+# *. Implement coding to recognize the $type of the token in this routine.
+# This is the hardest part, and is best done by immitating or modifying
+# some of the existing coding.  For example, to recognize v-strings, I
+# patched 'sub scan_bare_identifier' to recognize v-strings beginning with
+# 'v' and 'sub scan_number' to recognize v-strings without the leading 'v'.
+# 
+# *. Update sub operator_expected.  This update is critically important but
+# the coding is trivial.  Look at the comments in that routine for help.
+# For v-strings, which should behave like numbers, I just added 'v' to the
+# regex used to handle numbers and strings (types 'n' and 'Q').
+# 
+# *. Implement a 'bond strength' rule in sub set_bond_strengths in
+# Perl::Tidy::Formatter for breaking lines around this token type.  You can
+# skip this step and take the default at first, then adjust later to get
+# desired results.  For adding type 'v', I looked at sub bond_strength and
+# saw that number type 'n' was using default strengths, so I didn't do
+# anything.  I may tune it up someday if I don't like the way line
+# breaks with v-strings look.
+# 
+# *. Implement a 'whitespace' rule in sub set_white_space_flag in
+# Perl::Tidy::Formatter.  For adding type 'v', I looked at this routine
+# and saw that type 'n' used spaces on both sides, so I just added 'v'
+# to the array @spaces_both_sides. 
+# 
+# *. Update HtmlWriter package so that users can colorize the token as
+# desired.  This is quite easy; see comments identified by 'NEW_TOKENS' in
+# that package.  For v-strings, I initially chose to use a default color
+# equal to the default for numbers, but it might be nice to change that
+# eventually.
+# 
+# *. Update comments in Perl::Tidy::Tokenizer::dump_token_types.  
+# 
+# *. Run lots and lots of debug tests.  Start with special files designed
+# to test the new token type.  Run with the -D flag to create a .DEBUG
+# file which shows the tokenization.  When these work ok, test as many old
+# scripts as possible.  Start with all of the '.t' files in the 'test'
+# directory of the distribution file.  Compare .tdy output with previous
+# version and updated version to see the differences.  Then include as
+# many more files as possible. My own technique has been to collect a huge
+# number of perl scripts (thousands!) into one directory and run perltidy
+# *, then run diff between the output of the previous version and the
+# current version.
+# 
+# -----------------------------------------------------------------------
+# 
+# =cut
 
         my $line_of_tokens = shift;
         my ($untrimmed_input_line) = $line_of_tokens->{_line_text};
@@ -18104,69 +18204,69 @@ EOM
         my $num;
         my $ci_string_sum = ( $_ = $ci_string_in_tokenizer ) =~ tr/1/0/;
 
-=head1 Computing Token Indentation
-
-    The final section of the tokenizer forms tokens and also computes
-    parameters needed to find indentation.  It is much easier to do it
-    in the tokenizer than elsewhere.  Here is a brief description of how
-    indentation is computed.  Perl::Tidy computes indentation as the sum
-    of 2 terms:
-
-    (1) structural indentation, such as if/else/elsif blocks
-    (2) continuation indentation, such as long parameter call lists.
-
-    These are occasionally called primary and secondary indentation.
-
-    Structural indentation is introduced by tokens of type '{', although
-    the actual tokens might be '{', '(', or '['.  Structural indentation
-    is of two types: BLOCK and non-BLOCK.  Default structural indentation
-    is 4 characters if the standard indentation scheme is used.
-
-    Continuation indentation is introduced whenever a line at BLOCK level
-    is broken before its termination.  Default continuation indentation
-    is 2 characters in the standard indentation scheme.
-
-    Both types of indentation may be nested arbitrarily deep and
-    interlaced.  The distinction between the two is somewhat arbitrary.  
-
-    For each token, we will define two variables which would apply if
-    the current statement were broken just before that token, so that
-    that token started a new line:
-
-    $level = the structural indentation level,
-    $ci_level = the continuation indentation level 
-
-    The total indentation will be $level * (4 spaces) + $ci_level * (2 spaces),
-    assuming defaults.  However, in some special cases it is customary
-    to modify $ci_level from this strict value.
-
-    The total structural indentation is easy to compute by adding and
-    subtracting 1 from a saved value as types '{' and '}' are seen.  The
-    running value of this variable is $level_in_tokenizer.
-
-    The total continuation is much more difficult to compute, and requires
-    several variables.  These veriables are:
-
-    $ci_string_in_tokenizer = a string of 1's and 0's indicating, for
-      each indentation level, if there are intervening open secondary
-      structures just prior to that level.
-    $continuation_string_in_tokenizer = a string of 1's and 0's indicating
-      if the last token at that level is "continued", meaning that it
-      is not the first token of an expression.
-    $nesting_block_string = a string of 1's and 0's indicating, for each
-      indentation level, if the level is of type BLOCK or not.
-    $nesting_block_flag = the most recent 1 or 0 of $nesting_block_string
-    $nesting_list_string = a string of 1's and 0's indicating, for each
-      indentation level, if it is is appropriate for list formatting.
-      If so, continuation indentation is used to indent long list items.
-    $nesting_list_flag = the most recent 1 or 0 of $nesting_list_string
-    @slevel_stack = a stack of total nesting depths at each 
-      structural indentation level, where "total nesting depth" means
-      the nesting depth that would occur if every nesting token -- '{', '[',
-      and '(' -- , regardless of context, is used to compute a nesting
-      depth.
-
-=cut
+# =head1 Computing Token Indentation
+# 
+#     The final section of the tokenizer forms tokens and also computes
+#     parameters needed to find indentation.  It is much easier to do it
+#     in the tokenizer than elsewhere.  Here is a brief description of how
+#     indentation is computed.  Perl::Tidy computes indentation as the sum
+#     of 2 terms:
+# 
+#     (1) structural indentation, such as if/else/elsif blocks
+#     (2) continuation indentation, such as long parameter call lists.
+# 
+#     These are occasionally called primary and secondary indentation.
+# 
+#     Structural indentation is introduced by tokens of type '{', although
+#     the actual tokens might be '{', '(', or '['.  Structural indentation
+#     is of two types: BLOCK and non-BLOCK.  Default structural indentation
+#     is 4 characters if the standard indentation scheme is used.
+# 
+#     Continuation indentation is introduced whenever a line at BLOCK level
+#     is broken before its termination.  Default continuation indentation
+#     is 2 characters in the standard indentation scheme.
+# 
+#     Both types of indentation may be nested arbitrarily deep and
+#     interlaced.  The distinction between the two is somewhat arbitrary.  
+# 
+#     For each token, we will define two variables which would apply if
+#     the current statement were broken just before that token, so that
+#     that token started a new line:
+# 
+#     $level = the structural indentation level,
+#     $ci_level = the continuation indentation level 
+# 
+#     The total indentation will be $level * (4 spaces) + $ci_level * (2 spaces),
+#     assuming defaults.  However, in some special cases it is customary
+#     to modify $ci_level from this strict value.
+# 
+#     The total structural indentation is easy to compute by adding and
+#     subtracting 1 from a saved value as types '{' and '}' are seen.  The
+#     running value of this variable is $level_in_tokenizer.
+# 
+#     The total continuation is much more difficult to compute, and requires
+#     several variables.  These veriables are:
+# 
+#     $ci_string_in_tokenizer = a string of 1's and 0's indicating, for
+#       each indentation level, if there are intervening open secondary
+#       structures just prior to that level.
+#     $continuation_string_in_tokenizer = a string of 1's and 0's indicating
+#       if the last token at that level is "continued", meaning that it
+#       is not the first token of an expression.
+#     $nesting_block_string = a string of 1's and 0's indicating, for each
+#       indentation level, if the level is of type BLOCK or not.
+#     $nesting_block_flag = the most recent 1 or 0 of $nesting_block_string
+#     $nesting_list_string = a string of 1's and 0's indicating, for each
+#       indentation level, if it is is appropriate for list formatting.
+#       If so, continuation indentation is used to indent long list items.
+#     $nesting_list_flag = the most recent 1 or 0 of $nesting_list_string
+#     @slevel_stack = a stack of total nesting depths at each 
+#       structural indentation level, where "total nesting depth" means
+#       the nesting depth that would occur if every nesting token -- '{', '[',
+#       and '(' -- , regardless of context, is used to compute a nesting
+#       depth.
+# 
+# =cut
 
         #my $nesting_block_flag = ($nesting_block_string =~ /1$/); 
         #my $nesting_list_flag = ($nesting_list_string =~ /1$/); 
@@ -18230,78 +18330,78 @@ EOM
                       $slevel_in_tokenizer - $slevel_stack[$#slevel_stack];
                 }
 
-=head1 Continuation Indentation
-
-Having tried setting continuation indentation both in the formatter and
-in the tokenizer, I can say that setting it in the tokenizer is much,
-much easier.  The formatter already has too much to do, and can't
-make decisions on line breaks without knowing what 'ci' will be at
-arbitrary locations.
-
-But a problem with setting the continuation indentation (ci) here
-in the tokenizer is that we do not know where line breaks will actually
-be.  As a result, we don't know if we should propagate continuation
-indentation to higher levels of structure.  
-
-For nesting of only structural indentation, we never need to do this.
-For example, in a long if statement, like this
-
-  if ( !$output_block_type[$i] 
-    && ($in_statement_continuation) )
-  {           <--outdented
-      do_something();
-  }
-
-the second line has ci but we do normally give the lines within the BLOCK
-any ci.  This would be true if we had blocks nested arbitrarily deeply.
-
-But consider something like this, where we have created a break after
-an opening paren on line 1, and the paren is not (currently) a
-structural indentation token:
-
-my $file = $menubar->Menubutton(
-  qw/-text File -underline 0 -menuitems/ => [
-      [
-          Cascade    => '~View',
-          -menuitems => [
-          ...
-
-The second line has ci, so it would seem reasonable to propagate it
-down, giving the third line 1 ci + 1 indentation.  This suggests the
-following rule, which is currently used to propagating ci down: if there
-are any non-structural opening parens (or brackets, or braces), before
-an opening structural brace, then ci is propagated down, and otherwise
-not.  The variable $intervening_secondary_structure contains this
-information for the current token, and the string
-"$ci_string_in_tokenizer" is a stack of previous values of this
-variable.
-
-If no breaks are made just after a secondary structure, this method 
-will give ci where it really isn't required.  For example,
-
-    my $str = join ( " ", map {
-       /\n/ ? do { my $n = $_; $n =~ tr/\n/ /; $n }
-       : $_;
-      } @_ ) . "\015\012";
-
-Here, there is no break after the first '(', so the second line gets
-ci + one indent, but it would look ok without the ci.  However, the
-extra ci does no harm.
-
-This logic works well, but it is still incomplete.  A current problem is
-that the ci logic does not propagate down hierarchically through
-consecutive non-structural bracing.  More work needs to be done to
-improve the formatting in this case.  The next step in development along
-these lines will be to define parens following a comma, in LIST context,
-to be structural.  Here is an example of two levels of non-structural
-indentation, but only single continuation-indentation
-
-   $deps = control_fields(
-     ( "Pre-Depends", "Depends",  "Recommends", "Suggests",
-     "Conflicts",     "Provides" )
-   );
-
-=cut
+# =head1 Continuation Indentation
+# 
+# Having tried setting continuation indentation both in the formatter and
+# in the tokenizer, I can say that setting it in the tokenizer is much,
+# much easier.  The formatter already has too much to do, and can't
+# make decisions on line breaks without knowing what 'ci' will be at
+# arbitrary locations.
+# 
+# But a problem with setting the continuation indentation (ci) here
+# in the tokenizer is that we do not know where line breaks will actually
+# be.  As a result, we don't know if we should propagate continuation
+# indentation to higher levels of structure.  
+# 
+# For nesting of only structural indentation, we never need to do this.
+# For example, in a long if statement, like this
+# 
+#   if ( !$output_block_type[$i] 
+#     && ($in_statement_continuation) )
+#   {           <--outdented
+#       do_something();
+#   }
+# 
+# the second line has ci but we do normally give the lines within the BLOCK
+# any ci.  This would be true if we had blocks nested arbitrarily deeply.
+# 
+# But consider something like this, where we have created a break after
+# an opening paren on line 1, and the paren is not (currently) a
+# structural indentation token:
+# 
+# my $file = $menubar->Menubutton(
+#   qw/-text File -underline 0 -menuitems/ => [
+#       [
+#           Cascade    => '~View',
+#           -menuitems => [
+#           ...
+# 
+# The second line has ci, so it would seem reasonable to propagate it
+# down, giving the third line 1 ci + 1 indentation.  This suggests the
+# following rule, which is currently used to propagating ci down: if there
+# are any non-structural opening parens (or brackets, or braces), before
+# an opening structural brace, then ci is propagated down, and otherwise
+# not.  The variable $intervening_secondary_structure contains this
+# information for the current token, and the string
+# "$ci_string_in_tokenizer" is a stack of previous values of this
+# variable.
+# 
+# If no breaks are made just after a secondary structure, this method 
+# will give ci where it really isn't required.  For example,
+# 
+#     my $str = join ( " ", map {
+#        /\n/ ? do { my $n = $_; $n =~ tr/\n/ /; $n }
+#        : $_;
+#       } @_ ) . "\015\012";
+# 
+# Here, there is no break after the first '(', so the second line gets
+# ci + one indent, but it would look ok without the ci.  However, the
+# extra ci does no harm.
+# 
+# This logic works well, but it is still incomplete.  A current problem is
+# that the ci logic does not propagate down hierarchically through
+# consecutive non-structural bracing.  More work needs to be done to
+# improve the formatting in this case.  The next step in development along
+# these lines will be to define parens following a comma, in LIST context,
+# to be structural.  Here is an example of two levels of non-structural
+# indentation, but only single continuation-indentation
+# 
+#    $deps = control_fields(
+#      ( "Pre-Depends", "Depends",  "Recommends", "Suggests",
+#      "Conflicts",     "Provides" )
+#    );
+# 
+# =cut
 
                 # save the current states
                 push ( @slevel_stack, 1 + $slevel_in_tokenizer );
@@ -18343,26 +18443,26 @@ indentation, but only single continuation-indentation
                 $continuation_string_in_tokenizer .=
                   ( $in_statement_continuation > 0 ) ? '1' : '0';
 
-=pod
-
- Sometimes we want to give an opening brace continuation indentation,
- and sometimes not.  For code blocks, we don't do it, so that the leading
- '{' gets outdented, like this:
-
-  if ( !$output_block_type[$i] 
-    && ($in_statement_continuation) )
-  {           <--outdented
-
- For other types, we will give them continuation indentation.  For example,
- here is how a list looks with the opening paren indented:
-
-    @LoL =
-      ( [ "fred", "barney" ], [ "george", "jane", "elroy" ],
-        [ "homer", "marge", "bart" ], );
-
- This looks best when 'ci' is one-half of the indentation  (i.e., 2 and 4)
-
-=cut
+# =pod
+# 
+#  Sometimes we want to give an opening brace continuation indentation,
+#  and sometimes not.  For code blocks, we don't do it, so that the leading
+#  '{' gets outdented, like this:
+# 
+#   if ( !$output_block_type[$i] 
+#     && ($in_statement_continuation) )
+#   {           <--outdented
+# 
+#  For other types, we will give them continuation indentation.  For example,
+#  here is how a list looks with the opening paren indented:
+# 
+#     @LoL =
+#       ( [ "fred", "barney" ], [ "george", "jane", "elroy" ],
+#         [ "homer", "marge", "bart" ], );
+# 
+#  This looks best when 'ci' is one-half of the indentation  (i.e., 2 and 4)
+# 
+# =cut
 
                 my $total_ci = $ci_string_sum;
                 if (
@@ -18444,18 +18544,24 @@ indentation, but only single continuation-indentation
                         }
                     }
 
-=pod
-                If we are in a list, then
-                we must set continuatoin indentation at the closing
-                paren of something like this (paren after $check):
-                    assert(
-                        __LINE__,
-                        ( not defined $check )
-                          or ref $check
-                          or $check eq "new"
-                          or $check eq "old",
-                    );
-=cut
+# =pod
+#                 If we are in a list, then
+#                 we must set continuatoin indentation at the closing
+#                 paren of something like this (paren after $check):
+#                     assert(
+#                         __LINE__,
+#                         ( not defined $check )
+#                           or ref $check
+#                           or $check eq "new"
+#                           or $check eq "old",
+#                     );
+# =cut
+
+##BUB
+                    elsif ( $tok eq ')' ) {
+                        $in_statement_continuation = 1
+                          if $output_container_type[$i] =~ /^[;,\{\}]$/;
+                    }
 
                     #OLD: elsif ( $nesting_list_string =~ /1$/ ) {
                     #    $in_statement_continuation=1;
@@ -18489,6 +18595,11 @@ indentation, but only single continuation-indentation
                     if ( $type =~ /^[,\?\:]$/ ) {
                         $in_statement_continuation = 0;
                     }
+                }
+
+                # be sure binary operators get continuation indentation
+                if ( $is_binary_type{$type} && $container_environment) {
+                    $in_statement_continuation = 1;
                 }
 
                 # continuation indentation is sum of any open ci from previous
@@ -18821,37 +18932,37 @@ sub write_error_indicator_pair {
 
 sub make_numbered_line {
 
-=pod
-
- Given an input line, its line number, and a character position of interest, 
- create a string not longer than 80 characters of the form
-    $lineno: sub_string
- such that the sub_string of $str contains the position of interest
-
- Here is an example of what we want, in this case we add trailing '...'
- because the line is long.
-
-2: (One of QAML 2.0's authors is a member of the World Wide Web Con ...
-
- Here is another example, this time in which we used leading '...'
- because of excessive length:
-
-2: ... er of the World Wide Web Consortium's
-
- input parameters are:
-  $lineno = line number
-  $str = the text of the line
-  $pos = position of interest (the error) : 0 = first character
-
-  We return : 
-    - $offset = an offset which corrects the position in case we only
-      display part of a line, such that $pos-$offset is the effective
-      position from the start of the displayed line.
-    - $numbered_line = the numbered line as above, 
-    - $underline = a blank 'underline' which is all spaces with the same
-      number of characters as the numbered line.
-
-=cut
+# =pod
+# 
+#  Given an input line, its line number, and a character position of interest, 
+#  create a string not longer than 80 characters of the form
+#     $lineno: sub_string
+#  such that the sub_string of $str contains the position of interest
+# 
+#  Here is an example of what we want, in this case we add trailing '...'
+#  because the line is long.
+# 
+# 2: (One of QAML 2.0's authors is a member of the World Wide Web Con ...
+# 
+#  Here is another example, this time in which we used leading '...'
+#  because of excessive length:
+# 
+# 2: ... er of the World Wide Web Consortium's
+# 
+#  input parameters are:
+#   $lineno = line number
+#   $str = the text of the line
+#   $pos = position of interest (the error) : 0 = first character
+# 
+#   We return : 
+#     - $offset = an offset which corrects the position in case we only
+#       display part of a line, such that $pos-$offset is the effective
+#       position from the start of the displayed line.
+#     - $numbered_line = the numbered line as above, 
+#     - $underline = a blank 'underline' which is all spaces with the same
+#       number of characters as the numbered line.
+# 
+# =cut
 
     my ( $lineno, $str, $pos ) = @_;
     my $offset = ( $pos < 60 ) ? 0 : $pos - 40;
@@ -18884,27 +18995,27 @@ sub make_numbered_line {
 
 sub write_on_underline {
 
-=pod
-
-The "underline" is a string that shows where an error is; it starts
-out as a string of blanks with the same length as the numbered line of 
-code above it, and we have to add marking to show where an error is.
-In the example below, we want to write the string '--^' just below
-the line of bad code:
-
-2: (One of QAML 2.0's authors is a member of the World Wide Web Con ...
-                ---^                                                   
-We are given the current underline string, plus a position and a
-string to write on it.
-
-In the above example, there will be 2 calls to do this:
-First call:  $pos=19, pos_chr=^
-Second call: $pos=16, pos_chr=---
-
-This is a trivial thing to do with substr, but there is some
-checking to do.
-
-=cut
+# =pod
+# 
+# The "underline" is a string that shows where an error is; it starts
+# out as a string of blanks with the same length as the numbered line of 
+# code above it, and we have to add marking to show where an error is.
+# In the example below, we want to write the string '--^' just below
+# the line of bad code:
+# 
+# 2: (One of QAML 2.0's authors is a member of the World Wide Web Con ...
+#                 ---^                                                   
+# We are given the current underline string, plus a position and a
+# string to write on it.
+# 
+# In the above example, there will be 2 calls to do this:
+# First call:  $pos=19, pos_chr=^
+# Second call: $pos=16, pos_chr=---
+# 
+# This is a trivial thing to do with substr, but there is some
+# checking to do.
+# 
+# =cut
 
     my ( $underline, $pos, $pos_chr ) = @_;
 
@@ -18954,38 +19065,38 @@ sub is_non_structural_brace {
 
 sub operator_expected {
 
-=pod
-
-Many perl symbols have two or more meanings.  For example, '<<'
-can be a shift operator or a here-doc operator.  The
-interpretation of these symbols depends on the current state of
-the tokenizer, which may either be expecting a term or an
-operator.  For this example, a << would be a shift if an operator
-is expected, and a here-doc if a term is expected.  This routine
-is called to make this decision for any current token.  It returns
-one of three possible values:
-
-    OPERATOR - operator expected (or at least, not a term)
-    UNKNOWN  - can't tell  
-    TERM     - a term is expected (or at least, not an operator)
-
-The decision is based on what has been seen so far.  This information
-is stored in the "$last_nonblank_type" and "$last_nonblank_token" variables.
-For example, if the $last_nonblank_type is '=~', then we are expecting
-a TERM, whereas if $last_nonblank_type is 'n' (numeric), we are
-expecting an OPERATOR. 
-
-If a UNKNOWN is returned, the calling routine must guess. A major goal
-of this tokenizer is to minimize the possiblity of returning
-UNKNOWN, because a wrong guess can spoil the formatting of a script.
-
-adding NEW_TOKENS: it is critically important that this routine be updated
-to allow it to determine if an operator or term is to be expected
-after the new token.  Doing this simply involves adding the new token
-character to one of the regexes in this routine or to one of the hash lists
-that it uses, which are initialized in the BEGIN section.
-
-=cut
+# =pod
+# 
+# Many perl symbols have two or more meanings.  For example, '<<'
+# can be a shift operator or a here-doc operator.  The
+# interpretation of these symbols depends on the current state of
+# the tokenizer, which may either be expecting a term or an
+# operator.  For this example, a << would be a shift if an operator
+# is expected, and a here-doc if a term is expected.  This routine
+# is called to make this decision for any current token.  It returns
+# one of three possible values:
+# 
+#     OPERATOR - operator expected (or at least, not a term)
+#     UNKNOWN  - can't tell  
+#     TERM     - a term is expected (or at least, not an operator)
+# 
+# The decision is based on what has been seen so far.  This information
+# is stored in the "$last_nonblank_type" and "$last_nonblank_token" variables.
+# For example, if the $last_nonblank_type is '=~', then we are expecting
+# a TERM, whereas if $last_nonblank_type is 'n' (numeric), we are
+# expecting an OPERATOR. 
+# 
+# If a UNKNOWN is returned, the calling routine must guess. A major goal
+# of this tokenizer is to minimize the possiblity of returning
+# UNKNOWN, because a wrong guess can spoil the formatting of a script.
+# 
+# adding NEW_TOKENS: it is critically important that this routine be updated
+# to allow it to determine if an operator or term is to be expected
+# after the new token.  Doing this simply involves adding the new token
+# character to one of the regexes in this routine or to one of the hash lists
+# that it uses, which are initialized in the BEGIN section.
+# 
+# =cut
 
     my ( $prev_type, $tok, $next_type ) = @_;
     my $op_expected = UNKNOWN;
@@ -19122,49 +19233,49 @@ that it uses, which are initialized in the BEGIN section.
     return $op_expected;
 }
 
-=pod
-
-The following routines keep track of nesting depths of the nesting
-types, ( [ { and ?.  This is necessary for determining the indentation
-level, and also for debugging programs.  Not only do they keep track of
-nesting depths of the individual brace types, but they check that each
-of the other brace types is balanced within matching pairs.  For
-example, if the program sees this sequence:
-
-        {  ( ( ) }
-
-then it can determine that there is an extra left paren somewhere
-between the { and the }.  And so on with every other possible
-combination of outer and inner brace types.  For another
-example:
-
-        ( [ ..... ]  ] )
-
-which has an extra ] within the parens.  
-
-The brace types have indexes 0 .. 3 which are indexes into
-the matrices.
-
-The pair ? : are treated as just another nesting type, with ? acting
-as the opening brace and : acting as the closing brace.
-
-The matrix 
-
-        $depth_array[$a][$b][ $current_depth[$a] ] = $current_depth[$b];
-
-saves the nesting depth of brace type $b (where $b is either of the other
-nesting types) when brace type $a enters a new depth.  When this depth
-decreases, a check is made that the current depth of brace types $b is
-unchanged, or otherwise there must have been an error.  This can
-be very useful for localizing errors, particularly when perl runs to
-the end of a large file (such as this one) and announces that there
-is a problem somewhere.
-
-A numerical sequence number is maintained for every nesting type,
-so that each matching pair can be uniquely identified in a simple
-way.
-
-=cut
+# =pod
+# 
+# The following routines keep track of nesting depths of the nesting
+# types, ( [ { and ?.  This is necessary for determining the indentation
+# level, and also for debugging programs.  Not only do they keep track of
+# nesting depths of the individual brace types, but they check that each
+# of the other brace types is balanced within matching pairs.  For
+# example, if the program sees this sequence:
+# 
+#         {  ( ( ) }
+# 
+# then it can determine that there is an extra left paren somewhere
+# between the { and the }.  And so on with every other possible
+# combination of outer and inner brace types.  For another
+# example:
+# 
+#         ( [ ..... ]  ] )
+# 
+# which has an extra ] within the parens.  
+# 
+# The brace types have indexes 0 .. 3 which are indexes into
+# the matrices.
+# 
+# The pair ? : are treated as just another nesting type, with ? acting
+# as the opening brace and : acting as the closing brace.
+# 
+# The matrix 
+# 
+#         $depth_array[$a][$b][ $current_depth[$a] ] = $current_depth[$b];
+# 
+# saves the nesting depth of brace type $b (where $b is either of the other
+# nesting types) when brace type $a enters a new depth.  When this depth
+# decreases, a check is made that the current depth of brace types $b is
+# unchanged, or otherwise there must have been an error.  This can
+# be very useful for localizing errors, particularly when perl runs to
+# the end of a large file (such as this one) and announces that there
+# is a problem somewhere.
+# 
+# A numerical sequence number is maintained for every nesting type,
+# so that each matching pair can be uniquely identified in a simple
+# way.
+# 
+# =cut
 
 sub increase_nesting_depth {
     my ( $a, $i_tok ) = @_;
@@ -19977,20 +20088,20 @@ sub do_quote {
 
 sub scan_number_do {
 
-=pod
-
-  scan a number in any of the formats that Perl accepts
-  Underbars (_) are allowed in decimal numbers.  
-  input parameters -
-      $input_line  - the string to scan
-      $i           - pre_token index to start scanning
-    $rtoken_map    - reference to the pre_token map giving starting
-                    character position in $input_line of token $i
-  output parameters -
-    $i            - last pre_token index of the number just scanned
-    number        - the number (characters); or undef if not a number
-
-=cut
+# =pod
+# 
+#   scan a number in any of the formats that Perl accepts
+#   Underbars (_) are allowed in decimal numbers.  
+#   input parameters -
+#       $input_line  - the string to scan
+#       $i           - pre_token index to start scanning
+#     $rtoken_map    - reference to the pre_token map giving starting
+#                     character position in $input_line of token $i
+#   output parameters -
+#     $i            - last pre_token index of the number just scanned
+#     number        - the number (characters); or undef if not a number
+# 
+# =cut
 
     my ( $input_line, $i, $rtoken_map, $input_type ) = @_;
     my $pos_beg = $$rtoken_map[$i];
@@ -20262,24 +20373,24 @@ sub scan_bare_identifier_do {
 
 sub scan_id_do {
 
-=pod
-
-This is the new scanner and will eventually replace scan_identifier.
-Only type 'sub' and 'package' are implemented.
-Token types $ * % @ & -> are not yet implemented.
-
-Scan identifier following a type token.
-The type of call depends on $id_scan_state: $id_scan_state = ''
-for starting call, in which case $tok must be the token defining
-the type.  
-
-If the type token is the last nonblank token on the line, a value
-of $id_scan_state = $tok is returned, indicating that further
-calls must be made to get the identifier.  If the type token is
-not the last nonblank token on the line, the identifier is
-scanned and handled and a value of '' is returned.
-
-=cut
+# =pod
+# 
+# This is the new scanner and will eventually replace scan_identifier.
+# Only type 'sub' and 'package' are implemented.
+# Token types $ * % @ & -> are not yet implemented.
+# 
+# Scan identifier following a type token.
+# The type of call depends on $id_scan_state: $id_scan_state = ''
+# for starting call, in which case $tok must be the token defining
+# the type.  
+# 
+# If the type token is the last nonblank token on the line, a value
+# of $id_scan_state = $tok is returned, indicating that further
+# calls must be made to get the identifier.  If the type token is
+# not the last nonblank token on the line, the identifier is
+# scanned and handled and a value of '' is returned.
+# 
+# =cut
 
     my ( $input_line, $i, $tok, $rtokens, $rtoken_map, $id_scan_state ) = @_;
     my $type = '';
@@ -20567,14 +20678,14 @@ sub do_scan_package {
 
 sub scan_identifier_do {
 
-=pod
-
-This routine assembles tokens into identifiers.  It maintains a scan
-state, id_scan_state.  It updates id_scan_state based upon current
-id_scan_state and token, and returns an updated id_scan_state and the
-next index after the identifier.  
-
-=cut
+# =pod
+# 
+# This routine assembles tokens into identifiers.  It maintains a scan
+# state, id_scan_state.  It updates id_scan_state based upon current
+# id_scan_state and token, and returns an updated id_scan_state and the
+# next index after the identifier.  
+# 
+# =cut
 
     my ( $i, $id_scan_state, $identifier, $rtokens ) = @_;
     my $i_begin   = $i;
@@ -21634,21 +21745,161 @@ BEGIN {
     #     __PACKAGE__
     #     );
 
-=pod
-
-     The list of keywords was extracted from function 'keyword' in perl file
-     toke.c version 5.005.03, using this utility, plus a little editing:
-     (file getkwd.pl):
-     while (<>) { while (/\"(.*)\"/g) { print "$1\n"; } }
-     Add 'get' prefix where necessary, then split into the above lists.
-
-     This list should be updated as necessary.
-     The list should not contain these special variables:
-     ARGV DATA ENV SIG STDERR STDIN STDOUT
-     __DATA__ __END__
-
-=cut
+# =pod
+# 
+#      The list of keywords was extracted from function 'keyword' in perl file
+#      toke.c version 5.005.03, using this utility, plus a little editing:
+#      (file getkwd.pl):
+#      while (<>) { while (/\"(.*)\"/g) { print "$1\n"; } }
+#      Add 'get' prefix where necessary, then split into the above lists.
+# 
+#      This list should be updated as necessary.
+#      The list should not contain these special variables:
+#      ARGV DATA ENV SIG STDERR STDIN STDOUT
+#      __DATA__ __END__
+# 
+# =cut
 
     @is_keyword{@Keywords} = (1) x scalar(@Keywords);
 }
 1;
+__END__
+
+=head1 NAME
+
+Perl::Tidy - main module for the perltidy utility
+
+=head1 SYNOPSIS
+
+    use Perl::Tidy;
+
+    Perl::Tidy::perltidy(
+        source      => $source,
+        destination => $destination,
+        stderr      => $stderr,
+        argv        => $argv,
+        perltidyrc  => $perltidyrc,
+        logfile     => $logfile,
+        errorfile   => $errorfile,
+    );
+
+=head1 DESCRIPTION
+
+This module makes the functionality of the perltidy utility available to perl
+scripts.  Any or all of the input parameters may be omitted, in which case the
+@ARGV array will be used to provide input parameters as described
+in the perltidy(1) man page.
+
+For example, the perltidy script is basically just this:
+
+    use Perl::Tidy;
+    Perl::Tidy::perltidy();
+
+The module accepts input and output streams by a variety of methods.
+The following list of parameters may be any of a the following: a
+filename, an ARRAY reference, a SCALAR reference, or an object with
+either a B<getline> or B<print> method, as appropriate.
+
+        source          - the source of the script to be formatted
+        destination     - the destination of the formatted output
+        stderr          - standard error output
+        perltidyrc      - the .perltidyrc file
+        logfile         - the .LOG file stream, if any 
+        errorfile       - the .ERR file stream, if any
+
+The following chart illustrates the logic used to decide how to
+treat a parameter.
+
+   ref($param)  $param is assumed to be:
+   -----------  ---------------------
+   undef        a filename
+   SCALAR       ref to string; IO::Scalar must be installed
+   ARRAY        ref to array; IO::ScalarArray must be installed
+   (other)      object with getline (if source) or print method
+
+If the parameter is an object, and the object has a B<close> method, that
+close method will be called at the end of the stream.
+
+=over 4
+
+=item source
+
+If the B<source> parameter is given, it defines the source of the
+input stream.
+
+=item destination
+
+If the B<destination> parameter is given, it will be used to define the
+file or memory location to receive output of perltidy.  
+
+=item stderr
+
+The B<stderr> parameter allows the calling program to capture the output
+to what would otherwise go to the standard error output device.
+
+=item perltidyrc
+
+If the B<perltidyrc> file is given, it will be used instead of any
+F<.perltidyrc> configuration file that would otherwise be used. 
+
+=item argv
+
+If the B<argv> parameter is given, it will be used instead of the
+B<@ARGV> array.  The B<argv> parameter may be a string, a reference to a
+string, or a reference to an array.  If it is a string or reference to a
+string, it will be parsed into an array of items just as if it were a
+command line string.
+
+=back
+
+=head1 EXAMPLE
+
+The following example passes perltidy a snippet as a reference
+to a string and receives the result back in a reference to
+an array.  It requires that both IO::Scalar and IO::ScalarArray 
+be installed to run.
+
+ use Perl::Tidy;
+ 
+ # some messy source code to format
+ my $source = <<'EOM';
+ use strict;
+ my @editors=('Emacs', 'Vi   '); my $rand = rand();
+ print "A poll of 10 random programmers gave these results:\n";
+ foreach(0..10) {
+ my $i=int ($rand+rand());
+ print " $editors[$i] users are from Venus" . ", " . 
+ "$editors[1-$i] users are from Mars" . 
+ "\n";
+ }
+ EOM
+ 
+ # We'll pass it as ref to SCALAR and receive it in a ref to ARRAY
+ my @dest;
+ perltidy( source => \$source, destination => \@dest );
+ foreach (@dest) {print}
+
+=head1 EXPORT
+
+  &perltidy
+
+=head1 CREDITS
+
+Thanks to Hugh Myers who developed the initial modular interface 
+to perltidy.
+
+=head1 VERSION
+
+This man page documents Perl::Tidy version 20020222.
+
+=head1 AUTHOR
+
+ Steve Hancock
+ perltidy at users.sourceforge.net
+
+=head1 SEE ALSO
+
+The perltidy(1) man page describes all of the features of perltidy.  It
+can be found at http://perltidy.sourceforge.net.
+
+=cut

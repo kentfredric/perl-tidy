@@ -27,8 +27,8 @@ README: README.pod
 INSTALL: INSTALL.pod
 	pod2text INSTALL.pod >INSTALL
 
-perltidy.1: perltidy.pod
-	pod2man perltidy.pod >perltidy.1
+perltidy.1: ../src/perltidy
+	pod2man ../src/perltidy >perltidy.1
 
 README.html: README.pod
 	pod2html README.pod >README.html
@@ -36,11 +36,11 @@ README.html: README.pod
 INSTALL.html: INSTALL.pod
 	pod2html INSTALL.pod >INSTALL.html
 
-perltidy.txt: perltidy.pod
-	pod2text perltidy.pod >perltidy.txt
+perltidy.txt: ../src/perltidy
+	pod2text ../src/perltidy >perltidy.txt
 
-perltidy.html: perltidy.pod
-	pod2html perltidy.pod >perltidy.html
+perltidy.html: ../src/perltidy
+	pod2html ../src/perltidy >perltidy.html
 
 stylekey.html: stylekey.pod
 	pod2html stylekey.pod >stylekey.html
@@ -74,4 +74,3 @@ TODO.html: TODO.pod
 
 TODO.txt: TODO.pod
 	pod2text TODO.pod >TODO.txt
-

@@ -14,6 +14,7 @@
 	<LI><A HREF="#perltidy change log">Perltidy Change Log</A></LI>
 	<UL>
 
+		<LI><A HREF="#2002 04 08">2002 04 08</A></LI>
 		<LI><A HREF="#2002 02 25">2002 02 25</A></LI>
 		<LI><A HREF="#2001 12 31">2001 12 31</A></LI>
 		<LI><A HREF="#2001 11 28">2001 11 28</A></LI>
@@ -44,6 +45,8 @@
  have hit a bug, unusual behavior, annoyance, or have a
  suggested improvement, please send a note to perltidy at
  users.sourceforge.net.</PRE>
+<P>
+<H2><A NAME="2002 04 08">2002 04 08</A></H2>
 <PRE>
  -Corrected a mistokenization of variables for a package with a name
   equal to a perl keyword.  For example:</PRE>
@@ -52,31 +55,58 @@
      package my;
      sub qx{print &quot;Hello from my::qx\n&quot;;}</PRE>
 <PRE>
-  In this case, the leading 'my' was tokenized as a keyword, and a
+  In this case, the leading 'my' was mistokenized as a keyword, and a
   space was being place between 'my' and '::'.  This has been
   corrected.  Thanks to Martin Sluka for discovering this.</PRE>
+<PRE>
+ -Corrected problem where nested parentheses were not getting full
+  indentation.  This has been on the todo list for some time; thanks 
+  to Axel Rose for a snippet demonstrating this issue.</PRE>
+<PRE>
+            OLD: inner list is not indented
+            $this-&gt;sendnumeric(
+                $this-&gt;server,
+                (
+                  $ret-&gt;name,        $user-&gt;username, $user-&gt;host,
+                $user-&gt;server-&gt;name, $user-&gt;nick,     &quot;H&quot;
+                ),
+            );</PRE>
+<PRE>
+            NEW:
+            $this-&gt;sendnumeric(
+                $this-&gt;server,
+                (
+                    $ret-&gt;name,          $user-&gt;username, $user-&gt;host,
+                    $user-&gt;server-&gt;name, $user-&gt;nick,     &quot;H&quot;
+                ),
+            );</PRE>
 <PRE>
  -Code cleaned up by removing the following unused, undocumented flags.
   They should not be in any .perltidyrc files because they were just
   experimental flags which were never documented.  Most of them placed
   artificial limits on spaces, and Wolfgang Weisselberg convinced me that
-  most of them they do more harm than good.</PRE>
+  most of them they do more harm than good by causing unexpected results.</PRE>
 <PRE>
   --maximum-continuation-indentation (-mci)
   --maximum-whitespace-columns
   --maximum-space-to-comment (-xsc)
-  --big-space-jump (-bsj)
-  --ignore-old-line-breaks (-iob)</PRE>
+  --big-space-jump (-bsj)</PRE>
 <PRE>
+ -Pod file 'perltidy.pod' has been appended to the script 'perltidy', and
+  Tidy.pod has been append to the module 'Tidy.pm'.  Older MakeMaker's
+  were having trouble.
+</PRE>
+<PRE>
+
  -A new flag -isbc has been added for more control on comments. This flag
   has the effect that if there is no leading space on the line, then the
   comment will not be indented, and otherwise it may be.  If both -ibc and
   -isbc are set, then -isbc takes priority.  Thanks to Frank Steinhauer
   for suggesting this.</PRE>
 <PRE>
- -A new document stylekey.pod has been created to guide new users
-  through the maze of style parameters.  An html version is on the
-  perltidy web page.  It should be very helpful.</PRE>
+ -A new document 'stylekey.pod' has been created to quickly guide new users
+  through the maze of perltidy style parameters.  An html version is 
+  on the perltidy web page.  Take a look! It should be very helpful.</PRE>
 <PRE>
  -Parameters for controlling 'vertical tightness' have been added:
   -vt and -vtc are the main controls, but finer control is provided
@@ -134,7 +164,7 @@
   with common practice.  Of course, you can still put semicolons 
   there if you like.  Thanks to Simon Perreault for a discussion of this.</PRE>
 <PRE>
- -A new flag -wocb=n has been added to allow existing list formatting
+ -A new flag -wocb has been added to allow existing list formatting
   to be retained.  (--want-old-comma-breaks).  See updated manual.</PRE>
 <PRE>
  -Most instances of extra semicolons are now deleted.  This is

@@ -6,10 +6,6 @@ Perltidy open BUGS
      This file only lists open bugs.  For bugs which have been fixed, 
      see the ChangeLog.  
 
-  The command-line abbreviation feature is broken.
-    This error slipped into the current release, but it will be fixed in the
-    next release.
-
   A here-doc invoked through an 'e' modifier on a pattern replacement text is not recognized
     For example, the output of perltidy for this script has a syntax error:
 

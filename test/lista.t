@@ -77,6 +77,183 @@ map( $matchwords{ join "", sort split //, $_ } = $_, 'cig',
   = @_;
 
 {
+    # This will get messed up...
+    &InitKeymap(*emacs_keymap, 'SelfInsert', 'emacs_keymap',
+		($inDOS ? () : ('C-@',	'Ding') ),
+		'C-a',	'BeginningOfLine',
+		'C-b',	'BackwardChar',
+		'C-c',	'Interrupt',
+		'C-d',	'DeleteChar',
+		'C-e',	'EndOfLine',
+		'C-f',	'ForwardChar',
+		'C-g',	'Abort',
+		'M-C-g',	'Abort',
+		'C-h',	'BackwardDeleteChar',
+		"TAB" ,	'Complete',
+		"C-j" ,	'AcceptLine',
+		'C-k',	'KillLine',
+		'C-l',	'ClearScreen',
+		"C-m" ,	'AcceptLine',
+		'C-n',	'NextHistory',
+		'C-o',  'OperateAndGetNext',
+		'C-p',	'PreviousHistory',
+		'C-q',	'QuotedInsert',
+		'C-r',	'ReverseSearchHistory',
+		'C-s',	'ForwardSearchHistory',
+		'C-t',	'TransposeChars',
+		'C-u',	'UnixLineDiscard',
+		##'C-v',	'QuotedInsert',
+		'C-v',	'HistorySearchForward',
+		'C-w',	'UnixWordRubout',
+		qq/"\cX\cX"/,	'ReReadInitFile',
+		qq/"\cX?"/,	'PossibleCompletions',
+		qq/"\cX*"/,	'InsertPossibleCompletions',
+		'C-y',	'Yank',
+		'C-z',	'Suspend',
+		'C-\\',	'Ding',
+		'C-^',	'Ding',
+		'C-_',	'Undo',
+		'DEL',	($inDOS ?
+			 'BackwardKillWord' : # <Control>+<Backspace>
+			 'BackwardDeleteChar'
+			),
+		'M-<',	'BeginningOfHistory',
+		'M->',	'EndOfHistory',
+		'M-DEL',	'BackwardKillWord',
+		'M-C-h',	'BackwardKillWord',
+		'M-C-j',	'ToggleEditingMode',
+		'M-C-v',	'QuotedInsert',
+		'M-b',	'BackwardWord',
+		'M-c',	'CapitalizeWord',
+		'M-d',	'KillWord',
+		'M-f',	'ForwardWord',
+		'M-l',	'DownCaseWord',
+		'M-r',	'RevertLine',
+		'M-t',	'TransposeWords',
+		'M-u',	'UpcaseWord',
+		'M-v',	'HistorySearchBackward',
+		'M-y',	'YankPop',
+		"M-?",	'PossibleCompletions',
+		"M-TAB",	'TabInsert',
+		qq/"\e[A"/,  'previous-history',
+		qq/"\e[B"/,  'next-history',
+		qq/"\e[C"/,  'forward-char',
+		qq/"\e[D"/,  'backward-char',
+		qq/"\eOA"/,  'previous-history',
+		qq/"\eOB"/,  'next-history',
+		qq/"\eOC"/,  'forward-char',
+		qq/"\eOD"/,  'backward-char',
+		qq/"\e[[A"/,  'previous-history',
+		qq/"\e[[B"/,  'next-history',
+		qq/"\e[[C"/,  'forward-char',
+		qq/"\e[[D"/,  'backward-char',
+		qq/"\e[2~"/,   'ToggleInsertMode', # X: <Insert>
+
+		# HP xterm
+		#qq/"\e[A"/,   'PreviousHistory',	# up    arrow
+		#qq/"\e[B"/,   'NextHistory',		# down  arrow
+		#qq/"\e[C"/,   'ForwardChar',		# right arrow
+		#qq/"\e[D"/,   'BackwardChar',		# left  arrow
+		qq/"\e[H"/,   'BeginningOfLine',        # home
+		qq/"\e[1~"/,  'HistorySearchForward',   # find
+		qq/"\e[3~"/,  'ToggleInsertMode',	# insert char
+		qq/"\e[4~"/,  'ToggleInsertMode',	# select
+		qq/"\e[5~"/,  'HistorySearchBackward',	# prev
+		qq/"\e[6~"/,  'HistorySearchForward',	# next
+		qq/"\e[\0"/,  'BeginningOfLine',	# home
+		#'C-k',        'KillLine',		# clear display
+
+		# hpterm
+
+		($ENV{'TERM'} eq 'hpterm' ?
+		 (
+		  qq/"\eA"/,    'PreviousHistory',     # up    arrow
+		  qq/"\eB"/,    'NextHistory',	       # down  arrow
+		  qq/"\eC"/,    'ForwardChar',	       # right arrow
+		  qq/"\eD"/,    'BackwardChar',	       # left  arrow
+		  qq/"\eS"/,    'BeginningOfHistory',  # shift up    arrow
+		  qq/"\eT"/,    'EndOfHistory',	       # shift down  arrow
+		  qq/"\e&r1R"/, 'EndOfLine',	       # shift right arrow
+		  qq/"\e&r1L"/, 'BeginningOfLine',     # shift left  arrow
+		  qq/"\eJ"/,    'ClearScreen',	       # clear display
+		  qq/"\eM"/,    'UnixLineDiscard',     # delete line
+		  qq/"\eK"/,    'KillLine',	       # clear  line
+		  qq/"\eG\eK"/, 'BackwardKillLine',    # shift clear line
+		  qq/"\eP"/,    'DeleteChar',	       # delete char
+		  qq/"\eL"/,    'Yank',		       # insert line
+		  qq/"\eQ"/,    'ToggleInsertMode',    # insert char
+		  qq/"\eV"/,    'HistorySearchBackward',# prev
+		  qq/"\eU"/,    'HistorySearchForward',# next
+		  qq/"\eh"/,    'BeginningOfLine',     # home
+		  qq/"\eF"/,    'EndOfLine',	       # shift home
+		  qq/"\ei"/,    'Suspend',	       # shift tab
+		 ) :
+		 ()
+		),
+		($inDOS ?
+		 (
+		  qq/"\0\16"/, 'Undo', # 14: <Alt>+<Backspace>
+		  qq/"\0\23"/, 'RevertLine', # 19: <Alt>+<R>
+		  qq/"\0\24"/, 'TransposeWords', # 20: <Alt>+<T>
+		  qq/"\0\25"/, 'YankPop', # 21: <Alt>+<Y>
+		  qq/"\0\26"/, 'UpcaseWord', # 22: <Alt>+<U>
+		  qq/"\0\31"/, 'ReverseSearchHistory', # 25: <Alt>+<P>
+		  qq/"\0\40"/, 'KillWord', # 32: <Alt>+<D>
+		  qq/"\0\41"/, 'ForwardWord', # 33: <Alt>+<F>
+		  qq/"\0\46"/, 'DownCaseWord', # 38: <Alt>+<L>
+		  #qq/"\0\51"/, 'TildeExpand', # 41: <Alt>+<\'>
+		  qq/"\0\56"/, 'CapitalizeWord', # 46: <Alt>+<C>
+		  qq/"\0\60"/, 'BackwardWord', # 48: <Alt>+<B>
+		  qq/"\0\61"/, 'ForwardSearchHistory', # 49: <Alt>+<N>
+		  #qq/"\0\64"/, 'YankLastArg', # 52: <Alt>+<.>
+		  qq/"\0\65"/, 'PossibleCompletions', # 53: <Alt>+</>
+		  qq/"\0\107"/, 'BeginningOfLine', # 71: <Home>
+		  qq/"\0\110"/, 'previous-history', # 72: <Up arrow>
+		  qq/"\0\111"/, 'HistorySearchBackward', # 73: <Page Up>
+		  qq/"\0\113"/, 'backward-char', # 75: <Left arrow>
+		  qq/"\0\115"/, 'forward-char', # 77: <Right arrow>
+		  qq/"\0\117"/, 'EndOfLine', # 79: <End>
+		  qq/"\0\120"/, 'next-history', # 80: <Down arrow>
+		  qq/"\0\121"/, 'HistorySearchForward', # 81: <Page Down>
+		  qq/"\0\122"/, 'ToggleInsertMode', # 82: <Insert>
+		  qq/"\0\123"/, 'DeleteChar', # 83: <Delete>
+		  qq/"\0\163"/, 'BackwardWord', # 115: <Ctrl>+<Left arrow>
+		  qq/"\0\164"/, 'ForwardWord', # 116: <Ctrl>+<Right arrow>
+		  qq/"\0\165"/, 'KillLine', # 117: <Ctrl>+<End>
+		  qq/"\0\166"/, 'EndOfHistory', # 118: <Ctrl>+<Page Down>
+		  qq/"\0\167"/, 'BackwardKillLine', # 119: <Ctrl>+<Home>
+		  qq/"\0\204"/, 'BeginningOfHistory', # 132: <Ctrl>+<Page Up>
+		  qq/"\0\223"/, 'KillWord', # 147: <Ctrl>+<Delete>
+		 )
+		 : ( 'C-@',	'Ding')
+		)
+	       );
+
+    # be sure we break at the ',' after 'RECUR'
+    return $class->SUPER::new(
+        'RECUR',
+        {
+
+            # for Property.pm
+            content => {
+                type => 'volatile',
+                doc  => 'Full value of property',
+
+            }
+        }
+    );
+
+    # This is sensitive to how the comma before the empty line
+    # is treated by set_comma_breakpoints
+    Convert::BER->define(
+        [ '_Time_generic' => $STRING,         undef ],
+        [ TimeUZ          => '_Time_generic', BER_UNIVERSAL | 23 ],
+        [ TimeUL          => '_Time_generic', BER_UNIVERSAL | 23 ],
+
+        [ TimeGZ => '_Time_generic', BER_UNIVERSAL | 24 ],
+        [ TimeGL => '_Time_generic', BER_UNIVERSAL | 24 ],
+    );
+
     # No container around this list, so indentation sucks:
     $art_button = Button $frame2
       -text             => "article",

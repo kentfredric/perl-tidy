@@ -21,7 +21,6 @@
 		<LI><A HREF="#improved vertical alignment">Improved Vertical Alignment</A></LI>
 		<LI><A HREF="#documentation">Documentation</A></LI>
 		<LI><A HREF="#html writer">HTML writer</A></LI>
-		<LI><A HREF="#further modularization">Further Modularization</A></LI>
 		<LI><A HREF="#tokenization issues">Tokenization issues</A></LI>
 		<LI><A HREF="#outdent block comments as a group">Outdent block comments as a group</A></LI>
 		<LI><A HREF="#option to reformat block comments">Option to reformat block comments</A></LI>
@@ -39,18 +38,14 @@ are of interest, but there is no particular schedule for implementing
 them.</P>
 <P>
 <H2><A NAME="xml output">XML Output</A></H2>
-<P>The ability to write a tokenized script in XML format looks
-very useful.  This would allow the creation of simple utilities to
-reliably manipulate perl code.</P>
-<P>The output will be controlled by a switch <STRONG>--format=s</STRONG>, or simply <STRONG>-f=s</STRONG>,
-where <STRONG>s</STRONG> would be <STRONG>html</STRONG>, <STRONG>xml</STRONG>, or <STRONG>tidy</STRONG>.  The current <STRONG>-html</STRONG> flag
-would be mapped into <STRONG>-format=html</STRONG>.</P>
+<P>A -xml option is being tested.  This will allow the creation of simple
+utilities to reliably manipulate perl code.</P>
 <P>
 <H2><A NAME="fix numerous little formatting issues">Fix numerous little formatting issues</A></H2>
 <P>There is, and always will be, a large number of relatively minor
 formatting issues that need to be addressed.  I'm working on them as
-time permits.  Some of the most interesting have to do with
-automatically deciding the best number of columns to use for a table.</P>
+time permits.  The most interesting have to do with automatically
+formatting lists.</P>
 <P>
 <H2><A NAME="bugs">BUGS</A></H2>
 <P>There are still a couple of bugs listed in the BUGS file that need
@@ -58,8 +53,8 @@ to be fixed.  These are low priority compared to formatting
 issues, but need to be done.</P>
 <P>
 <H2><A NAME="improved : formatting">improved ?: formatting</A></H2>
-<P>I intend to associate an indentation level with ?: statements in a
-future release.  this will make nested ?: statements more readable.</P>
+<P>An indentation level will be associated with ?: statements.
+This will make nested ?: statements more readable.</P>
 <P>
 <H2><A NAME="improved vertical alignment">Improved Vertical Alignment</A></H2>
 <P>Coding modifications are underway to improve the vertical alignment
@@ -75,12 +70,8 @@ a separate module.</P>
 <P>The HTML writer does not colorize interpolated identifiers in here
 documents or quoted strings.  The tokenizer outputs interpolation
 information for here docs; it still needs to be updated to do this for
-multiline quotes.  Then code needs to be written to scan for and markup
+multi-line quotes.  Then code needs to be written to scan for and markup
 identifiers.</P>
-<P>
-<H2><A NAME="further modularization">Further Modularization</A></H2>
-<P>The current version, which uses just a single module, will be further
-subdivided.</P>
 <P>
 <H2><A NAME="tokenization issues">Tokenization issues</A></H2>
 <P>There are some subtle issues with distinguishing block types that should
@@ -102,7 +93,7 @@ needs to be done.  Also, brace types of something like ${ ... } are
 not currently labeled as code blocks because this simplifies formatting.
 However, this should be done eventually for correctness.</P>
 <P>Token type 'M' (for Method) has been reserved for subroutine definition
-names.  It needs to be implementd; I've patched around this in the html
+names.  It needs to be implemented; I've patched around this in the html
 writer for now.  I'm considering new token types for prototypes and
 attributes, to simplify parsing and formatting.</P>
 <P>

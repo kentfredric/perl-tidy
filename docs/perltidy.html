@@ -30,6 +30,7 @@
 		<LI><A HREF="#whitespace control">Whitespace Control</A></LI>
 		<LI><A HREF="#comment controls">Comment Controls</A></LI>
 		<LI><A HREF="#line break control">Line Break Control</A></LI>
+		<LI><A HREF="#breaking at existing line breaks">Breaking at Existing Line Breaks</A></LI>
 		<LI><A HREF="#blank line control">Blank Line Control</A></LI>
 		<LI><A HREF="#styles">Styles</A></LI>
 		<LI><A HREF="#other controls">Other Controls</A></LI>
@@ -74,7 +75,7 @@ which can be found at
 can be found at
 <A HREF="http://perltidy.sourceforge.net/stylekey.html">http://perltidy.sourceforge.net/stylekey.html</A></P>
 <P>Perltidy can produce output on either of two modes, depending on the
-existance of an <STRONG>-html</STRONG> flag.  Without this flag, the output is passed
+existence of an <STRONG>-html</STRONG> flag.  Without this flag, the output is passed
 through a formatter.  The default formatting tries to follow the
 recommendations in perlstyle(1), but it can be controlled in detail with
 numerous input parameters, which are described in <A HREF="#formatting options">FORMATTING OPTIONS</A>.</P>
@@ -358,7 +359,7 @@ option.
 <DT><STRONG><A NAME="item_%2Dsyn%2C_%2D%2Dcheck%2Dsyntax"><STRONG>-syn</STRONG>,   <STRONG>--check-syntax</STRONG></A></STRONG><BR>
 <DD>
 The purpose of this flag is to alert you to any situation in which the
-intput file has good syntax but the output file has bad syntax, which
+input file has good syntax but the output file has bad syntax, which
 implies an error by perltidy.
 <P>This flag causes perltidy to run <CODE>perl -c -T</CODE> to check syntax of input
 and output.  (To change the flags passed to perl, see the next item,
@@ -691,7 +692,7 @@ this type of input.  Such a list can be obtained by the command
 <DT><STRONG><A NAME="item_Trimming_whitespace_around_qw_quotes">Trimming whitespace around <CODE>qw</CODE> quotes</A></STRONG><BR>
 <DD>
 <STRONG>-tqw</STRONG> or <STRONG>--trim-qw</STRONG> provide the default behavior of trimming
-spaces around multiline <CODE>qw</CODE> quotes and indenting them appropriately.
+spaces around multi-line <CODE>qw</CODE> quotes and indenting them appropriately.
 <P><STRONG>-ntqw</STRONG> or <STRONG>--notrim-qw</STRONG> cause leading and trailing whitespace around
 multi-line <CODE>qw</CODE> quotes to be left unchanged.  This option will not
 normally be necessary, but was added for testing purposes, because in
@@ -985,9 +986,10 @@ expression to be formed.</P>
 <DL>
 <DT><STRONG><A NAME="item_%2Dfnl%2C_%2D%2Dfreeze%2Dnewlines"><STRONG>-fnl</STRONG>,  <STRONG>--freeze-newlines</STRONG></A></STRONG><BR>
 <DD>
-If you do not want any changes to the line breaks in your script, set <STRONG>-fnl</STRONG>,
-and they will remain fixed, and the rest of the commands in this section and
-the Blank Line Control section will be ignored.  You may want to use <STRONG>-noll</STRONG>
+If you do not want any changes to the line breaks in your script, set
+<STRONG>-fnl</STRONG>, and they will remain fixed, and the rest of the commands in
+this section and sections <A HREF="#breaking at existing line breaks">Breaking at Existing Line Breaks</A> and
+<A HREF="#blank line control">Blank Line Control</A> will be ignored.  You may want to use <STRONG>-noll</STRONG>
 with this.
 <P></P>
 <DT><STRONG><A NAME="item_%2Dce%2C_%2D%2Dcuddled%2Delse"><STRONG>-ce</STRONG>,   <STRONG>--cuddled-else</STRONG></A></STRONG><BR>
@@ -1246,47 +1248,6 @@ possible values of this string, see <A HREF="#specifying block types">Specifying
 the exception of one-line blocks, they will normally remain on a 
 separate line.</P>
 <P></P>
-<DT><STRONG><A NAME="item_%2Dwocb%3Dn%2C_%2D%2Dwant%2Dold%2Dcomma%2Dbreaks%3"><STRONG>-wocb=n</STRONG>,  <STRONG>--want-old-comma-breaks=n</STRONG></A></STRONG><BR>
-<DD>
-The value of <STRONG>n</STRONG> indicates the degree to which perltidy should follow
-line breaks at existing commas.
-<PRE>
-   n=0 do not consider old comma breakpoints at all in list 
-       formatting.
-   n=1 (default) means perltidy makes a best guess at list
-       formatting, and may use old comma breakpoints in some cases.
-       At present, old comma breakpoints are used
-       for lists interrupted by comments and line breaks,
-       and for lists with mixtures of '=&gt;'s and commas.
-   n=2 means always use old comma breakpoints in list formatting.</PRE>
-<P>The default, <STRONG>n=1</STRONG>, works reasonably well in most cases, but if your
-script has nicely formatted tables which get messed up by the default
-method, you can use <STRONG>n=2</STRONG> to preserve this formatting.  The value
-<STRONG>n=0</STRONG> would only be used if the input script is a complete mess and the
-default method does not work well because of this.</P>
-<P>Consider:</P>
-<PRE>
-    my @list = (1,
-                1, 1,
-                1, 2, 1,
-                1, 3, 3, 1,
-                1, 4, 6, 4, 1,);</PRE>
-<P>The default formatting will flatten this down to one line:</P>
-<PRE>
-    # perltidy (default)
-    my @list = ( 1, 1, 1, 1, 2, 1, 1, 3, 3, 1, 1, 4, 6, 4, 1, );</PRE>
-<P>which hides the structure. Using <STRONG>-wocb=2</STRONG>, plus additional flags
-to retain the original style, yields</P>
-<PRE>
-    # perltidy -wocb=2 -lp -pt=2 -vt=1 -vtc=1
-    my @list = (1,
-                1, 1,
-                1, 2, 1,
-                1, 3, 3, 1,
-                1, 4, 6, 4, 1,);</PRE>
-<P>Probably the best strategy is to first try the default list formatting,
-and only change <STRONG>-wocb=n</STRONG> if necessary, on a case by case basis.</P>
-<P></P>
 <DT><STRONG><A NAME="item_%2Ddnl%2C_%2D%2Ddelete%2Dold%2Dnewlines"><STRONG>-dnl</STRONG>,  <STRONG>--delete-old-newlines</STRONG></A></STRONG><BR>
 <DD>
 By default, perltidy first deletes all old line break locations, and then it
@@ -1332,6 +1293,72 @@ perltidy uses (use <STRONG>--dump-token-types</STRONG> for a list).  However, fo
 few token types there may be conflicts with hardwired logic which cause
 unexpected results.  One example is curly braces, which should be
 controlled with the parameter <STRONG>bl</STRONG> provided for that purpose.</P>
+<P></P></DL>
+<P>
+<H2><A NAME="breaking at existing line breaks">Breaking at Existing Line Breaks</A></H2>
+<P>Several parameters are available for controlling the extent to which
+line breaks in the input script influence the output script.
+In most cases, the default values are set so that, if a choice is
+possible, the output style follows the input style.  For example, if a
+short logical container is broken in the input script, then the
+default behavior is for it to remain broken in the output script.</P>
+<P>Most of the parameters in this section would only be required for
+a one-time conversion of a script from short container lengths to
+longer container lengths.</P>
+<DL>
+<DT><STRONG><A NAME="item_%2Diob%2C_%2D%2Dignore%2Dold%2Dbreakpoints"><STRONG>-iob</STRONG>,  <STRONG>--ignore-old-breakpoints</STRONG></A></STRONG><BR>
+<DD>
+Use this flag to tell perltidy to ignore existing line breaks
+to the maximum extent possible.  This will tend to produce
+the longest possible lines which do not exceed the line length
+limit.
+<P></P>
+<DT><STRONG><A NAME="item_%2Dbol%2C_%2D%2Dbreak%2Dat%2Dold%2Dlogical%2Dbreak"><STRONG>-bol</STRONG>,  <STRONG>--break-at-old-logical-breakpoints</STRONG></A></STRONG><BR>
+<DD>
+By default, if a logical expression is broken at a <CODE>&amp;&amp;</CODE>, <CODE>||</CODE>, <CODE>and</CODE>,
+or <CODE>or</CODE>, then the container will remain broken.  Also, breaks
+at internal keywords <CODE>if</CODE> and <CODE>unless</CODE> will normally be retained.
+To prevent this, use <STRONG>-nbol</STRONG>.
+<P></P>
+<DT><STRONG><A NAME="item_%2Dbok%2C_%2D%2Dbreak%2Dat%2Dold%2Dkeyword%2Dbreak"><STRONG>-bok</STRONG>,  <STRONG>--break-at-old-keyword-breakpoints</STRONG></A></STRONG><BR>
+<DD>
+By default, perltidy will retain a breakpoint before keywords which may
+return lists, such as <CODE>sort</CODE> and &lt;map&gt;.  This allows chains of these
+operators to be displayed one per line.  Use <STRONG>-nbok</STRONG> to prevent
+retaining these breakpoints.
+<P></P>
+<DT><STRONG><A NAME="item_%2Dboa%2C_%2D%2Dbreak%2Dat%2Dold%2Darrow%2Dbreakpo"><STRONG>-boa</STRONG>,  <STRONG>--break-at-old-arrow-breakpoints</STRONG></A></STRONG><BR>
+<DD>
+The default behavior for a container with comma-arrows, '=&gt;', is to
+break after the next comma if the container spans multiple lines, and
+not to break if the container spans one line.  Use <STRONG>-nboa</STRONG> to tell
+perltidy to ignore the old line breaks and instead to form the longest
+possible one-line containers with comma-arrows.
+<P></P>
+<DT><STRONG><A NAME="item_%2Dboc%2C_%2D%2Dbreak%2Dat%2Dold%2Dcomma%2Dbreakpo"><STRONG>-boc</STRONG>,  <STRONG>--break-at-old-comma-breakpoints</STRONG></A></STRONG><BR>
+<DD>
+This flag tells perltidy to try to break at all old commas.  Normally,
+perltidy makes a best guess at list formatting, and seldom uses old
+comma breakpoints.  Usually this works well, but consider:
+<PRE>
+    my @list = (1,
+                1, 1,
+                1, 2, 1,
+                1, 3, 3, 1,
+                1, 4, 6, 4, 1,);</PRE>
+<P>The default formatting will flatten this down to one line:</P>
+<PRE>
+    # perltidy (default)
+    my @list = ( 1, 1, 1, 1, 2, 1, 1, 3, 3, 1, 1, 4, 6, 4, 1, );</PRE>
+<P>which hides the structure. Using <STRONG>-boc</STRONG>, plus additional flags
+to retain the original style, yields</P>
+<PRE>
+    # perltidy -boc -lp -pt=2 -vt=1 -vtc=1
+    my @list = (1,
+                1, 1,
+                1, 2, 1,
+                1, 3, 3, 1,
+                1, 4, 6, 4, 1,);</PRE>
 <P></P></DL>
 <P>
 <H2><A NAME="blank line control">Blank Line Control</A></H2>
@@ -1835,10 +1862,11 @@ it frequently.</P>
 <P>The following list shows all short parameter names which allow a prefix
 'n' to produce the negated form:</P>
 <PRE>
-    D anl asc aws bbb bbc bbs bli baa syn ce csc dac dbc dcsc dnl
-    dws dp dpro dsm dsc ddf dln dop dsn dtt dwls dwrs f fll
-    hsc html ibc icb icp isbc lp log lal x lsl bl sbl okw ola oll
-    pvl q opt sbc sfs ssc sts se st sob t tac tbc tp tsc tqw w</PRE>
+    D anl asc aws bbb bbc bbs bli boa boc bok bol baa syn ce csc 
+    dac dbc dcsc dnl dws dp dpro dsm dsc ddf dln dop dsn dtt dwls dwrs 
+    f fll hsc html ibc icb icp isbc lp log lal x lsl bl 
+    sbl okw ola oll pvl q opt sbc sfs ssc sts se st sob 
+    t tac tbc tp tsc tqw w</PRE>
 <P>Equivalently, the prefix 'no' on the corresponding long names may be
 used.</P>
 <P>
@@ -1899,7 +1927,7 @@ confusing filenames such as <EM>somefile.tdy.tdy.tdy</EM>.
 <P>
 <HR>
 <H1><A NAME="version">VERSION</A></H1>
-<P>This man page documents perltidy version 20020327.</P>
+<P>This man page documents perltidy version 20020408.</P>
 <P>
 <HR>
 <H1><A NAME="credits">CREDITS</A></H1>

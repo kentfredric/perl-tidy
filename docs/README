@@ -7,9 +7,9 @@ Welcome to Perltidy!
 PREREQUISITES
     Not many. Perltidy is programmed to work under a standard distribution
     of Perl as old as version 5.004 or later. (You can find your version
-    with "perl -v"). We have had some recent reports of problems with
-    versions this old, however, but we have not heard of any problems with
-    Perl 5.005 and later, though.
+    with "perl -v"). This release was successfully tested on a 5.004_04
+    (1997) linux distribution of perl. However, some older systems may have
+    problems, perhaps because of memory limitations.
 
     These modules are not required, but perltidy may use them if detected:
 
@@ -24,7 +24,7 @@ PREREQUISITES
       IO::ScalarArray
 
     The total disk space needed after removing the installation directory
-    will about 1 Mb. (If really neccessary, this could be reduced to about
+    will about 1 Mb. (If really necessary, this could be reduced to about
     320k by using perltidy to squeeze itself down using perltidy -dac
     --mangle Tidy.pm .)
 

@@ -58,3 +58,6 @@ print "$Cnested\n";
                 	It is needed to check syntax; deactivate with -nsyn"
     );
 }
+
+# x is operator
+($x,$y,$text)= $pdf->textParagraph(10,800,250,800, join(' ',q|Liber vel Legis. inforom summa cum laude. | x (1000/$f)));
