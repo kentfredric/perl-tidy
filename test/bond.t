@@ -1,4 +1,27 @@
-    { { {
+{ 
+    print {$parser->output_handle()}
+      $parser->parse_text(
+                          {
+                              -expand_text => q(escape_ltgt),
+                              -expand_seq  => q(simple_delimiters)
+                          },
+                          $text,
+                          $line
+      )->raw_text();
+    
+    { 
+
+        # break before the '->'
+        ( $current_feature_item->children )[0]
+          ->set( $current_feature->primary_tag );
+
+            # break after '+' here:
+            my $min_gnu_indentation = $standard_increment +
+              $gnu_stack[$max_gnu_stack_index]->get_SPACES();
+    
+    {
+            $gControlFields{$lMarcTag}
+              ->clusters->{ substr( $gPosDefData, 0, 1 ) }->field_length;
     $sth->{'Database'}->{'xbase_tables'}
                   ->{ $parsed_sql->{'table'}[0] }->field_type($_);
     } } }

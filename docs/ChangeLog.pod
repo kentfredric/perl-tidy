@@ -6,7 +6,12 @@
 
 =head2 2002 xx xx 
 
- -Long 'for' expressions will be broken after each ';'.   perltidy -gnu
+ -Merged VMS filename handling patch sent by Michael Cartmell.  (Invalid
+  output filenames were being created in some cases). 
+
+ -Long C-style 'for' expressions will be broken after each ';'.   
+
+  'perltidy -gnu' gives:
 
     OLD:
     for ($status = $db->seq($key, $value, R_CURSOR()) ; $status == 0
@@ -18,7 +23,7 @@
          $status = $db->seq($key, $value, R_NEXT()))
 
  -For the -lp option, a single long term within parens (without commas) now 
- has better alignment.  For example, perltidy -gnu
+  has better alignment.  For example, perltidy -gnu
 
             OLD:
             $self->throw("Must specify a known host, not $location,"

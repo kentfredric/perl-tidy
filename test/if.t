@@ -14,6 +14,19 @@ push @allowed, $_
 {
     foreach (@extn_hints) { print "$_ "; }
     if ($text) { write_text_block( $text, $is_head ); $text = (); $is_head = 0; }
+
+    # want 'if' on a new line:
+    $w = $w->Subwidget('frame')
+      if (
+        @_
+        && $_[0] =~ /^(?: bbox
+				|columnconfigure
+				|location
+				|propagate
+				|rowconfigure
+				|size
+				|slaves)$/x
+      );
 }
 
 # some nested if statements

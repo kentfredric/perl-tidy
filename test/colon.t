@@ -1,4 +1,12 @@
 {
+    $cmd =
+      (!ref $cmd) 
+      ? $cmd
+      : (!ref $$cmd[0])
+      ? (
+        ($$cmd[1] ne '' && !&opt('p')) ? "\\" . eval("qq^$$cmd[1]^") : $$cmd[0])
+      : return map(&helpstr($key, substr($$_[2], 0, 1), $tab, $_), &cmds($cmd));
+
     # with side comment
     $me = $Is_MSWin32 ? $ENV{'USERNAME'}
       : $^O eq 'os2' ? $ENV{'USER'} || $ENV{'LOGNAME'}

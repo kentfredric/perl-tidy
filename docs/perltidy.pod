@@ -120,7 +120,7 @@ request outputting to the standard output.  For example,
 
 This option may only be used if there is just a single input file.  When
 this option is used, perltidy will have to create a temporary copy of
-the output file, perltidy.TMPO, to feed to perl for syntax checking,
+the output file to feed to perl for syntax checking,
 unless allow syntax checking is disabled.  This file will be deleted
 when the job finishes.  The default is B<-nst> or B<-nostandard-output>.
 
@@ -1583,25 +1583,22 @@ in any way.  And, of course, it does not modify pod documents.
 When standard input is used, the log file, if saved, is F<perltidy.LOG>,
 and any errors are written to F<perltidy.ERR> unless the B<-se> flag is
 set.  These are saved in the current working directory.  If syntax
-checking is used, a temporary copy of the input file will be created in
-the current working directory called F<perltidy.TMPI>, but it will be
-removed when perltidy finishes.
+checking is used, a temporary copy of the input file will be created but it
+will be removed when perltidy finishes.
 
 When standard output and syntax checking are used, a temporary copy of the
-output file will be created in the current working directory called
-F<perltidy.TMPO>.  It will be removed when perltidy finishes.
+output file will be created and removed when perltidy finishes.
 
 =item Files overwritten
 
 The following file extensions are used by perltidy, and files with these
-extensions may be overwritten or deleted: F<.tdy>, F<.ERR>, F<.LOG>, F<.TEE>,
-F<.TMPI>, F<.TMPO>.
+extensions may be overwritten or deleted: F<.tdy>, F<.ERR>, F<.LOG>, F<.TEE>.
 
 =item  Files extensions limitations
 
 Perltidy does not operate on files for which the run could produce a file with
 a duplicated file extension.  These extensions are F<.tdy>, F<.LOG>, F<.ERR>,
-F<.TEE>, F<.TMPI>, F<.TMPO>.  The purpose of this rule is to prevent generating
+F<.TEE>.  The purpose of this rule is to prevent generating
 confusing filenames such as F<somefile.tdy.tdy.tdy>.
 
 =back

@@ -8,6 +8,9 @@
 
 {
     {
+        # sparsity .28
+        $self->Target->Set("CharmMonster", 0, $self->Caster, $self->CharmTarget,
+                           $self->CharmTarget2);
         {
             {
                 _safe_symlink(
