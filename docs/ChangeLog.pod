@@ -5,7 +5,7 @@
  suggested improvement, please send a note to perltidy at
  users.sourceforge.net.  
 
-=head2 2002 xx xx
+=head2 2002 08 25
 
  -Fixed bug in which space was inserted in a hyphenated hash key:
     my $val = $myhash{USER-NAME};

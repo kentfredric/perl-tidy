@@ -61,7 +61,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.24 2002/08/26 00:26:38 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.25 2002/08/26 20:28:55 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 # Preloaded methods go here.
@@ -6496,7 +6496,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.24 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.25 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -18460,11 +18460,11 @@ EOM
                     elsif ( $tok eq 'continue' ) {
                         if (   $last_nonblank_token ne ';'
                             && $last_nonblank_block_type !~
-                            /^(while|until|for|foreach)$/ )
+                            /^(;|while|until|for|foreach)$/ )
                         {
-                            warning(
-"'$tok' should follow a 'while', 'until', or 'foreach'  block\n"
-                            );
+                            # note: ';' in list above because continues
+                            # can follow bare blocks
+                            warning( "'$tok' should follow a block\n");
                         }
                     }
                 }
