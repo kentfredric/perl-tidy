@@ -6,6 +6,20 @@
   : $type eq '*' ? *{"${pkg}::$sym"}
   : do { require Carp; Carp::croak("Can't export symbol: $type$sym") };
 {
+    # mixed logical and conditional; can go many ways:
+    $ok && $msg[0] =~ /\A(\S+)/ ? $1 : undef;
+    
+    $ok && 
+    $msg[0] =~ /\A(\S+)/ ? $1 : undef;
+
+    $ok && $msg[0] =~ /\A(\S+)/ ? $1 
+    : undef;
+
+    $ok
+      && $msg[0] =~ /\A(\S+)/
+      ? $1
+      : undef;
+
     if ($minbits < 32) {
         while ($list) { 
 	    $top = $val if $val > $top;
@@ -32,13 +46,40 @@
       : $^O eq 'os2' ? $ENV{'USER'} || $ENV{'LOGNAME'}
       : eval { getpwuid($<) };    # May be missing
 
+    # This will exercise sub recombine breakpoints;
+    # the second ? in the last line makes it not a colon chain in
+    # sub set_continuation_breaks
+    (/^$/) ? $filecol
+      : (s/^\+//) ? $filecol + $_
+      : (s/^\-//) ? $filecol - $_
+      : (s/^>//)  ? ( $filecol + $_ ) % $pages
+      : (s/^<//)  ? ( $filecol - $_ ) % $pages
+      : (s/^<//)  ? ( $a ? ( $filecol - $_ ) % $pages : $b )
+      : $d;
+
 {
+        # This is too complex for sub recombine_breakpoints
+        # From (test4/vshnu)
+	$filecol =
+	    (/^$/)     ? $filecol					 :
+	    (s/^\+//)  ? $filecol  + $_					 :
+	    (s/^\-//)  ? $filecol  - $_					 :
+	    (s/^>//)   ? ($filecol + $_) % $pages			 :
+	    (s/^]//)   ? (($filecol + $_ >= $pages) ? 0 : $filecol + $_) :
+	    (s/^<//)   ? ($filecol - $_) % $pages			 :
+	    (s/^\[//)  ? (($filecol == 0) ? $pages - ($pages % $_ || $_) :
+			  ($filecol - $_ < 0) ? 0 : $filecol - $_)	 :
+	    (/^\d/)    ? $_ - 1						 :
+	    (s/^\\?//) ? (($col{$_}, $row{$_}) = &pageto($_))[0]	 : 0;
         ( ref($usage_fref) =~ /CODE/ ) 
           ? &$usage_fref
           : ( &blast_usage, &blast_params, &blast_general_params );
         exit 1;
 
 {
+            ( $feat->strand == -1 )
+              ? ( @range = ( $feat->end, $feat->start, $feat->strand ) )
+              : ( @range = ( $feat->start, $feat->end, $feat->strand ) );
             sprintf(
                 "%d%s",
                 $mday,

@@ -130,7 +130,7 @@
 .\" ========================================================================
 .\"
 .IX Title "PERLTIDY 1"
-.TH PERLTIDY 1 "2002-04-15" "perl v5.6.1" "User Contributed Perl Documentation"
+.TH PERLTIDY 1 "2002-04-16" "perl v5.6.1" "User Contributed Perl Documentation"
 .UC
 .SH "NAME"
 perltidy \- a perl script indenter and reformatter
@@ -271,21 +271,17 @@ For example, instead of \fB\-dump\-token\-types\fR, it would be sufficient to en
 Several parameters which refer to code block types may be customized by
 also specifying an associated list of block types.  The type of a block
 is the name of the keyword which introduces that block, such as \fBif\fR,
-\&\fBelse\fR, or \fBsub\fR.  One exception is a labeled block, which should be
+\&\fBelse\fR, or \fBsub\fR.  An exception is a labeled block, which should be
 specified with just a colon.
 .PP
-An example is the \fB\-csc\fR closing side comment parameter, which may
-be customized by specifying a list of block types with \fB\-cscl=s\fR.  The
-parameter \fBs\fR here is a list of the block types.  It should be
-quoted if it contains any spaces.
-.PP
-For example, the following command requests that only \f(CW\*(C`sub\*(C'\fR's, labels,
-\&\f(CW\*(C`BEGIN\*(C'\fR, and \f(CW\*(C`END\*(C'\fR blocks be affected by any \fB\-csc\fR or \fB\-dcsc\fR
-operation:
+For example, the following parameter specifies \f(CW\*(C`sub\*(C'\fR, labels, \f(CW\*(C`BEGIN\*(C'\fR, and
+\&\f(CW\*(C`END\*(C'\fR blocks:
 .PP
 .Vb 1
 \&   -cscl="sub : BEGIN END"
 .Ve
+(the meaning of the \-cscl parameter is described below.)  Note that
+quotes are required around the list of block types.
 .Sh "I/O control"
 .IX Subsection "I/O control"
 The following parameters concern the files which are read and written.
@@ -313,6 +309,14 @@ this option is used, perltidy will have to create a temporary copy of
 the output file to feed to perl for syntax checking,
 unless allow syntax checking is disabled.  This file will be deleted
 when the job finishes.  The default is \fB\-nst\fR or \fB\-nostandard\-output\fR.
+.IP "\fB\-se\fR,    \fB\-\-standard\-error\-output\fR" 4
+.IX Item "-se,    --standard-error-output"
+If perltidy detects an error when processing file \fIsomefile.pl\fR, its
+default behavior is to write error messages to file \fIsomefile.pl.ERR\fR.
+Use \fB\-se\fR to cause all error messages to be sent to the standard error
+output stream instead.  This directive may be negated with \fB\-nse\fR. 
+Thus, you may place \fB\-se\fR in a \fI.perltidyrc\fR and override it
+when desired with \fB\-nse\fR on the command line.
 .IP "\fB\-oext\fR=ext,    \fB\-\-output\-file\-extension\fR=ext" 4
 .IX Item "-oext=ext,    --output-file-extension=ext"
 Change the extension of the output file to be \fI.ext\fR instead of the
@@ -339,14 +343,6 @@ If the path contains spaces, it should be placed in quotes.
 .Sp
 This parameter will be ignored if output is being directed to standard output,
 or if it is being specified explicitly with the \fB\-o=s\fR parameter.
-.IP "\fB\-se\fR,    \fB\-\-standard\-error\-output\fR" 4
-.IX Item "-se,    --standard-error-output"
-If perltidy detects an error when processing file \fIsomefile.pl\fR, its
-default behavior is to write error messages to file \fIsomefile.pl.ERR\fR.
-Use \fB\-se\fR to cause all error messages to be sent to the standard error
-output stream instead.  This directive may be negated with \fB\-nse\fR. 
-Thus, you may place \fB\-se\fR in a \fI.perltidyrc\fR and override it
-when desired with \fB\-nse\fR on the command line.
 .IP "\fB\-w\fR,    \fB\-\-warning\-output\fR" 4
 .IX Item "-w,    --warning-output"
 Setting \fB\-w\fR causes perltidy to include any non-critical warning
@@ -1150,7 +1146,9 @@ expression to be formed.
 .IX Item "-fnl,  --freeze-newlines"
 If you do not want any changes to the line breaks in your script, set
 \&\fB\-fnl\fR, and they will remain fixed, and the rest of the commands in
-this section and sections \*(L"Retaining or Ignoring Existing Line Breaks\*(R" and
+this section and sections 
+\&\*(L"Controlling List Formatting\*(R",
+\&\*(L"Retaining or Ignoring Existing Line Breaks\*(R", and
 \&\*(L"Blank Line Control\*(R" will be ignored.  You may want to use \fB\-noll\fR
 with this.
 .IP "\fB\-ce\fR,   \fB\-\-cuddled\-else\fR" 4
@@ -1266,20 +1264,18 @@ flag.  In this case, the above example becomes
 A conflict occurs if both \fB\-bl\fR and \fB\-bar\fR are specified.
 .IP "Vertical tightness of non-block curly braces, parentheses, and square brackets." 4
 .IX Item "Vertical tightness of non-block curly braces, parentheses, and square brackets."
-The \*(L"tightness\*(R" of the previous section really referred to what might
-better be called \*(L"horizontal tightness\*(R".  A separate set of parameters
-control what shall be called vertical tightness.  Here are the main
-points:
+These parameters control what shall be called vertical tightness.  Here are the
+main points:
 .RS 4
 .IP "\(bu" 4
 Opening tokens (except for block braces) are controlled by \fB\-vt=n\fR, or
 \&\fB\-\-vertical\-tightness=n\fR, where
 .Sp
 .Vb 4
-\& -vt=0 break line after opening token (default). 
+\& -vt=0 always break a line after opening token (default). 
 \& -vt=1 do not break unless this would produce more than one 
 \&         step in indentation in a line.
-\& -vt=2 do not break after opening token
+\& -vt=2 never break a line after opening token
 .Ve
 .IP "\(bu" 4
 You must also use the \fB\-lp\fR flag when you use the \fB\-vt\fR flag; the
@@ -1289,7 +1285,7 @@ Closing tokens (except for block braces) are controlled by \fB\-vtc=n\fR, or
 \&\fB\-\-vertical\-tightness\-closing=n\fR, where
 .Sp
 .Vb 5
-\& -vtc=0 always line break before closing token (default), 
+\& -vtc=0 always break a line before a closing token (default), 
 \& -vtc=1 do not break before a closing token which is followed 
 \&        by a semicolon or another closing token, and is not in 
 \&        a list environment.
@@ -1355,7 +1351,7 @@ The difference between \fB\-vt=1\fR and \fB\-vt=2\fR is shown here:
 .Ve
 With \fB\-vt=1\fR, the line ending in \f(CW\*(C`add(\*(C'\fR does not combine with the next
 line because the next line is not balanced.  This can help with
-readability, but we use \fB\-vt=2\fR to ignore this rule.
+readability, but \fB\-vt=2\fR can be used to ignore this rule.
 .Sp
 The tightest, and least readable, code is produced with both \f(CW\*(C`\-vt=2\*(C'\fR and
 \&\f(CW\*(C`\-vtc=2\*(C'\fR:
@@ -1500,19 +1496,12 @@ perltidy uses (use \fB\-\-dump\-token\-types\fR for a list).  However, for a
 few token types there may be conflicts with hardwired logic which cause
 unexpected results.  One example is curly braces, which should be
 controlled with the parameter \fBbl\fR provided for that purpose.
-.Sh "Controlling list formatting"
-.IX Subsection "Controlling list formatting"
+.Sh "Controlling List Formatting"
+.IX Subsection "Controlling List Formatting"
 Perltidy attempts to place comma-separated arrays of values in tables
 which look good.  Its default algorithms usually work well, and they
 have been improving with each release, but several parameters are
-available for controlling it.
-.PP
-At present, the automatic formatting of lists is only done for lists
-which have no comments or empty lines between the opening and closing
-tokens of the list container.  If there are any comments or blank lines
-between the opening and closing structural brace, parenthesis, or
-bracket containing the list, then the original line breaks are used
-for the entire list instead.
+available to control list formatting.
 .IP "\fB\-boc\fR,  \fB\-\-break\-at\-old\-comma\-breakpoints\fR" 4
 .IX Item "-boc,  --break-at-old-comma-breakpoints"
 This flag tells perltidy to try to break at all old commas.  This is not
@@ -2148,9 +2137,9 @@ The following list shows all short parameter names which allow a prefix
 \&'n' to produce the negated form:
 .PP
 .Vb 5
-\&    D anl asc aws bbb bbc bbs bli boc bok bol syn ce csc 
+\&    D anl asc aws bbb bbc bbs bli boc bok bol bot syn ce csc 
 \&    dac dbc dcsc dnl dws dp dpro dsm dsc ddf dln dop dsn dtt dwls dwrs 
-\&    f fll hsc html ibc icb icp isbc lp log lal x lsl bl 
+\&    f fll hsc html ibc icb icp iob isbc lp log lal x lsl bl 
 \&    sbl okw ola oll pvl q opt sbc sfs ssc sts se st sob 
 \&    t tac tbc tp tsc tqw w
 .Ve
@@ -2206,7 +2195,7 @@ confusing filenames such as \fIsomefile.tdy.tdy.tdy\fR.
 \&\fIperlstyle\fR\|(1), \fIPerl::Tidy\fR\|(3)
 .SH "VERSION"
 .IX Header "VERSION"
-This man page documents perltidy version 20020411.
+This man page documents perltidy version 20020416.
 .SH "CREDITS"
 .IX Header "CREDITS"
 Michael Cartmell supplied code for adaptation to \s-1VMS\s0 and helped with

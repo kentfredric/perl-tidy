@@ -16,7 +16,7 @@
 #.cd
 .title The Perltidy Home Page
 
-<A href="http://sourceforge.net"> <IMG src="http://sourceforge.net/sflogo.php?group_id=4664&amp;type=1" width="88" height="31" border="0" alt="SourceForge Logo"></A> 
+<A href="http://sourceforge.net"> <IMG src="http://sourceforge.net/sflogo.php?group_id=17029&type=5" width="210" height="62" border="0" alt="SourceForge Logo"></A> 
 
 <hr>
 
@@ -76,13 +76,14 @@ tested on Unix, Windows, VMS and MacPerl.
 
 <li>Please check the <a href="INSTALL.html">Installation Notes</a>
 
-<li>download <a href="http://prdownloads.sourceforge.net/perltidy/Perl-Tidy-20020225.tgz">
+<li>download <a href="http://prdownloads.sourceforge.net/perltidy/Perl-Tidy-20020416.tgz">
 The latest release (.tgz, Unix-style line endings)</a>
 
-<li>download <a href="http://prdownloads.sourceforge.net/perltidy/Perl-Tidy-20020225.zip">
+<li>download <a href="http://prdownloads.sourceforge.net/perltidy/Perl-Tidy-20020416.zip">
 The latest release (.zip, Windows-style line endings)</a>
 
-<li><a href="http://www.linuxquebec.com/~nomis80/perltidy/">rpm's</a> courtesy of Simon Perreault.
+<li>
+<a href="http://sourceforge.net/project/showfiles.php?group_id=17029&release_id=19582">rpm's</a> courtesy of Simon Perreault.
 
 <li> If these links are broken, 
 go 

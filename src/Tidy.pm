@@ -61,7 +61,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.17 2002/04/16 15:00:57 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.18 2002/04/21 01:08:40 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 # Preloaded methods go here.
@@ -3750,9 +3750,11 @@ use vars qw{
   @tokens_to_go
   @types_to_go
 
+
   %saved_opening_indentation
 
   $max_index_to_go
+  $comma_count_in_batch
   $old_line_count_in_batch
   $last_nonblank_index_to_go
   $last_nonblank_type_to_go
@@ -3819,6 +3821,7 @@ use vars qw{
   %is_sort_map_grep
   %is_sort_map_grep_eval
   %is_block_without_semicolon
+  %is_if_unless_and_or
 
   @has_broken_sublist
   @dont_align
@@ -3919,6 +3922,9 @@ BEGIN {
 
     @_ = qw(sort map grep eval);
     @is_sort_map_grep_eval{@_} = (1) x scalar(@_);
+
+    @_ = qw(if unless and or);
+    @is_if_unless_and_or{@_} = (1) x scalar(@_);
 
     # We can remove semicolons after blocks preceded by these keywords
     @_ = qw(BEGIN END CHECK INIT AUTOLOAD DESTROY continue if elsif else
@@ -4182,6 +4188,7 @@ sub prepare_for_new_input_lines {
     $rbrace_follower                = undef;
     $lengths_to_go[0] = 0;
     $old_line_count_in_batch = 1;
+    $comma_count_in_batch = 0;
 
     destroy_one_line_block();
 }
@@ -4555,7 +4562,7 @@ sub set_leading_whitespace {
             my $min_gnu_indentation =
               $gnu_stack[$max_gnu_stack_index]->get_SPACES();
 
-            ##BUB: This needs some tune-up
+            ##TESTING: This may need some tune-up
             $available_space = $space_count - $min_gnu_indentation;
             if ( $available_space >= $standard_increment ) {
                 $min_gnu_indentation += $standard_increment;
@@ -4564,7 +4571,6 @@ sub set_leading_whitespace {
                 $min_gnu_indentation += $available_space + 1;
             }
             elsif ( $last_nonblank_token =~ /^[\{\[\(]$/ ) {
-                ##                    $min_gnu_indentation += $tightness{$last_nonblank_token};
                 if ( ( $tightness{$last_nonblank_token} < 2 ) ) {
                     $min_gnu_indentation += 2;
                 }
@@ -6205,6 +6211,9 @@ sub set_white_space_flag {
             $last_nonblank_index_to_go      = $max_index_to_go;
             $last_nonblank_type_to_go       = $type;
             $last_nonblank_token_to_go      = $token;
+            if ($type eq ',') {
+                $comma_count_in_batch++;
+            }
         }
 
         FORMATTER_DEBUG_FLAG_STORE && do {
@@ -6460,7 +6469,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.17 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.18 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -7431,7 +7440,13 @@ sub correct_lp_indentation {
 
         # looking at each token in this output line..
         my $i;
+        my $pad_spaces;
         foreach $i ( $ibeg .. $iend ) {
+
+            # How many space characters to place before this token
+            # for special alignment.  Actual padding is done in the
+            # continue block.
+            $pad_spaces=0;
 
             # looking for next unvisited indentation item
             my $indentation = $leading_spaces_to_go[$i];
@@ -7441,6 +7456,17 @@ sub correct_lp_indentation {
                 # looking for indentation item for which we are aligning 
                 # with parens, braces, and brackets 
                 next unless ( $indentation->get_ALIGN_PAREN() );
+
+                # skip closed container on this line
+                if ( $i > $ibeg ) {
+                    my $im = $i - 1;
+                    if ( $types_to_go[$im] eq 'b' && $im > $ibeg ) { $im-- }
+                    if ( $type_sequence_to_go[$im]
+                        && $mate_index_to_go[$im] <= $iend )
+                    {
+                        next;
+                    }
+                }
 
                 if ( $line == 1 && $i == $ibeg ) {
                     $do_not_pad = 1;
@@ -7476,7 +7502,6 @@ sub correct_lp_indentation {
                     $actual_pos = total_line_length( $ibegm, $iendm );
 
                     # follow -pt style
-                    # BUB
                     ++$actual_pos
                       if ( $types_to_go[ $iendm + 1 ] eq 'b' );
                 }
@@ -7487,6 +7512,65 @@ sub correct_lp_indentation {
                 }
 
                 my $move_right = $actual_pos - $predicted_pos;
+
+                # BUBBA:
+                # Define number of spaces of padding needed to get better
+                # alignment with the next line.
+                if ( $line < $max_line && $i > 0 ) {
+                    my $ibeg_next = $$ri_first[ $line + 1 ];
+                    my $tok_next  = $tokens_to_go[$ibeg_next];
+                    if ( $tok_next =~ /^(\&\&|\|\||and|or)$/
+                        && $nesting_depth_to_go[$i] ==
+                        $nesting_depth_to_go[$ibeg_next] )
+                    {
+                        my $iend_next = $$ri_last[ $line + 1 ];
+                        my $inext_next = $ibeg_next + 1;
+                        if ( $types_to_go[$inext_next] eq 'b' ) {
+                            $inext_next++;
+                        }
+                        my $type = $types_to_go[$i];
+                        if (
+
+                            # types must match
+                            $types_to_go[$inext_next] eq $type
+
+                            # next line must be balanced
+                            && $nesting_depth_to_go[ $iend_next + 1 ] ==
+                            $nesting_depth_to_go[$i]
+
+                            # keywords must match if keyword
+                            && !(
+                                $type eq 'k'
+                                && $tokens_to_go[$i] ne
+                                $tokens_to_go[$inext_next]
+                            )
+                          )
+                        {
+                            $pad_spaces = 1 + length($tok_next);
+                            if ( $ci_levels_to_go[$ibeg_next] > 0 ) {
+                                $pad_spaces += $rOpts_continuation_indentation;
+                            }
+                        }
+                    }
+                }
+
+##                if ( $line < $max_line && $i > 0 ) {
+##                    my $ibeg_next = $$ri_first[ $line + 1 ];
+##                    my $tok_next  = $tokens_to_go[$ibeg_next];
+##                    if ( $tok_next =~ /^(\&\&|\|\||and|or)$/ ) {
+##                        my $inext_next = $ibeg_next + 1;
+##                        if ( $types_to_go[$inext_next] eq 'b' ) {
+##                            $inext_next++;
+##                        }
+##                        ##print "BUBBA: type=$types_to_go[$inext_next] type=$types_to_go[$i]\n"; 
+##                        if ( $types_to_go[$inext_next] eq $types_to_go[$i] ) {
+##                            $pad_spaces = 1 + length($tok_next);
+##                            if ( $ci_levels_to_go[$ibeg_next] > 0 ) {
+##                                $pad_spaces += $rOpts_continuation_indentation;
+##                            }
+##                        }
+##                    }
+##                }
 
                 # done if no error to correct (gnu2.t)
                 if ( $move_right == 0 ) {
@@ -7501,6 +7585,7 @@ sub correct_lp_indentation {
 
                 if ( $closing_index < 0 ) {
                     $indentation->set_RECOVERABLE_SPACES($move_right);
+                    $pad_spaces=0;
                     next;
                 }
 
@@ -7587,12 +7672,24 @@ sub correct_lp_indentation {
                         $saw_indentation{$_}
                           ->permanently_decrease_AVAILABLE_SPACES( -$move );
                     }
+                    if ($move != $move_right) { $pad_spaces=0 }
                 }
 
                 # Otherwise, record what we want and the vertical aligner 
                 # will try to recover it.
                 else {
                     $indentation->set_RECOVERABLE_SPACES($move_right);
+                    $pad_spaces=0;
+                }
+            }
+        }
+
+        # now apply any padding to this token for alignment
+        continue {
+            if ($pad_spaces) {
+                my $length_t = total_line_length( $ibeg, $iend );
+                if ( $pad_spaces + $length_t <= $rOpts_maximum_line_length ) {
+                    $tokens_to_go[$i] = ' ' x $pad_spaces . $tokens_to_go[$i];
                 }
             }
         }
@@ -7744,10 +7841,16 @@ sub output_line_to_go {
 
         if (
             $max_index_to_go > 0
-            && ( $is_long_line
+            && (
+                $is_long_line
                 || $old_line_count_in_batch > 1
                 || is_unbalanced_batch()
-                || $rOpts_comma_arrow_breakpoints == 0 )
+                || (
+                    $comma_count_in_batch
+                    && ( $rOpts_maximum_fields_per_table > 0
+                        || $rOpts_comma_arrow_breakpoints == 0 )
+                )
+            )
           )
         {
             $saw_good_break = scan_list();
@@ -9080,11 +9183,6 @@ sub set_vertical_tightness_flags {
                 if ( $i < $ibeg + 2 ) {
                 }
 
-                # TESTING : this causes too many bad side effects
-                #elsif ( $type =~ /^(\[|L)$/ ) {
-                #    $alignment_type = $type;
-                #}
-
                 # must follow a blank token
                 elsif ( $types_to_go[ $i - 1 ] ne 'b' ) {
                 }
@@ -9981,14 +10079,10 @@ sub pad_array_to_go {
     }
 
     my %is_logical_container;
-    my %is_if_unless_and_or;
 
     BEGIN {
         @_ = qw# if elsif unless while and or not && | || ? : ! #;
         @is_logical_container{@_} = (1) x scalar(@_);
-
-        @_ = qw(if unless and or);
-        @is_if_unless_and_or{@_} = (1) x scalar(@_);
     }
 
     sub set_for_semicolon_breakpoints {
@@ -10004,8 +10098,7 @@ sub pad_array_to_go {
             $item_count_stack[$dd] == 0
             && $is_logical_container{ $container_type[$dd] }
 
-            # BUBBA-X
-            # TESTING
+            # TESTING:
             || $has_old_logical_breakpoints[$dd]
           )
         {
@@ -10213,7 +10306,6 @@ sub pad_array_to_go {
                         && $rOpts_break_at_old_logical_breakpoints )
                     {
                         set_forced_breakpoint($i);
-                        ##$saw_good_breakpoint=1
                     }
                 }
             }
@@ -10232,14 +10324,13 @@ sub pad_array_to_go {
                         if ( ( $i == $i_line_start || $i == $i_line_end )
                             && $rOpts_break_at_old_trinary_breakpoints )
                         {
-                            ##$saw_good_breakpoint = 1;
-                            ## BUBBA: TESTING
+                            # TESTING:
                             set_forced_breakpoint($i);
 
                             # break at previous '='
-                            ##print "BUBBA: i=$i_equals[$depth]\n";
                             if ( $i_equals[$depth] > 0 ) {
                                 set_forced_breakpoint( $i_equals[$depth] );
+                                $i_equals[$depth]=-1;
                             }
                         }
                     }
@@ -10585,6 +10676,11 @@ sub pad_array_to_go {
                     # we do not need to break at the top level of an 'if'
                     # type expression
                     && !$is_simple_logical_expression
+
+                    ## modification to keep ': (' containers vertically tight;
+                    ## but probably better to let user set -vt=1 to avoid
+                    ## inconsistency with other paren types
+                    ## && ($container_type[$current_depth] ne ':')
 
                     # otherwise, we require one of these reasons for breaking:
                     && (
@@ -11943,8 +12039,7 @@ sub set_forced_breakpoint {
     }
 
     # breaks are forced before 'or' and 'and' for now:
-    if ( $token eq 'and' || $token eq 'or' ) { $i-- }
-    if ( $token =~ /^(and|or|if|unless)$/ ) { $i-- }
+    if ($is_if_unless_and_or{$token} ) {$i--}
 
     if ( $i >= 0 && $i <= $max_index_to_go ) {
         my $i_nonblank = ( $types_to_go[$i] ne 'b' ) ? $i : $i - 1;
@@ -12098,8 +12193,8 @@ sub undo_forced_breakpoint_stack {
                         # join } and ;
                         ( ( $if == $imid ) && ( $types_to_go[$il] eq ';' ) )
 
-                        # handle '.' below
-                        || ( $types_to_go[$imidr] eq '.' )
+                        # handle '.' and '?' below
+                        || ( $types_to_go[$imidr] =~ /^[\.\?]$/ )
                       );
                 }
 
@@ -12523,7 +12618,7 @@ sub set_continuation_breaks {
             my $strength                 = $bond_strength_to_go[$i_test];
             my $must_break               = 0;
 
-            # FIXME: TESTING: What if want break after these??
+            # FIXME: TESTING: Might want to be able to break after these
             # force an immediate break at certain operators 
             # with lower level than the start of the line
             if (
@@ -13860,7 +13955,7 @@ sub append_line {
     if ( $jmax <= 0 ) {
         $zero_count++;
 
-        ## BUBBA3: if ( $maximum_line_index >= 0 ) {
+        ## TESTING: if ( $maximum_line_index >= 0 ) {
         ##if ( $maximum_line_index >= 0 && !get_RECOVERABLE_SPACES($indentation) ){
         if ( $maximum_line_index >= 0
             && !get_RECOVERABLE_SPACES( $group_lines[0]->get_indentation() ) )
@@ -14320,7 +14415,7 @@ sub check_match {
                     $pad += $leading_space_count;
                 }
 
-                # BUBBAPAD: suspend this rule to allow last lines to join
+                # TESTING: suspend this rule to allow last lines to join
                 if ( $pad > 0 ) { $match = 0; }
             }
 
@@ -20532,7 +20627,7 @@ sub do_scan_sub {
         ( $i, $error ) = inverse_pretoken_map( $i, $pos, $rtoken_map );
         if ($error) { warning("Possibly invalid sub\n") }
 
-        # TESTING: check for multiple definitions of a sub
+        # check for multiple definitions of a sub
         my ( $next_nonblank_token, $i_next ) =
           find_next_nonblank_token_on_this_line( $i, $rtokens );
 
@@ -21883,7 +21978,7 @@ to perltidy.
 
 =head1 VERSION
 
-This man page documents Perl::Tidy version 20020411.
+This man page documents Perl::Tidy version 20020416.
 
 =head1 AUTHOR
 

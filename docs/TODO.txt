@@ -1,30 +1,46 @@
+        if (
+             $type_sequence_to_go[$iend]
+             && !$block_type_to_go[$iend]
+             && $is_opening_token{$token_end}
+             && (
+                  $opening_vertical_tightness{$token_end} > 0
+                  || (    $rOpts_line_up_parentheses
+                       && $token_end eq '('
+                       && $iend > $ibeg
+                       && $types_to_go[ $iend - 1 ] ne 'b' )
+             )
+          )
 Perltidy TODO List
     This is a "wish-list" of features to add and things to do. All of these
     are of interest, but there is no particular schedule for implementing
     them.
 
-  XML Output
-    A -xml option is being tested. This will allow the creation of simple
-    utilities to reliably manipulate perl code.
+  Improved Vertical Alignment
+    Coding modifications are underway to improve the vertical alignment
+    logic.
 
   Fix numerous little formatting issues
     There is, and always will be, a large number of relatively minor
-    formatting issues that need to be addressed. I'm working on them as time
-    permits. The most interesting have to do with automatically formatting
-    lists.
+    formatting issues that need to be addressed.
 
   BUGS
     There are still a couple of bugs listed in the BUGS file that need to be
     fixed. These are low priority compared to formatting issues, but need to
     be done.
 
+  Outdent block comments as a group
+    At present, the decision to outdent a long block comment, when that
+    option is used, is made on a line-by-line basis. Instead, the decision
+    should be made for a sequence of comments as a group, so that the result
+    is not ragged.
+
   improved ?: formatting
     An indentation level will be associated with ?: statements. This will
     make nested ?: statements more readable.
 
-  Improved Vertical Alignment
-    Coding modifications are underway to improve the vertical alignment
-    logic.
+  XML Output
+    A -xml option is being tested. This will allow the creation of simple
+    utilities to reliably manipulate perl code.
 
   Documentation
     A FAQ is being written to explain some of the more subtle formatting
@@ -64,12 +80,6 @@ Perltidy TODO List
     writer for now. I'm considering new token types for prototypes and
     attributes, to simplify parsing and formatting.
 
-  Outdent block comments as a group
-    At present, the decision to outdent a long block comment, when that
-    option is used, is made on a line-by-line basis. Instead, the decision
-    should be made for a sequence of comments as a group, so that the result
-    is not ragged. This is a relatively straightforward update.
-
   Option to reformat block comments
     I'm looking into an option to use Text::Autoformat to reformat comments.
     Thanks to Tim Maher for this suggestion. I made some preliminary tests
@@ -80,7 +90,4 @@ Perltidy TODO List
 
     One way to do this would be to first implement the XML feature mentioned
     above, and then write a separate utility to read and process the XML.
-
-  Switch/Case formatting
-    There is a request to have perltidy format switch/case statements.
 

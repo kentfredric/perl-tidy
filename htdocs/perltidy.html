@@ -18,6 +18,7 @@
 	<LI><A HREF="#options  overview">OPTIONS - OVERVIEW</A></LI>
 	<UL>
 
+		<LI><A HREF="#specifying block types">Specifying Block Types</A></LI>
 		<LI><A HREF="#i/o control">I/O control</A></LI>
 	</UL>
 
@@ -29,6 +30,8 @@
 		<LI><A HREF="#whitespace control">Whitespace Control</A></LI>
 		<LI><A HREF="#comment controls">Comment Controls</A></LI>
 		<LI><A HREF="#line break control">Line Break Control</A></LI>
+		<LI><A HREF="#controlling list formatting">Controlling List Formatting</A></LI>
+		<LI><A HREF="#retaining or ignoring existing line breaks">Retaining or Ignoring Existing Line Breaks</A></LI>
 		<LI><A HREF="#blank line control">Blank Line Control</A></LI>
 		<LI><A HREF="#styles">Styles</A></LI>
 		<LI><A HREF="#other controls">Other Controls</A></LI>
@@ -66,10 +69,14 @@
 <H1><A NAME="description">DESCRIPTION</A></H1>
 <P>Perltidy reads a perl script and writes an indented, reformatted script.</P>
 <P>Many users will find enough information in <A HREF="#examples">EXAMPLES</A> to get 
-started.  New users may benefit from the short tutorial which
-comes with the distribution.</P>
+started.  New users may benefit from the short tutorial 
+which can be found at
+<A HREF="http://perltidy.sourceforge.net/tutorial.html">http://perltidy.sourceforge.net/tutorial.html</A></P>
+<P>A convenient aid to systematically defining a set of style parameters
+can be found at
+<A HREF="http://perltidy.sourceforge.net/stylekey.html">http://perltidy.sourceforge.net/stylekey.html</A></P>
 <P>Perltidy can produce output on either of two modes, depending on the
-existance of an <STRONG>-html</STRONG> flag.  Without this flag, the output is passed
+existence of an <STRONG>-html</STRONG> flag.  Without this flag, the output is passed
 through a formatter.  The default formatting tries to follow the
 recommendations in perlstyle(1), but it can be controlled in detail with
 numerous input parameters, which are described in <A HREF="#formatting options">FORMATTING OPTIONS</A>.</P>
@@ -155,6 +162,19 @@ is <STRONG>-syn</STRONG> or <STRONG>--check-syntax</STRONG>.  The flag to skip t
 For example, instead of <STRONG>-dump-token-types</STRONG>, it would be sufficient to enter
 <STRONG>-dump-tok</STRONG>, or even <STRONG>-dump-t</STRONG>, to uniquely identify this command.</P>
 <P>
+<H2><A NAME="specifying block types">Specifying Block Types</A></H2>
+<P>Several parameters which refer to code block types may be customized by
+also specifying an associated list of block types.  The type of a block
+is the name of the keyword which introduces that block, such as <STRONG>if</STRONG>,
+<STRONG>else</STRONG>, or <STRONG>sub</STRONG>.  An exception is a labeled block, which should be
+specified with just a colon.</P>
+<P>For example, the following parameter specifies <CODE>sub</CODE>, labels, <CODE>BEGIN</CODE>, and
+<CODE>END</CODE> blocks:</P>
+<PRE>
+   -cscl=&quot;sub : BEGIN END&quot;</PRE>
+<P>(the meaning of the -cscl parameter is described below.)  Note that
+quotes are required around the list of block types.</P>
+<P>
 <H2><A NAME="i/o control">I/O control</A></H2>
 <P>The following parameters concern the files which are read and written.</P>
 <DL>
@@ -183,6 +203,15 @@ the output file to feed to perl for syntax checking,
 unless allow syntax checking is disabled.  This file will be deleted
 when the job finishes.  The default is <STRONG>-nst</STRONG> or <STRONG>-nostandard-output</STRONG>.</P>
 <P></P>
+<DT><STRONG><A NAME="item_%2Dse%2C_%2D%2Dstandard%2Derror%2Doutput"><STRONG>-se</STRONG>,    <STRONG>--standard-error-output</STRONG></A></STRONG><BR>
+<DD>
+If perltidy detects an error when processing file <EM>somefile.pl</EM>, its
+default behavior is to write error messages to file <EM>somefile.pl.ERR</EM>.
+Use <STRONG>-se</STRONG> to cause all error messages to be sent to the standard error
+output stream instead.  This directive may be negated with <STRONG>-nse</STRONG>. 
+Thus, you may place <STRONG>-se</STRONG> in a <EM>.perltidyrc</EM> and override it
+when desired with <STRONG>-nse</STRONG> on the command line.
+<P></P>
 <DT><STRONG><A NAME="item_%2Doext%3Dext%2C_%2D%2Doutput%2Dfile%2Dextension%3"><STRONG>-oext</STRONG>=ext,    <STRONG>--output-file-extension</STRONG>=ext</A></STRONG><BR>
 <DD>
 Change the extension of the output file to be <EM>.ext</EM> instead of the
@@ -206,15 +235,6 @@ appear in whatever directory contains <EM>somefile.pl</EM>.</P>
 <P>If the path contains spaces, it should be placed in quotes.</P>
 <P>This parameter will be ignored if output is being directed to standard output,
 or if it is being specified explicitly with the <STRONG>-o=s</STRONG> parameter.</P>
-<P></P>
-<DT><STRONG><A NAME="item_%2Dse%2C_%2D%2Dstandard%2Derror%2Doutput"><STRONG>-se</STRONG>,    <STRONG>--standard-error-output</STRONG></A></STRONG><BR>
-<DD>
-If perltidy detects an error when processing file <EM>somefile.pl</EM>, its
-default behavior is to write error messages to file <EM>somefile.pl.ERR</EM>.
-Use <STRONG>-se</STRONG> to cause all error messages to be sent to the standard error
-output stream instead.  This directive may be negated with <STRONG>-nse</STRONG>. 
-Thus, you may place <STRONG>-se</STRONG> in a <EM>.perltidyrc</EM> and override it
-when desired with <STRONG>-nse</STRONG> on the command line.
 <P></P>
 <DT><STRONG><A NAME="item_%2Dw%2C_%2D%2Dwarning%2Doutput"><STRONG>-w</STRONG>,    <STRONG>--warning-output</STRONG></A></STRONG><BR>
 <DD>
@@ -337,7 +357,7 @@ option.
 <DT><STRONG><A NAME="item_%2Dsyn%2C_%2D%2Dcheck%2Dsyntax"><STRONG>-syn</STRONG>,   <STRONG>--check-syntax</STRONG></A></STRONG><BR>
 <DD>
 The purpose of this flag is to alert you to any situation in which the
-intput file has good syntax but the output file has bad syntax, which
+input file has good syntax but the output file has bad syntax, which
 implies an error by perltidy.
 <P>This flag causes perltidy to run <CODE>perl -c -T</CODE> to check syntax of input
 and output.  (To change the flags passed to perl, see the next item,
@@ -416,6 +436,7 @@ starting level, use <STRONG>-sil=n</STRONG>, to force the starting level to be n
 By default, perltidy indents lists with 4 spaces, or whatever value
 is specified with <STRONG>-i=n</STRONG>.  Here is a small list formatted in this way:
 <PRE>
+    # perltidy (default)
     @month_of_year = (
         'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
         'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
@@ -423,8 +444,9 @@ is specified with <STRONG>-i=n</STRONG>.  Here is a small list formatted in this
 <P>Use the <STRONG>-lp</STRONG> flag to add extra indentation to cause the data to begin
 past the opening parentheses of a sub call or list, or opening square
 bracket of an anonymous array, or opening curly brace of an anonymous
-hash.  With this option set, the above list would become:</P>
+hash.  With this option, the above list would become:</P>
 <PRE>
+    # perltidy -lp
     @month_of_year = (
                        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
@@ -438,10 +460,12 @@ closing parens may cause perltidy to temporarily revert to its default
 method.</P>
 <P>Note: The <STRONG>-lp</STRONG> option may not be used together with the <STRONG>-t</STRONG> tabs option.
 It may, however, be used with the <STRONG>-et=n</STRONG> tab method.</P>
-<P>In addition, any parameter which restricts the ability of perltidy to
-choose newlines will all conflict with <STRONG>-lp</STRONG> and will cause <STRONG>-lp</STRONG> to
-be deactivated.  These include 
-<STRONG>-io</STRONG>, <STRONG>-fnl</STRONG>, <STRONG>-nanl</STRONG>, and <STRONG>-ndnl</STRONG>.</P>
+<P>In addition, any parameter which significantly restricts the ability of
+perltidy to choose newlines will conflict with <STRONG>-lp</STRONG> and will cause
+<STRONG>-lp</STRONG> to be deactivated.  These include <STRONG>-io</STRONG>, <STRONG>-fnl</STRONG>, <STRONG>-nanl</STRONG>, and
+<STRONG>-ndnl</STRONG>.  The reason is that the <STRONG>-lp</STRONG> indenation style can require
+the careful coordination of an arbitrary number of break points in
+hierarchical lists, and these flags may prevent that.</P>
 <P></P>
 <DT><STRONG><A NAME="item_%2Dicp%2C_%2D%2Dindent%2Dclosing%2Dparen"><STRONG>-icp</STRONG>, <STRONG>--indent-closing-paren</STRONG></A></STRONG><BR>
 <DD>
@@ -452,7 +476,7 @@ previous example with <STRONG>-icp</STRONG> would give,
     # perltidy -icp:
     @month_of_year = (
         'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
         );</PRE>
 <P></P>
 <DT><STRONG><A NAME="item_%2Dicb%2C_%2D%2Dindent%2Dclosing%2Dbrace"><STRONG>-icb</STRONG>, <STRONG>--indent-closing-brace</STRONG></A></STRONG><BR>
@@ -550,7 +574,7 @@ within.  A numerical value of 0, 1, or 2 defines the tightness, with
 0 being least tight and 2 being most tight.  Spaces within containers
 are always symmetric, so if there is a space after a <CODE>(</CODE> then there
 will be a space before the corresponding <CODE>)</CODE>.
-<P>The <STRONG>-pt=n</STRONG> or <STRONG>--paren-tightness</STRONG> parameter controls the space within
+<P>The <STRONG>-pt=n</STRONG> or <STRONG>--paren-tightness=n</STRONG> parameter controls the space within
 parens.  The example below shows the effect of the three possible
 values, 0, 1, and 2:</P>
 <PRE>
@@ -561,7 +585,7 @@ values, 0, 1, and 2:</P>
 of a ')'.  For n=2 there is never a space.  For n=1, the default, there
 is a space unless the quantity within the parens is a single token, such
 as an identifier or quoted string.</P>
-<P>Likewise, the parameter <STRONG>-sbt=n</STRONG> or <STRONG>--square-bracket-tightness</STRONG>
+<P>Likewise, the parameter <STRONG>-sbt=n</STRONG> or <STRONG>--square-bracket-tightness=n</STRONG>
 controls the space within square brackets, as illustrated below.</P>
 <PRE>
  $width = $col[ $j + $k ] - $col[ $j ];  # -sbt=0
@@ -666,7 +690,7 @@ this type of input.  Such a list can be obtained by the command
 <DT><STRONG><A NAME="item_Trimming_whitespace_around_qw_quotes">Trimming whitespace around <CODE>qw</CODE> quotes</A></STRONG><BR>
 <DD>
 <STRONG>-tqw</STRONG> or <STRONG>--trim-qw</STRONG> provide the default behavior of trimming
-spaces around multiline <CODE>qw</CODE> quotes and indenting them appropriately.
+spaces around multi-line <CODE>qw</CODE> quotes and indenting them appropriately.
 <P><STRONG>-ntqw</STRONG> or <STRONG>--notrim-qw</STRONG> cause leading and trailing whitespace around
 multi-line <CODE>qw</CODE> quotes to be left unchanged.  This option will not
 normally be necessary, but was added for testing purposes, because in
@@ -692,8 +716,14 @@ example:
 <PRE>
  # this comment is not indented              (-nibc)
              if ($task) { yyy(); }</PRE>
-<P>See also <STRONG>-sbc</STRONG> for a way to have some indented and some outdented
-block comments.</P>
+<P>See also the next item, <STRONG>-isbc</STRONG>, as well as <STRONG>-sbc</STRONG>, for other ways to
+have some indented and some outdented block comments.</P>
+<P></P>
+<DT><STRONG><A NAME="item_%2Disbc%2C_%2D%2Dindent%2Dspaced%2Dblock%2Dcomment"><STRONG>-isbc</STRONG>,  <STRONG>--indent-spaced-block-comments</STRONG></A></STRONG><BR>
+<DD>
+If there is no leading space on the line, then the comment will not be
+indented, and otherwise it may be.
+<P>If both <STRONG>-ibc</STRONG> and <STRONG>-isbc</STRONG> are set, then <STRONG>-isbc</STRONG> takes priority.</P>
 <P></P>
 <DT><STRONG><A NAME="item_%2Dolc%2C_%2D%2Doutdent%2Dlong%2Dcomments"><STRONG>-olc</STRONG>, <STRONG>--outdent-long-comments</STRONG></A></STRONG><BR>
 <DD>
@@ -730,7 +760,7 @@ They can be useful for code maintenance and debugging.  The command
 <STRONG>-csc</STRONG> (or <STRONG>-closing-side-comments</STRONG>) adds or updates closing side
 comments.  For example, here is a small code snippet
 <PRE>
-        sub foo {
+        sub message {
             if ( !defined( $_[0] ) ) {
                 print(&quot;Hello, World\n&quot;);
             }
@@ -740,15 +770,15 @@ comments.  For example, here is a small code snippet
         }</PRE>
 <P>And here is the result of processing with <CODE>perltidy -csc</CODE>:</P>
 <PRE>
-        sub foo {
+        sub message {
             if ( !defined( $_[0] ) ) {
                 print(&quot;Hello, World\n&quot;);
             }
             else {
                 print( $_[0], &quot;\n&quot; );
             }
-        } ## end sub foo</PRE>
-<P>A closing side comment was added for <CODE>sub foo</CODE> in this case, but not
+        } ## end sub message</PRE>
+<P>A closing side comment was added for <CODE>sub message</CODE> in this case, but not
 for the <CODE>if</CODE> and <CODE>else</CODE> blocks, because they were below the 6 line
 cutoff limit for adding closing side comments.  This limit may be
 changed with the <STRONG>-csci</STRONG> command, described below.</P>
@@ -761,17 +791,17 @@ commands, <STRONG>-csc</STRONG> and <STRONG>-dcsc</STRONG>:</P>
 <DD>
 where <CODE>n</CODE> is the minimum number of lines that a block must have in
 order for a closing side comment to be added.  The default value is
-<CODE>n=6</CODE>.  To illustrate, here is the above block processed with
-<CODE>-csci=2 -csc</CODE>:
+<CODE>n=6</CODE>.  To illustrate:
 <PRE>
-        sub foo {
+        # perltidy -csci=2 -csc
+        sub message {
             if ( !defined( $_[0] ) ) {
                 print(&quot;Hello, World\n&quot;);
-            } ## end if ( !defined( $_[0] )...
+            } ## end if ( !defined( $_[0] ))
             else {
                 print( $_[0], &quot;\n&quot; );
-            } ## end else
-        } ## end sub foo</PRE>
+            } ## end else [ if ( !defined( $_[0] ))
+        } ## end sub message</PRE>
 <P>Now the <CODE>if</CODE> and <CODE>else</CODE> blocks are commented.  However, now this has
 become very cluttered.</P>
 <P></P>
@@ -789,9 +819,9 @@ its closing brace.
 where <CODE>string</CODE> is a list of block types to be tagged with closing side
 comments.  By default, all code block types preceded by a keyword or
 label (such as <CODE>if</CODE>, <CODE>sub</CODE>, and so on) will be tagged.  The <STRONG>-cscl</STRONG>
-command changes the default list to be any selected block types.  To
-request that a block with a label be included, include a bare colon,
-<CODE>:</CODE>, in the list of block types.  For example, the following command
+command changes the default list to be any selected block types; see
+<A HREF="#specifying block types">Specifying Block Types</A>.
+For example, the following command
 requests that only <CODE>sub</CODE>'s, labels, <CODE>BEGIN</CODE>, and <CODE>END</CODE> blocks be
 affected by any <STRONG>-csc</STRONG> or <STRONG>-dcsc</STRONG> operation:
 <PRE>
@@ -811,15 +841,29 @@ this).  To illustrate, in the above example, the appended text of the
 first block is <CODE> ( !defined( $_[0] )...</CODE>.  The existing limit of
 <CODE>n=20</CODE> caused this text to be truncated, as indicated by the <CODE>...</CODE>.
 <P></P>
+<DT><STRONG><A NAME="item_%2Dcsce%3Dn%2C_or_%2Dclosing%2Dside%2Dcomment%2Del"><STRONG>-csce=n</STRONG>, or <STRONG>-closing-side-comment-else-flag=n</STRONG></A></STRONG><BR>
+<DD>
+The default, <STRONG>n=0</STRONG>, places the text of the opening <CODE>if</CODE> statement after any
+terminal <CODE>else</CODE>.
+<P>If <STRONG>n=2</STRONG> is used, then each <CODE>elsif</CODE> is also given the text of the opening
+<CODE>if</CODE> statement.  Also, an <CODE>else</CODE> will include the text of a preceding
+<CODE>elsif</CODE> statement.  Note that this may result some long closing
+side comments.</P>
+<P>If <STRONG>n=1</STRONG> is used, the results will be the same as <STRONG>n=2</STRONG> whenever the
+resulting line length is less than the maximum allowed.</P>
+<P></P>
 <DT><STRONG><A NAME="item_%2Dcscw%2C_or_%2Dclosing%2Dside%2Dcomment%2Dwarnin"><STRONG>-cscw</STRONG>, or <STRONG>-closing-side-comment-warnings</STRONG></A></STRONG><BR>
 <DD>
 This parameter is intended to help make the initial transition to the use of
-closing side comments.  It will help prevent the loss of any existing side
-comment which happens to have the closing side comment prefix.  It causes two
+closing side comments.  
+It causes two
 things to happen if a closing side comment replaces an existing, different
 closing side comment:  first, an error message will be issued, and second, the
 original side comment will be placed alone on a new specially marked comment
 line for later attention.
+<P>The intent is to avoid clobbering existing hand-written side comments
+which happen to match the pattern of closing side comments. This flag
+should only be needed on the first run with <STRONG>-csc</STRONG>.</P>
 <P></P></DL>
 <P><STRONG>Important Notes on Closing Side Comments:</STRONG></P>
 <UL>
@@ -940,9 +984,12 @@ expression to be formed.</P>
 <DL>
 <DT><STRONG><A NAME="item_%2Dfnl%2C_%2D%2Dfreeze%2Dnewlines"><STRONG>-fnl</STRONG>,  <STRONG>--freeze-newlines</STRONG></A></STRONG><BR>
 <DD>
-If you do not want any changes to the line breaks in your script, set <STRONG>-fnl</STRONG>,
-and they will remain fixed, and the rest of the commands in this section and
-the Blank Line Control section will be ignored.  You may want to use <STRONG>-noll</STRONG>
+If you do not want any changes to the line breaks in your script, set
+<STRONG>-fnl</STRONG>, and they will remain fixed, and the rest of the commands in
+this section and sections 
+<A HREF="#controlling list formatting">Controlling List Formatting</A>,
+<A HREF="#retaining or ignoring existing line breaks">Retaining or Ignoring Existing Line Breaks</A>, and
+<A HREF="#blank line control">Blank Line Control</A> will be ignored.  You may want to use <STRONG>-noll</STRONG>
 with this.
 <P></P>
 <DT><STRONG><A NAME="item_%2Dce%2C_%2D%2Dcuddled%2Delse"><STRONG>-ce</STRONG>,   <STRONG>--cuddled-else</STRONG></A></STRONG><BR>
@@ -989,7 +1036,7 @@ opening sub braces.  For example,
  perltidy -sbl</PRE>
 <P>produces this result:</P>
 <PRE>
- sub foo
+ sub message
  {
     if (!defined($_[0])) {
         print(&quot;Hello, World\n&quot;);
@@ -1005,15 +1052,23 @@ the value of <STRONG>-bl</STRONG> is used.</P>
 <DD>
 The flag <STRONG>-bli</STRONG> is the same as <STRONG>-bl</STRONG> but in addition it causes one 
 unit of continuation indentation ( see <STRONG>-ci</STRONG> ) to be placed before 
-an opening and closing brace associated with the keywords 
-<STRONG>if</STRONG>, <STRONG>elsif</STRONG>, <STRONG>else</STRONG>, <STRONG>unless</STRONG>, <STRONG>for</STRONG>, <STRONG>foreach</STRONG>, <STRONG>sub</STRONG>, 
-<STRONG>while</STRONG>, <STRONG>until</STRONG>, and also with a preceding label.
+an opening and closing block braces.
 <P>For example,</P>
 <PRE>
         if ( $input_file eq '-' )    # -bli
           {
             important_function();
           }</PRE>
+<P>By default, this extra indentation occurs for blocks of type:
+<STRONG>if</STRONG>, <STRONG>elsif</STRONG>, <STRONG>else</STRONG>, <STRONG>unless</STRONG>, <STRONG>for</STRONG>, <STRONG>foreach</STRONG>, <STRONG>sub</STRONG>, 
+<STRONG>while</STRONG>, <STRONG>until</STRONG>, and also with a preceding label.  The next item
+shows how to change this.</P>
+<P></P>
+<DT><STRONG><A NAME="item_%2Dblil%3Ds%2C_%2D%2Dbrace%2Dleft%2Dand%2Dindent%2"><STRONG>-blil=s</STRONG>,    <STRONG>--brace-left-and-indent-list=s</STRONG></A></STRONG><BR>
+<DD>
+Use this parameter to change the types of block braces for which the
+<STRONG>-bli</STRONG> flag applies; see <A HREF="#specifying block types">Specifying Block Types</A>.  For example,
+<STRONG>-blil='if elsif else'</STRONG> would apply it to only <CODE>if/elsif/else</CODE> blocks.
 <P></P>
 <DT><STRONG><A NAME="item_%2Dbar%2C_%2D%2Dopening%2Dbrace%2Dalways%2Don%2Dri"><STRONG>-bar</STRONG>,    <STRONG>--opening-brace-always-on-right</STRONG></A></STRONG><BR>
 <DD>
@@ -1034,6 +1089,162 @@ flag.  In this case, the above example becomes</P>
             big_waste_of_time();
         }</PRE>
 <P>A conflict occurs if both <STRONG>-bl</STRONG> and <STRONG>-bar</STRONG> are specified.</P>
+<P></P>
+<DT><STRONG><A NAME="item_Vertical_tightness_of_non%2Dblock_curly_braces%2C_">Vertical tightness of non-block curly braces, parentheses, and square brackets.</A></STRONG><BR>
+<DD>
+These parameters control what shall be called vertical tightness.  Here are the
+main points:
+<UL>
+<LI>
+Opening tokens (except for block braces) are controlled by <STRONG>-vt=n</STRONG>, or
+<STRONG>--vertical-tightness=n</STRONG>, where
+<PRE>
+ -vt=0 always break a line after opening token (default). 
+ -vt=1 do not break unless this would produce more than one 
+         step in indentation in a line.
+ -vt=2 never break a line after opening token</PRE>
+<P></P>
+<LI>
+You must also use the <STRONG>-lp</STRONG> flag when you use the <STRONG>-vt</STRONG> flag; the
+reason is explained below.
+<P></P>
+<LI>
+Closing tokens (except for block braces) are controlled by <STRONG>-vtc=n</STRONG>, or
+<STRONG>--vertical-tightness-closing=n</STRONG>, where
+<PRE>
+ -vtc=0 always break a line before a closing token (default), 
+ -vtc=1 do not break before a closing token which is followed 
+        by a semicolon or another closing token, and is not in 
+        a list environment.
+ -vtc=2 never break before a closing token.</PRE>
+<P>The rules for <STRONG>-vtc=1</STRONG> are designed to maintain a reasonable balance
+between tightness and readability in complex lists.</P>
+<P></P>
+<LI>
+Different controls may be applied to to different token types,
+and it is also possible to control block braces; see below.
+<P></P>
+<LI>
+Finally, please note that these vertical tightness flags are merely
+hints to the formatter, and it cannot always follow them.  Things which
+make it difficult or impossible include comments, blank lines, blocks of
+code within a list, and possibly the lack of the <STRONG>-lp</STRONG> parameter.
+Also, these flags may be ignored for very small lists (2 or 3 lines in
+length).
+<P></P></UL>
+<P>Here are some examples:</P>
+<PRE>
+    # perltidy -lp -vt=0 -vtc=0
+    %romanNumerals = (
+                       one   =&gt; 'I',
+                       two   =&gt; 'II',
+                       three =&gt; 'III',
+                       four  =&gt; 'IV',
+    );</PRE>
+<PRE>
+    # perltidy -lp -vt=1 -vtc=0
+    %romanNumerals = ( one   =&gt; 'I',
+                       two   =&gt; 'II',
+                       three =&gt; 'III',
+                       four  =&gt; 'IV',
+    );</PRE>
+<PRE>
+    # perltidy -lp -vt=1 -vtc=1
+    %romanNumerals = ( one   =&gt; 'I',
+                       two   =&gt; 'II',
+                       three =&gt; 'III',
+                       four  =&gt; 'IV', );</PRE>
+<P>The difference between <STRONG>-vt=1</STRONG> and <STRONG>-vt=2</STRONG> is shown here:</P>
+<PRE>
+    # perltidy -lp -vt=1 
+    $init-&gt;add(
+                mysprintf( &quot;(void)find_threadsv(%s);&quot;,
+                           cstring( $threadsv_names[ $op-&gt;targ ] )
+                )
+    );</PRE>
+<PRE>
+    # perltidy -lp -vt=2 
+    $init-&gt;add( mysprintf( &quot;(void)find_threadsv(%s);&quot;,
+                           cstring( $threadsv_names[ $op-&gt;targ ] )
+                )
+    );</PRE>
+<P>With <STRONG>-vt=1</STRONG>, the line ending in <CODE>add(</CODE> does not combine with the next
+line because the next line is not balanced.  This can help with
+readability, but <STRONG>-vt=2</STRONG> can be used to ignore this rule.</P>
+<P>The tightest, and least readable, code is produced with both <CODE>-vt=2</CODE> and
+<CODE>-vtc=2</CODE>:</P>
+<PRE>
+    # perltidy -lp -vt=2 -vtc=2
+    $init-&gt;add( mysprintf( &quot;(void)find_threadsv(%s);&quot;,
+                           cstring( $threadsv_names[ $op-&gt;targ ] ) ) );</PRE>
+<P>Notice how the code in all of these examples collapses vertically as
+<STRONG>-vt</STRONG> increases, but the indentation remains unchanged.  This is
+because perltidy implements the <STRONG>-vt</STRONG> parameter by first formatting as
+if <STRONG>-vt=0</STRONG>, and then simply overwriting one output line on top of the
+next, if possible, to achieve the desired vertical tightness.  The
+<STRONG>-lp</STRONG> indentation style has been designed to allow this vertical
+collapse to occur, which is why it is required for the <STRONG>-vt</STRONG> parameter.</P>
+<P>The <STRONG>-vt=n</STRONG> and <STRONG>-vtc=n</STRONG> parameters apply to each type of container
+token.  If desired, vertical tightness controls can be applied
+independently to each of the closing container token types.</P>
+<P>The parameters for controlling parentheses are <STRONG>-pvt=n</STRONG> or
+<STRONG>--paren-vertical-tightness=n</STRONG>, and <STRONG>-pcvt=n</STRONG> or
+<STRONG>--paren-vertical-tightness-closing=n</STRONG>.</P>
+<P>Likewise, the parameters for square brackets are <STRONG>-sbvt=n</STRONG> or
+<STRONG>--square-bracket-vertical-tightness=n</STRONG>, and <STRONG>-sbcvt=n</STRONG> or
+<STRONG>--square-bracket-vertical-tightness-closing=n</STRONG>.</P>
+<P>Finally, the parameters for controlling non-code block braces are
+<STRONG>-bvt=n</STRONG> or <STRONG>--brace-vertical-tightness=n</STRONG>, and <STRONG>-bcvt=n</STRONG> or
+<STRONG>--brace-vertical-tightness-closing=n</STRONG>.</P>
+<P>In fact, the parameter <STRONG>-vt=n</STRONG> is actually just an abbreviation for
+<STRONG>-pvt=n -bvt=n sbvt=n</STRONG>, and likewise <STRONG>-vtc=n</STRONG> is an abbreviation
+for <STRONG>-pvtc=n -bvtc=n sbvtc=n</STRONG>.</P>
+<DT><STRONG><A NAME="item_%2Dbbvt%3Dn_or_%2D%2Dblock%2Dbrace%2Dvertical%2Dti"><STRONG>-bbvt=n</STRONG> or <STRONG>--block-brace-vertical-tightness=n</STRONG></A></STRONG><BR>
+<DD>
+The <STRONG>-bbvt=n</STRONG> flag is just like the <STRONG>-vt=n</STRONG> flag but applies
+to opening code block braces.
+<PRE>
+ -bbvt=0 break after opening block brace (default). 
+ -bbvt=1 do not break unless this would produce more than one 
+         step in indentation in a line.
+ -bbvt=2 do not break after opening block brace.</PRE>
+<P>It is necessary to also use either <STRONG>-bl</STRONG> or <STRONG>-bli</STRONG> for this to work,
+because, as with other vertical tightness controls, it is implemented by
+simply overwriting a line ending with an opening block brace with the
+subsequent line.  For example:</P>
+<PRE>
+    # perltidy -bli -bbvt=0
+    if ( open( FILE, &quot;&lt; $File&quot; ) )
+      {
+        while ( $File = &lt;FILE&gt; )
+          {
+            $In .= $File;
+            $count++;
+          }
+        close(FILE);
+      }</PRE>
+<PRE>
+    # perltidy -bli -bbvt=1
+    if ( open( FILE, &quot;&lt; $File&quot; ) )
+      { while ( $File = &lt;FILE&gt; )
+          { $In .= $File;
+            $count++;
+          }
+        close(FILE);
+      }</PRE>
+<P>By default this applies to blocks associated with keywords <STRONG>if</STRONG>,
+<STRONG>elsif</STRONG>, <STRONG>else</STRONG>, <STRONG>unless</STRONG>, <STRONG>for</STRONG>, <STRONG>foreach</STRONG>, <STRONG>sub</STRONG>, <STRONG>while</STRONG>,
+<STRONG>until</STRONG>, and also with a preceding label.  This can be changed with
+the parameter <STRONG>-bbvtl=string</STRONG>, or
+<STRONG>--block-brace-vertical-tightness-list=string</STRONG>, where <STRONG>string</STRONG> is a
+space-separated list of block types.  For more information on the
+possible values of this string, see <A HREF="#specifying block types">Specifying Block Types</A></P>
+<P>For example, if we want to just apply this style to <CODE>if</CODE>,
+<CODE>elsif</CODE>, and <CODE>else</CODE> blocks, we could use 
+<CODE>perltidy -bli -bbvt -bbvtl='if elsif else'</CODE>.</P>
+<P>There is no vertical tightness control for closing block braces; with
+the exception of one-line blocks, they will normally remain on a 
+separate line.</P>
 <P></P>
 <DT><STRONG><A NAME="item_%2Ddnl%2C_%2D%2Ddelete%2Dold%2Dnewlines"><STRONG>-dnl</STRONG>,  <STRONG>--delete-old-newlines</STRONG></A></STRONG><BR>
 <DD>
@@ -1080,6 +1291,148 @@ perltidy uses (use <STRONG>--dump-token-types</STRONG> for a list).  However, fo
 few token types there may be conflicts with hardwired logic which cause
 unexpected results.  One example is curly braces, which should be
 controlled with the parameter <STRONG>bl</STRONG> provided for that purpose.</P>
+<P></P></DL>
+<P>
+<H2><A NAME="controlling list formatting">Controlling List Formatting</A></H2>
+<P>Perltidy attempts to place comma-separated arrays of values in tables
+which look good.  Its default algorithms usually work well, and they
+have been improving with each release, but several parameters are
+available to control list formatting.</P>
+<DL>
+<DT><STRONG><A NAME="item_%2Dboc%2C_%2D%2Dbreak%2Dat%2Dold%2Dcomma%2Dbreakpo"><STRONG>-boc</STRONG>,  <STRONG>--break-at-old-comma-breakpoints</STRONG></A></STRONG><BR>
+<DD>
+This flag tells perltidy to try to break at all old commas.  This is not
+the default.  Normally, perltidy makes a best guess at list formatting,
+and seldom uses old comma breakpoints.  Usually this works well,
+but consider:
+<PRE>
+    my @list = (1,
+                1, 1,
+                1, 2, 1,
+                1, 3, 3, 1,
+                1, 4, 6, 4, 1,);</PRE>
+<P>The default formatting will flatten this down to one line:</P>
+<PRE>
+    # perltidy (default)
+    my @list = ( 1, 1, 1, 1, 2, 1, 1, 3, 3, 1, 1, 4, 6, 4, 1, );</PRE>
+<P>which hides the structure. Using <STRONG>-boc</STRONG>, plus additional flags
+to retain the original style, yields</P>
+<PRE>
+    # perltidy -boc -lp -pt=2 -vt=1 -vtc=1
+    my @list = (1,
+                1, 1,
+                1, 2, 1,
+                1, 3, 3, 1,
+                1, 4, 6, 4, 1,);</PRE>
+<P>A disadvantage of this flag is that all tables in the file
+must already be nicely formatted.</P>
+<P></P>
+<DT><STRONG><A NAME="item_%2Dmft%3Dn%2C_%2D%2Dmaximum%2Dfields%2Dper%2Dtable"><STRONG>-mft=n</STRONG>,  <STRONG>--maximum-fields-per-table=n</STRONG></A></STRONG><BR>
+<DD>
+If the computed number of fields for any table exceeds <STRONG>n</STRONG>, then it
+will be reduced to <STRONG>n</STRONG>.  The default value for <STRONG>n</STRONG> is a large number,
+40.  While this value should probably be left unchanged as a general
+rule, it might be used on a small section of code to force a list to
+have a particular number of fields per line, and then either the <STRONG>-boc</STRONG>
+flag could be used to retain this formatting, or a single comment could
+be introduced somewhere to freeze the formatting in future applications
+of perltidy.
+<PRE>
+    # perltidy -mft=2
+    @month_of_year = (    
+        'Jan', 'Feb',
+        'Mar', 'Apr',
+        'May', 'Jun',
+        'Jul', 'Aug',
+        'Sep', 'Oct',
+        'Nov', 'Dec'
+    );</PRE>
+<P></P>
+<DT><STRONG><A NAME="item_%2Dcab%3Dn%2C_%2D%2Dcomma%2Darrow%2Dbreakpoints%3D"><STRONG>-cab=n</STRONG>,  <STRONG>--comma-arrow-breakpoints=n</STRONG></A></STRONG><BR>
+<DD>
+A comma which follows a comma arrow, '=&gt;', requires special
+consideration.  In a long list, it is common to break at all such
+commas.  This parameter can be used to control how perltidy breaks at
+these commas.  (However, it will have no effect if old comma breaks are
+being forced because <STRONG>-boc</STRONG> is used).  The possible values of <STRONG>n</STRONG> are:
+<PRE>
+ n=0 break at all commas after =&gt;  
+ n=1 stable: break at all commas after =&gt; unless this would break
+     an existing one-line container (default)
+ n=2 break at all commas after =&gt;, but try to form the maximum
+     maximum one-line container lengths
+ n=3 do not treat commas after =&gt; specially at all</PRE>
+<P>For example, given the following single line, perltidy by default will
+not add any line breaks because it would break the existing one-line
+container:</P>
+<PRE>
+    bless { B =&gt; $B, Root =&gt; $Root } =&gt; $package;</PRE>
+<P>Using <STRONG>-cab=0</STRONG> will force a break after each comma-arrow item:</P>
+<PRE>
+    # perltidy -cab=0:
+    bless {
+        B    =&gt; $B,
+        Root =&gt; $Root
+    } =&gt; $package;</PRE>
+<P>If perltidy is subsequently run with this container broken, then by
+default it will break after each '=&gt;' because the container is now
+broken.  To reform a one-line container, the parameter <STRONG>-cab=2</STRONG> would
+be needed.</P>
+<P>The flag <STRONG>-cab=3</STRONG> can be used to prevent these commas from being
+treated specially.  In this case, an item such as <CODE>&quot;01&quot; =</CODE> 31&gt; is
+treated as a single item in a table.  The number of fields in this table
+will be determined by the same rules that are used for any other table.
+Here is an example.
+</P>
+<PRE>
+
+    # perltidy -cab=3
+    my %last_day = (
+        &quot;01&quot; =&gt; 31, &quot;02&quot; =&gt; 29, &quot;03&quot; =&gt; 31, &quot;04&quot; =&gt; 30,
+        &quot;05&quot; =&gt; 31, &quot;06&quot; =&gt; 30, &quot;07&quot; =&gt; 31, &quot;08&quot; =&gt; 31,
+        &quot;09&quot; =&gt; 30, &quot;10&quot; =&gt; 31, &quot;11&quot; =&gt; 30, &quot;12&quot; =&gt; 31
+    );</PRE>
+<P></P></DL>
+<P>
+<H2><A NAME="retaining or ignoring existing line breaks">Retaining or Ignoring Existing Line Breaks</A></H2>
+<P>Several additional parameters are available for controlling the extent
+to which line breaks in the input script influence the output script.
+In most cases, the default parameter values are set so that, if a choice
+is possible, the output style follows the input style.  For example, if
+a short logical container is broken in the input script, then the
+default behavior is for it to remain broken in the output script.</P>
+<P>Most of the parameters in this section would only be required for a
+one-time conversion of a script from short container lengths to longer
+container lengths.  The opposite effect, of converting long container
+lengths to shorter lengths, can be obtained by temporarily using a short
+maximum line length.</P>
+<DL>
+<DT><STRONG><A NAME="item_%2Dbol%2C_%2D%2Dbreak%2Dat%2Dold%2Dlogical%2Dbreak"><STRONG>-bol</STRONG>,  <STRONG>--break-at-old-logical-breakpoints</STRONG></A></STRONG><BR>
+<DD>
+By default, if a logical expression is broken at a <CODE>&amp;&amp;</CODE>, <CODE>||</CODE>, <CODE>and</CODE>,
+or <CODE>or</CODE>, then the container will remain broken.  Also, breaks
+at internal keywords <CODE>if</CODE> and <CODE>unless</CODE> will normally be retained.
+To prevent this, and thus form longer lines, use <STRONG>-nbol</STRONG>.
+<P></P>
+<DT><STRONG><A NAME="item_%2Dbok%2C_%2D%2Dbreak%2Dat%2Dold%2Dkeyword%2Dbreak"><STRONG>-bok</STRONG>,  <STRONG>--break-at-old-keyword-breakpoints</STRONG></A></STRONG><BR>
+<DD>
+By default, perltidy will retain a breakpoint before keywords which may
+return lists, such as <CODE>sort</CODE> and &lt;map&gt;.  This allows chains of these
+operators to be displayed one per line.  Use <STRONG>-nbok</STRONG> to prevent
+retaining these breakpoints.
+<P></P>
+<DT><STRONG><A NAME="item_%2Dbot%2C_%2D%2Dbreak%2Dat%2Dold%2Dtrinary%2Dbreak"><STRONG>-bot</STRONG>,  <STRONG>--break-at-old-trinary-breakpoints</STRONG></A></STRONG><BR>
+<DD>
+By default, if a conditional (trinary) operator is broken at a <CODE>:</CODE>,
+then it will remain broken.  To prevent this, and thereby
+form longer lines, use <STRONG>-nbot</STRONG>.
+<P></P>
+<DT><STRONG><A NAME="item_%2Diob%2C_%2D%2Dignore%2Dold%2Dbreakpoints"><STRONG>-iob</STRONG>,  <STRONG>--ignore-old-breakpoints</STRONG></A></STRONG><BR>
+<DD>
+Use this flag to tell perltidy to ignore existing line breaks to the
+maximum extent possible.  This will tend to produce the longest possible
+containers, regardless of type, which do not exceed the line length
+limit.
 <P></P></DL>
 <P>
 <H2><A NAME="blank line control">Blank Line Control</A></H2>
@@ -1289,49 +1642,6 @@ lines before the ``hash-bang'' line.  This option also invokes perl with a
 allow perltidy to parse interactive VMS scripts, but it should be used
 for any script which is normally invoked with <CODE>perl -x</CODE>.
 <P></P>
-<DT><STRONG><A NAME="item_Controlling_list_formatting_and_vertical_alignment">Controlling list formatting and vertical alignment</A></STRONG><BR>
-<DD>
-Perltidy attempts to place comma-separated arrays of values 
-in tables which can be vertically aligned.  The number of
-fields is, by default, chosen to be the largest even number which
-fits in the current page width (defined by <STRONG>-l=n</STRONG>).  Usually this
-works well.
-<P>There are two ways to control this formatting.  The first is with the
-use of comments or empty lines.  If there are any comments or blank
-lines between the opening and closing structural brace, parenthesis, or
-bracket containing the list, then the original line breaks will be used
-for the entire list instead.</P>
-<P>The second is with the parameter <STRONG>--mft=n</STRONG> or
-<STRONG>--maximum-fields-per-table=n</STRONG>.  The default value for <STRONG>n</STRONG> is a large
-number, 40.  If the computed number of fields for any table exceeds
-<STRONG>n</STRONG>, then it will be reduced to <STRONG>n</STRONG>.  While this value should probably
-be left unchanged as a general rule, it might be used on a small section
-of code to force a list to have a particular number of fields per line,
-and then a single comment could be introduced somewhere to freeze the
-formatting in future applications of perltidy, like this:</P>
-<PRE>
-    # perltidy -mft=2
-    @month_of_year = (    
-        'Jan', 'Feb',
-        'Mar', 'Apr',
-        'May', 'Jun',
-        'Jul', 'Aug',
-        'Sep', 'Oct',
-        'Nov', 'Dec'
-    );</PRE>
-<P>Vertical alignment refers to lining up similar tokens vertically, like
-this:</P>
-<PRE>
- my $lines     = 0;    # checksum: #lines
- my $bytes     = 0;    # checksum: #bytes
- my $sum       = 0;    # checksum: system V sum</PRE>
-<P>Once the perltidy vertical aligner ``locks on'' to a pattern, such as
-defined by the ``='' and ``#'' in the above example, it retains the pattern
-for as long as possible.  However, a blank line or full-line comment
-will cause it to forget the pattern and start looking for another.
-Thus, a single blank line can be introduced to force the aligner to stop
-aligning when it is undesirable.</P>
-<P></P>
 <DT><STRONG><A NAME="item_Making_a_file_unreadable">Making a file unreadable</A></STRONG><BR>
 <DD>
 The goal of perltidy is to improve the readability of files, but there
@@ -1376,20 +1686,6 @@ option is used) if the block is a code block.</P>
 blocks following the keywords <CODE>map</CODE>, <CODE>eval</CODE>, and <CODE>sort</CODE>, because
 these code blocks are often small and most clearly displayed in a single
 line.</P>
-<P>Occasionally it is helpful to introduce line breaks in lists containing
-a '=&gt;' symbol, which is sometimes called a ``comma-arrow''.  To force
-perltidy to introduce breaks in a one-line block containing comma
-arrows, use the <STRONG>--break-after-comma-arrows</STRONG>, or <STRONG>-baa</STRONG>, flag.  For
-example, given the following single line, perltidy will not add any line
-breaks:</P>
-<PRE>
-    bless { B =&gt; $B, Root =&gt; $Root } =&gt; $package;   -nbaa (default)</PRE>
-<P>To introduce breaks to show the structure, use <STRONG>-baa</STRONG>:</P>
-<PRE>
-    bless {                                         -baa
-        B    =&gt; $B,
-        Root =&gt; $Root
-    } =&gt; $package;</PRE>
 <P>One-line block rules can conflict with the cuddled-else option.  When
 the cuddled-else option is used, perltidy retains existing one-line
 blocks, even if they do not obey cuddled-else formatting.</P>
@@ -1583,10 +1879,11 @@ it frequently.</P>
 <P>The following list shows all short parameter names which allow a prefix
 'n' to produce the negated form:</P>
 <PRE>
-    D anl asc aws bbb bbc bbs bli baa syn ce csc dac dbc dcsc dnl
-    dws dp dpro dsm dsc ddf dln dop dsn dtt dwls dwrs f fll
-    hsc html ibc icb icp lp log lal x lsl bl sbl okw ola oll
-    pvl q opt sbc sfs ssc sts se st sob t tac tbc tp tsc tqw w</PRE>
+    D anl asc aws bbb bbc bbs bli boc bok bol bot syn ce csc 
+    dac dbc dcsc dnl dws dp dpro dsm dsc ddf dln dop dsn dtt dwls dwrs 
+    f fll hsc html ibc icb icp iob isbc lp log lal x lsl bl 
+    sbl okw ola oll pvl q opt sbc sfs ssc sts se st sob 
+    t tac tbc tp tsc tqw w</PRE>
 <P>Equivalently, the prefix 'no' on the corresponding long names may be
 used.</P>
 <P>
@@ -1647,7 +1944,7 @@ confusing filenames such as <EM>somefile.tdy.tdy.tdy</EM>.
 <P>
 <HR>
 <H1><A NAME="version">VERSION</A></H1>
-<P>This man page documents perltidy version 20020225.</P>
+<P>This man page documents perltidy version 20020416.</P>
 <P>
 <HR>
 <H1><A NAME="credits">CREDITS</A></H1>

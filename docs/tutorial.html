@@ -366,12 +366,12 @@ message on the terminal (or standard error output):</P>
  Final nesting depth of '{'s is 1
  The most recent un-matched '{' is on line 6
  6: } elsif ($temperature &lt; 68) {{
-                                ^</PRE>
-<P>This shows how perltidy will, by default, write error messages to a file
-with the extension <EM>.ERR</EM>, and it will write a note that it did so to
+                                ^
+This shows how perltidy will, by default, write error messages to a file
+with the extension F&lt;.ERR&gt;, and it will write a note that it did so to
 the standard error device.  If you would prefer to have the error
-messages sent to standard output, instead of to a <EM>.ERR</EM> file, use the
-<STRONG>-se</STRONG> flag.</P>
+messages sent to standard output, instead of to a F&lt;.ERR&gt; file, use the
+B&lt;-se&gt; flag.</PRE>
 <P>Almost every programmer would want to see error messages of this type,
 but there are a number of messages which, if reported, would be
 annoying.  To manage this problem, perltidy puts its messages into two
@@ -382,7 +382,7 @@ errors, but you can control this with input flags, as follows:</P>
  ----  --------------
        default: report errors but not warnings
  -w    report all errors and warnings
- -q    quiet; do not report either errors or warnings</PRE>
+ -q    quiet! do not report either errors or warnings</PRE>
 <P>The default is generally a good choice, but it's not a bad idea to check
 programs with <STRONG>-w</STRONG> occasionally, especially if your are looking for a
 bug.  For example, it will ask if you really want '=' instead of '=~' in
@@ -496,8 +496,9 @@ parameters available for adjusting the appearance of an HTML file, but a
 very easy way is to just write the HTML file with this simple command
 and then edit the stylesheet which is embedded at its top.</P>
 <P>One important thing to know about the <STRONG>-html</STRONG> flag is that perltidy can
-either send its output to its beautifier or to its HTML writer, but not
-both in a single run.  So the situation can be represented like this:</P>
+either send its output to its beautifier or to its HTML writer, but
+(unfortunately) not both in a single run.  So the situation can be
+represented like this:</P>
 <PRE>
                   ------------
                   |          |     ---&gt;beautifier--&gt; testfile.pl.tdy

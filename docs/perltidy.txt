@@ -123,18 +123,16 @@ OPTIONS - OVERVIEW
     Several parameters which refer to code block types may be customized by
     also specifying an associated list of block types. The type of a block
     is the name of the keyword which introduces that block, such as if,
-    else, or sub. One exception is a labeled block, which should be
-    specified with just a colon.
+    else, or sub. An exception is a labeled block, which should be specified
+    with just a colon.
 
-    An example is the -csc closing side comment parameter, which may be
-    customized by specifying a list of block types with -cscl=s. The
-    parameter s here is a list of the block types. It should be quoted if it
-    contains any spaces.
-
-    For example, the following command requests that only "sub"'s, labels,
-    "BEGIN", and "END" blocks be affected by any -csc or -dcsc operation:
+    For example, the following parameter specifies "sub", labels, "BEGIN",
+    and "END" blocks:
 
        -cscl="sub : BEGIN END"
+
+    (the meaning of the -cscl parameter is described below.) Note that
+    quotes are required around the list of block types.
 
   I/O control
     The following parameters concern the files which are read and written.
@@ -163,6 +161,14 @@ OPTIONS - OVERVIEW
         allow syntax checking is disabled. This file will be deleted when
         the job finishes. The default is -nst or -nostandard-output.
 
+    -se, --standard-error-output
+        If perltidy detects an error when processing file somefile.pl, its
+        default behavior is to write error messages to file somefile.pl.ERR.
+        Use -se to cause all error messages to be sent to the standard error
+        output stream instead. This directive may be negated with -nse.
+        Thus, you may place -se in a .perltidyrc and override it when
+        desired with -nse on the command line.
+
     -oext=ext, --output-file-extension=ext
         Change the extension of the output file to be .ext instead of the
         default .tdy. If the -html option is used, this will change the
@@ -188,14 +194,6 @@ OPTIONS - OVERVIEW
         This parameter will be ignored if output is being directed to
         standard output, or if it is being specified explicitly with the
         -o=s parameter.
-
-    -se, --standard-error-output
-        If perltidy detects an error when processing file somefile.pl, its
-        default behavior is to write error messages to file somefile.pl.ERR.
-        Use -se to cause all error messages to be sent to the standard error
-        output stream instead. This directive may be negated with -nse.
-        Thus, you may place -se in a .perltidyrc and override it when
-        desired with -nse on the command line.
 
     -w, --warning-output
         Setting -w causes perltidy to include any non-critical warning
@@ -956,9 +954,9 @@ FORMATTING OPTIONS
     -fnl, --freeze-newlines
         If you do not want any changes to the line breaks in your script,
         set -fnl, and they will remain fixed, and the rest of the commands
-        in this section and sections "Retaining or Ignoring Existing Line
-        Breaks" and "Blank Line Control" will be ignored. You may want to
-        use -noll with this.
+        in this section and sections "Controlling List Formatting",
+        "Retaining or Ignoring Existing Line Breaks", and "Blank Line
+        Control" will be ignored. You may want to use -noll with this.
 
     -ce, --cuddled-else
         Enable the "cuddled else" style, in which "else" and "elsif" are
@@ -1060,18 +1058,16 @@ FORMATTING OPTIONS
 
     Vertical tightness of non-block curly braces, parentheses, and square
     brackets.
-        The "tightness" of the previous section really referred to what
-        might better be called "horizontal tightness". A separate set of
-        parameters control what shall be called vertical tightness. Here are
-        the main points:
+        These parameters control what shall be called vertical tightness.
+        Here are the main points:
 
         *   Opening tokens (except for block braces) are controlled by
             -vt=n, or --vertical-tightness=n, where
 
-             -vt=0 break line after opening token (default). 
+             -vt=0 always break a line after opening token (default). 
              -vt=1 do not break unless this would produce more than one 
                      step in indentation in a line.
-             -vt=2 do not break after opening token
+             -vt=2 never break a line after opening token
 
         *   You must also use the -lp flag when you use the -vt flag; the
             reason is explained below.
@@ -1079,7 +1075,7 @@ FORMATTING OPTIONS
         *   Closing tokens (except for block braces) are controlled by
             -vtc=n, or --vertical-tightness-closing=n, where
 
-             -vtc=0 always line break before closing token (default), 
+             -vtc=0 always break a line before a closing token (default), 
              -vtc=1 do not break before a closing token which is followed 
                     by a semicolon or another closing token, and is not in 
                     a list environment.
@@ -1138,7 +1134,7 @@ FORMATTING OPTIONS
 
         With -vt=1, the line ending in "add(" does not combine with the next
         line because the next line is not balanced. This can help with
-        readability, but we use -vt=2 to ignore this rule.
+        readability, but -vt=2 can be used to ignore this rule.
 
         The tightest, and least readable, code is produced with both "-vt=2"
         and "-vtc=2":
@@ -1278,18 +1274,11 @@ FORMATTING OPTIONS
         cause unexpected results. One example is curly braces, which should
         be controlled with the parameter bl provided for that purpose.
 
-  Controlling list formatting
+  Controlling List Formatting
     Perltidy attempts to place comma-separated arrays of values in tables
     which look good. Its default algorithms usually work well, and they have
     been improving with each release, but several parameters are available
-    for controlling it.
-
-    At present, the automatic formatting of lists is only done for lists
-    which have no comments or empty lines between the opening and closing
-    tokens of the list container. If there are any comments or blank lines
-    between the opening and closing structural brace, parenthesis, or
-    bracket containing the list, then the original line breaks are used for
-    the entire list instead.
+    to control list formatting.
 
     -boc, --break-at-old-comma-breakpoints
         This flag tells perltidy to try to break at all old commas. This is
@@ -1896,9 +1885,9 @@ SWITCHES WHICH MAY BE NEGATED
     The following list shows all short parameter names which allow a prefix
     'n' to produce the negated form:
 
-        D anl asc aws bbb bbc bbs bli boc bok bol syn ce csc 
+        D anl asc aws bbb bbc bbs bli boc bok bol bot syn ce csc 
         dac dbc dcsc dnl dws dp dpro dsm dsc ddf dln dop dsn dtt dwls dwrs 
-        f fll hsc html ibc icb icp isbc lp log lal x lsl bl 
+        f fll hsc html ibc icb icp iob isbc lp log lal x lsl bl 
         sbl okw ola oll pvl q opt sbc sfs ssc sts se st sob 
         t tac tbc tp tsc tqw w
 
@@ -1955,7 +1944,7 @@ SEE ALSO
     perlstyle(1), Perl::Tidy(3)
 
 VERSION
-    This man page documents perltidy version 20020411.
+    This man page documents perltidy version 20020416.
 
 CREDITS
     Michael Cartmell supplied code for adaptation to VMS and helped with

@@ -377,7 +377,6 @@ Here is what F<testfile.pl.ERR> contains:
  The most recent un-matched '{' is on line 6
  6: } elsif ($temperature < 68) {{
                                 ^
-
 This shows how perltidy will, by default, write error messages to a file
 with the extension F<.ERR>, and it will write a note that it did so to
 the standard error device.  If you would prefer to have the error
@@ -394,7 +393,7 @@ errors, but you can control this with input flags, as follows:
  ----  --------------
        default: report errors but not warnings
  -w    report all errors and warnings
- -q    quiet; do not report either errors or warnings
+ -q    quiet! do not report either errors or warnings
 
 The default is generally a good choice, but it's not a bad idea to check
 programs with B<-w> occasionally, especially if your are looking for a
@@ -529,8 +528,9 @@ very easy way is to just write the HTML file with this simple command
 and then edit the stylesheet which is embedded at its top.
 
 One important thing to know about the B<-html> flag is that perltidy can
-either send its output to its beautifier or to its HTML writer, but not
-both in a single run.  So the situation can be represented like this:
+either send its output to its beautifier or to its HTML writer, but
+(unfortunately) not both in a single run.  So the situation can be
+represented like this:
 
                   ------------
                   |          |     --->beautifier--> testfile.pl.tdy

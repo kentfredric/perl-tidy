@@ -30,7 +30,7 @@
 		<LI><A HREF="#whitespace control">Whitespace Control</A></LI>
 		<LI><A HREF="#comment controls">Comment Controls</A></LI>
 		<LI><A HREF="#line break control">Line Break Control</A></LI>
-		<LI><A HREF="#controlling list formatting">Controlling list formatting</A></LI>
+		<LI><A HREF="#controlling list formatting">Controlling List Formatting</A></LI>
 		<LI><A HREF="#retaining or ignoring existing line breaks">Retaining or Ignoring Existing Line Breaks</A></LI>
 		<LI><A HREF="#blank line control">Blank Line Control</A></LI>
 		<LI><A HREF="#styles">Styles</A></LI>
@@ -166,17 +166,14 @@ For example, instead of <STRONG>-dump-token-types</STRONG>, it would be sufficie
 <P>Several parameters which refer to code block types may be customized by
 also specifying an associated list of block types.  The type of a block
 is the name of the keyword which introduces that block, such as <STRONG>if</STRONG>,
-<STRONG>else</STRONG>, or <STRONG>sub</STRONG>.  One exception is a labeled block, which should be
+<STRONG>else</STRONG>, or <STRONG>sub</STRONG>.  An exception is a labeled block, which should be
 specified with just a colon.</P>
-<P>An example is the <STRONG>-csc</STRONG> closing side comment parameter, which may
-be customized by specifying a list of block types with <STRONG>-cscl=s</STRONG>.  The
-parameter <STRONG>s</STRONG> here is a list of the block types.  It should be
-quoted if it contains any spaces.</P>
-<P>For example, the following command requests that only <CODE>sub</CODE>'s, labels,
-<CODE>BEGIN</CODE>, and <CODE>END</CODE> blocks be affected by any <STRONG>-csc</STRONG> or <STRONG>-dcsc</STRONG>
-operation:</P>
+<P>For example, the following parameter specifies <CODE>sub</CODE>, labels, <CODE>BEGIN</CODE>, and
+<CODE>END</CODE> blocks:</P>
 <PRE>
    -cscl=&quot;sub : BEGIN END&quot;</PRE>
+<P>(the meaning of the -cscl parameter is described below.)  Note that
+quotes are required around the list of block types.</P>
 <P>
 <H2><A NAME="i/o control">I/O control</A></H2>
 <P>The following parameters concern the files which are read and written.</P>
@@ -206,6 +203,15 @@ the output file to feed to perl for syntax checking,
 unless allow syntax checking is disabled.  This file will be deleted
 when the job finishes.  The default is <STRONG>-nst</STRONG> or <STRONG>-nostandard-output</STRONG>.</P>
 <P></P>
+<DT><STRONG><A NAME="item_%2Dse%2C_%2D%2Dstandard%2Derror%2Doutput"><STRONG>-se</STRONG>,    <STRONG>--standard-error-output</STRONG></A></STRONG><BR>
+<DD>
+If perltidy detects an error when processing file <EM>somefile.pl</EM>, its
+default behavior is to write error messages to file <EM>somefile.pl.ERR</EM>.
+Use <STRONG>-se</STRONG> to cause all error messages to be sent to the standard error
+output stream instead.  This directive may be negated with <STRONG>-nse</STRONG>. 
+Thus, you may place <STRONG>-se</STRONG> in a <EM>.perltidyrc</EM> and override it
+when desired with <STRONG>-nse</STRONG> on the command line.
+<P></P>
 <DT><STRONG><A NAME="item_%2Doext%3Dext%2C_%2D%2Doutput%2Dfile%2Dextension%3"><STRONG>-oext</STRONG>=ext,    <STRONG>--output-file-extension</STRONG>=ext</A></STRONG><BR>
 <DD>
 Change the extension of the output file to be <EM>.ext</EM> instead of the
@@ -229,15 +235,6 @@ appear in whatever directory contains <EM>somefile.pl</EM>.</P>
 <P>If the path contains spaces, it should be placed in quotes.</P>
 <P>This parameter will be ignored if output is being directed to standard output,
 or if it is being specified explicitly with the <STRONG>-o=s</STRONG> parameter.</P>
-<P></P>
-<DT><STRONG><A NAME="item_%2Dse%2C_%2D%2Dstandard%2Derror%2Doutput"><STRONG>-se</STRONG>,    <STRONG>--standard-error-output</STRONG></A></STRONG><BR>
-<DD>
-If perltidy detects an error when processing file <EM>somefile.pl</EM>, its
-default behavior is to write error messages to file <EM>somefile.pl.ERR</EM>.
-Use <STRONG>-se</STRONG> to cause all error messages to be sent to the standard error
-output stream instead.  This directive may be negated with <STRONG>-nse</STRONG>. 
-Thus, you may place <STRONG>-se</STRONG> in a <EM>.perltidyrc</EM> and override it
-when desired with <STRONG>-nse</STRONG> on the command line.
 <P></P>
 <DT><STRONG><A NAME="item_%2Dw%2C_%2D%2Dwarning%2Doutput"><STRONG>-w</STRONG>,    <STRONG>--warning-output</STRONG></A></STRONG><BR>
 <DD>
@@ -989,7 +986,9 @@ expression to be formed.</P>
 <DD>
 If you do not want any changes to the line breaks in your script, set
 <STRONG>-fnl</STRONG>, and they will remain fixed, and the rest of the commands in
-this section and sections <A HREF="#retaining or ignoring existing line breaks">Retaining or Ignoring Existing Line Breaks</A> and
+this section and sections 
+<A HREF="#controlling list formatting">Controlling List Formatting</A>,
+<A HREF="#retaining or ignoring existing line breaks">Retaining or Ignoring Existing Line Breaks</A>, and
 <A HREF="#blank line control">Blank Line Control</A> will be ignored.  You may want to use <STRONG>-noll</STRONG>
 with this.
 <P></P>
@@ -1093,19 +1092,17 @@ flag.  In this case, the above example becomes</P>
 <P></P>
 <DT><STRONG><A NAME="item_Vertical_tightness_of_non%2Dblock_curly_braces%2C_">Vertical tightness of non-block curly braces, parentheses, and square brackets.</A></STRONG><BR>
 <DD>
-The ``tightness'' of the previous section really referred to what might
-better be called ``horizontal tightness''.  A separate set of parameters
-control what shall be called vertical tightness.  Here are the main
-points:
+These parameters control what shall be called vertical tightness.  Here are the
+main points:
 <UL>
 <LI>
 Opening tokens (except for block braces) are controlled by <STRONG>-vt=n</STRONG>, or
 <STRONG>--vertical-tightness=n</STRONG>, where
 <PRE>
- -vt=0 break line after opening token (default). 
+ -vt=0 always break a line after opening token (default). 
  -vt=1 do not break unless this would produce more than one 
          step in indentation in a line.
- -vt=2 do not break after opening token</PRE>
+ -vt=2 never break a line after opening token</PRE>
 <P></P>
 <LI>
 You must also use the <STRONG>-lp</STRONG> flag when you use the <STRONG>-vt</STRONG> flag; the
@@ -1115,7 +1112,7 @@ reason is explained below.
 Closing tokens (except for block braces) are controlled by <STRONG>-vtc=n</STRONG>, or
 <STRONG>--vertical-tightness-closing=n</STRONG>, where
 <PRE>
- -vtc=0 always line break before closing token (default), 
+ -vtc=0 always break a line before a closing token (default), 
  -vtc=1 do not break before a closing token which is followed 
         by a semicolon or another closing token, and is not in 
         a list environment.
@@ -1173,7 +1170,7 @@ length).
     );</PRE>
 <P>With <STRONG>-vt=1</STRONG>, the line ending in <CODE>add(</CODE> does not combine with the next
 line because the next line is not balanced.  This can help with
-readability, but we use <STRONG>-vt=2</STRONG> to ignore this rule.</P>
+readability, but <STRONG>-vt=2</STRONG> can be used to ignore this rule.</P>
 <P>The tightest, and least readable, code is produced with both <CODE>-vt=2</CODE> and
 <CODE>-vtc=2</CODE>:</P>
 <PRE>
@@ -1296,17 +1293,11 @@ unexpected results.  One example is curly braces, which should be
 controlled with the parameter <STRONG>bl</STRONG> provided for that purpose.</P>
 <P></P></DL>
 <P>
-<H2><A NAME="controlling list formatting">Controlling list formatting</A></H2>
+<H2><A NAME="controlling list formatting">Controlling List Formatting</A></H2>
 <P>Perltidy attempts to place comma-separated arrays of values in tables
 which look good.  Its default algorithms usually work well, and they
 have been improving with each release, but several parameters are
-available for controlling it.</P>
-<P>At present, the automatic formatting of lists is only done for lists
-which have no comments or empty lines between the opening and closing
-tokens of the list container.  If there are any comments or blank lines
-between the opening and closing structural brace, parenthesis, or
-bracket containing the list, then the original line breaks are used
-for the entire list instead.</P>
+available to control list formatting.</P>
 <DL>
 <DT><STRONG><A NAME="item_%2Dboc%2C_%2D%2Dbreak%2Dat%2Dold%2Dcomma%2Dbreakpo"><STRONG>-boc</STRONG>,  <STRONG>--break-at-old-comma-breakpoints</STRONG></A></STRONG><BR>
 <DD>
@@ -1888,9 +1879,9 @@ it frequently.</P>
 <P>The following list shows all short parameter names which allow a prefix
 'n' to produce the negated form:</P>
 <PRE>
-    D anl asc aws bbb bbc bbs bli boc bok bol syn ce csc 
+    D anl asc aws bbb bbc bbs bli boc bok bol bot syn ce csc 
     dac dbc dcsc dnl dws dp dpro dsm dsc ddf dln dop dsn dtt dwls dwrs 
-    f fll hsc html ibc icb icp isbc lp log lal x lsl bl 
+    f fll hsc html ibc icb icp iob isbc lp log lal x lsl bl 
     sbl okw ola oll pvl q opt sbc sfs ssc sts se st sob 
     t tac tbc tp tsc tqw w</PRE>
 <P>Equivalently, the prefix 'no' on the corresponding long names may be
@@ -1953,7 +1944,7 @@ confusing filenames such as <EM>somefile.tdy.tdy.tdy</EM>.
 <P>
 <HR>
 <H1><A NAME="version">VERSION</A></H1>
-<P>This man page documents perltidy version 20020411.</P>
+<P>This man page documents perltidy version 20020416.</P>
 <P>
 <HR>
 <H1><A NAME="credits">CREDITS</A></H1>

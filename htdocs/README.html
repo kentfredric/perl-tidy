@@ -29,9 +29,12 @@ License -- please see the included file ``COPYING'' for details.</P>
 <P>
 <HR>
 <H1><A NAME="prerequisites">PREREQUISITES</A></H1>
-<P>Perltidy should work under a standard distribution of Perl version 5.004
-or later.  (You can find your version with <CODE>perl -v</CODE>). It may use these
-other modules if detected:</P>
+<P>Not many.  Perltidy is programmed to work under a standard distribution of Perl
+as old as version 5.004 or later.  (You can find your version with <CODE>perl -v</CODE>).  
+This release was successfully tested on a 5.004_04 (1997) linux
+distribution of perl.  However, some older systems may have problems,
+perhaps because of memory limitations.</P>
+<P>These modules are not required, but perltidy may use them if detected:</P>
 <PRE>
   Win32    will be used to help identify a Windows system if detected
   HTML::Entities  will be used to encode HTML entities if detected</PRE>
@@ -41,9 +44,10 @@ module:</P>
 <PRE>
   IO::Scalar
   IO::ScalarArray</PRE>
-<P>The total disk space needed after removing the installation directory
-will about 1 Mb.  (If neccessary, this could be reduced to about 320k
-by using perltidy to squeeze itself down using <STRONG>-dac --mangle</STRONG> .)</P>
+<P>The total disk space needed after removing the installation directory will
+about 1 Mb.  (If really necessary, this could be reduced to about 320k by
+using perltidy to squeeze itself down using <STRONG>perltidy -dac --mangle Tidy.pm</STRONG>
+.)</P>
 <P>
 <HR>
 <H1><A NAME="download">DOWNLOAD</A></H1>
@@ -73,7 +77,13 @@ command can tell the format.
 <P>
 <HR>
 <H1><A NAME="installation">INSTALLATION</A></H1>
-<P>Please see the file INSTALL for installation information.</P>
+<P>For most standard installations, the standard Makefile.PL method should work:</P>
+<PRE>
+ perl Makefile.PL
+ make
+ make test
+ make install</PRE>
+<P>But please at least take a quick look at the INSTALL file.</P>
 <P>
 <HR>
 <H1><A NAME="what next">WHAT NEXT</A></H1>

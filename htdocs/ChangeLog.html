@@ -14,6 +14,7 @@
 	<LI><A HREF="#perltidy change log">Perltidy Change Log</A></LI>
 	<UL>
 
+		<LI><A HREF="#2002 04 16">2002 04 16</A></LI>
 		<LI><A HREF="#2002 02 25">2002 02 25</A></LI>
 		<LI><A HREF="#2001 12 31">2001 12 31</A></LI>
 		<LI><A HREF="#2001 11 28">2001 11 28</A></LI>
@@ -44,12 +45,172 @@
  have hit a bug, unusual behavior, annoyance, or have a
  suggested improvement, please send a note to perltidy at
  users.sourceforge.net.</PRE>
+<P>
+<H2><A NAME="2002 04 16">2002 04 16</A></H2>
+<PRE>
+ -Corrected a mistokenization of variables for a package with a name
+  equal to a perl keyword.  For example:</PRE>
+<PRE>
+     my::qx();
+     package my;
+     sub qx{print &quot;Hello from my::qx\n&quot;;}</PRE>
+<PRE>
+  In this case, the leading 'my' was mistokenized as a keyword, and a
+  space was being place between 'my' and '::'.  This has been
+  corrected.  Thanks to Martin Sluka for discovering this.</PRE>
+<PRE>
+ -A new flag -bol (--break-at-old-logic-breakpoints)
+  has been added to control whether containers with logical expressions
+  should be broken open.  This is the default.</PRE>
+<PRE>
+ -A new flag -bok (--break-at-old-keyword-breakpoints)
+  has been added to follow breaks at old keywords which return lists,
+  such as sort and map.  This is the default.</PRE>
+<PRE>
+ -A new flag -bot (--break-at-old-trinary-breakpoints) has been added to
+  follow breaks at trinary (conditional) operators.  This is the default.</PRE>
+<PRE>
+ -A new flag -cab=n has been added to control breaks at commas after
+  '=&gt;' tokens.  The default is n=1, meaning break unless this breaks
+  open an existing on-line container.</PRE>
+<PRE>
+ -A new flag -boc has been added to allow existing list formatting
+  to be retained.  (--break-at-old-comma-breakpoints).  See updated manual.</PRE>
+<PRE>
+ -A new flag -iob (--ignore-old-breakpoints) has been added to
+  prevent the locations of old breakpoints from influencing the output
+  format.</PRE>
+<PRE>
+ -Corrected problem where nested parentheses were not getting full
+  indentation.  This has been on the todo list for some time; thanks 
+  to Axel Rose for a snippet demonstrating this issue.</PRE>
+<PRE>
+            OLD: inner list is not indented
+            $this-&gt;sendnumeric(
+                $this-&gt;server,
+                (
+                  $ret-&gt;name,        $user-&gt;username, $user-&gt;host,
+                $user-&gt;server-&gt;name, $user-&gt;nick,     &quot;H&quot;
+                ),
+            );</PRE>
+<PRE>
+            NEW:
+            $this-&gt;sendnumeric(
+                $this-&gt;server,
+                (
+                    $ret-&gt;name,          $user-&gt;username, $user-&gt;host,
+                    $user-&gt;server-&gt;name, $user-&gt;nick,     &quot;H&quot;
+                ),
+            );</PRE>
+<PRE>
+ -Code cleaned up by removing the following unused, undocumented flags.
+  They should not be in any .perltidyrc files because they were just
+  experimental flags which were never documented.  Most of them placed
+  artificial limits on spaces, and Wolfgang Weisselberg convinced me that
+  most of them they do more harm than good by causing unexpected results.</PRE>
+<PRE>
+  --maximum-continuation-indentation (-mci)
+  --maximum-whitespace-columns
+  --maximum-space-to-comment (-xsc)
+  --big-space-jump (-bsj)</PRE>
+<PRE>
+ -Pod file 'perltidy.pod' has been appended to the script 'perltidy', and
+  Tidy.pod has been append to the module 'Tidy.pm'.  Older MakeMaker's
+  were having trouble.
+</PRE>
+<PRE>
+
+ -A new flag -isbc has been added for more control on comments. This flag
+  has the effect that if there is no leading space on the line, then the
+  comment will not be indented, and otherwise it may be.  If both -ibc and
+  -isbc are set, then -isbc takes priority.  Thanks to Frank Steinhauer
+  for suggesting this.</PRE>
+<PRE>
+ -A new document 'stylekey.pod' has been created to quickly guide new users
+  through the maze of perltidy style parameters.  An html version is 
+  on the perltidy web page.  Take a look! It should be very helpful.</PRE>
+<PRE>
+ -Parameters for controlling 'vertical tightness' have been added:
+  -vt and -vtc are the main controls, but finer control is provided
+  with -pvt, -pcvt, -bvt, -bcvt, -sbvt, -sbcvt.  Block brace vertical
+  tightness controls have also been added.
+  See updated manual and also see 'stylekey.pod'. Simple examples:</PRE>
+<PRE>
+    # perltidy -lp -vt=1 -vtc=1
+    @month_of_year = ( 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' );</PRE>
+<PRE>
+    # perltidy -lp -vt=1 -vtc=0
+    @month_of_year = ( 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    );</PRE>
+<PRE>
+ -Lists which do not format well in uniform columns are now better
+  identified and formated.</PRE>
+<PRE>
+    OLD:
+    return $c-&gt;create( 'polygon', $x, $y, $x + $ruler_info{'size'},
+        $y + $ruler_info{'size'}, $x - $ruler_info{'size'},
+        $y + $ruler_info{'size'} );</PRE>
+<PRE>
+    NEW:
+    return $c-&gt;create(
+        'polygon', $x, $y,
+        $x + $ruler_info{'size'},
+        $y + $ruler_info{'size'},
+        $x - $ruler_info{'size'},
+        $y + $ruler_info{'size'}
+    );</PRE>
+<PRE>
+    OLD:
+      radlablist($f1, pad('Initial', $p), $b-&gt;{Init}-&gt;get_panel_ref, 'None ',
+                 'None', 'Default', 'Default', 'Simple', 'Simple');
+    NEW:
+      radlablist($f1,
+                 pad('Initial', $p),
+                 $b-&gt;{Init}-&gt;get_panel_ref,
+                 'None ', 'None', 'Default', 'Default', 'Simple', 'Simple');</PRE>
+<PRE>
+ -Corrected problem where an incorrect html filename was generated for 
+  external calls to Tidy.pm module.  Fixed incorrect html title when
+  Tidy.pm is called with IO::Scalar or IO::Array source.</PRE>
+<PRE>
+ -Output file permissons are now set as follows.  An output script file
+  gets the same permission as the input file, except that owner
+  read/write permission is added (otherwise, perltidy could not be
+  rerun).  Html output files use system defaults.  Previously chmod 0755
+  was used in all cases.  Thanks to Mark Olesen for bringing this up.</PRE>
+<PRE>
+ -Missing semicolons will not be added in multi-line blocks of type
+  sort, map, or grep.  This brings perltidy into closer agreement
+  with common practice.  Of course, you can still put semicolons 
+  there if you like.  Thanks to Simon Perreault for a discussion of this.</PRE>
+<PRE>
+ -Most instances of extra semicolons are now deleted.  This is
+  particularly important if the -csc option is used.  Thanks to Wolfgang
+  Weisselberg for noting this.  For example, the following line
+  (produced by 'h2xs' :) has an extra semicolon which will now be
+  removed:</PRE>
+<PRE>
+     BEGIN { plan tests =&gt; 1 };</PRE>
+<PRE>
+ -New parameter -csce (--closing-side-comment-else-flag) can be used
+  to control what text is appended to 'else' and 'elsif' blocks.
+  Default is to just add leading 'if' text to an 'else'.  See manual.</PRE>
+<PRE>
+ -The -csc option now labels 'else' blocks with additinal information
+  from the opening if statement and elsif statements, if space.
+  Thanks to Wolfgang Weisselberg for suggesting this.</PRE>
+<PRE>
+ -The -csc option will now remove any old closing side comments
+  below the line interval threshold. Thanks to Wolfgang Weisselberg for
+  suggesting this.</PRE>
 <PRE>
  -The abbreviation feature, which was broken in the previous version,
   is now fixed.  Thanks to Michael Cartmell for noting this.</PRE>
 <PRE>
  -Vertical alignment is now done for '||='  .. somehow this was 
-  missing.</PRE>
+  overlooked.</PRE>
 <P>
 <H2><A NAME="2002 02 25">2002 02 25</A></H2>
 <PRE>
@@ -173,7 +334,7 @@
 <PRE>
  -Merged patch sent by Yves Orton to handle appropriate
   configuration file locations for different Windows varieties
-  (2000, NT, XP, 95, 98).</PRE>
+  (2000, NT, Me, XP, 95, 98).</PRE>
 <PRE>
  -Added patch to properly handle a for/foreach loop without
   parens around a list represented as a qw.  I didn't know this

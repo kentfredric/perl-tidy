@@ -1,3 +1,13 @@
+    my %ret_hash = map { $_ => $current_package{$_} } 
+        qw(NAME TITLE AUTHOR VERSION ABSTRACT PERLCORE_VER);
+
+    %SORT_ORDER = map { $_ => $n++ } (
+        'forbidden', 'not auth', 'not found', 'empty',
+        'dns',       'timeout',  'error',     'unknown',
+        'multi',     'moved',    'redirect',  'ok',
+        'unchecked'
+    );
+
     # broken by comment
     @modified =
       map { $_->[0] }

@@ -14,7 +14,7 @@
 	<LI><A HREF="#perltidy change log">Perltidy Change Log</A></LI>
 	<UL>
 
-		<LI><A HREF="#2002 04 11">2002 04 11</A></LI>
+		<LI><A HREF="#2002 04 16">2002 04 16</A></LI>
 		<LI><A HREF="#2002 02 25">2002 02 25</A></LI>
 		<LI><A HREF="#2001 12 31">2001 12 31</A></LI>
 		<LI><A HREF="#2001 11 28">2001 11 28</A></LI>
@@ -46,7 +46,7 @@
  suggested improvement, please send a note to perltidy at
  users.sourceforge.net.</PRE>
 <P>
-<H2><A NAME="2002 04 11">2002 04 11</A></H2>
+<H2><A NAME="2002 04 16">2002 04 16</A></H2>
 <PRE>
  -Corrected a mistokenization of variables for a package with a name
   equal to a perl keyword.  For example:</PRE>
@@ -59,26 +59,27 @@
   space was being place between 'my' and '::'.  This has been
   corrected.  Thanks to Martin Sluka for discovering this.</PRE>
 <PRE>
- -A new flag -iob (--ignore-old-breakpoints) has been added to
-  prevent the locations of old breakpoints from influencing the output
-  format.  This is one of several new parameters which give some 
-  control over the extent to which old line breaks influence the output
-  format.</PRE>
-<PRE>
- -A new flag -boc has been added to allow existing list formatting
-  to be retained.  (--break-at-old-comma-breakpoints).  See updated manual.</PRE>
-<PRE>
- -A new flag -boa (--break-at-old-arrow-breakpoints)
-  has been added to control whether containers with comma-arrow tokens
-  should be broken open.</PRE>
-<PRE>
  -A new flag -bol (--break-at-old-logic-breakpoints)
   has been added to control whether containers with logical expressions
-  should be broken open.</PRE>
+  should be broken open.  This is the default.</PRE>
 <PRE>
  -A new flag -bok (--break-at-old-keyword-breakpoints)
   has been added to follow breaks at old keywords which return lists,
   such as sort and map.  This is the default.</PRE>
+<PRE>
+ -A new flag -bot (--break-at-old-trinary-breakpoints) has been added to
+  follow breaks at trinary (conditional) operators.  This is the default.</PRE>
+<PRE>
+ -A new flag -cab=n has been added to control breaks at commas after
+  '=&gt;' tokens.  The default is n=1, meaning break unless this breaks
+  open an existing on-line container.</PRE>
+<PRE>
+ -A new flag -boc has been added to allow existing list formatting
+  to be retained.  (--break-at-old-comma-breakpoints).  See updated manual.</PRE>
+<PRE>
+ -A new flag -iob (--ignore-old-breakpoints) has been added to
+  prevent the locations of old breakpoints from influencing the output
+  format.</PRE>
 <PRE>
  -Corrected problem where nested parentheses were not getting full
   indentation.  This has been on the todo list for some time; thanks 

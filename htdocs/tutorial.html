@@ -85,8 +85,8 @@ the original to the default ``non-cuddled-else'' style.  This is because
 perltidy has to make some kind of default selection of formatting
 options, and this default tries to follow the suggestions in the
 perlstyle man pages.</P>
-<P>If you prefer the original ``cuddled-else'' style you can indicate that
-with a <STRONG>-ce</STRONG> flag.  So if you rerun with that flag</P>
+<P>If you prefer the original ``cuddled-else'' style, don't worry, you can
+indicate that with a <STRONG>-ce</STRONG> flag.  So if you rerun with that flag</P>
 <PRE>
  perltidy -ce testfile.pl</PRE>
 <P>you will see a return to the original ``cuddled-else'' style.  There are
@@ -230,8 +230,12 @@ files before starting to work again.</P>
 <P>Perltidy has to make some kind of default selection of formatting
 options, and its choice is to try to follow the suggestions in the
 perlstyle man pages.  Many programmers more or less follow these
-suggestions with a few exceptions.  The parameters most commonly
-used include these:</P>
+suggestions with a few exceptions.  In this section we will
+look at just a few of the most commonly used style parameters.  Later,
+you may want to systematically develop a set of style
+parameters with the help of
+the perltidy <STRONG>stylekey</STRONG> web page at
+<A HREF="http://perltidy.sourceforge.net/stylekey.html">http://perltidy.sourceforge.net/stylekey.html</A></P>
 <DL>
 <DT><STRONG><A NAME="item_%2Dce%2C_cuddled_elses"><STRONG>-ce</STRONG>, cuddled elses</A></STRONG><BR>
 <DD>
@@ -362,12 +366,12 @@ message on the terminal (or standard error output):</P>
  Final nesting depth of '{'s is 1
  The most recent un-matched '{' is on line 6
  6: } elsif ($temperature &lt; 68) {{
-                                ^</PRE>
-<P>This shows how perltidy will, by default, write error messages to a file
-with the extension <EM>.ERR</EM>, and it will write a note that it did so to
+                                ^
+This shows how perltidy will, by default, write error messages to a file
+with the extension F&lt;.ERR&gt;, and it will write a note that it did so to
 the standard error device.  If you would prefer to have the error
-messages sent to standard output, instead of to a <EM>.ERR</EM> file, use the
-<STRONG>-se</STRONG> flag.</P>
+messages sent to standard output, instead of to a F&lt;.ERR&gt; file, use the
+B&lt;-se&gt; flag.</PRE>
 <P>Almost every programmer would want to see error messages of this type,
 but there are a number of messages which, if reported, would be
 annoying.  To manage this problem, perltidy puts its messages into two
@@ -378,7 +382,7 @@ errors, but you can control this with input flags, as follows:</P>
  ----  --------------
        default: report errors but not warnings
  -w    report all errors and warnings
- -q    do not report either errors or warnings</PRE>
+ -q    quiet! do not report either errors or warnings</PRE>
 <P>The default is generally a good choice, but it's not a bad idea to check
 programs with <STRONG>-w</STRONG> occasionally, especially if your are looking for a
 bug.  For example, it will ask if you really want '=' instead of '=~' in
@@ -394,12 +398,6 @@ this line:
 the input and output files.  If the input file has good syntax but the
 output file has bad syntax, then perltidy made an error.  This is very
 unlikely, but worth checking.</P>
-<P>If the input file has an error according to the <CODE>perl -c</CODE> check, then
-the output file will not be checked, and any error messages returned by
-the <CODE>perl -c</CODE> check will be discarded (because they usually turn out to
-be more annoying than helpful).  If you want to see them, though, you
-can use the <STRONG>-w</STRONG> flag.  This might be useful if you are debugging a
-script.</P>
 <P>Here's a diagram showing how this works:</P>
 <PRE>
                           OK                            OK
@@ -408,6 +406,12 @@ script.</P>
              | Fail                       | Fail
              |                            |
        -w shows errors             perltidy made error</PRE>
+<P>If the input file has an error according to the <CODE>perl -c</CODE> check, then
+the output file will not be checked (since we already know that it will
+have an error), and any error messages returned by the <CODE>perl -c</CODE> check
+will be discarded (because they usually turn out to be more annoying
+than helpful).  If you want to see them, though, you can use the <STRONG>-w</STRONG>
+flag.  This might be useful if you are debugging a script.</P>
 <P>This syntax check will be deactivated for Windows 9x/Me and also when
 input or output are not from identifiable filenames.  Perltidy will, of
 course, still report any syntax errors that it detects by itself in
@@ -437,7 +441,7 @@ verbose log file by issuing the following command</P>
 created in your directory.</P>
 <P>If you open this file, you will see that it is a text file with a
 combination of warning messages and informative messages.  All you need
-to know for now is that it exists.</P>
+to know for now is that it exists; someday it may be useful.</P>
 <P>
 <H2><A NAME="using perltidy as a filter on selected text from an editor">Using Perltidy as a Filter on Selected Text from an Editor</A></H2>
 <P>Most programmer's editors allow a selected group of lines to be passed
@@ -456,9 +460,30 @@ text by any of the text selection methods, and then issue the command
 !perltidy in command mode.  Thus, an entire file can be formatted using</P>
 <PRE>
  :%!perltidy -q</PRE>
+<P>or, without the <STRONG>-q</STRONG> flag, just</P>
+<PRE>
+ :%!perltidy</PRE>
 <P>It isn't necessary to format an entire file, however.  Perltidy will
 probably work well as long as you select blocks of text whose braces,
 parentheses, and square brackets are properly balanced.</P>
+<P>For the <STRONG>emacs</STRONG> editor, first mark a region and then pipe it through
+perltidy.  For example, to format an entire file, select it with <CODE>C-x h</CODE> 
+and then pipe it with <CODE>M-1 M-|</CODE> and then <CODE>perltidy</CODE>.  The numeric
+argument, <CODE>M-1</CODE> causes the output from perltidy to replace the marked
+text.  See ``GNU Emacs Manual'' for more information,
+<A HREF="http://www.gnu.org/manual/emacs-20.3/html_node/emacs_toc.html">http://www.gnu.org/manual/emacs-20.3/html_node/emacs_toc.html</A></P>
+<P>If you have difficulty with an editor, try the <STRONG>-st</STRONG> flag, which will
+force perltidy to send output to standard output.  This might be needed,
+for example, if the editor passes text to perltidy as temporary filename
+instead of through the standard input.  If this works, you might put the
+<STRONG>-st</STRONG> flag in your <EM>.perltidyrc</EM> file.</P>
+<P>After you get your editor and perltidy successfully talking to each
+other, try formatting a snippet of code with a brace error to see what
+happens.  (Do not use the quiet flag, <STRONG>-q</STRONG>, for this test).  Perltidy
+will send one line starting with <CODE>##</CODE> to standard error output.  Your
+editor may either display it at the top of the reformatted text or at
+the bottom.  You probably cannot control this, but you need to know
+where to look when an actual error is detected.</P>
 <P>
 <H2><A NAME="writing an html file">Writing an HTML File</A></H2>
 <P>Perltidy can switch between two different output modes.  We have been
@@ -471,8 +496,9 @@ parameters available for adjusting the appearance of an HTML file, but a
 very easy way is to just write the HTML file with this simple command
 and then edit the stylesheet which is embedded at its top.</P>
 <P>One important thing to know about the <STRONG>-html</STRONG> flag is that perltidy can
-either send its output to its beautifier or to its HTML writer, but not
-both in a single run.  So the situation can be represented like this:</P>
+either send its output to its beautifier or to its HTML writer, but
+(unfortunately) not both in a single run.  So the situation can be
+represented like this:</P>
 <PRE>
                   ------------
                   |          |     ---&gt;beautifier--&gt; testfile.pl.tdy
@@ -484,10 +510,14 @@ like to both beautify a script and write it to HTML, you need to do it
 in two steps.</P>
 <P>
 <H2><A NAME="summary">Summary</A></H2>
-<P>That's enough to get started using perltidy.  You will want to delete
-unwanted files in the temporary directory created in this tutorial.
-Many additional special features and capabilities can be found in the
-manual pages for perltidy.</P>
+<P>That's enough to get started using perltidy.  
+When you are ready to create a <EM>.perltidyrc</EM> file, you may find it
+helpful to use the <EM>stylekey</EM> page as a guide at
+<A HREF="http://perltidy.sourceforge.net/stylekey.html">http://perltidy.sourceforge.net/stylekey.html</A></P>
+<P>Many additional special
+features and capabilities can be found in the manual pages for perltidy
+at
+<A HREF="http://perltidy.sourceforge.net/perltidy.html">http://perltidy.sourceforge.net/perltidy.html</A></P>
 <P>We hope that perltidy makes perl programming a little more fun.
 Please check the perltidy
 web site <A HREF="http://perltidy.sourceforge.net">http://perltidy.sourceforge.net</A> occasionally
