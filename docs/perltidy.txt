@@ -180,6 +180,12 @@ OPTIONS - OVERVIEW
         default .tdy. If the -html option is used, this will change the
         extension to be .ext instead of the default .html.
 
+        If the extension "ext" begins with "A-Z", "a-z", or "0-9", then it
+        will be appended to the filename with an intermediate '.' (or '_' on
+        some systems). Otherwise, it will be appended directly. Thus, for
+        example, using "-oext=htm" and "-oext=.htm" on somefile.pl with both
+        produce somefile.pl.htm
+
     -opath=path, --output-path=path
         When perltidy creates a filename for an output file, by default it
         merely appends an extension to the path and basename of the input
@@ -204,13 +210,21 @@ OPTIONS - OVERVIEW
     -b, --backup-and-modify-in-place
         Modify the input file or files in-place and save the original with
         the extension .bak. Any existing .bak file will be deleted. See next
-        item for changing the default backup extension. This only works when
-        input is from an actual file. Also, it does not work (or make sense)
-        in -html mode.
+        item for changing the default backup extension.
+
+        A -b flag will be ignored if input is from standard input, or if the
+        -html flag is set.
 
     -bext=ext, --backup-file-extension=ext
-        Change the extension of the backup file to be .ext instead of the
+        Change the extension of the backup file to be something other than
         the default .bak.
+
+        If the extension "ext" begins with "A-Z", "a-z", or "0-9", then it
+        will be appended to the filename with an intermediate '.' (or '_' on
+        some systems). Otherwise, it will be appended directly. For example,
+        suppose the file is somefile.pl. If "ext=old", the backup file will
+        be somefile.pl.old. If "ext=~", then the backup file will be
+        somefile.pl~ .
 
     -w, --warning-output
         Setting -w causes perltidy to include any non-critical warning
@@ -230,10 +244,8 @@ OPTIONS - OVERVIEW
          :n1,n2!perltidy -q
 
         where "n1,n2" represents the selected text. Without the -q flag, any
-        error messages will mess up your screen. Besides, it is common to
-        run perltidy on incomplete blocks from an editor, and you don't want
-        to see any complaints about that. (Or maybe you do; in that case, be
-        prepared to use your "undo" key).
+        error message may mess up your screen, so be prepared to use your
+        "undo" key.
 
     -log, --logfile
         Save the .LOG file, which has many useful diagnostics. Perltidy
@@ -884,6 +896,11 @@ FORMATTING OPTIONS
             may also want to use the -ssc flag to keep these modified
             closing side comments spaced the same as actual closing side
             comments.
+
+        *   Temporarily generating closing side comments is a useful
+            technique for exploring and/or debugging a perl script,
+            especially one written by someone else. You can always remove
+            them with -dcsc.
 
     Static Block Comments
         Static block comments are block comments with a special leading
@@ -1916,7 +1933,7 @@ SWITCHES WHICH MAY BE NEGATED
     The following list shows all short parameter names which allow a prefix
     'n' to produce the negated form:
 
-        D anl asc aws bbb bbc bbs bli boc bok bol bot syn ce csc 
+        D anl asc aws b bbb bbc bbs bli boc bok bol bot syn ce csc 
         dac dbc dcsc dnl dws dp dpro dsm dsc ddf dln dop dsn dtt dwls dwrs 
         f fll hsc html ibc icb icp iob isbc lp log lal x lsl bl 
         sbl okw ola oll pvl q opt sbc sfs ssc sts se st sob 
@@ -1949,27 +1966,23 @@ LIMITATIONS
         documents.
 
 FILES
-    Special files when standard input or standard output are used
+    Special files when standard input is used
         When standard input is used, the log file, if saved, is
         perltidy.LOG, and any errors are written to perltidy.ERR unless the
         -se flag is set. These are saved in the current working directory.
-        If syntax checking is used, a temporary copy of the input file will
-        be created, but it will be removed when perltidy finishes.
-
-        When standard output and syntax checking are used, a temporary copy
-        of the output file will be created. It will be removed when perltidy
-        finishes.
 
     Files overwritten
         The following file extensions are used by perltidy, and files with
-        these extensions may be overwritten or deleted: .tdy, .ERR, .LOG,
-        .TEE.
+        these extensions may be overwritten or deleted: .ERR, .LOG, .TEE,
+        and/or .tdy, .html, and .bak, depending on the run type and
+        settings.
 
     Files extensions limitations
         Perltidy does not operate on files for which the run could produce a
-        file with a duplicated file extension. These extensions are .tdy,
-        .LOG, .ERR, .TEE. The purpose of this rule is to prevent generating
-        confusing filenames such as somefile.tdy.tdy.tdy.
+        file with a duplicated file extension. These extensions include
+        .LOG, .ERR, .TEE, and perhaps .tdy and .bak, depending on the run
+        type. The purpose of this rule is to prevent generating confusing
+        filenames such as somefile.tdy.tdy.tdy.
 
 SEE ALSO
     perlstyle(1), Perl::Tidy(3)

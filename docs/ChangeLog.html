@@ -55,8 +55,11 @@
  -New option '-b' or '--backup-and-modify-in-place' will cause perltidy to
  overwrite the original file with the beautified output file.  The original
  file will be saved with a '.bak' extension (which can be changed with
- -bext=s).  Please see updated docs.  Thanks to Rudi Farkas for the suggestion
- and example coding.</PRE>
+ -bext=s).  Please see updated docs.  Thanks to Rudi Farkas for the suggestion.</PRE>
+<PRE>
+ -Anchor lines of the form &lt;a name=&quot;mysub&quot;&gt;&lt;/a&gt; are now inserted at key points
+ in html output, such as before sub definitions, for the convenience of
+ postprocessing scripts.  Suggested by Howard Owen.</PRE>
 <PRE>
  -The cuddled-else (-ce) flag now also makes cuddled continues, like
  this:</PRE>

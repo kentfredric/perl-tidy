@@ -61,7 +61,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.26 2002/09/17 03:09:39 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.27 2002/09/18 22:18:02 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 # Preloaded methods go here.
@@ -398,38 +398,55 @@ EOM
             die "-format='$fmt' but must be one of: $formats\n";
         }
 
-
         my $output_extension = $default_file_extension{ $rOpts->{'format'} };
         if ( defined( $rOpts->{'output-file-extension'} ) ) {
             $output_extension = $rOpts->{'output-file-extension'};
         }
+        if ( $output_extension =~ /^[a-zA-Z0-9]/ ) {
+            $output_extension = $dot . $output_extension;
+        }
 
-        # check for -b option and any associated conflicts
-        my $backup_extension = 'bak'; 
+        my $backup_extension = 'bak';
         if ( defined( $rOpts->{'backup-file-extension'} ) ) {
             $backup_extension = $rOpts->{'backup-file-extension'};
         }
-        my $in_place_modify = $rOpts->{'backup-and-modify-in-place'}
-          && $rOpts->{'format'} eq 'tidy';
-        if ($in_place_modify) {
+        if ( $backup_extension =~ /^[a-zA-Z0-9]/ ) {
+            $backup_extension = $dot . $backup_extension;
+        }
 
+        # check for -b option; 
+        my $in_place_modify = $rOpts->{'backup-and-modify-in-place'}
+          && $rOpts->{'format'} eq 'tidy' # silently ignore unless beautify mode
+          && @ARGV > 0;    # silently ignore if standard input;
+                           # this allows -b to be in a .perltidyrc file
+                           # without error messages when running from an editor
+
+        # turn off -b with warnings in case of conflicts with other options
+        if ($in_place_modify) {
             if ( $rOpts->{'standard-output'} ) {
-                die "You may not use -b and -st together\n";
-            }
-            unless ( @ARGV > 0 ) {
-                die "You may not use -b and standard input together\n";
+                print STDERR
+                  "Ignoring -b; you may not use -b and -st together\n";
+                $in_place_modify = 0;
             }
             if ($destination_stream) {
-                die "You may not specify a destination array and -b together\n";
+                print STDERR
+"Ignoring -b; you may not specify a destination array and -b together\n";
+                $in_place_modify = 0;
             }
             if ($source_stream) {
-                die "You may not specify a source array and -b together\n";
+                print STDERR
+"Ignoring -b; you may not specify a source array and -b together\n";
+                $in_place_modify = 0;
             }
             if ( $rOpts->{'outfile'} ) {
-                die "You may not use -b and -o together\n";
+                print STDERR
+                  "Ignoring -b; you may not use -b and -o together\n";
+                $in_place_modify = 0;
             }
             if ( defined( $rOpts->{'output-path'} ) ) {
-                die "You may not use -b and -opath together\n";
+                print STDERR
+                  "Ignoring -b; you may not use -b and -opath together\n";
+                $in_place_modify = 0;
             }
         }
 
@@ -437,6 +454,15 @@ EOM
         if ( $rOpts->{'format'} eq 'html' ) {
             Perl::Tidy::HtmlWriter->check_options($rOpts);
         }
+
+        # make the pattern of file extensions that we shouldn't touch
+        $_ = quotemeta($output_extension);
+        my $forbidden_file_extensions = "(($dot_pattern)(LOG|DEBUG|ERR|TEE)|$_";
+        if ($in_place_modify) {
+            $_ = quotemeta($backup_extension);
+            $forbidden_file_extensions .= "|$_";
+        }
+        $forbidden_file_extensions .= ')$';
 
         # Create a diagnostics object if requested;
         # This is only useful for code development
@@ -461,25 +487,16 @@ EOM
             unshift ( @ARGV, '-' ) unless @ARGV;
         }
 
-        # loop to process all files in argument list
-        my $number_of_files = @ARGV;
-        my $formatter       = undef;
-        $tokenizer = undef;
-
         # Set a flag here for any system which does not have a shell to
         # expand wildcard filenames like '*.pl'.  In theory it should also
         # be ok to set the flag for any system, but I prefer not to do so
         # out of robustness concerns.
         my $use_glob = $is_Windows;
 
-        # make the pattern of file extensions that we shouldn't touch
-        my $forbidden_file_extensions =
-          $dot_pattern . "($output_extension|LOG|DEBUG|ERR|TEE";
-        if ($in_place_modify) {
-            $forbidden_file_extensions .= "|$backup_extension";
-        }
-        $forbidden_file_extensions .= ')$';
-
+        # loop to process all files in argument list
+        my $number_of_files = @ARGV;
+        my $formatter       = undef;
+        $tokenizer = undef;
         while ( $input_file = shift @ARGV ) {
             my $fileroot;
             my $input_file_permissions;
@@ -491,10 +508,8 @@ EOM
                 $fileroot = "perltidy";
             }
             elsif ( $input_file eq '-' ) {    # '-' indicates input from STDIN
-                if ($in_place_modify) {
-                    die "You may not use -b and standard input together\n";
-                }
                 $fileroot = "perltidy";   # root name to use for .ERR, .LOG, etc
+                $in_place_modify = 0;
             }
             else {
                 $fileroot = $input_file;
@@ -566,7 +581,7 @@ EOM
             # rerun perltidy over and over with wildcard input.
             if (
                 !$source_stream
-                && ( $input_file =~ /$forbidden_file_extensions/
+                && (   $input_file =~ /$forbidden_file_extensions/
                     || $input_file eq 'DIAGNOSTICS' )
               )
             {
@@ -635,11 +650,11 @@ EOM
             }
             else {
                 if ($in_place_modify) {
-                   $output_file = IO::File->new_tmpfile()
+                    $output_file = IO::File->new_tmpfile()
                       or die "cannot open temp file for -b option: $!\n";
                 }
                 else {
-                    $output_file = $fileroot . $dot . $output_extension;
+                    $output_file = $fileroot . $output_extension;
                 }
             }
 
@@ -753,15 +768,14 @@ EOM
                     die print
 "problem with -b backing up input file '$input_file': not a file\n";
                 }
-                my $backup_name =
-                  $input_file . $dot . $backup_extension; ##$rOpts->{'backup-file-extension'};
+                my $backup_name = $input_file . $backup_extension;
                 if ( -f $backup_name ) {
                     unlink($backup_name)
-                       or die
+                      or die
 "unable to remove previous '$backup_name' for -b option; check permissions: $!\n";
                 }
                 rename( $input_file, $backup_name )
-                    or die
+                  or die
 "problem renaming $input_file to $backup_name for -b option: $!\n";
                 $ifname = $backup_name;
 
@@ -770,7 +784,7 @@ EOM
 
                 my $fout = IO::File->new("> $input_file")
                   or die
-                  "problem opening $input_file for write for -b option; check directory permissions: $!\n";
+"problem opening $input_file for write for -b option; check directory permissions: $!\n";
                 my $line;
                 while ( $line = $output_file->getline() ) {
                     $fout->print($line);
@@ -1129,7 +1143,7 @@ sub process_command_line {
       format=tidy
       backup-file-extension=bak
     );
-    
+
     ## FIXME: above should be _bak for VMS
     push @defaults, "perl-syntax-check-flags=-c -T";
 
@@ -3218,6 +3232,7 @@ sub new {
 
     my $html_file_opened = 0;
     my $html_fh;
+    my $html_temp_fh;
     ( $html_fh, my $html_filename ) =
       Perl::Tidy::streamhandle( $html_file, 'w' );
     unless ($html_fh) {
@@ -3274,11 +3289,21 @@ ENDCSS
 <body bgcolor=\"$rOpts->{'html-color-background'}\" text=\"$rOpts->{'html-color-punctuation'}\">
 HTML_START
         }
+
+        # Start the index, which requires that the <pre> section
+        # go out to a temporary file.  The close() routine will
+        # copy the <pre> section to the output.
+        $html_temp_fh = IO::File->new_tmpfile()
+          or die "cannot open temp file for -html: $!\n";
+        $html_fh->print( <<"INDEX_END");
+<ul>
+INDEX_END
     }
 
     my $fname_comment = $input_file;
     $fname_comment =~ s/--+/-/g;    # protect HTML comment tags
-    $html_fh->print( <<"END_PRE");
+    my $dest = $html_temp_fh ? $html_temp_fh : $html_fh;
+    $dest->print( <<"END_PRE");
 <!-- filename: $fname_comment -->
 <pre>
 END_PRE
@@ -3287,6 +3312,7 @@ END_PRE
         _html_file        => $html_file,
         _html_file_opened => $html_file_opened,
         _html_fh          => $html_fh,
+        _html_temp_fh     => $html_temp_fh,
     }, $class;
 }
 
@@ -3608,7 +3634,27 @@ sub set_default_properties {
 sub close_html_file {
     my $self = shift;
     return unless $self->{_html_file_opened};
-    my $html_fh = $self->{_html_fh};
+
+    my $html_fh      = $self->{_html_fh};
+    my $html_temp_fh = $self->{_html_temp_fh};
+
+    # If we are writing an index, finish it and append
+    # the <pre> section which is on a temp file
+    if ($html_temp_fh) {
+        $html_fh->print( <<"INDEX_END");
+</ul>
+INDEX_END
+
+        seek( $html_temp_fh, 0, 0 )
+          or die "unable to rewind tmp file for -html option: $!\n";
+        my $line;
+        while ( $line = $html_temp_fh->getline() ) {
+            $html_fh->print($line);
+        }
+        $html_temp_fh->close();
+    }
+
+    # finish the html page
     $html_fh->print( <<"PRE_END");
 </pre>
 PRE_END
@@ -3636,8 +3682,8 @@ sub markup_tokens {
         if ( $type eq 'i' && $token =~ /^(sub\s+)(\w.*)$/ ) {
             $token = $self->markup_html_element( $1, 'k' );
             push @colored_tokens, $token;
-            $token = $2;
-            $type  = 'M';
+            $token   = $2;
+            $type    = 'M';
             $subname = $token;
         }
 
@@ -3655,7 +3701,7 @@ sub markup_tokens {
         $token = $self->markup_html_element( $token, $type );
         push @colored_tokens, $token;
     }
-    return (\@colored_tokens, $subname);
+    return ( \@colored_tokens, $subname );
 }
 
 sub markup_html_element {
@@ -3719,7 +3765,8 @@ sub write_line {
 
     my $self = shift;
     return unless $self->{_html_file_opened};
-    my $html_fh = $self->{_html_fh};
+    my $html_fh      = $self->{_html_fh};
+    my $html_temp_fh = $self->{_html_temp_fh};
     my ($line_of_tokens) = @_;
     my $line_type   = $line_of_tokens->{_line_type};
     my $input_line  = $line_of_tokens->{_line_text};
@@ -3742,9 +3789,10 @@ sub write_line {
           $self->markup_tokens( $rtokens, $rtoken_type );
         $html_line .= join '', @$rcolored_tokens;
 
-        # add anchor at a sub 
+        # add a sub to the index
         if ($subname) {
-            $html_fh->print("<a name=\"$subname\"><a>\n");
+            $html_fh->print("<li><a href=\"#$subname\">$subname<a>\n");
+            $html_temp_fh->print("<a name=\"$subname\"><a>") if $html_temp_fh;
         }
     }
 
@@ -3773,7 +3821,8 @@ sub write_line {
     }
 
     # write the line
-    $html_fh->print("$html_line\n");
+    my $dest = $html_temp_fh ? $html_temp_fh : $html_fh;
+    $dest->print("$html_line\n");
 }
 
 #####################################################################
@@ -4378,7 +4427,7 @@ sub write_line {
 
         # leave the blank counters in a predictable state 
         # after __END__ or __DATA__
-        elsif ( $line_type =~ /^(END_START|DATA_START)$/) {
+        elsif ( $line_type =~ /^(END_START|DATA_START)$/ ) {
             $file_writer_object->reset_consecutive_blank_lines();
         }
 
@@ -6640,7 +6689,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.26 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.27 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -7199,8 +7248,7 @@ sub set_white_space_flag {
                         $last_nonblank_token eq '}'
                         && (
                             $is_block_without_semicolon{
-                                $last_nonblank_block_type
-                            }
+                                $last_nonblank_block_type }
                             || $last_nonblank_block_type =~ /^sub\s+\w/
                             || $last_nonblank_block_type =~ /^\w+:$/ )
                     )
@@ -18598,9 +18646,10 @@ EOM
                             && $last_nonblank_block_type !~
                             /^(\{|\}|;|while|until|for|foreach)$/ )
                         {
+
                             # note: ';' '{' and '}' in list above
                             # because continues can follow bare blocks
-                            warning( "'$tok' should follow a block\n");
+                            warning("'$tok' should follow a block\n");
                         }
                     }
                 }
@@ -22370,6 +22419,7 @@ The perltidy(1) man page describes all of the features of perltidy.  It
 can be found at http://perltidy.sourceforge.net.
 
 =cut
+
 
 
 

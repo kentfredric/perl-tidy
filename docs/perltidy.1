@@ -130,7 +130,7 @@
 .\" ========================================================================
 .\"
 .IX Title "PERLTIDY 1"
-.TH PERLTIDY 1 "2002-09-16" "perl v5.6.1" "User Contributed Perl Documentation"
+.TH PERLTIDY 1 "2002-09-17" "perl v5.6.1" "User Contributed Perl Documentation"
 .UC
 .SH "NAME"
 perltidy \- a perl script indenter and reformatter
@@ -184,9 +184,9 @@ extension.  For any file with an error, there will be a file with extension
 .Vb 1
 \&  perltidy -b file1.pl file2.pl
 .Ve
-Modify file1.pl and file1.pl in place, and backup the originals to file1.pl.bak
-and file2.pl.bak.  If file1.pl.bak and/or file2.pl.bak already exist,
-they will be overwritten.
+Modify \fIfile1.pl\fR and \fIfile1.pl\fR in place, and backup the originals to
+\&\fIfile1.pl.bak\fR and \fIfile2.pl.bak\fR.  If \fIfile1.pl.bak\fR and/or \fIfile2.pl.bak\fR
+already exist, they will be overwritten.
 .PP
 .Vb 1
 \&  perltidy -gnu somefile.pl
@@ -329,6 +329,12 @@ when desired with \fB\-nse\fR on the command line.
 Change the extension of the output file to be \fI.ext\fR instead of the
 default \fI.tdy\fR.  If the \fB\-html\fR option is used, this will change
 the extension to be \fI.ext\fR instead of the default \fI.html\fR.
+.Sp
+If the extension \f(CW\*(C`ext\*(C'\fR begins with \f(CW\*(C`A\-Z\*(C'\fR, \f(CW\*(C`a\-z\*(C'\fR, or \f(CW\*(C`0\-9\*(C'\fR, then it
+will be appended to the filename with an intermediate '.' (or '_' on
+some systems).  Otherwise, it will be appended directly.  Thus, for
+example, using \f(CW\*(C`\-oext=htm\*(C'\fR and \f(CW\*(C`\-oext=.htm\*(C'\fR  on \fIsomefile.pl\fR with
+both produce \fIsomefile.pl.htm\fR
 .IP "\fB\-opath\fR=path,    \fB\-\-output\-path\fR=path" 4
 .IX Item "-opath=path,    --output-path=path"
 When perltidy creates a filename for an output file, by default it merely
@@ -354,12 +360,21 @@ or if it is being specified explicitly with the \fB\-o=s\fR parameter.
 .IX Item "-b,    --backup-and-modify-in-place"
 Modify the input file or files in-place and save the original with the
 extension \fI.bak\fR.  Any existing \fI.bak\fR file will be deleted.  See next item
-for changing the default backup extension.  This only works when input is from
-an actual file.  Also, it does not work (or make sense) in \fB\-html\fR mode.
+for changing the default backup extension.  
+.Sp
+A \fB\-b\fR flag will be ignored if input is from standard input, or
+if the \fB\-html\fR flag is set. 
 .IP "\fB\-bext\fR=ext,    \fB\-\-backup\-file\-extension\fR=ext" 4
 .IX Item "-bext=ext,    --backup-file-extension=ext"
-Change the extension of the backup file to be \fI.ext\fR instead of the
-the default \fI.bak\fR.
+Change the extension of the backup file to be something other than the
+default \fI.bak\fR.  
+.Sp
+If the extension \f(CW\*(C`ext\*(C'\fR begins with \f(CW\*(C`A\-Z\*(C'\fR, \f(CW\*(C`a\-z\*(C'\fR, or \f(CW\*(C`0\-9\*(C'\fR, then it
+will be appended to the filename with an intermediate '.' (or '_' on
+some systems).  Otherwise, it will be appended directly.  For example,
+suppose the file is \fIsomefile.pl\fR.  If \f(CW\*(C`ext=old\*(C'\fR, the backup file will
+be \fIsomefile.pl.old\fR.  If \f(CW\*(C`ext=~\*(C'\fR, then the backup file will be
+\&\fIsomefile.pl~\fR  .  
 .IP "\fB\-w\fR,    \fB\-\-warning\-output\fR" 4
 .IX Item "-w,    --warning-output"
 Setting \fB\-w\fR causes perltidy to include any non-critical warning
@@ -379,10 +394,8 @@ perltidy as a filter from within the editor using something like
 \& :n1,n2!perltidy -q
 .Ve
 where \f(CW\*(C`n1,n2\*(C'\fR represents the selected text.  Without the \fB\-q\fR flag,
-any error messages will mess up your screen.  Besides, it is common to
-run perltidy on incomplete blocks from an editor, and you don't want to
-see any complaints about that.  (Or maybe you do; in that case, be
-prepared to use your \*(L"undo\*(R" key).
+any error message may mess up your screen, so be prepared to use your
+\&\*(L"undo\*(R" key.
 .IP "\fB\-log\fR,    \fB\-\-logfile\fR" 4
 .IX Item "-log,    --logfile"
 Save the \fI.LOG\fR file, which has many useful diagnostics.  Perltidy always
@@ -1060,6 +1073,10 @@ Otherwise, your edits will be lost when you rerun perltidy with \fB\-csc\fR.   F
 example, you could simply change \f(CW\*(C`## end\*(C'\fR to be \f(CW\*(C`## End\*(C'\fR, since the test is
 case sensitive.  You may also want to use the \fB\-ssc\fR flag to keep these
 modified closing side comments spaced the same as actual closing side comments.
+.IP "\(bu" 4
+Temporarily generating closing side comments is a useful technique for
+exploring and/or debugging a perl script, especially one written by someone
+else.  You can always remove them with \fB\-dcsc\fR.
 .RE
 .RS 4
 .RE
@@ -2167,7 +2184,7 @@ The following list shows all short parameter names which allow a prefix
 \&'n' to produce the negated form:
 .PP
 .Vb 5
-\&    D anl asc aws bbb bbc bbs bli boc bok bol bot syn ce csc 
+\&    D anl asc aws b bbb bbc bbs bli boc bok bol bot syn ce csc 
 \&    dac dbc dcsc dnl dws dp dpro dsm dsc ddf dln dop dsn dtt dwls dwrs 
 \&    f fll hsc html ibc icb icp iob isbc lp log lal x lsl bl 
 \&    sbl okw ola oll pvl q opt sbc sfs ssc sts se st sob 
@@ -2200,26 +2217,24 @@ reformat them separately).  Perltidy does not format 'format' sections
 in any way.  And, of course, it does not modify pod documents.
 .SH "FILES"
 .IX Header "FILES"
-.IP "Special files when standard input or standard output are used" 4
-.IX Item "Special files when standard input or standard output are used"
+.IP "Special files when standard input is used" 4
+.IX Item "Special files when standard input is used"
 When standard input is used, the log file, if saved, is \fIperltidy.LOG\fR,
 and any errors are written to \fIperltidy.ERR\fR unless the \fB\-se\fR flag is
-set.  These are saved in the current working directory.  If syntax
-checking is used, a temporary copy of the input file will be created,
-but it will be removed when perltidy finishes.
-.Sp
-When standard output and syntax checking are used, a temporary copy of the
-output file will be created.  It will be removed when perltidy finishes.
+set.  These are saved in the current working directory.  
 .IP "Files overwritten" 4
 .IX Item "Files overwritten"
 The following file extensions are used by perltidy, and files with these
-extensions may be overwritten or deleted: \fI.tdy\fR, \fI.ERR\fR, \fI.LOG\fR, \fI.TEE\fR.
+extensions may be overwritten or deleted: \fI.ERR\fR, \fI.LOG\fR, \fI.TEE\fR,
+and/or \fI.tdy\fR, \fI.html\fR, and \fI.bak\fR, depending on the run type and
+settings.
 .IP "Files extensions limitations" 4
 .IX Item "Files extensions limitations"
 Perltidy does not operate on files for which the run could produce a file with
-a duplicated file extension.  These extensions are \fI.tdy\fR, \fI.LOG\fR, \fI.ERR\fR,
-\&\fI.TEE\fR.  The purpose of this rule is to prevent generating
-confusing filenames such as \fIsomefile.tdy.tdy.tdy\fR.
+a duplicated file extension.  These extensions include \fI.LOG\fR, \fI.ERR\fR,
+\&\fI.TEE\fR, and perhaps \fI.tdy\fR and \fI.bak\fR, depending on the run type.  The
+purpose of this rule is to prevent generating confusing filenames such as
+\&\fIsomefile.tdy.tdy.tdy\fR.
 .SH "SEE ALSO"
 .IX Header "SEE ALSO"
 \&\fIperlstyle\fR\|(1), \fIPerl::Tidy\fR\|(3)
