@@ -1,5 +1,15 @@
 # some alignment tests
 
+# align for
+$priv{$_}{16}  = "INBIN"  for ( "open", "backtick" );
+$priv{$_}{32}  = "INCR"   for ( "open", "backtick" );
+$priv{$_}{64}  = "OUTBIN" for ( "open", "backtick" );
+$priv{$_}{128} = "OUTCR"  for ( "open", "backtick" );
+
+# align 'while'
+$nglyphbits++   while ( $nglyphmax >=   ( 1 << $nglyphbits ) );
+$nadvancebits++ while ( $nadvancemax >= ( 1 << $nadvancebits ) );
+
 # at present, 'last' remains aligned across a gap:
 /s/  && do { $msg->subject($arg); last SWITCH; };
 /q/  && do { return; };

@@ -1,3 +1,8 @@
+$a{-foo}       = 2;
+$a{foo}        = 2;
+$a{$foo}       = 2;
+$a{ 2 + $foo } = 2;
+
 # A simple test hash
 # conversions of month number into letters (0-11)
 my %MonthChars = ('0', 'Jan',

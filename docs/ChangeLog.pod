@@ -7,11 +7,16 @@
 
 =head2 2002 xx xx
 
+ -Bareword strings with leading '-', like, '-foo' now count as 1 token
+ for horizontal tightness for consistency.  This way $a{'-foo'},
+ $a{foo}, and $a{-foo} are now all treated similarly.  Thus, by default,
+ OLD: $a{ -foo } will now be NEW: $a{-foo}.  Suggested by Mark Olesen.
+
  -added 2 new flags to control spaces between keywords and opening parens:
    -sak=s  or --space-after-keyword=s,  and
    -nsak=s or --nospace-after-keyword=s, where 's' is a list of keywords.
 
- The NEW default list of keywords which get a space is:
+ The new default list of keywords which get a space is:
 
    "my local our and or eq ne if else elsif until unless while for foreach
      return switch case given when"
@@ -27,7 +32,7 @@
 
         push pop shift unshift join split die
 
- but did not have 'our'.  So, if you prefer to make perltidy behave
+ but did not have 'our'.  Example: if you prefer to make perltidy behave
  exactly as before, you can include the following two lines in your
  .perltidyrc file: 
 
@@ -36,6 +41,23 @@
 
  -Corrected html error in .toc file when -frm -html is used (extra ");
   browsers were tolerant of it.
+
+ -Improved alignment of ?/: chains of the form
+  OLD:
+    $leapyear =
+      $year % 4     ? 0
+      : $year % 100 ? 1
+      : $year % 400 ? 0
+      : 1;
+  NEW:
+    $leapyear =
+        $year % 4   ? 0
+      : $year % 100 ? 1
+      : $year % 400 ? 0
+      : 1;
+
+ -All perl code distributed with perl 5.8 is parsed correctly except
+ for one instance (lextest.t) of the known bug.
 
 =head2 2002 11 30
 

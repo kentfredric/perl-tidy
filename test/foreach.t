@@ -1,3 +1,15 @@
+# break with foreach on new line:
+$is_vertical_alignment_keyword{$_} = 1
+  foreach qw(if unless and or eq ne for foreach while until);
+
+# Break this before the 'for'
+$command .=
+   " -" . $_ . " " . $source_options->{$_} for keys %{$source_options};
+
+# break at foreach, not ','
+    s/^&//, $export_cache->{$_} = 1
+      foreach (@$exports, @{"$pkg\::EXPORT_OK"});
+
 {
     # break at all ';'s
     for ($i = 0 ;

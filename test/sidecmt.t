@@ -1,5 +1,13 @@
 # some side comments to line up
 
+{
+    # hanging side comment aligned with a long line:
+    # caused trouble at one time
+    return &postponed_sub
+      unless ref \$_[0] eq 'GLOB';  # A subroutine is compiled.
+                                    # Cannot be done before the file is compiled
+}
+
 # At one time the middle line was not lined up because of $VERSION
 my $WinSize    = "\0" x 8;      # window size buffer
 my $VERSION    = '0.70';        # because we're V7-compatible :)

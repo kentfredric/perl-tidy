@@ -61,7 +61,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.39 2003/01/05 19:36:54 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.40 2003/01/10 15:41:56 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 sub streamhandle {
@@ -2320,6 +2320,8 @@ Whitespace Control
  -wls=s  want space left of tokens in string; i.e. -nwls='+ - * /'
  -wrs=s  want space right of tokens in string;
  -sts    put space before terminal semicolon of a statement
+ -sak=s  put space between keywords given in s and '(';
+ -nsak=s no space between keywords in s and '('; i.e. -nsak='my our local'
 
 Line Break Control
  -fnl    freeze newlines; this disables all line break changes
@@ -6276,10 +6278,9 @@ EOM
     }
 
     # default keywords for which space is introduced before an opening paren
-    # TODO: add 'case' and 'when' after vertical aligner is improved
     # (at present, including them messes up vertical alignment)
-    @_ = qw(my local our and or eq ne if else 
-        elsif until unless while for foreach return switch given);
+    @_ = qw(my local our and or eq ne if else elsif until 
+        unless while for foreach return switch case given when);
     @space_after_keyword{@_} = (1) x scalar(@_);
 
     # allow user to modify these defaults
@@ -7028,8 +7029,22 @@ sub set_white_space_flag {
                     $ws = WS_NO;
                 }
                 else {
+
+                    # Patch to count '-foo' as single token so that
+                    # each of  $a{-foo} and $a{foo} and $a{'foo'} do
+                    # not get spaces with default formatting.
+                    my $j_here = $j;
+                    ++$j_here
+                      if ( $token eq '-'
+                        && $last_token             eq '{'
+                        && $$rtoken_type[ $j + 1 ] eq 'w' );
+
+                    # $j_next is where a closing token should be if
+                    # the container has a single token
                     my $j_next =
-                      ( $$rtoken_type[ $j + 1 ] eq 'b' ) ? $j + 2 : $j + 1;
+                      ( $$rtoken_type[ $j_here + 1 ] eq 'b' )
+                      ? $j_here + 2
+                      : $j_here + 1;
                     my $tok_next  = $$rtokens[$j_next];
                     my $type_next = $$rtoken_type[$j_next];
 
@@ -7667,7 +7682,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.39 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.40 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -8624,6 +8639,8 @@ sub set_logical_padding {
     #           &Error_OutOfRange;
     #       }
     #
+    #  We will also do something similar with certain ?/: chains
+    #
     my ( $ri_first, $ri_last ) = @_;
     my $max_line = @$ri_first - 1;
 
@@ -8638,7 +8655,7 @@ sub set_logical_padding {
         $iend                = $$ri_last[$line];
         $ibeg_next           = $$ri_first[ $line + 1 ];
         $tok_next            = $tokens_to_go[$ibeg_next];
-        $has_leading_op_next = ( $tok_next =~ /^(\&\&|\|\||and|or)$/ );
+        $has_leading_op_next = ( $tok_next =~ /^(\&\&|\|\||and|or|\:)$/ );
         next unless ($has_leading_op_next);
 
         # next line must not be at lesser depth
@@ -8654,13 +8671,34 @@ sub set_logical_padding {
             # previous line must be at lesser depth if this is not first line
             # of the batch
             if ( $line > 0 ) {
-                next
-                  if $nesting_depth_to_go[$ibegm] >=
-                  $nesting_depth_to_go[$ibeg];
-
+                
                 # skip if we are at same depth as a previous line
                 # with leading logical operator
                 next if $has_leading_op;
+
+                # For ':' chains, add space after a line ending in some
+                # type of equality.  Example:
+                #    $leapyear =
+                #        $year % 4   ? 0     # <- We are here
+                #      : $year % 100 ? 1
+                #      : $year % 400 ? 0
+                #      : 1;
+                if ( $tok_next eq ':' ) {
+                    next unless $types_to_go[$iendm] =~ /=$/;
+                }
+
+                # For other operators, previous line must be lesser depth
+                #       if (   ( $Year < 1601 )
+                #           || ( $Year > 2899 )     # <- We are here
+                #           || ( $EndYear < 1601 )
+                #           || ( $EndYear > 2899 ) )
+                #       {
+                else {
+                    next
+                      if $nesting_depth_to_go[$ibegm] >=
+                      $nesting_depth_to_go[$ibeg];
+                }
+
                 $ipad = $ibeg;
             }
 
@@ -10566,7 +10604,7 @@ sub set_vertical_tightness_flags {
         @_ = qw#{ ? : => = += -= =~ *= /= .= && || ||= #;
         @is_vertical_alignment_type{@_} = (1) x scalar(@_);
 
-        @_ = qw(if unless and or eq ne);
+        @_ = qw(if unless and or eq ne for foreach while until);
         @is_vertical_alignment_keyword{@_} = (1) x scalar(@_);
     }
 
@@ -10589,16 +10627,17 @@ sub set_vertical_tightness_flags {
         # look at each line of this batch..
         my $last_vertical_alignment_before_index;
         my $vert_last_nonblank_type;
+        my $vert_last_nonblank_token;
         my $vert_last_nonblank_block_type;
         my $max_line = @$ri_first - 1;
-        my ( $i, $type, $token, $block_type, $last_nonblank_token,
-            $alignment_type );
+        my ( $i, $type, $token, $block_type, $alignment_type );
         my ( $ibeg, $iend, $line );
         foreach $line ( 0 .. $max_line ) {
             $ibeg                                 = $$ri_first[$line];
             $iend                                 = $$ri_last[$line];
             $last_vertical_alignment_before_index = -1;
             $vert_last_nonblank_type              = '';
+            $vert_last_nonblank_token             = '';
             $vert_last_nonblank_block_type        = '';
 
             # look at each token in this output line..
@@ -10667,22 +10706,19 @@ sub set_vertical_tightness_flags {
                     }
                 }
 
-             # We have to be very careful about alignment before opening parens.
-             # It is ok to line up sequences like this:
-             #    if    ( $something eq "simple" )  { &handle_simple }
-             #    elsif ( $something eq "hard" )    { &handle_hard }
-                elsif ( $type eq '(' ) {
-                    if ( ( $i == $ibeg + 2 )
-                        && $tokens_to_go[$ibeg] =~ /^(if|elsif)/ )
-                    {
-                        $alignment_type = $type;
-                    }
-                }
-
                 # align before one of these types..
                 # Note: add '.' after new vertical aligner is operational
                 elsif ( $is_vertical_alignment_type{$type} ) {
                     $alignment_type = $token;
+             
+                    # For a paren after keyword, only align something like this:
+                    #    if    ( $a ) { &a }
+                    #    elsif ( $b ) { &b }
+                    if ( $token eq '(' && $vert_last_nonblank_type eq 'k' ) {
+                        $alignment_type = ""
+                          unless $vert_last_nonblank_token =~
+                          /^(if|unless|elsif)$/;
+                    }
 
                     # be sure the alignment tokens are unique
                     # This didn't work well: reason not determined
@@ -10737,6 +10773,7 @@ sub set_vertical_tightness_flags {
                 $matching_token_to_go[$i] = $alignment_type;
                 if ( $type ne 'b' ) {
                     $vert_last_nonblank_type       = $type;
+                    $vert_last_nonblank_token      = $token;
                     $vert_last_nonblank_block_type = $block_type;
                 }
             }
@@ -10786,656 +10823,670 @@ sub terminal_type {
     }
 }
 
-sub set_bond_strengths {
+{
+    my %is_good_keyword_breakpoint;
 
-    BEGIN {
+    sub set_bond_strengths {
 
-        ###############################################################
-        # NOTE: NO_BREAK's set here are HINTS which may not be honored;
-        # essential NO_BREAKS's must be enforced in section 2, below.
-        ###############################################################
+        BEGIN {
 
-        # adding NEW_TOKENS: add a left and right bond strength by
-        # mimmicking what is done for an existing token type.  You
-        # can skip this step at first and take the default, then
-        # tweak later to get desired results.
+            @_ = qw(if unless while until for foreach);
+            @is_good_keyword_breakpoint{@_} = (1) x scalar(@_);
 
-        # The bond strengths should roughly follow precenence order where
-        # possible.  If you make changes, please check the results very
-        # carefully on a variety of scripts.
+            ###############################################################
+            # NOTE: NO_BREAK's set here are HINTS which may not be honored;
+            # essential NO_BREAKS's must be enforced in section 2, below.
+            ###############################################################
 
-        # no break around possible filehandle
-        $left_bond_strength{'Z'}  = NO_BREAK;
-        $right_bond_strength{'Z'} = NO_BREAK;
+            # adding NEW_TOKENS: add a left and right bond strength by
+            # mimmicking what is done for an existing token type.  You
+            # can skip this step at first and take the default, then
+            # tweak later to get desired results.
 
-        # never put a bare word on a new line:
-        # example print (STDERR, "bla"); will fail with break after (
-        $left_bond_strength{'w'} = NO_BREAK;
+            # The bond strengths should roughly follow precenence order where
+            # possible.  If you make changes, please check the results very
+            # carefully on a variety of scripts.
+
+            # no break around possible filehandle
+            $left_bond_strength{'Z'}  = NO_BREAK;
+            $right_bond_strength{'Z'} = NO_BREAK;
+
+            # never put a bare word on a new line:
+            # example print (STDERR, "bla"); will fail with break after (
+            $left_bond_strength{'w'} = NO_BREAK;
 
         # blanks always have infinite strength to force breaks after real tokens
-        $right_bond_strength{'b'} = NO_BREAK;
+            $right_bond_strength{'b'} = NO_BREAK;
 
-        # try not to break on exponentation
-        @_                       = qw" ** .. ... <=> ";
-        @left_bond_strength{@_}  = (STRONG) x scalar(@_);
-        @right_bond_strength{@_} = (STRONG) x scalar(@_);
+            # try not to break on exponentation
+            @_                       = qw" ** .. ... <=> ";
+            @left_bond_strength{@_}  = (STRONG) x scalar(@_);
+            @right_bond_strength{@_} = (STRONG) x scalar(@_);
 
-        # The comma-arrow has very low precedence but not a good break point
-        $left_bond_strength{'=>'}  = NO_BREAK;
-        $right_bond_strength{'=>'} = NOMINAL;
+            # The comma-arrow has very low precedence but not a good break point
+            $left_bond_strength{'=>'}  = NO_BREAK;
+            $right_bond_strength{'=>'} = NOMINAL;
 
-        # ok to break after label
-        $left_bond_strength{'J'}  = NO_BREAK;
-        $right_bond_strength{'J'} = NOMINAL;
-        $left_bond_strength{'j'}  = STRONG;
-        $right_bond_strength{'j'} = STRONG;
-        $left_bond_strength{'A'}  = STRONG;
-        $right_bond_strength{'A'} = STRONG;
+            # ok to break after label
+            $left_bond_strength{'J'}  = NO_BREAK;
+            $right_bond_strength{'J'} = NOMINAL;
+            $left_bond_strength{'j'}  = STRONG;
+            $right_bond_strength{'j'} = STRONG;
+            $left_bond_strength{'A'}  = STRONG;
+            $right_bond_strength{'A'} = STRONG;
 
-        $left_bond_strength{'->'}  = STRONG;
-        $right_bond_strength{'->'} = VERY_STRONG;
+            $left_bond_strength{'->'}  = STRONG;
+            $right_bond_strength{'->'} = VERY_STRONG;
 
-        # breaking AFTER these is just ok:
-        @_                       = qw" % + - * / x  ";
-        @left_bond_strength{@_}  = (STRONG) x scalar(@_);
-        @right_bond_strength{@_} = (NOMINAL) x scalar(@_);
+            # breaking AFTER these is just ok:
+            @_                       = qw" % + - * / x  ";
+            @left_bond_strength{@_}  = (STRONG) x scalar(@_);
+            @right_bond_strength{@_} = (NOMINAL) x scalar(@_);
 
-        # breaking BEFORE these is just ok:
-        @_                       = qw" >> << ";
-        @right_bond_strength{@_} = (STRONG) x scalar(@_);
-        @left_bond_strength{@_}  = (NOMINAL) x scalar(@_);
+            # breaking BEFORE these is just ok:
+            @_                       = qw" >> << ";
+            @right_bond_strength{@_} = (STRONG) x scalar(@_);
+            @left_bond_strength{@_}  = (NOMINAL) x scalar(@_);
 
-        # I prefer breaking before the string concatenation operator
-        # because it can be hard to see at the end of a line
-        # swap these to break after a '.'
-        # this could be a future option
-        $right_bond_strength{'.'} = STRONG;
-        $left_bond_strength{'.'}  = 0.9 * NOMINAL + 0.1 * WEAK;
+            # I prefer breaking before the string concatenation operator
+            # because it can be hard to see at the end of a line
+            # swap these to break after a '.'
+            # this could be a future option
+            $right_bond_strength{'.'} = STRONG;
+            $left_bond_strength{'.'}  = 0.9 * NOMINAL + 0.1 * WEAK;
 
-        @_                       = qw"} ] ) ";
-        @left_bond_strength{@_}  = (STRONG) x scalar(@_);
-        @right_bond_strength{@_} = (NOMINAL) x scalar(@_);
+            @_                       = qw"} ] ) ";
+            @left_bond_strength{@_}  = (STRONG) x scalar(@_);
+            @right_bond_strength{@_} = (NOMINAL) x scalar(@_);
 
-        # make these a little weaker than nominal so that they get
-        # favored for end-of-line characters
-        @_                       = qw"!= == =~ !~";
-        @left_bond_strength{@_}  = (STRONG) x scalar(@_);
-        @right_bond_strength{@_} = ( 0.9 * NOMINAL + 0.1 * WEAK ) x scalar(@_);
+            # make these a little weaker than nominal so that they get
+            # favored for end-of-line characters
+            @_                       = qw"!= == =~ !~";
+            @left_bond_strength{@_}  = (STRONG) x scalar(@_);
+            @right_bond_strength{@_} =
+              ( 0.9 * NOMINAL + 0.1 * WEAK ) x scalar(@_);
 
-        # break AFTER these
-        @_                       = qw" < >  | & >= <=";
-        @left_bond_strength{@_}  = (VERY_STRONG) x scalar(@_);
-        @right_bond_strength{@_} = ( 0.8 * NOMINAL + 0.2 * WEAK ) x scalar(@_);
+            # break AFTER these
+            @_                       = qw" < >  | & >= <=";
+            @left_bond_strength{@_}  = (VERY_STRONG) x scalar(@_);
+            @right_bond_strength{@_} =
+              ( 0.8 * NOMINAL + 0.2 * WEAK ) x scalar(@_);
 
-        # breaking either before or after a quote is ok
-        # but bias for breaking before a quote
-        $left_bond_strength{'Q'}  = NOMINAL;
-        $right_bond_strength{'Q'} = NOMINAL + 0.02;
-        $left_bond_strength{'q'}  = NOMINAL;
-        $right_bond_strength{'q'} = NOMINAL;
+            # breaking either before or after a quote is ok
+            # but bias for breaking before a quote
+            $left_bond_strength{'Q'}  = NOMINAL;
+            $right_bond_strength{'Q'} = NOMINAL + 0.02;
+            $left_bond_strength{'q'}  = NOMINAL;
+            $right_bond_strength{'q'} = NOMINAL;
 
-        # starting a line with a keyword is usually ok
-        $left_bond_strength{'k'} = NOMINAL;
+            # starting a line with a keyword is usually ok
+            $left_bond_strength{'k'} = NOMINAL;
 
-        # we usually want to bond a keyword strongly to what immediately
-        # follows, rather than leaving it stranded at the end of a line
-        $right_bond_strength{'k'} = STRONG;
+            # we usually want to bond a keyword strongly to what immediately
+            # follows, rather than leaving it stranded at the end of a line
+            $right_bond_strength{'k'} = STRONG;
 
-        $left_bond_strength{'G'}  = NOMINAL;
-        $right_bond_strength{'G'} = STRONG;
+            $left_bond_strength{'G'}  = NOMINAL;
+            $right_bond_strength{'G'} = STRONG;
 
-        # it is very good to break AFTER various assignment operators
-        @_ = qw(
-          = **= += *= &= <<= &&=
-          -= /= |= >>= ||=
-          .= %= ^=
-          x=
+            # it is very good to break AFTER various assignment operators
+            @_ = qw(
+              = **= += *= &= <<= &&=
+              -= /= |= >>= ||=
+              .= %= ^=
+              x=
+            );
+            @left_bond_strength{@_}  = (STRONG) x scalar(@_);
+            @right_bond_strength{@_} =
+              ( 0.4 * WEAK + 0.6 * VERY_WEAK ) x scalar(@_);
+
+            # break BEFORE '&&' and '||'
+            # set strength of '||' to same as '=' so that chains like
+            # $a = $b || $c || $d   will break before the first '||'
+            $right_bond_strength{'||'} = NOMINAL;
+            $left_bond_strength{'||'}  = $right_bond_strength{'='};
+
+            # set strength of && a little higher than ||
+            $right_bond_strength{'&&'} = NOMINAL;
+            $left_bond_strength{'&&'}  = $left_bond_strength{'||'} + 0.1;
+
+            $left_bond_strength{';'}  = VERY_STRONG;
+            $right_bond_strength{';'} = VERY_WEAK;
+            $left_bond_strength{'f'}  = VERY_STRONG;
+
+            # make right strength of for ';' a little less than '='
+            # to make for contents break after the ';' to avoid this:
+            #   for ( $j = $number_of_fields - 1 ; $j < $item_count ; $j +=
+            #     $number_of_fields )
+            # and make it weaker than ',' and 'and' too
+            $right_bond_strength{'f'} = VERY_WEAK - 0.03;
+
+            # The strengths of ?/: should be somewhere between
+            # an '=' and a quote (NOMINAL),
+            # make strength of ':' slightly less than '?' to help
+            # break long chains of ? : after the colons
+            $left_bond_strength{':'}  = 0.4 * WEAK + 0.6 * NOMINAL;
+            $right_bond_strength{':'} = NO_BREAK;
+            $left_bond_strength{'?'}  = $left_bond_strength{':'} + 0.01;
+            $right_bond_strength{'?'} = NO_BREAK;
+
+            $left_bond_strength{','}  = VERY_STRONG;
+            $right_bond_strength{','} = VERY_WEAK;
+        }
+
+        # patch-its always ok to break at end of line
+        $nobreak_to_go[$max_index_to_go] = 0;
+
+        # adding a small 'bias' to strengths is a simple way to make a line
+        # break at the first of a sequence of identical terms.  For example,
+        # to force long string of conditional operators to break with
+        # each line ending in a ':', we can add a small number to the bond
+        # strength of each ':'
+        my $colon_bias = 0;
+        my $amp_bias   = 0;
+        my $bar_bias   = 0;
+        my $and_bias   = 0;
+        my $or_bias    = 0;
+        my $dot_bias   = 0;
+        my $f_bias     = 0;
+        my $code_bias  = -.01;
+        my $type       = 'b';
+        my $token      = ' ';
+        my $last_type;
+        my $last_nonblank_type  = $type;
+        my $last_nonblank_token = $token;
+        my $delta_bias          = 0.0001;
+        my $list_str            = $left_bond_strength{'?'};
+
+        my ( $block_type, $i_next, $i_next_nonblank, $next_nonblank_token,
+            $next_nonblank_type, $next_token, $next_type, $total_nesting_depth,
         );
-        @left_bond_strength{@_}  = (STRONG) x scalar(@_);
-        @right_bond_strength{@_} =
-          ( 0.4 * WEAK + 0.6 * VERY_WEAK ) x scalar(@_);
 
-        # break BEFORE '&&' and '||'
-        # set strength of '||' to same as '=' so that chains like
-        # $a = $b || $c || $d   will break before the first '||'
-        $right_bond_strength{'||'} = NOMINAL;
-        $left_bond_strength{'||'}  = $right_bond_strength{'='};
-
-        # set strength of && a little higher than ||
-        $right_bond_strength{'&&'} = NOMINAL;
-        $left_bond_strength{'&&'}  = $left_bond_strength{'||'} + 0.1;
-
-        $left_bond_strength{';'}  = VERY_STRONG;
-        $right_bond_strength{';'} = VERY_WEAK;
-        $left_bond_strength{'f'}  = VERY_STRONG;
-
-        # make right strength of for ';' a little less than '='
-        # to make for contents break after the ';' to avoid this:
-        #   for ( $j = $number_of_fields - 1 ; $j < $item_count ; $j +=
-        #     $number_of_fields )
-        # and make it weaker than ',' and 'and' too
-        $right_bond_strength{'f'} = VERY_WEAK - 0.03;
-
-        # The strengths of ?/: should be somewhere between
-        # an '=' and a quote (NOMINAL),
-        # make strength of ':' slightly less than '?' to help
-        # break long chains of ? : after the colons
-        $left_bond_strength{':'}  = 0.4 * WEAK + 0.6 * NOMINAL;
-        $right_bond_strength{':'} = NO_BREAK;
-        $left_bond_strength{'?'}  = $left_bond_strength{':'} + 0.01;
-        $right_bond_strength{'?'} = NO_BREAK;
-
-        $left_bond_strength{','}  = VERY_STRONG;
-        $right_bond_strength{','} = VERY_WEAK;
-    }
-
-    # patch-its always ok to break at end of line
-    $nobreak_to_go[$max_index_to_go] = 0;
-
-    # adding a small 'bias' to strengths is a simple way to make a line
-    # break at the first of a sequence of identical terms.  For example,
-    # to force long string of conditional operators to break with
-    # each line ending in a ':', we can add a small number to the bond
-    # strength of each ':'
-    my $colon_bias = 0;
-    my $amp_bias   = 0;
-    my $bar_bias   = 0;
-    my $and_bias   = 0;
-    my $or_bias    = 0;
-    my $dot_bias   = 0;
-    my $f_bias     = 0;
-    my $code_bias  = -.01;
-    my $type       = 'b';
-    my $token      = ' ';
-    my $last_type;
-    my $last_nonblank_type  = $type;
-    my $last_nonblank_token = $token;
-    my $delta_bias          = 0.0001;
-    my $list_str            = $left_bond_strength{'?'};
-
-    my ( $block_type, $i_next, $i_next_nonblank, $next_nonblank_token,
-        $next_nonblank_type, $next_token, $next_type, $total_nesting_depth, );
-
-    # preliminary loop to compute bond strengths
-    for ( my $i = 0 ; $i <= $max_index_to_go ; $i++ ) {
-        $last_type = $type;
-        if ( $type ne 'b' ) {
-            $last_nonblank_type  = $type;
-            $last_nonblank_token = $token;
-        }
-        $type = $types_to_go[$i];
-
-        # strength on both sides of a blank is the same
-        if ( $type eq 'b' && $last_type ne 'b' ) {
-            $bond_strength_to_go[$i] = $bond_strength_to_go[ $i - 1 ];
-            next;
-        }
-
-        $token               = $tokens_to_go[$i];
-        $block_type          = $block_type_to_go[$i];
-        $i_next              = $i + 1;
-        $next_type           = $types_to_go[$i_next];
-        $next_token          = $tokens_to_go[$i_next];
-        $total_nesting_depth = $nesting_depth_to_go[$i_next];
-        $i_next_nonblank     = ( ( $next_type eq 'b' ) ? $i + 2 : $i + 1 );
-        $next_nonblank_type  = $types_to_go[$i_next_nonblank];
-        $next_nonblank_token = $tokens_to_go[$i_next_nonblank];
-
-        # Some token chemistry...  The decision about where to break a
-        # line depends upon a "bond strength" between tokens.  The LOWER
-        # the bond strength, the MORE likely a break.  The strength
-        # values are based on trial-and-error, and need to be tweaked
-        # occasionally to get desired results.  Things to keep in mind
-        # are:
-        #   1. relative strengths are important.  small differences
-        #      in strengths can make big formatting differences.
-        #   2. each indentation level adds one unit of bond strength
-        #   3. a value of NO_BREAK makes an unbreakable bond
-        #   4. a value of VERY_WEAK is the strength of a ','
-        #   5. values below NOMINAL are considered ok break points
-        #   6. values above NOMINAL are considered poor break points
-        # We are computing the strength of the bond between the current
-        # token and the NEXT token.
-        my $bond_str = VERY_STRONG;    # a default, high strength
-
-        #---------------------------------------------------------------
-        # section 1:
-        # use minimum of left and right bond strengths if defined;
-        # digraphs and trigraphs like to break on their left
-        #---------------------------------------------------------------
-        my $bsr = $right_bond_strength{$type};
-
-        if ( !defined($bsr) ) {
-
-            if ( $is_digraph{$type} || $is_trigraph{$type} ) {
-                $bsr = STRONG;
+        # preliminary loop to compute bond strengths
+        for ( my $i = 0 ; $i <= $max_index_to_go ; $i++ ) {
+            $last_type = $type;
+            if ( $type ne 'b' ) {
+                $last_nonblank_type  = $type;
+                $last_nonblank_token = $token;
             }
-            else {
-                $bsr = VERY_STRONG;
+            $type = $types_to_go[$i];
+
+            # strength on both sides of a blank is the same
+            if ( $type eq 'b' && $last_type ne 'b' ) {
+                $bond_strength_to_go[$i] = $bond_strength_to_go[ $i - 1 ];
+                next;
             }
-        }
 
-        if ( $token eq 'and' or $token eq 'or' ) {
-            $bsr = NOMINAL;
-        }
-        elsif ( $token eq 'ne' or $token eq 'eq' ) {
-            $bsr = NOMINAL;
-        }
-        my $bsl = $left_bond_strength{$next_nonblank_type};
+            $token               = $tokens_to_go[$i];
+            $block_type          = $block_type_to_go[$i];
+            $i_next              = $i + 1;
+            $next_type           = $types_to_go[$i_next];
+            $next_token          = $tokens_to_go[$i_next];
+            $total_nesting_depth = $nesting_depth_to_go[$i_next];
+            $i_next_nonblank     = ( ( $next_type eq 'b' ) ? $i + 2 : $i + 1 );
+            $next_nonblank_type  = $types_to_go[$i_next_nonblank];
+            $next_nonblank_token = $tokens_to_go[$i_next_nonblank];
 
-        # set terminal bond strength to the nominal value
-        # this will cause good preceding breaks to be retained
-        if ( $i_next_nonblank > $max_index_to_go ) {
-            $bsl = NOMINAL;
-        }
+            # Some token chemistry...  The decision about where to break a
+            # line depends upon a "bond strength" between tokens.  The LOWER
+            # the bond strength, the MORE likely a break.  The strength
+            # values are based on trial-and-error, and need to be tweaked
+            # occasionally to get desired results.  Things to keep in mind
+            # are:
+            #   1. relative strengths are important.  small differences
+            #      in strengths can make big formatting differences.
+            #   2. each indentation level adds one unit of bond strength
+            #   3. a value of NO_BREAK makes an unbreakable bond
+            #   4. a value of VERY_WEAK is the strength of a ','
+            #   5. values below NOMINAL are considered ok break points
+            #   6. values above NOMINAL are considered poor break points
+            # We are computing the strength of the bond between the current
+            # token and the NEXT token.
+            my $bond_str = VERY_STRONG;    # a default, high strength
 
-        if ( !defined($bsl) ) {
+            #---------------------------------------------------------------
+            # section 1:
+            # use minimum of left and right bond strengths if defined;
+            # digraphs and trigraphs like to break on their left
+            #---------------------------------------------------------------
+            my $bsr = $right_bond_strength{$type};
 
-            if (   $is_digraph{$next_nonblank_type}
-                || $is_trigraph{$next_nonblank_type} )
+            if ( !defined($bsr) ) {
+
+                if ( $is_digraph{$type} || $is_trigraph{$type} ) {
+                    $bsr = STRONG;
+                }
+                else {
+                    $bsr = VERY_STRONG;
+                }
+            }
+
+            if ( $token eq 'and' or $token eq 'or' ) {
+                $bsr = NOMINAL;
+            }
+            elsif ( $token eq 'ne' or $token eq 'eq' ) {
+                $bsr = NOMINAL;
+            }
+            my $bsl = $left_bond_strength{$next_nonblank_type};
+
+            # set terminal bond strength to the nominal value
+            # this will cause good preceding breaks to be retained
+            if ( $i_next_nonblank > $max_index_to_go ) {
+                $bsl = NOMINAL;
+            }
+
+            if ( !defined($bsl) ) {
+
+                if (   $is_digraph{$next_nonblank_type}
+                    || $is_trigraph{$next_nonblank_type} )
+                {
+                    $bsl = WEAK;
+                }
+                else {
+                    $bsl = VERY_STRONG;
+                }
+            }
+
+            # make or, and slightly weaker than a ','
+            if ( $next_nonblank_token eq 'or' ) {
+                $bsl = VERY_WEAK - 0.02;
+            }
+            if ( $next_nonblank_token eq 'and' ) {
+                $bsl = VERY_WEAK - 0.01;
+            }
+            elsif ($next_nonblank_token eq 'ne'
+                or $next_nonblank_token eq 'eq' )
             {
-                $bsl = WEAK;
+                $bsl = NOMINAL;
             }
-            else {
-                $bsl = VERY_STRONG;
+            elsif ( $next_nonblank_token =~ /^(lt|gt|le|ge)$/ ) {
+                $bsl = 0.9 * NOMINAL + 0.1 * STRONG;
             }
-        }
 
-        # make or, and slightly weaker than a ','
-        if ( $next_nonblank_token eq 'or' ) {
-            $bsl = VERY_WEAK - 0.02;
-        }
-        if ( $next_nonblank_token eq 'and' ) {
-            $bsl = VERY_WEAK - 0.01;
-        }
-        elsif ( $next_nonblank_token eq 'ne' or $next_nonblank_token eq 'eq' ) {
-            $bsl = NOMINAL;
-        }
-        elsif ( $next_nonblank_token =~ /^(lt|gt|le|ge)$/ ) {
-            $bsl = 0.9 * NOMINAL + 0.1 * STRONG;
-        }
+            # Note: it might seem that we would want to keep a NO_BREAK if
+            # either token has this value.  This didn't work, because in an
+            # arrow list, it prevents the comma from separating from the
+            # following bare word (which is probably quoted by its arrow).
+            # So necessary NO_BREAK's have to be handled as special cases
+            # in the final section.
+            $bond_str = ( $bsr < $bsl ) ? $bsr : $bsl;
+            my $bond_str_1 = $bond_str;
 
-        # Note: it might seem that we would want to keep a NO_BREAK if
-        # either token has this value.  This didn't work, because in an
-        # arrow list, it prevents the comma from separating from the
-        # following bare word (which is probably quoted by its arrow).
-        # So necessary NO_BREAK's have to be handled as special cases
-        # in the final section.
-        $bond_str = ( $bsr < $bsl ) ? $bsr : $bsl;
-        my $bond_str_1 = $bond_str;
+            #---------------------------------------------------------------
+            # section 2:
+            # special cases
+            #---------------------------------------------------------------
 
-        #---------------------------------------------------------------
-        # section 2:
-        # special cases
-        #---------------------------------------------------------------
-
-        # allow long lines before final { in an if statement, as in:
-        #    if (..........
-        #      ..........)
-        #    {
-        #
-        # Otherwise, the line before the { tends to be too short.
-        if ( $type eq ')' ) {
-            if ( $next_nonblank_type eq '{' ) {
-                $bond_str = VERY_WEAK + 0.03;
+            # allow long lines before final { in an if statement, as in:
+            #    if (..........
+            #      ..........)
+            #    {
+            #
+            # Otherwise, the line before the { tends to be too short.
+            if ( $type eq ')' ) {
+                if ( $next_nonblank_type eq '{' ) {
+                    $bond_str = VERY_WEAK + 0.03;
+                }
             }
-        }
 
-        elsif ( $type eq '(' ) {
-            if ( $next_nonblank_type eq '{' ) {
-                $bond_str = NOMINAL;
+            elsif ( $type eq '(' ) {
+                if ( $next_nonblank_type eq '{' ) {
+                    $bond_str = NOMINAL;
+                }
             }
-        }
 
-        # break on something like '} (', but keep this stronger than a ','
-        # example is in 'howe.pl'
-        elsif ( $type eq 'R' or $type eq '}' ) {
-            if ( $next_nonblank_type eq '(' ) {
-                $bond_str = 0.8 * VERY_WEAK + 0.2 * WEAK;
+            # break on something like '} (', but keep this stronger than a ','
+            # example is in 'howe.pl'
+            elsif ( $type eq 'R' or $type eq '}' ) {
+                if ( $next_nonblank_type eq '(' ) {
+                    $bond_str = 0.8 * VERY_WEAK + 0.2 * WEAK;
+                }
             }
-        }
 
-        #-----------------------------------------------------------------
-        # adjust bond strength bias
-        #-----------------------------------------------------------------
+            #-----------------------------------------------------------------
+            # adjust bond strength bias
+            #-----------------------------------------------------------------
 
-        elsif ( $type eq 'f' ) {
-            $bond_str += $f_bias;
-            $f_bias   += $delta_bias;
-        }
+            elsif ( $type eq 'f' ) {
+                $bond_str += $f_bias;
+                $f_bias   += $delta_bias;
+            }
 
-        # in long ?: conditionals, bias toward just one set per line (colon.t)
-        elsif ( $type eq ':' ) {
-            if ( !$want_break_before{$type} ) {
+          # in long ?: conditionals, bias toward just one set per line (colon.t)
+            elsif ( $type eq ':' ) {
+                if ( !$want_break_before{$type} ) {
+                    $bond_str   += $colon_bias;
+                    $colon_bias += $delta_bias;
+                }
+            }
+
+            if (   $next_nonblank_type eq ':'
+                && $want_break_before{$next_nonblank_type} )
+            {
                 $bond_str   += $colon_bias;
                 $colon_bias += $delta_bias;
             }
-        }
 
-        if (   $next_nonblank_type eq ':'
-            && $want_break_before{$next_nonblank_type} )
-        {
-            $bond_str   += $colon_bias;
-            $colon_bias += $delta_bias;
-        }
-
-        # if leading '.' is used, align all but 'short' quotes;
-        # the idea is to not place something like "\n" on a single line.
-        elsif ( $next_nonblank_type eq '.' ) {
-            if ( $want_break_before{'.'} ) {
-                unless (
-                    $last_nonblank_type eq '.'
-                    && (
-                        length($token) <=
-                        $rOpts_short_concatenation_item_length )
-                    && ( $token !~ /^[\)\]\}]$/ )
-                  )
-                {
-                    $dot_bias += $delta_bias;
-                }
-                $bond_str += $dot_bias;
-            }
-        }
-        elsif ( $next_nonblank_type eq '&&' ) {
-            $bond_str += $amp_bias;
-            $amp_bias += $delta_bias;
-        }
-        elsif ( $next_nonblank_type eq '||' ) {
-            $bond_str += $bar_bias;
-            $bar_bias += $delta_bias;
-        }
-        elsif ( $next_nonblank_type eq 'k' ) {
-
-            if ( $next_nonblank_token eq 'and' ) {
-                $bond_str += $and_bias;
-                $and_bias += $delta_bias;
-            }
-            elsif ( $next_nonblank_token eq 'or' ) {
-                $bond_str += $or_bias;
-                $or_bias  += $delta_bias;
-            }
-
-            # FIXME: needs more testing
-            elsif ( $is_keyword_returning_list{$next_nonblank_token} ) {
-                $bond_str = $list_str if ( $bond_str > $list_str );
-            }
-        }
-
-        # keep matrix and hash indices together
-        # but make them a little below STRONG to allow breaking open
-        # something like {'some-word'}{'some-very-long-word'} at the }{
-        # (bracebrk.t)
-        if (   ( $type eq ']' or $type eq 'R' )
-            && ( $next_nonblank_type eq '[' or $next_nonblank_type eq 'L' ) )
-        {
-            $bond_str = 0.9 * STRONG + 0.1 * NOMINAL;
-        }
-
-        if ( $next_nonblank_type eq 'i' && $next_nonblank_token =~ /^->/ ) {
-
-            # increase strength to the point where a break in the following
-            # will be after the opening paren rather than at the arrow:
-            #    $a->$b($c);
-            if ( $type eq 'i' ) {
-                $bond_str = 1.45 * STRONG;
-            }
-
-            elsif ( $type =~ /^[\)\]\}R]$/ ) {
-                $bond_str = 0.1 * STRONG + 0.9 * NOMINAL;
-            }
-
-            # otherwise make strength before an '->' a little over a '+'
-            else {
-                if ( $bond_str <= NOMINAL ) {
-                    $bond_str = NOMINAL + 0.01;
+            # if leading '.' is used, align all but 'short' quotes;
+            # the idea is to not place something like "\n" on a single line.
+            elsif ( $next_nonblank_type eq '.' ) {
+                if ( $want_break_before{'.'} ) {
+                    unless (
+                        $last_nonblank_type eq '.'
+                        && (
+                            length($token) <=
+                            $rOpts_short_concatenation_item_length )
+                        && ( $token !~ /^[\)\]\}]$/ )
+                      )
+                    {
+                        $dot_bias += $delta_bias;
+                    }
+                    $bond_str += $dot_bias;
                 }
             }
-        }
+            elsif ( $next_nonblank_type eq '&&' ) {
+                $bond_str += $amp_bias;
+                $amp_bias += $delta_bias;
+            }
+            elsif ( $next_nonblank_type eq '||' ) {
+                $bond_str += $bar_bias;
+                $bar_bias += $delta_bias;
+            }
+            elsif ( $next_nonblank_type eq 'k' ) {
 
-        if ( $token eq ')' && $next_nonblank_token eq '[' ) {
-            $bond_str = 0.2 * STRONG + 0.8 * NOMINAL;
-        }
+                if ( $next_nonblank_token eq 'and' ) {
+                    $bond_str += $and_bias;
+                    $and_bias += $delta_bias;
+                }
+                elsif ( $next_nonblank_token eq 'or' ) {
+                    $bond_str += $or_bias;
+                    $or_bias  += $delta_bias;
+                }
 
-        # map1.t -- correct for a quirk in perl
-        if (   $token eq '('
-            && $next_nonblank_type eq 'i'
-            && $last_nonblank_type eq 'k'
-            && $is_sort_map_grep{$last_nonblank_token} )
+                # FIXME: needs more testing
+                elsif ( $is_keyword_returning_list{$next_nonblank_token} ) {
+                    $bond_str = $list_str if ( $bond_str > $list_str );
+                }
+            }
 
-          #     /^(sort|map|grep)$/ )
-        {
-            $bond_str = NO_BREAK;
-        }
-
-        # extrude.t: do not break before paren at:
-        #    -l pid_filename(
-        if ( $last_nonblank_type eq 'F' && $next_nonblank_token eq '(' ) {
-            $bond_str = NO_BREAK;
-        }
-
-        # good to break after end of code blocks
-        if ( $type eq '}' && $block_type ) {
-
-            $bond_str = 0.5 * WEAK + 0.5 * VERY_WEAK + $code_bias;
-            $code_bias += $delta_bias;
-        }
-
-        if ( $type eq 'k' ) {
-
-            # allow certain control keywords to stand out
-            if (   ( $next_nonblank_type eq 'k' )
-                && ( $token =~ /^(last|next|redo|return)$/ ) )
+            # keep matrix and hash indices together
+            # but make them a little below STRONG to allow breaking open
+            # something like {'some-word'}{'some-very-long-word'} at the }{
+            # (bracebrk.t)
+            if (   ( $type eq ']' or $type eq 'R' )
+                && ( $next_nonblank_type eq '[' or $next_nonblank_type eq 'L' )
+              )
             {
-                $bond_str = 0.45 * WEAK + 0.55 * VERY_WEAK;
+                $bond_str = 0.9 * STRONG + 0.1 * NOMINAL;
             }
+
+            if ( $next_nonblank_type eq 'i' && $next_nonblank_token =~ /^->/ ) {
+
+                # increase strength to the point where a break in the following
+                # will be after the opening paren rather than at the arrow:
+                #    $a->$b($c);
+                if ( $type eq 'i' ) {
+                    $bond_str = 1.45 * STRONG;
+                }
+
+                elsif ( $type =~ /^[\)\]\}R]$/ ) {
+                    $bond_str = 0.1 * STRONG + 0.9 * NOMINAL;
+                }
+
+                # otherwise make strength before an '->' a little over a '+'
+                else {
+                    if ( $bond_str <= NOMINAL ) {
+                        $bond_str = NOMINAL + 0.01;
+                    }
+                }
+            }
+
+            if ( $token eq ')' && $next_nonblank_token eq '[' ) {
+                $bond_str = 0.2 * STRONG + 0.8 * NOMINAL;
+            }
+
+            # map1.t -- correct for a quirk in perl
+            if (   $token eq '('
+                && $next_nonblank_type eq 'i'
+                && $last_nonblank_type eq 'k'
+                && $is_sort_map_grep{$last_nonblank_token} )
+
+              #     /^(sort|map|grep)$/ )
+            {
+                $bond_str = NO_BREAK;
+            }
+
+            # extrude.t: do not break before paren at:
+            #    -l pid_filename(
+            if ( $last_nonblank_type eq 'F' && $next_nonblank_token eq '(' ) {
+                $bond_str = NO_BREAK;
+            }
+
+            # good to break after end of code blocks
+            if ( $type eq '}' && $block_type ) {
+
+                $bond_str = 0.5 * WEAK + 0.5 * VERY_WEAK + $code_bias;
+                $code_bias += $delta_bias;
+            }
+
+            if ( $type eq 'k' ) {
+
+                # allow certain control keywords to stand out
+                if (   ( $next_nonblank_type eq 'k' )
+                    && ( $token =~ /^(last|next|redo|return)$/ ) )
+                {
+                    $bond_str = 0.45 * WEAK + 0.55 * VERY_WEAK;
+                }
 
 # Don't break after keyword my.  This is a quick fix for a
 # rare problem with perl. An example is this line from file
 # Container.pm:
 # foreach my $question( Debian::DebConf::ConfigDb::gettree( $this->{'question'} ) )
 
-            if ( $token eq 'my' ) {
-                $bond_str = NO_BREAK;
-            }
-
-        }
-
-        # good to break before 'if', 'unless', etc
-        if ( $is_if_brace_follower{$next_nonblank_token} ) {
-            $bond_str = VERY_WEAK;
-        }
-
-        if ( $next_nonblank_type eq 'k' ) {
-
-            # keywords like 'unless' 'if' make good breaks
-            if ( $is_do_follower{$next_nonblank_token} ) {
-                $bond_str = VERY_WEAK / 1.05;
-            }
-
-        }
-
-        # try not to break before a comma-arrow
-        elsif ( $next_nonblank_type eq '=>' ) {
-            if ( $bond_str < STRONG ) { $bond_str = STRONG }
-        }
-
-        #----------------------------------------------------------------------
-        # only set NO_BREAK's from here on
-        #----------------------------------------------------------------------
-        if ( $type eq 'C' or $type eq 'U' ) {
-
-            # use strict requires that bare word and => not be separated
-            if ( $next_nonblank_type eq '=>' ) {
-                $bond_str = NO_BREAK;
-            }
-
-        }
-
-        # use strict requires that bare word within braces not start new line
-        elsif ( $type eq 'L' ) {
-
-            if ( $next_nonblank_type eq 'w' ) {
-                $bond_str = NO_BREAK;
-            }
-        }
-
-        # in older version of perl, use strict can cause problems with
-        # breaks before bare words following opening parens.  For example,
-        # this will fail under older versions if a break is made between
-        # '(' and 'MAIL':
-        #  use strict;
-        #  open( MAIL, "a long filename or command");
-        #  close MAIL;
-        elsif ( $type eq '{' ) {
-
-            if ( $token eq '(' && $next_nonblank_type eq 'w' ) {
-
-                # but it's fine to break if the word is followed by a '=>'
-                # or if it is obviously a sub call
-                my $i_next_next_nonblank = $i_next_nonblank + 1;
-                my $next_next_type       = $types_to_go[$i_next_next_nonblank];
-                if (   $next_next_type eq 'b'
-                    && $i_next_nonblank < $max_index_to_go )
-                {
-                    $i_next_next_nonblank++;
-                    $next_next_type = $types_to_go[$i_next_next_nonblank];
+                if ( $token eq 'my' ) {
+                    $bond_str = NO_BREAK;
                 }
 
-                ##if ( $next_next_type ne '=>' ) {
-                # these are ok: '->xxx', '=>', '('
+            }
 
-                # We'll check for an old breakpoint and keep a leading
-                # bareword if it was that way in the input file.  Presumably
-                # it was ok that way.  For example, the following would remain
-                # unchanged:
-                #
-                # @months = (
-                #   January,   February, March,    April,
-                #   May,       June,     July,     August,
-                #   September, October,  November, December,
-                # );
-                #
-                # This should be sufficient:
-                if ( !$old_breakpoint_to_go[$i]
-                    && ( $next_next_type eq ',' || $next_next_type eq '}' ) )
+            # good to break before 'if', 'unless', etc
+            if ( $is_if_brace_follower{$next_nonblank_token} ) {
+                $bond_str = VERY_WEAK;
+            }
+
+            if ( $next_nonblank_type eq 'k' ) {
+
+                # keywords like 'unless', 'if', etc, within statements 
+                # make good breaks
+                if ( $is_good_keyword_breakpoint{$next_nonblank_token} ) {
+                    $bond_str = VERY_WEAK / 1.05;
+                }
+            }
+
+            # try not to break before a comma-arrow
+            elsif ( $next_nonblank_type eq '=>' ) {
+                if ( $bond_str < STRONG ) { $bond_str = STRONG }
+            }
+
+         #----------------------------------------------------------------------
+         # only set NO_BREAK's from here on
+         #----------------------------------------------------------------------
+            if ( $type eq 'C' or $type eq 'U' ) {
+
+                # use strict requires that bare word and => not be separated
+                if ( $next_nonblank_type eq '=>' ) {
+                    $bond_str = NO_BREAK;
+                }
+
+            }
+
+           # use strict requires that bare word within braces not start new line
+            elsif ( $type eq 'L' ) {
+
+                if ( $next_nonblank_type eq 'w' ) {
+                    $bond_str = NO_BREAK;
+                }
+            }
+
+            # in older version of perl, use strict can cause problems with
+            # breaks before bare words following opening parens.  For example,
+            # this will fail under older versions if a break is made between
+            # '(' and 'MAIL':
+            #  use strict;
+            #  open( MAIL, "a long filename or command");
+            #  close MAIL;
+            elsif ( $type eq '{' ) {
+
+                if ( $token eq '(' && $next_nonblank_type eq 'w' ) {
+
+                    # but it's fine to break if the word is followed by a '=>'
+                    # or if it is obviously a sub call
+                    my $i_next_next_nonblank = $i_next_nonblank + 1;
+                    my $next_next_type = $types_to_go[$i_next_next_nonblank];
+                    if (   $next_next_type eq 'b'
+                        && $i_next_nonblank < $max_index_to_go )
+                    {
+                        $i_next_next_nonblank++;
+                        $next_next_type = $types_to_go[$i_next_next_nonblank];
+                    }
+
+                    ##if ( $next_next_type ne '=>' ) {
+                    # these are ok: '->xxx', '=>', '('
+
+                  # We'll check for an old breakpoint and keep a leading
+                  # bareword if it was that way in the input file.  Presumably
+                  # it was ok that way.  For example, the following would remain
+                  # unchanged:
+                  #
+                  # @months = (
+                  #   January,   February, March,    April,
+                  #   May,       June,     July,     August,
+                  #   September, October,  November, December,
+                  # );
+                  #
+                  # This should be sufficient:
+                    if ( !$old_breakpoint_to_go[$i]
+                        && ( $next_next_type eq ',' || $next_next_type eq '}' )
+                      )
+                    {
+                        $bond_str = NO_BREAK;
+                    }
+                }
+            }
+
+            elsif ( $type eq 'w' ) {
+
+                if ( $next_nonblank_type eq 'R' ) {
+                    $bond_str = NO_BREAK;
+                }
+
+                # use strict requires that bare word and => not be separated
+                if ( $next_nonblank_type eq '=>' ) {
+                    $bond_str = NO_BREAK;
+                }
+            }
+
+          # in fact, use strict hates bare words on any new line.  For example,
+          # a break before the underscore here provokes the wrath of use strict:
+          #    if ( -r $fn && ( -s _ || $AllowZeroFilesize)) {
+            elsif ( $type eq 'F' ) {
+                $bond_str = NO_BREAK;
+            }
+
+            # use strict does not allow separating type info from trailing { }
+            # testfile is readmail.pl
+            elsif ( $type eq 't' or $type eq 'i' ) {
+
+                if ( $next_nonblank_type eq 'L' ) {
+                    $bond_str = NO_BREAK;
+                }
+            }
+
+        # Do not break between a possible filehandle and a ? or /
+        # and do not introduce a break after it if there is no blank (extrude.t)
+            elsif ( $type eq 'Z' ) {
+
+                # dont break..
+                if (
+
+                    # if there is no blank and we do not want one. Examples:
+                    #    print $x++    # do not break after $x
+                    #    print HTML"HELLO"   # break ok after HTML
+                    (
+                           $next_type ne 'b'
+                        && defined( $want_left_space{$next_type} )
+                        && $want_left_space{$next_type} == WS_NO
+                    )
+
+                    # or we might be followed by the start of a quote
+                    || $next_nonblank_type =~ /^[\/\?]$/
+                  )
                 {
                     $bond_str = NO_BREAK;
                 }
             }
-        }
 
-        elsif ( $type eq 'w' ) {
-
-            if ( $next_nonblank_type eq 'R' ) {
+            # Do not break before a possible file handle
+            #if ( ( $type eq 'Z' ) || ( $next_nonblank_type eq 'Z' ) ) {
+            if ( $next_nonblank_type eq 'Z' ) {
                 $bond_str = NO_BREAK;
             }
 
-            # use strict requires that bare word and => not be separated
-            if ( $next_nonblank_type eq '=>' ) {
+            # patch to put cuddled elses back together when on multiple
+            # lines, as in: } \n else \n { \n
+            if ($rOpts_cuddled_else) {
+
+                if (   ( $token eq 'else' ) && ( $next_nonblank_type eq '{' )
+                    || ( $type eq '}' ) && ( $next_nonblank_token eq 'else' ) )
+                {
+                    $bond_str = NO_BREAK;
+                }
+            }
+
+            # keep '}' together with ';'
+            if ( ( $token eq '}' ) && ( $next_nonblank_type eq ';' ) ) {
                 $bond_str = NO_BREAK;
             }
-        }
 
-        # in fact, use strict hates bare words on any new line.  For example,
-        # a break before the underscore here provokes the wrath of use strict:
-        #    if ( -r $fn && ( -s _ || $AllowZeroFilesize)) {
-        elsif ( $type eq 'F' ) {
-            $bond_str = NO_BREAK;
-        }
-
-        # use strict does not allow separating type info from trailing { }
-        # testfile is readmail.pl
-        elsif ( $type eq 't' or $type eq 'i' ) {
-
-            if ( $next_nonblank_type eq 'L' ) {
+            # never break between sub name and opening paren
+            if ( ( $type eq 'w' ) && ( $next_nonblank_token eq '(' ) ) {
                 $bond_str = NO_BREAK;
             }
-        }
 
-        # Do not break between a possible filehandle and a ? or /
-        # and do not introduce a break after it if there is no blank (extrude.t)
-        elsif ( $type eq 'Z' ) {
+            #---------------------------------------------------------------
+            # section 3:
+            # now take nesting depth into account
+            #---------------------------------------------------------------
+            # final strength incorporates the bond strength and nesting depth
+            my $strength;
 
-            # dont break..
-            if (
-
-                # if there is no blank and we do not want one. Examples:
-                #    print $x++    # do not break after $x
-                #    print HTML"HELLO"   # break ok after HTML
-                (
-                       $next_type ne 'b'
-                    && defined( $want_left_space{$next_type} )
-                    && $want_left_space{$next_type} == WS_NO
-                )
-
-                # or we might be followed by the start of a quote
-                || $next_nonblank_type =~ /^[\/\?]$/
-              )
-            {
-                $bond_str = NO_BREAK;
-            }
-        }
-
-        # Do not break before a possible file handle
-        #if ( ( $type eq 'Z' ) || ( $next_nonblank_type eq 'Z' ) ) {
-        if ( $next_nonblank_type eq 'Z' ) {
-            $bond_str = NO_BREAK;
-        }
-
-        # patch to put cuddled elses back together when on multiple
-        # lines, as in: } \n else \n { \n
-        if ($rOpts_cuddled_else) {
-
-            if (   ( $token eq 'else' ) && ( $next_nonblank_type eq '{' )
-                || ( $type eq '}' ) && ( $next_nonblank_token eq 'else' ) )
-            {
-                $bond_str = NO_BREAK;
-            }
-        }
-
-        # keep '}' together with ';'
-        if ( ( $token eq '}' ) && ( $next_nonblank_type eq ';' ) ) {
-            $bond_str = NO_BREAK;
-        }
-
-        # never break between sub name and opening paren
-        if ( ( $type eq 'w' ) && ( $next_nonblank_token eq '(' ) ) {
-            $bond_str = NO_BREAK;
-        }
-
-        #---------------------------------------------------------------
-        # section 3:
-        # now take nesting depth into account
-        #---------------------------------------------------------------
-        # final strength incorporates the bond strength and nesting depth
-        my $strength;
-
-        if ( defined($bond_str) && !$nobreak_to_go[$i] ) {
-            if ( $total_nesting_depth > 0 ) {
-                $strength = $bond_str + $total_nesting_depth;
+            if ( defined($bond_str) && !$nobreak_to_go[$i] ) {
+                if ( $total_nesting_depth > 0 ) {
+                    $strength = $bond_str + $total_nesting_depth;
+                }
+                else {
+                    $strength = $bond_str;
+                }
             }
             else {
-                $strength = $bond_str;
+                $strength = NO_BREAK;
             }
-        }
-        else {
-            $strength = NO_BREAK;
-        }
 
-        # always break after side comment
-        if ( $type eq '#' ) { $strength = 0 }
+            # always break after side comment
+            if ( $type eq '#' ) { $strength = 0 }
 
-        $bond_strength_to_go[$i] = $strength;
+            $bond_strength_to_go[$i] = $strength;
 
-        FORMATTER_DEBUG_FLAG_BOND && do {
-            my $str = substr( $token, 0, 15 );
-            $str .= ' ' x ( 16 - length($str) );
-            print
+            FORMATTER_DEBUG_FLAG_BOND && do {
+                my $str = substr( $token, 0, 15 );
+                $str .= ' ' x ( 16 - length($str) );
+                print
 "BOND:  i=$i $str $type $next_nonblank_type depth=$total_nesting_depth strength=$bond_str_1 -> $bond_str -> $strength \n";
-        };
+            };
+        }
     }
-}
 
+}
 sub pad_array_to_go {
 
     # to simplify coding in scan_list and set_bond_strengths, it helps
@@ -15110,6 +15161,7 @@ use vars qw(
   $group_maximum_gap
   $marginal_match
   $last_group_level_written
+  $last_leading_space_count
   $extra_indent_ok
   $zero_count
   @group_lines
@@ -15209,6 +15261,7 @@ sub initialize_for_new_group {
     $group_type              = "";
     $marginal_match          = 0;
     $comment_leading_space_count = 0;
+    $last_leading_space_count= 0;
 }
 
 # interface to Perl::Tidy::Diagnostics routines
@@ -15371,14 +15424,24 @@ sub append_line {
       )
       = @_;
 
-    my $leading_space_count = get_SPACES($indentation);
-
     # number of fields is $jmax
     # number of tokens between fields is $jmax-1
     my $jmax = $#{$rfields};
     $previous_minimum_jmax_seen = $minimum_jmax_seen;
     $previous_maximum_jmax_seen = $maximum_jmax_seen;
 
+    my $leading_space_count = get_SPACES($indentation);
+
+    # set outdented flag to be sure we either align within statements or
+    # across statement boundaries, but not both.
+    my $is_outdented = $last_leading_space_count > $leading_space_count;
+    $last_leading_space_count = $leading_space_count;
+    
+    # Patch: undo for hanging side comment
+    my $is_hanging_side_comment =
+      ( $jmax == 1 && $rtokens->[0] eq '#' && $rfields->[0] =~ /^\s*$/ );
+    $is_outdented = 0 if $is_hanging_side_comment;
+    
     VALIGN_DEBUG_FLAG_APPEND0 && do {
         print
 "APPEND0: entering lines=$maximum_line_index new #fields= $jmax, leading_count=$leading_space_count last_cmt=$last_comment_column force=$is_forced_break\n";
@@ -15415,7 +15478,7 @@ sub append_line {
     if ( $level < 0 ) { $level = 0 }
 
     # do not align code across indentation level changes
-    if ( $level != $group_level ) {
+    if ( $level != $group_level || $is_outdented ) {
 
         # we are allowed to shift a group of lines to the right if its
         # level is greater than the previous and next group
@@ -15526,7 +15589,6 @@ sub append_line {
     # --------------------------------------------------------------------
     # create an object to hold this line
     # --------------------------------------------------------------------
-    my $is_hanging_side_comment = 0;
     my $new_line                = new Perl::Tidy::VerticalAligner::Line(
         jmax                      => $jmax,
         jmax_original_line        => $jmax,
@@ -19290,6 +19352,10 @@ sub reset_indentation_level {
     @_ = qw(|| &&);
     @is_binary_type{@_} = (1) x scalar(@_);
 
+    my %is_binary_keyword;
+    @_ = qw(and or eq ne cmp);
+    @is_binary_keyword{@_} = (1) x scalar(@_);
+
     # 'L' is token for opening { at hash key
     my %is_opening_type;
     @_ = qw" L { ( [ ";
@@ -20516,7 +20582,12 @@ EOM
                 }
 
                 # be sure binary operators get continuation indentation
-                if ( $is_binary_type{$type} && $container_environment ) {
+                if (
+                    $container_environment
+                    && (   $type eq 'k' && $is_binary_keyword{$tok}
+                        || $is_binary_type{$type} )
+                  )
+                {
                     $in_statement_continuation = 1;
                 }
 
