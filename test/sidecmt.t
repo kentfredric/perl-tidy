@@ -46,6 +46,6 @@ my %fields = ( tag => 1,    # old/new
 
 # should outdent '};' with following side comment
 $VERSION = do {
-    my @r = (q$Revision: 1.1 $ =~ /\d+/g);
+    my @r = (q$Revision: 1.1.1.1 $ =~ /\d+/g);
     sprintf "%d." . "%02d" x $#r, @r;
   };    # must be all one line, for MakeMaker

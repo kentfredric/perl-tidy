@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'RCS';
-    $Id: perltidy,v 1.1 2001/06/10 22:58:15 perltidy Exp $
+    $Id: perltidy,v 1.1.1.1 2001/06/10 22:58:15 perltidy Exp $
 RCS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
