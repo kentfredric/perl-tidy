@@ -9,6 +9,14 @@ my $pos  = 0; # start of patch data
 my $endkit = 0; # saw end of kit
 my $fail  = 0; # failed
 
+# keep '=' lined up even with hanging side comments
+$ax         = 1;    # side comment
+                    # hanging side comment
+$boondoggle = 5;    # side comment
+$beetle     = 5;    # side comment
+                    # hanging side comment
+$d          = 3;
+
 # A more complicated case.  
 # Formerly the first line did not get lined up because the ',' gives it
 # a different pattern from the others.

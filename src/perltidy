@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.29 2001/08/18 05:24:31 perltidy Exp $
+    $Id: perltidy,v 1.30 2001/08/19 00:16:03 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -4339,7 +4339,7 @@ sub print_line_of_tokens {
     #     /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
     # Examples:
     #   *VERSION = \'1.01';
-    #   ( $VERSION ) = '$Revision: 1.29 $ ' =~ /\$Revision:\s+([^\s]+)/;
+    #   ( $VERSION ) = '$Revision: 1.30 $ ' =~ /\$Revision:\s+([^\s]+)/;
     # We will pass such a line straight through unless -npvl is used
     my $is_VERSION_statement = 0;
 
@@ -7886,11 +7886,11 @@ package Perltidy::VerticalAligner::Line;
     use constant RPATTERNS               => 4;
     use constant INDENTATION             => 5;
     use constant LEADING_SPACE_COUNT     => 6;
-    use constant IS_FORCED_BREAK         => 7;
-    use constant OUTDENT_LONG_LINES      => 8;
-    use constant LIST_TYPE               => 9;
-    use constant IS_HANGING_SIDE_COMMENT => 10;
-    use constant RALIGNMENTS             => 11;
+    use constant OUTDENT_LONG_LINES      => 7;
+    use constant LIST_TYPE               => 8;
+    use constant IS_HANGING_SIDE_COMMENT => 9;
+    use constant RALIGNMENTS             => 10;
+    use constant MAXIMUM_LINE_LENGTH     => 11;
 
     my %_index_map;
     $_index_map{jmax}                    = JMAX;
@@ -7900,11 +7900,11 @@ package Perltidy::VerticalAligner::Line;
     $_index_map{rpatterns}               = RPATTERNS;
     $_index_map{indentation}             = INDENTATION;
     $_index_map{leading_space_count}     = LEADING_SPACE_COUNT;
-    $_index_map{is_forced_break}         = IS_FORCED_BREAK;
     $_index_map{outdent_long_lines}      = OUTDENT_LONG_LINES;
     $_index_map{list_type}               = LIST_TYPE;
     $_index_map{is_hanging_side_comment} = IS_HANGING_SIDE_COMMENT;
     $_index_map{ralignments}             = RALIGNMENTS;
+    $_index_map{maximum_line_length}     = MAXIMUM_LINE_LENGTH;
 
     my @_default_data = ();
     $_default_data[JMAX]                    = undef;
@@ -7914,11 +7914,11 @@ package Perltidy::VerticalAligner::Line;
     $_default_data[RPATTERNS]               = undef;
     $_default_data[INDENTATION]             = undef;
     $_default_data[LEADING_SPACE_COUNT]     = undef;
-    $_default_data[IS_FORCED_BREAK]         = undef;
     $_default_data[OUTDENT_LONG_LINES]      = undef;
     $_default_data[LIST_TYPE]               = undef;
     $_default_data[IS_HANGING_SIDE_COMMENT] = undef;
     $_default_data[RALIGNMENTS]             = [];
+    $_default_data[MAXIMUM_LINE_LENGTH]     = undef;
 
     {
 
@@ -7937,15 +7937,14 @@ package Perltidy::VerticalAligner::Line;
         no strict "refs";
         my $self = bless [], $class;
 
+        $self->[RALIGNMENTS] = [];
+
         foreach my $member ( keys %_index_map ) {
             my $index = $_index_map{$member};
             if ( exists $arg{$member} ) { $self->[$index] = $arg{$member} }
             elsif ($caller_is_obj) { $self->[$index] = $caller->[$index] }
             else { $self->[$index] = $_default_data[$index] }
         }
-
-        # patch - must be unique ref
-        $self->[RALIGNMENTS] = [];
 
         $self->_increment_count();
         return $self;
@@ -7962,7 +7961,6 @@ package Perltidy::VerticalAligner::Line;
     sub get_rpatterns               { $_[0]->[RPATTERNS] }
     sub get_indentation             { $_[0]->[INDENTATION] }
     sub get_leading_space_count     { $_[0]->[LEADING_SPACE_COUNT] }
-    sub get_is_forced_break         { $_[0]->[IS_FORCED_BREAK] }
     sub get_outdent_long_lines      { $_[0]->[OUTDENT_LONG_LINES] }
     sub get_list_type               { $_[0]->[LIST_TYPE] }
     sub get_is_hanging_side_comment { $_[0]->[IS_HANGING_SIDE_COMMENT] }
@@ -7970,17 +7968,13 @@ package Perltidy::VerticalAligner::Line;
     sub set_column     { $_[0]->[RALIGNMENTS]->[ $_[1] ]->set_column( $_[2] ) }
     sub get_alignment  { $_[0]->[RALIGNMENTS]->[ $_[1] ] }
     sub get_alignments { @{ $_[0]->[RALIGNMENTS] } }
-
     sub get_column { $_[0]->[RALIGNMENTS]->[ $_[1] ]->get_column() }
-
     sub get_starting_column {
         $_[0]->[RALIGNMENTS]->[ $_[1] ]->get_starting_column();
     }
-
     sub increment_column {
         $_[0]->[RALIGNMENTS]->[ $_[1] ]->increment_column( $_[2] );
     }
-
     sub set_alignments { my $self = shift; @{ $self->[RALIGNMENTS] } = @_; }
 
     sub current_field_width {
@@ -8007,7 +8001,8 @@ package Perltidy::VerticalAligner::Line;
             return $self->get_starting_column($j);
         }
         else {
-            return $self->get_starting_column($j) - $self->get_column($j);
+            #return $self->get_starting_column($j) - $self->get_column($j);
+            return $self->get_starting_column($j) - $self->get_starting_column($j-1);
         }
     }
 
@@ -8021,6 +8016,30 @@ package Perltidy::VerticalAligner::Line;
         }
     }
 
+    sub get_available_space_on_right {
+        my $self = shift;
+        my $jmax = $self->get_jmax();
+        return $self->[MAXIMUM_LINE_LENGTH]-$self->get_column($jmax);
+    }
+
+    sub save_columns {
+
+        my $self=shift;
+        my $jmax = $self->get_jmax();
+        for my $j ( 0 .. $jmax ) {
+            $self->[RALIGNMENTS]->[$j]->save_column();
+        }
+    }
+
+    sub restore_columns {
+
+        my $self=shift;
+        my $jmax = $self->get_jmax();
+        for my $j ( 0 .. $jmax ) {
+            $self->[RALIGNMENTS]->[$j]->restore_column();
+        }
+    }
+
     sub set_jmax                { $_[0]->[JMAX]                = $_[1] }
     sub set_jmax_original_line  { $_[0]->[JMAX_ORIGINAL_LINE]  = $_[1] }
     sub set_rtokens             { $_[0]->[RTOKENS]             = $_[1] }
@@ -8028,10 +8047,10 @@ package Perltidy::VerticalAligner::Line;
     sub set_rpatterns           { $_[0]->[RPATTERNS]           = $_[1] }
     sub set_indentation         { $_[0]->[INDENTATION]         = $_[1] }
     sub set_leading_space_count { $_[0]->[LEADING_SPACE_COUNT] = $_[1] }
-    sub set_is_forced_break     { $_[0]->[IS_FORCED_BREAK]     = $_[1] }
     sub set_outdent_long_lines  { $_[0]->[OUTDENT_LONG_LINES]  = $_[1] }
     sub set_list_type           { $_[0]->[LIST_TYPE]           = $_[1] }
     sub set_is_hanging_side_comment { $_[0]->[IS_HANGING_SIDE_COMMENT] = $_[1] }
+    sub set_alignment { $_[0]->[RALIGNMENTS]->[$_[1]] =$_[2]}
 
 }
 
@@ -8046,7 +8065,7 @@ package Perltidy::VerticalAligner::Alignment;
 {
 
     use strict;
-    use Carp;
+    #use Carp;
 
     # Symbolic array indexes
     use constant COLUMN          => 0;    # the current column number
@@ -8054,6 +8073,7 @@ package Perltidy::VerticalAligner::Alignment;
     use constant MATCHING_TOKEN  => 2;    # what token we are matching
     use constant STARTING_LINE   => 3;    # the line index of creation
     use constant ENDING_LINE     => 4;    # the most recent line to use it
+    use constant SAVED_COLUMN    => 5;    # the most recent line to use it
 
     # Correspondence between variables and array indexes
     my %_index_map;
@@ -8062,6 +8082,7 @@ package Perltidy::VerticalAligner::Alignment;
     $_index_map{matching_token}  = MATCHING_TOKEN;
     $_index_map{starting_line}   = STARTING_LINE;
     $_index_map{ending_line}     = ENDING_LINE;
+    $_index_map{saved_column}    = SAVED_COLUMN;
 
     my @_default_data = ();
     $_default_data[COLUMN]          = undef;
@@ -8069,6 +8090,7 @@ package Perltidy::VerticalAligner::Alignment;
     $_default_data[MATCHING_TOKEN]  = undef;
     $_default_data[STARTING_LINE]   = undef;
     $_default_data[ENDING_LINE]     = undef;
+    $_default_data[SAVED_COLUMN]    = undef;
 
     # class population count
     {
@@ -8113,6 +8135,9 @@ package Perltidy::VerticalAligner::Alignment;
     sub set_ending_line     { $_[0]->[ENDING_LINE]     = $_[1] }
     sub increment_column { $_[0]->[COLUMN] += $_[1] }
 
+    sub save_column         { $_[0]->[SAVED_COLUMN]    = $_[0]->[COLUMN] }
+    sub restore_column      { $_[0]->[COLUMN]          = $_[0]->[SAVED_COLUMN] }
+
 }
 
 package Perltidy::VerticalAligner;
@@ -8137,6 +8162,7 @@ to flush.
 =cut
 
 use vars qw(
+  $current_line
   $maximum_jmax_seen
   $minimum_jmax_seen
   $previous_minimum_jmax_seen
@@ -8147,8 +8173,6 @@ use vars qw(
   $extra_indent_ok
   $zero_count
   @group_lines
-  $rcolumns
-  $rstarting_columns
   $last_comment_column
   $lines_since_last_side_comment
   $last_lines_since_last_side_comment
@@ -8170,12 +8194,11 @@ sub initialize {
     # variables describing the entire space group:
     $maximum_line_index = -1;    # lines in the current group
 
+    $current_line             = undef;
     $group_level              = 0;
     $last_group_level_written = -1;
     $extra_indent_ok          = 0;    # can we move all lines to the right?
     $zero_count               = 0;    # count consecutive lines without tokens
-    $rcolumns                 = [];
-    $rstarting_columns        = [];
     $last_comment_column      = 0;
     $lines_since_last_side_comment      = 100;
     $last_lines_since_last_side_comment = 100;
@@ -8359,10 +8382,9 @@ The log file warns the user if there are any such tabs.
         $zero_count++;
 
         if ( $maximum_line_index >= 0 ) {
-            my $maximum_field_index = $group_lines[0]->get_jmax();
 
             # flush the current group if it has some aligned columns..
-            if ( $maximum_field_index > 1 ) { flush() }
+            if ( $group_lines[0]->get_jmax() > 1 ) { flush() }
 
             # flush current group if we are just collecting side comments..
             elsif (
@@ -8405,6 +8427,7 @@ The log file warns the user if there are any such tabs.
     # --------------------------------------------------------------------
     # create an object to hold this line
     # --------------------------------------------------------------------
+    my $is_hanging_side_comment = 0;
     my $new_line = new Perltidy::VerticalAligner::Line(
         jmax                    => $jmax,
         jmax_original_line      => $jmax,
@@ -8413,82 +8436,84 @@ The log file warns the user if there are any such tabs.
         rpatterns               => $rpatterns,
         indentation             => $indentation,
         leading_space_count     => $leading_space_count,
-        is_forced_break         => $is_forced_break,
         outdent_long_lines      => $outdent_long_lines,
         list_type               => "",
-        is_hanging_side_comment => 0,
+        is_hanging_side_comment => $is_hanging_side_comment,
+        maximum_line_length     => $rOpts->{'maximum-line-length'}, 
     );
 
-    my $old_line = undef;
-    if ( $maximum_line_index >= 0 ) {
-        $old_line = $group_lines[0];
-    }
-
     # --------------------------------------------------------------------
-    # Step 1a. Allow hanging side comment to join current group, if any
-    # This will help keep side comments aligned, because otherwise we
-    # will have to start a new group, making alignment less likely.
-    # --------------------------------------------------------------------
-    hanging_comment_check($new_line);
-
-    # --------------------------------------------------------------------
-    # Step 2. It simplifies things to create a zero length side comment
+    # It simplifies things to create a zero length side comment
     # if none exists.
     # --------------------------------------------------------------------
     make_side_comment($new_line);
 
     # --------------------------------------------------------------------
-    # Step 2a. Decide if this is a simple list of items
-    # Select from 3 list types: none, comma, comma-arrow
-    # We use this below to be less restrictive in deciding what to align
+    # Decide if this is a simple list of items.
+    # There are 3 list types: none, comma, comma-arrow.
+    # We use this below to be less restrictive in deciding what to align.
     # --------------------------------------------------------------------
-    list_check($new_line);
+    if ($is_forced_break) {
+        decide_if_list($new_line);
+    }
 
-    # --------------------------------------------------------------------
-    # Step 3. If there is just one previous line, and it has more fields
-    # than the new line, try to join fields together to get a match with
-    # the new line.  At the present time, only a single leading '=' is
-    # allowed to be compressed out.  This is useful in rare cases where
-    # a table is forced to use old breakpoints because of side comments,
-    # and the table starts out something like this:
-    #   my %MonthChars = ('0', 'Jan',	# side comment
-    #                     '1', 'Feb',
-    #                     '2', 'Mar',
-    # Eliminating the '=' field will allow the remaining fields to line up.
-    # This situation does not occur if there are no side comments
-    # because scan_list would put a break after the opening '('.
-    # --------------------------------------------------------------------
     if ( $maximum_line_index >= 0 ) {
-        eliminate_old_fields( $new_line, $old_line );
+
+        #my $old_line = $group_lines[0];
+        #$current_line = $group_lines[0];
+
+        # --------------------------------------------------------------------
+        # Allow hanging side comment to join current group, if any
+        # This will help keep side comments aligned, because otherwise we
+        # will have to start a new group, making alignment less likely.
+        # --------------------------------------------------------------------
+        $is_hanging_side_comment=
+          hanging_comment_check($new_line, $current_line);
+
+        # --------------------------------------------------------------------
+        # If there is just one previous line, and it has more fields
+        # than the new line, try to join fields together to get a match with
+        # the new line.  At the present time, only a single leading '=' is
+        # allowed to be compressed out.  This is useful in rare cases where
+        # a table is forced to use old breakpoints because of side comments,
+        # and the table starts out something like this:
+        #   my %MonthChars = ('0', 'Jan',	# side comment
+        #                     '1', 'Feb',
+        #                     '2', 'Mar',
+        # Eliminating the '=' field will allow the remaining fields to line up.
+        # This situation does not occur if there are no side comments
+        # because scan_list would put a break after the opening '('.
+        # --------------------------------------------------------------------
+        eliminate_old_fields( $new_line, $current_line );
+
+        # --------------------------------------------------------------------
+        # If the new line has more fields than the current group,
+        # see if we can match the first fields and combine the remaining
+        # fields of the new line.  
+        # --------------------------------------------------------------------
+        eliminate_new_fields( $new_line, $current_line );
+
+        # --------------------------------------------------------------------
+        # Flush previous group unless all common tokens and patterns match..
+        # --------------------------------------------------------------------
+        check_match( $new_line, $current_line );
+
+        # --------------------------------------------------------------------
+        # See if there is space for this line in the current group (if any)
+        # --------------------------------------------------------------------
+        if ( $maximum_line_index >= 0 ) {
+            check_fit( $new_line, $current_line );
+        }
     }
 
     # --------------------------------------------------------------------
-    # Step 4. If the new line has more fields than the current group,
-    # see if we can match the first fields and combine the remaining
-    # fields of the new line.  
-    # --------------------------------------------------------------------
-    if ( $maximum_line_index >= 0 ) {
-        eliminate_new_fields( $new_line, $old_line );
-    }
-
-    # --------------------------------------------------------------------
-    # Step 5. Flush previous group unless all common tokens and patterns match..
-    # --------------------------------------------------------------------
-    if ( $maximum_line_index >= 0 ) {
-        check_match( $new_line, $old_line );
-    }
-
-    # --------------------------------------------------------------------
-    # Step 6. See if there is space for this line in the current group
-    # --------------------------------------------------------------------
-    if ( $maximum_line_index >= 0 ) {
-        check_fit( $new_line, $old_line );
-    }
-
-    # --------------------------------------------------------------------
-    # Step 7. Append this line to the current group (or start new group)
+    # Append this line to the current group (or start new group)
     # --------------------------------------------------------------------
     accept_line($new_line);
+
+    # Future update to allow this to vary:
+    $current_line = $new_line if ($maximum_line_index == 0);
+    #unless ($is_hanging_side_comment && $current_line); 
 
     # --------------------------------------------------------------------
     # Step 8. Some old debugging stuff
@@ -8500,40 +8525,45 @@ The log file warns the user if there are any such tabs.
         dump_array(@$rtokens);
         print "APPEND patterns:";
         dump_array(@$rpatterns);
-        print "APPEND common columns:";
-        dump_array(@$rcolumns);
     }
 }
 
 sub hanging_comment_check {
 
-    my $line                    = shift;
-    my $is_hanging_side_comment = 0;
+    my $line     = shift;
+    my $old_line = shift;
 
-    if ( $maximum_line_index >= 0 ) {
-        my $jmax                = $line->get_jmax();
-        my $rtokens             = $line->get_rtokens();
-        my $rfields             = $line->get_rfields();
-        my $rpatterns           = $line->get_rpatterns();
-        my $maximum_field_index = $group_lines[0]->get_jmax();
-        if ( $jmax == 1 && $$rtokens[ $jmax - 1 ] eq '#'
-            && $$rfields[0] =~ /^\s*$/ && $maximum_field_index > $jmax )
-        {
+    my $jmax                = $line->get_jmax();
+    my $rtokens             = $line->get_rtokens();
+    my $rfields             = $line->get_rfields();
+    my $rpatterns           = $line->get_rpatterns();
+    my $maximum_field_index = $old_line->get_jmax();
 
-            $is_hanging_side_comment = 1;
-            $jmax                    = $maximum_field_index;
-            $line->set_jmax($jmax);
-            $$rfields[$jmax] = $$rfields[1];
-            $$rtokens[ $jmax - 1 ]   = $$rtokens[0];
-            $$rpatterns[ $jmax - 1 ] = $$rpatterns[0];
-            for ( my $j = 1 ; $j < $jmax ; $j++ ) {
-                $$rfields[$j] = " ";  # NOTE: caused glitch unless 1 blank, why?
-                $$rtokens[ $j - 1 ]   = "";
-                $$rpatterns[ $j - 1 ] = "";
-            }
+    # It is a hanging side comment ..
+    if (    # if..
+        $jmax == 1    # there are 2 fields..
+        && $$rfields[0] =~ /^\s*$/    # and the first field is empty...
+        && $$rtokens[0] eq '#'            # and the second field is a comment..
+        && $maximum_field_index > $jmax   # and the current line has more fields
+      )
+    {
+
+        $line->set_is_hanging_side_comment(1);
+        $jmax = $maximum_field_index;
+        $line->set_jmax($jmax);
+        $$rfields[$jmax] = $$rfields[1];
+        $$rtokens[ $jmax - 1 ]   = $$rtokens[0];
+        $$rpatterns[ $jmax - 1 ] = $$rpatterns[0];
+        for ( my $j = 1 ; $j < $jmax ; $j++ ) {
+            $$rfields[$j] = " ";  # NOTE: caused glitch unless 1 blank, why?
+            $$rtokens[ $j - 1 ]   = "";
+            $$rpatterns[ $j - 1 ] = "";
         }
+        return 1;
     }
-    $line->set_is_hanging_side_comment($is_hanging_side_comment);
+    else {
+        return 0;
+    }
 }
 
 sub eliminate_old_fields {
@@ -8640,39 +8670,31 @@ sub make_side_comment {
     }
 }
 
-sub list_check {
+sub decide_if_list {
 
     my $line = shift;
-
-    my $jmax            = $line->get_jmax();
-    my $rtokens         = $line->get_rtokens();
-    my $rfields         = $line->get_rfields();
-    my $rpatterns       = $line->get_rpatterns();
-    my $is_forced_break = $line->get_is_forced_break();
-
-    my $list_type  = "";
-    my $test_token = $$rtokens[0];
 
     # A list will be taken to be a line with a forced break in which all
     # of the field separators are commas or comma-arrows (except for the
     # trailing #)
-    if ( $is_forced_break > 0 ) {
 
-        # List separator tokens are things like ',3'   or '=>2',
-        # where the trailing digit is the nesting depth.  Allow braces
-        # to allow nested list items.
-        if ( $test_token =~ /^(\,|=>)/ ) {
-            $list_type = $test_token;
-            foreach my $i ( 1 .. $jmax - 2 ) {
+    # List separator tokens are things like ',3'   or '=>2',
+    # where the trailing digit is the nesting depth.  Allow braces
+    # to allow nested list items.
+    my $rtokens    = $line->get_rtokens();
+    my $test_token = $$rtokens[0];
+    if ( $test_token =~ /^(\,|=>)/ ) {
+        my $list_type = $test_token;
+        my $jmax      = $line->get_jmax();
+        foreach my $i ( 1 .. $jmax - 2 ) {
 
-                if ( $$rtokens[$i] !~ /^(\,|=>|\{)/ ) {
-                    $list_type = "";
-                    last;
-                }
+            if ( $$rtokens[$i] !~ /^(\,|=>|\{)/ ) {
+                $list_type = "";
+                last;
             }
         }
+        $line->set_list_type($list_type);
     }
-    $line->set_list_type($list_type);
 }
 
 sub eliminate_new_fields {
@@ -8732,7 +8754,6 @@ sub check_match {
 
     my $new_line            = shift;
     my $old_line            = shift;
-    my $maximum_field_index = $old_line->get_jmax();
 
     my $jmax                    = $new_line->get_jmax();
     my $jmax_original_line      = $new_line->get_jmax_original_line();
@@ -8747,6 +8768,7 @@ sub check_match {
     my $old_rtokens     = $old_line->get_rtokens();
     my $starting_jmax   = $old_line->get_jmax_original_line();
     my $group_list_type = $old_line->get_list_type();
+    my $maximum_field_index = $old_line->get_jmax();
 
     # flush if this line has too many fields
     if ( $jmax > $maximum_field_index ) { flush(); }
@@ -8830,8 +8852,6 @@ sub check_fit {
     my $new_line = shift;
     my $old_line = shift;
 
-    my $maximum_field_index = $old_line->get_jmax();
-
     my $jmax                    = $new_line->get_jmax();
     my $leading_space_count     = $new_line->get_leading_space_count();
     my $is_hanging_side_comment = $new_line->get_is_hanging_side_comment();
@@ -8843,15 +8863,10 @@ sub check_fit {
 
     if ( $maximum_line_index >= 0 ) {
         my $padding_so_far    = 0;
-        my $padding_available =
-          $rOpts->{'maximum-line-length'} -
-          $old_line->get_column($maximum_field_index);
+        my $padding_available = $old_line->get_available_space_on_right();
 
         # save current columns in case this doesn't work
-        my @old_columns;
-        for my $j ( 0 .. $maximum_field_index ) {
-            $old_columns[$j] = $old_line->get_column($j);
-        }
+        $old_line->save_columns();
 
         for my $j ( 0 .. $jmax ) {
 
@@ -8914,10 +8929,7 @@ sub check_fit {
             {
 
                 # revert to starting state then flush; things didn't work out
-                for my $k ( 0 .. $maximum_field_index ) {
-                    $old_line->set_column( $k, $old_columns[$k] );
-                }
-
+                $old_line->restore_columns();
                 flush();
                 last;
             }
@@ -8937,9 +8949,9 @@ sub accept_line {
     # initialize field lengths if starting new group
     if ( $maximum_line_index == 0 ) {
 
-        my @new_alignments = ();
         my $jmax           = $new_line->get_jmax();
         my $rfields        = $new_line->get_rfields();
+        my $rtokens        = $new_line->get_rtokens();
         my $j;
         my $col = $new_line->get_leading_space_count();
 
@@ -8950,13 +8962,12 @@ sub accept_line {
             my $alignment = new Perltidy::VerticalAligner::Alignment(
                 column          => $col,
                 starting_column => $col,
+                matching_token  => $$rtokens[$j],
                 starting_line   => $maximum_line_index,
                 ending_line     => $maximum_line_index,
             );
-            push @new_alignments, $alignment;
+            $new_line->set_alignment($j,$alignment);
         }
-
-        $new_line->set_alignments(@new_alignments);
 
         $maximum_jmax_seen = $jmax;
         $minimum_jmax_seen = $jmax;
@@ -9021,6 +9032,7 @@ sub flush {
     # initialize for new group
     $maximum_line_index = -1;
     $zero_count         = 0;
+    $current_line       = undef;
 }
 
 sub decide_if_aligned {
@@ -9070,8 +9082,7 @@ sub adjust_side_comment {
         my $line = $group_lines[0];
 
         # the maximum space without exceeding the line length:
-        my $avail =
-          $rOpts->{'maximum-line-length'} - $line->get_column( $kmax - 1 );
+        my $avail = $line->get_available_space_on_right();
 
         # try to use the previous comment column
         my $move = $last_comment_column - $line->get_column( $kmax - 2 );
@@ -9279,12 +9290,8 @@ sub get_extra_leading_spaces {
 
             if ($extra_indentation_spaces_wanted) {
 
-                my $maximum_field_index = $group_lines[0]->get_jmax();
-
                 # the maximum space without exceeding the line length:
-                my $avail =
-                  $rOpts->{'maximum-line-length'} - $group_lines[0]
-                  ->get_column($maximum_field_index);
+                my $avail = $group_lines[0]->get_available_space_on_right();
                 $extra_leading_spaces =
                   ( $avail > $extra_indentation_spaces_wanted ) ?
                   $extra_indentation_spaces_wanted : $avail;
@@ -9328,9 +9335,8 @@ sub combine_fields {
                 $pad += $group_lines[$j]->get_leading_space_count();
             }
 
-            if ( $pad > 0 ) {
-                $line->increase_field_width( $k, $pad );
-            }
+            if ( $pad > 0 ) { $line->increase_field_width( $k, $pad ) }
+
         }
     }
 }
@@ -13365,12 +13371,11 @@ sub inverse_pretoken_map {
 sub guess_if_pattern_or_conditional {
 
     # this routine is called when we have encountered a ? following an
-    # unknown bareword, and we must decide if it starts a pattern or is a
-    # division
+    # unknown bareword, and we must decide if it starts a pattern or not
     # input parameters:
     #   $i - token index of the ? starting possible pattern
     # output parameters:
-    #   $is_pattern = 0 if probably division,  =1 if probably a pattern
+    #   $is_pattern = 0 if probably not pattern,  =1 if probably a pattern
     #   msg = a warning or diagnostic message
     my ( $i, $rtokens, $rtoken_map ) = @_;
     my $is_pattern = 0;
