@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.42 2001/09/07 23:23:42 perltidy Exp $
+    $Id: perltidy,v 1.43 2001/09/08 14:30:23 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -3271,19 +3271,22 @@ sub set_leading_whitespace {
     # if this is a non-blank..
     if ( $type ne 'b' ) {
 
-        # TESTING-LP: '.' ':', '?' '||' '&&' added (mci.t)
+        # '.' ':', '?' '||' '&&' added (mci.t)
         #if ( $last_nonblank_type =~ /^([\,\{])$/
 
         # and if ..
         if (
 
             # previous character was one of these:
-            $last_nonblank_type =~ /^([\:\?\,\{])$/
+            $last_nonblank_type =~ /^([\:\?\,])$/
+
+            # previous character was opening and this does not close it
+            || ($last_nonblank_type =~ /^([\{])$/ && $type !~ /^([\}])$/) 
 
             # or this token is one of these:
             || $type =~ /^([\.]|\|\||\&\&)$/
 
-            # TESTING
+            # or this is a closing structure
             || ( $type =~ /^([\}])$/ && $token eq $type )
 
             # or previous token was a keyword
@@ -3293,22 +3296,16 @@ sub set_leading_whitespace {
                 && ( $last_nonblank_token =~
                     /^(if|unless|and|or|last|next|redo|return)$/
 
-                    # or this set:
-                    #|| ( $last_nonblank_token =~ /^(if|unless)$/ )
-
                     && $type ne '{'
                 )
-            )    # TBD: find actual index
-
-            # or this is a closing structure
-            #|| $type =~ /^[\}]$/
+            )
 
             # or this is after an assignment after a closing structure
             || ( $last_nonblank_type =~ /=/
                 && $last_nonblank_type !~ /(==|!=|>=|<=|=~|=>)/
                 && ( $last_last_nonblank_type =~ /^[\}\)\]]$/
 
-                    # TESTING-LP:
+                    # and it is significantly to the right
                     || $gnu_position_predictor >
                     $rOpts->{'maximum-line-length'} / 2
                 )
@@ -4504,7 +4501,7 @@ sub print_line_of_tokens {
     #     /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
     # Examples:
     #   *VERSION = \'1.01';
-    #   ( $VERSION ) = '$Revision: 1.42 $ ' =~ /\$Revision:\s+([^\s]+)/;
+    #   ( $VERSION ) = '$Revision: 1.43 $ ' =~ /\$Revision:\s+([^\s]+)/;
     # We will pass such a line straight through unless -npvl is used
     my $is_VERSION_statement = 0;
 
