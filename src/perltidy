@@ -54,13 +54,13 @@ use vars qw{
 
 @EXPORT = qw( &perltidy );
 
-{ eval "use diagnostics"; }
+eval "use diagnostics";
 { eval "use IO::Scalar";      $missing_io_scalar      = $@; }
 { eval "use IO::ScalarArray"; $missing_io_scalararray = $@; }
 use IO::File;
 
 BEGIN {
-    ($VERSION=q($Id: perltidy,v 1.72 2001/12/17 16:11:08 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # one line for MakeMaker
+    ($VERSION=q($Id: perltidy,v 1.73 2001/12/19 01:07:33 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # one line for MakeMaker
 }
 
 # Preloaded methods go here.
@@ -1126,7 +1126,7 @@ sub expand_command_abbreviations {
 
             if ($config_file) {
                 die <<"DIE";
-Please check your configuration $config_file for circular-references. 
+Please check your configuration file $config_file for circular-references. 
 To deactivate it, use -npro.
 DIE
             }
@@ -1559,6 +1559,7 @@ Other controls
  -cscl=s change closing side comment to apply to selected list of blocks
  -csci=n minimum number of lines needed to apply a -csc tag, default n=6
  -csct=n maximum number of columns of appended text, default n=20 
+ -cscw   causes warning if old side comment is overwritten with -csc
 
  -sbc    use 'static block comments' identified by leading '##' (default)
  -sbcp=s change static block comment identifier to be other than '##'
@@ -3009,11 +3010,9 @@ use vars qw{
   $brace_follower_pattern
   $looking_for_else
 
-  @want_comma_break
-  @maximum_nesting_depth
-  @dont_align
-  @interrupted_list
   @has_broken_sublist
+  @dont_align
+  @want_comma_break
 
   $index_start_one_line_block
   $semicolons_before_block_self_destruct
@@ -3030,6 +3029,15 @@ use vars qw{
   %outdent_keyword
   $static_block_comment_pattern
   $static_side_comment_pattern
+
+  $rOpts_add_whitespace
+  $rOpts_continuation_indentation
+  $rOpts_cuddled_else
+  $rOpts_delete_old_whitespace
+  $rOpts_fuzzy_line_length
+  $rOpts_indent_columns
+  $rOpts_line_up_parentheses
+  $rOpts_maximum_line_length
 
   %FORMATTER_DEBUG_FLAG
   %tightness
@@ -3200,11 +3208,9 @@ sub new {
     @leading_spaces_to_go        = ();
     @reduced_spaces_to_go        = ();
 
-    @want_comma_break      = (0);
-    @maximum_nesting_depth = ();
-    @dont_align            = (0);
-    @interrupted_list      = (0);
-    @has_broken_sublist    = (0);
+    @dont_align         = ();
+    @has_broken_sublist = ();
+    @want_comma_break   = ();
 
     @ci_stack                   = ("");
     $saw_negative_indentation   = 0;
@@ -3377,7 +3383,8 @@ sub get_SPACES {
     # return the number of leading spaces associated with an indentation
     # variable $indentation is either a constant number of spaces or an object
     # with a get_SPACES method.
-    my ($indentation) = @_;
+    ##my ($indentation) = @_;
+    my $indentation = shift;
     return ref($indentation) ? $indentation->get_SPACES() : $indentation;
 }
 
@@ -3440,12 +3447,11 @@ sub set_leading_whitespace {
     #-------------------------------------------
     # handle the standard indentation scheme
     #-------------------------------------------
-    unless ( $rOpts->{'line-up-parentheses'} ) {
-        my $space_count =
-          $ci_level * $rOpts->{'continuation-indentation'} + $level *
-          $rOpts->{'indent-columns'};
+    unless ($rOpts_line_up_parentheses) {
+        my $space_count = $ci_level * $rOpts_continuation_indentation + $level *
+          $rOpts_indent_columns;
         my $ci_spaces =
-          ( $ci_level == 0 ) ? 0 : $rOpts->{'continuation-indentation'};
+          ( $ci_level == 0 ) ? 0 : $rOpts_continuation_indentation;
 
         if ($in_continued_quote) {
             $space_count = 0;
@@ -3494,8 +3500,7 @@ sub set_leading_whitespace {
         if ( $last_equals > $line_start_index_to_go ) {
 
             # and we are far to the right
-            if ( $gnu_position_predictor > $rOpts->{'maximum-line-length'} / 2 )
-            {
+            if ( $gnu_position_predictor > $rOpts_maximum_line_length / 2 ) {
 
                 # ok, make the switch -- note that we do not set a real
                 # breakpoint here because we may not really need one; sub
@@ -3611,9 +3616,10 @@ sub set_leading_whitespace {
         # choice results in a smooth transition between the gnu-style
         # and the standard style.
         my $standard_increment =
-          ( $level - $current_level ) * $rOpts->{'indent-columns'} +
-          ( $ci_level - $current_ci_level ) *
-          $rOpts->{'continuation-indentation'};
+          ##( $level - $current_level ) * $rOpts->{'indent-columns'} +
+          ( $level - $current_level ) * $rOpts_indent_columns +
+          ( $ci_level - $current_ci_level ) * $rOpts_continuation_indentation;
+        ##$rOpts->{'continuation-indentation'};
 
         # Now we have to define how much extra incremental space
         # ("$available_space") we want.  This extra space will be
@@ -3625,7 +3631,8 @@ sub set_leading_whitespace {
 
         # initialization on empty stack..
         if ( $max_gnu_stack_index == 0 ) {
-            $space_count = $level * $rOpts->{'indent-columns'};
+            ##$space_count = $level * $rOpts->{'indent-columns'};
+            $space_count = $level * $rOpts_indent_columns;
         }
 
         # if this is a BLOCK, add the standard increment
@@ -3743,8 +3750,7 @@ sub set_leading_whitespace {
                     $last_last_nonblank_type =~ /^[\}\)\]]$/
 
                     # and it is significantly to the right
-                    || $gnu_position_predictor >
-                    $rOpts->{'maximum-line-length'} / 2
+                    || $gnu_position_predictor > $rOpts_maximum_line_length / 2
                 )
             )
           )
@@ -3850,7 +3856,8 @@ sub check_for_long_gnu_style_lines {
     # remove some whitespace if it exceeds the desired maximum
 
     # this is only for the '-lp' style
-    return unless ( $rOpts->{'line-up-parentheses'} );
+    ##return unless ( $rOpts->{'line-up-parentheses'} );
+    return unless ($rOpts_line_up_parentheses);
 
     # nothing can be done if no stack items defined for this line
     return if ( $max_gnu_item_index == UNDEFINED_INDEX );
@@ -3859,7 +3866,7 @@ sub check_for_long_gnu_style_lines {
     # keep 2 extra free because they are needed in some cases
     # (result of trial-and-error testing)
     my $spaces_needed =
-      $gnu_position_predictor - $rOpts->{'maximum-line-length'} + 2;
+      $gnu_position_predictor - $rOpts_maximum_line_length + 2;
 
     return if ( $spaces_needed < 0 );
 
@@ -3943,7 +3950,8 @@ sub finish_lp_batch {
     # get the space back if there are side comments.
 
     # this is only for the 'lp' style
-    return unless ( $rOpts->{'line-up-parentheses'} );
+    ##return unless ( $rOpts->{'line-up-parentheses'} );
+    return unless ($rOpts_line_up_parentheses);
 
     # nothing can be done if no stack items defined for this line
     return if ( $max_gnu_item_index == UNDEFINED_INDEX );
@@ -3990,7 +3998,8 @@ sub reduce_lp_indentation {
     my $deleted_spaces = 0;
 
     # this is only for the -lp style
-    if ( $rOpts->{'line-up-parentheses'} ) {
+    ##if ( $rOpts->{'line-up-parentheses'} ) {
+    if ($rOpts_line_up_parentheses) {
 
         # it is only safe to undo indentation if there are no children.  
         my $item = $leading_spaces_to_go[$i];
@@ -4009,7 +4018,8 @@ sub token_sequence_length {
 
     # return length of tokens ($ifirst .. $ilast) including first & last
     # returns 0 if $ifirst > $ilast
-    my ( $ifirst, $ilast ) = @_;
+    my $ifirst = shift;
+    my $ilast  = shift;
     return 0 if ( $ilast < 0 || $ifirst > $ilast );
     return $lengths_to_go[ $ilast + 1 ] if ( $ifirst < 0 );
     return $lengths_to_go[ $ilast + 1 ] - $lengths_to_go[$ifirst];
@@ -4018,11 +4028,23 @@ sub token_sequence_length {
 sub total_line_length {
 
     # return length of a line of tokens ($ifirst .. $ilast)
-    my ( $ifirst, $ilast ) = @_;
+    my $ifirst = shift;
+    my $ilast  = shift;
     if ( $ifirst < 0 ) { $ifirst = 0 }
 
     return leading_spaces_to_go($ifirst) +
       token_sequence_length( $ifirst, $ilast );
+}
+
+sub excess_line_length {
+
+    # return number of characters by which a line of tokens ($ifirst..$ilast)
+    # exceeds the allowable line length.
+    my $ifirst = shift;
+    my $ilast  = shift;
+    if ( $ifirst < 0 ) { $ifirst = 0 }
+    return leading_spaces_to_go($ifirst) +
+      token_sequence_length( $ifirst, $ilast ) - $rOpts_maximum_line_length;
 }
 
 sub finish_formatting {
@@ -4331,6 +4353,17 @@ EOM
         '[' => ']',
         '?' => ':',
     );
+
+    # frequently used parameters
+    $rOpts_add_whitespace           = $rOpts->{'add-whitespace'};
+    $rOpts_continuation_indentation = $rOpts->{'continuation-indentation'};
+    $rOpts_cuddled_else             = $rOpts->{'cuddled-else'};
+    $rOpts_delete_old_whitespace    = $rOpts->{'delete-old-whitespace'};
+    $rOpts_fuzzy_line_length        = $rOpts->{'fuzzy-line-length'};
+    $rOpts_indent_columns           = $rOpts->{'indent-columns'};
+    $rOpts_line_up_parentheses      = $rOpts->{'line-up-parentheses'};
+    $rOpts_maximum_line_length      = $rOpts->{'maximum-line-length'};
+
 }
 
 sub make_static_block_comment_pattern {
@@ -5198,7 +5231,7 @@ sub print_line_of_tokens {
          /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
      Examples:
        *VERSION = \'1.01';
-       ( $VERSION ) = '$Revision: 1.72 $ ' =~ /\$Revision:\s+([^\s]+)/;
+       ( $VERSION ) = '$Revision: 1.73 $ ' =~ /\$Revision:\s+([^\s]+)/;
      We will pass such a line straight through (by changing it
      to a quoted string) unless -npvl is used
     
@@ -5207,7 +5240,7 @@ sub print_line_of_tokens {
      block sequence numbers may see a closing sequence number but not
      the corresponding opening sequence number (sidecmt.t).  Example:
 
-    my $VERSION = do { my @r = (q$Revision: 1.72 $ =~ /\d+/g); sprintf
+    my $VERSION = do { my @r = (q$Revision: 1.73 $ =~ /\d+/g); sprintf
     "%d."."%02d" x $#r, @r }; 
 
     Here, the opening brace of 'do {' will not be seen, while the closing
@@ -5321,6 +5354,7 @@ sub print_line_of_tokens {
     $token = "";
 
     for ( $j = 0 ; $j <= $jmax ; $j++ ) {
+
         $token                 = $$rtokens[$j];
         $type                  = $$rtoken_type[$j];
         $block_type            = $$rblock_type[$j];
@@ -5385,7 +5419,7 @@ sub print_line_of_tokens {
         }
 
         # change 'LABEL   :'   to 'LABEL:'
-        if ( $type eq 'J' ) { $token =~ s/\s+//g }
+        elsif ( $type eq 'J' ) { $token =~ s/\s+//g }
 
         # patch to add space to something like "x10"
         # This avoids having to split this token in the pre-tokenizer
@@ -5412,7 +5446,7 @@ sub print_line_of_tokens {
         if ( ( $max_index_to_go >= 0 )
             && ( $type ne 'b' )
             && ( $types_to_go[$max_index_to_go] ne 'b' )
-            && ( $rOpts->{'add-whitespace'} ) )
+            && $rOpts_add_whitespace )
         {
             my $ws = $$rwhite_space_flag[$j];
 
@@ -5546,8 +5580,8 @@ sub print_line_of_tokens {
 
                     # it is too long (final length may be different from
                     # initial estimate). note: must allow 1 space for this token
-                    total_line_length( $index_start_one_line_block,
-                        $max_index_to_go ) >= $rOpts->{'maximum-line-length'}
+                    excess_line_length( $index_start_one_line_block,
+                        $max_index_to_go ) >= 0
 
                     # or if it has too many semicolons
                     || ( $semicolons_before_block_self_destruct == 0
@@ -5786,9 +5820,9 @@ sub print_line_of_tokens {
         else {
 
             if ( $type eq 'b' ) {
-                $token = ' ' if $rOpts->{'add-whitespace'};
+                $token = ' ' if $rOpts_add_whitespace;
 
-                if ( $rOpts->{'delete-old-whitespace'} ) {
+                if ($rOpts_delete_old_whitespace) {
                     next
                       unless is_essential_whitespace(
                         $last_last_nonblank_token,
@@ -5992,7 +6026,7 @@ sub starting_one_line_block {
     my $i;
 
     # see if length is too long to even start
-    if ( $pos > $rOpts->{'maximum-line-length'} ) {
+    if ( $pos > $rOpts_maximum_line_length ) {
         return 1;
     }
 
@@ -6003,7 +6037,7 @@ sub starting_one_line_block {
         else { $pos += length( $$rtokens[$i] ) }
 
         # Return false result if we exceed the maximum line length,
-        if ( $pos > $rOpts->{'maximum-line-length'} ) {
+        if ( $pos > $rOpts_maximum_line_length ) {
             return 0;
         }
 
@@ -6032,7 +6066,7 @@ sub starting_one_line_block {
                     $pos += length( $$rtokens[ $i + 1 ] );
                 }
 
-                if ( $pos > $rOpts->{'maximum-line-length'} ) {
+                if ( $pos > $rOpts_maximum_line_length ) {
                     return 0;
                 }
             }
@@ -6260,8 +6294,7 @@ sub correct_lp_indentation {
                             $max_length = $length_t;
                         }
                     }
-                    $right_margin =
-                      $rOpts->{'maximum-line-length'} - $max_length;
+                    $right_margin = $rOpts_maximum_line_length - $max_length;
                     if ( $right_margin < 0 ) { $right_margin = 0 }
                 }
 
@@ -6443,9 +6476,7 @@ sub output_line_to_go {
 
         # set all forced breakpoints for good list formatting
         my $saw_good_break = 0;
-        my $is_long_line   =
-          ( total_line_length( $imin, $max_index_to_go ) >
-              $rOpts->{'maximum-line-length'} );
+        my $is_long_line   = excess_line_length( $imin, $max_index_to_go ) > 0;
         if (
             $max_index_to_go > 0
             && ( $is_long_line
@@ -6497,7 +6528,8 @@ sub output_line_to_go {
 
         # do corrector step if -lp option is used
         my $do_not_pad = 0;
-        if ( $rOpts->{'line-up-parentheses'} ) {
+        ##if ( $rOpts->{'line-up-parentheses'} ) {
+        if ($rOpts_line_up_parentheses) {
             $do_not_pad = correct_lp_indentation( $ri_first, $ri_last );
         }
         send_lines_to_vertical_aligner( $ri_first, $ri_last, $do_not_pad );
@@ -7337,11 +7369,13 @@ sub set_adjusted_indentation {
     {
         my $space_count = leading_spaces_to_go($ibeg);
         if ( $space_count > 0 ) {
-            $space_count -= $rOpts->{'continuation-indentation'};
+            $space_count -= $rOpts_continuation_indentation;
+            ##$space_count -= $rOpts->{'continuation-indentation'};
             $is_outdented_line = 1;
             if ( $space_count < 0 ) { $space_count = 0 }
 
-            if ( $rOpts->{'line-up-parentheses'} ) {
+            ##if ( $rOpts->{'line-up-parentheses'} ) {
+            if ($rOpts_line_up_parentheses) {
                 $indentation =
                   new_lp_indentation_item( $space_count, $lev, 0, 0, 0 );
             }
@@ -7691,7 +7725,6 @@ sub set_bond_strengths {
         #   for ( $j = $number_of_fields - 1 ; $j < $item_count ; $j +=
         #     $number_of_fields )
         # and make it weaker than ',' too
-        ##$right_bond_strength{'f'} = 0.3 * WEAK + 0.7 * VERY_WEAK;
         $right_bond_strength{'f'} = VERY_WEAK - 0.001;
 
         # The strengths of ?/: should be somewhere between 
@@ -8036,7 +8069,7 @@ sub set_bond_strengths {
 
         # patch to put cuddled elses back together when on multiple
         # lines, as in: } \n else \n { \n
-        if ( $rOpts->{'cuddled-else'} ) {
+        if ($rOpts_cuddled_else) {
 
             if ( ( $token eq 'else' ) && ( $next_nonblank_type eq '{' )
                 || ( $type eq '}' ) && ( $next_nonblank_token eq 'else' ) )
@@ -8127,40 +8160,37 @@ sub scan_list {
     # stored in the array @forced_breakpoint_to_go, which is used to set
     # final breakpoints.
 
-    my $logical_pattern =
-      '^(if|elsif|unless|while|and|or|not|&&|\|\||\?|\:|\!)$';
-
     my $last_colon_sequence_number = -1;
 
-    my $starting_depth                = $nesting_depth_to_go[0];
-    my $current_depth                 = $starting_depth;
-    my @opening_structure_index_stack = ();
-
-    my @breakpoint_stack          = ();
+    my $starting_depth            = $nesting_depth_to_go[0];
+    my $current_depth             = $starting_depth;
     my $starting_breakpoint_count = $forced_breakpoint_count;
 
     my $depth;
     my $last_nonblank_type  = ';';
     my $last_nonblank_token = ';';
     my $i_last_nonblank_token;
-    my @max_length                 = ();
-    my @comma_index                = ();
-    my $item_count                 = 0;
-    my @item_count_stack           = ();
-    my @identifier_count_stack     = ();
-    my @old_breakpoint_count_stack = ();
-    my @breakpoint_undo_stack      = ();
-    my @container_type             = ();
-    my @last_comma_index           = ();
-    my @longest_term               = ();
-    my @last_equals_index          = ();
-    my $old_breakpoint_count       = 0;
-    my $good_old_breakpoint        = 0;
-    my $last_old_breakpoint_count  = 0;
-    my @index_before_arrow         = ();
-    my @rand_or_list               = ();
-    my @last_nonblank_type         = ();
-    my $saw_comma                  = 0;
+    my $old_breakpoint_count      = 0;
+    my $good_old_breakpoint       = 0;
+    my $last_old_breakpoint_count = 0;
+
+    my @breakpoint_stack              = ();
+    my @breakpoint_undo_stack         = ();
+    my @comma_index                   = ();
+    my @container_type                = ();
+    my @identifier_count_stack        = ();
+    my @index_before_arrow            = ();
+    my @interrupted_list              = ();
+    my @item_count_stack              = ();
+    my @last_comma_index              = ();
+    my @last_equals_index             = ();
+    my @last_nonblank_type            = ();
+    my @longest_term                  = ();
+    my @max_length                    = ();
+    my @maximum_nesting_depth         = ();
+    my @old_breakpoint_count_stack    = ();
+    my @opening_structure_index_stack = ();
+    my @rand_or_list                  = ();
 
     my $block_type    = ' ';
     my $type          = ';';
@@ -8181,22 +8211,24 @@ sub scan_list {
 
             $minimum_depth = $depth;
 
+            # BUBBA: verify that all are defined:
             # local arrays..
-            $item_count_stack[$depth]              = 0;
-            $identifier_count_stack[$depth]        = 0;
-            $index_before_arrow[$depth]            = -1;
-            $opening_structure_index_stack[$depth] = -1;
             $breakpoint_stack[$depth]              = $starting_breakpoint_count;
             $container_type[$depth]                = "";
+            $identifier_count_stack[$depth]        = 0;
+            $index_before_arrow[$depth]            = -1;
+            $interrupted_list[$depth]              = 1;
+            $item_count_stack[$depth]              = 0;
             $last_nonblank_type[$depth]            = "";
             $longest_term[$depth]                  = 0;
+            $maximum_nesting_depth[$depth]         = $depth;
+            $opening_structure_index_stack[$depth] = -1;
 
             # global arrays..
-            if ( !defined( $maximum_nesting_depth[$depth] ) ) {
-                $maximum_nesting_depth[$depth] = $depth;
-                $dont_align[$depth]            = 0;
-                $interrupted_list[$depth]      = 0;
-                $has_broken_sublist[$depth]    = 0;
+            if ( !defined( $has_broken_sublist[$depth] ) ) {
+                $dont_align[$depth]         = 0;
+                $has_broken_sublist[$depth] = 0;
+                $want_comma_break[$depth]   = 0;
             }
         }
     };
@@ -8227,6 +8259,7 @@ sub scan_list {
                 $next_nonblank_type,
                 $container_type[$dd],
                 $interrupted_list[$dd],
+                $maximum_nesting_depth[$dd],
                 \$do_not_break_apart,
             );
             $bp_count = $forced_breakpoint_count - $fbc;
@@ -8242,14 +8275,18 @@ sub scan_list {
         return ( $bp_count, $do_not_break_apart );
     };
 
+    my $is_logical_container = sub {
+        my $dd = shift;
+        $container_type[$dd] =~
+          /^(if|elsif|unless|while|and|or|not|&&|\|\||\?|\:|\!)$/;
+    };
+
     my $set_logical_breakpoints = sub {
         my $dd        = shift;
         my $i_opening = $opening_structure_index_stack[$dd];
-        ##my ($a,$b,$c)=caller();
-        ##print "BUBBA: $a $c: items=$item_count_stack[$dd] fbp=$forced_breakpoint_count bp=$breakpoint_stack[$dd] i_opening=$i_opening tok=$tokens_to_go[$i_opening]\n";
         if ( defined( $rand_or_list[$dd] )
             && $item_count_stack[$dd] == 0
-            && $container_type[$dd] =~ /$logical_pattern/o )
+            && $is_logical_container->($dd) )
         {
             while ( my $j = pop ( @{ $rand_or_list[$dd] } ) ) {
                 set_forced_breakpoint($j);
@@ -8273,9 +8310,7 @@ sub scan_list {
         $container_type[$dd] =~ /^(sort|map|grep|eval)$/;
     };
 
-    my $is_long_line =
-      total_line_length( 0, $max_index_to_go ) >
-      $rOpts->{'maximum-line-length'};
+    my $is_long_line = excess_line_length( 0, $max_index_to_go ) > 0;
 
     my $want_previous_breakpoint = 0;
 
@@ -8379,7 +8414,7 @@ sub scan_list {
         # block -- but we will break in logical breaks below so that
         # they do not add to the forced_breakpoint_count
         if ( $type eq 'k' && $token eq 'or' ) {
-            if ( $container_type[$depth] =~ /$logical_pattern/o ) {
+            if ( $is_logical_container->($depth) ) {
                 push @{ $rand_or_list[$depth] }, $i;
             }
             else {
@@ -8438,24 +8473,22 @@ sub scan_list {
         #------------------------------------------------------------
         if ( $depth > $current_depth ) {
 
-            $item_count_stack[$current_depth] = $item_count;
-            $item_count = 0;
-            $item_count_stack[$depth]              = 0;
-            $identifier_count_stack[$depth]        = 0;
-            $want_comma_break[$depth]              = 0;
-            $maximum_nesting_depth[$depth]         = $depth;
-            $index_before_arrow[$depth]            = -1;
+            $breakpoint_stack[$depth]           = $forced_breakpoint_count;
+            $breakpoint_undo_stack[$depth]      = $forced_breakpoint_undo_count;
+            $has_broken_sublist[$depth]         = 0;
+            $identifier_count_stack[$depth]     = 0;
+            $index_before_arrow[$depth]         = -1;
+            $interrupted_list[$depth]           = 0;
+            $item_count_stack[$depth]           = 0;
+            $last_comma_index[$depth]           = undef;
+            $last_equals_index[$depth]          = undef;
+            $last_nonblank_type[$depth]         = $last_nonblank_type;
+            $longest_term[$depth]               = 0;
+            $maximum_nesting_depth[$depth]      = $depth;
+            $old_breakpoint_count_stack[$depth] = $old_breakpoint_count;
             $opening_structure_index_stack[$depth] = $i;
-            $last_nonblank_type[$depth]            = $last_nonblank_type;
-            $interrupted_list[$depth]              = 0;
-            $has_broken_sublist[$depth]            = 0;
-            $breakpoint_stack[$depth]              = $forced_breakpoint_count;
-            $old_breakpoint_count_stack[$depth]    = $old_breakpoint_count;
-            $breakpoint_undo_stack[$depth] = $forced_breakpoint_undo_count;
-            $last_equals_index[$depth]     = undef;
-            $last_comma_index[$depth]      = undef;
-            $longest_term[$depth]          = 0;
-            $rand_or_list[$depth]          = [];
+            $rand_or_list[$depth]                  = [];
+            $want_comma_break[$depth]              = 0;
 
             # we want to remember keywords my, local, our
             $container_type[$depth] =
@@ -8519,12 +8552,10 @@ sub scan_list {
         #------------------------------------------------------------
         elsif ( $depth < $current_depth ) {
 
-            # BUBBA: check for new minimum depth here
-            # then remove defined below; maybe include this:
+            $check_for_new_minimum_depth->($depth);
 
             # remember how deep we have been 
-            if ( !defined( $maximum_nesting_depth[$depth] )
-                || $maximum_nesting_depth[$depth] <
+            if ( $maximum_nesting_depth[$depth] <
                 $maximum_nesting_depth[$current_depth] )
             {
                 $maximum_nesting_depth[$depth] =
@@ -8549,13 +8580,8 @@ sub scan_list {
             #print "LISTY sees: i=$i type=$type  tok=$token  block=$block_type depth=$depth next=$next_nonblank_type next_block=$next_nonblank_block_type inter=$interrupted_list[$current_depth]\n";
 
             # set breaks at commas if necessary
-            my $bp_count           = 0;
-            my $do_not_break_apart = 0;
-            if ( $item_count > 0 ) {
-                $item_count_stack[$current_depth] = $item_count;
-                ( $bp_count, $do_not_break_apart ) =
-                  $set_comma_breakpoints->($current_depth);
-            }
+            my ( $bp_count, $do_not_break_apart ) =
+              $set_comma_breakpoints->($current_depth);
 
             my $i_opening = $opening_structure_index_stack[$current_depth];
             my $saw_opening_structure = ( $i_opening >= 0 );
@@ -8567,9 +8593,7 @@ sub scan_list {
             # allowed line length
             if ( !$is_long_term && $saw_opening_structure ) {
                 my $i_opening_minus = find_token_starting_list($i_opening);
-                my $packed_columns = total_line_length( $i_opening_minus, $i );
-                $is_long_term =
-                  $packed_columns > $rOpts->{'maximum-line-length'};
+                $is_long_term = excess_line_length( $i_opening_minus, $i ) > 0;
             }
 
             # We've set breaks after all comma-arrows.  Now we have to
@@ -8695,13 +8719,10 @@ will be a forced break at its 'and'.
 
             # set some flags telling something about this container..
             my $is_simple_logical_expression = 0;
-            if (
-                $item_count == 0
+            if ( $item_count_stack[$current_depth] == 0
                 && $saw_opening_structure
                 && $tokens_to_go[$i_opening] eq '('
-                && $container_type[$current_depth] =~ /$logical_pattern/o
-
-              )
+                && $is_logical_container->($current_depth) )
             {
 
                 # This seems to be a simple logical expression with no existing
@@ -8748,8 +8769,8 @@ will be a forced break at its 'and'.
                 # For -lp option, we should put a breakpoint before the token
                 # which has been identified as starting this indentation level.
                 # This is necessary for proper alignment.
-                if ( $rOpts->{'line-up-parentheses'} && $saw_opening_structure )
-                {
+                ##if ( $rOpts->{'line-up-parentheses'} && $saw_opening_structure )
+                if ( $rOpts_line_up_parentheses && $saw_opening_structure ) {
                     my $item = $leading_spaces_to_go[ $i_opening + 1 ];
                     if ( defined($item) ) {
                         my $i_start_2 = $item->get_STARTING_INDEX();
@@ -8865,7 +8886,8 @@ will be a forced break at its 'and'.
 
 =cut
 
-                if ( $rOpts->{'line-up-parentheses'} ) {
+##if ( $rOpts->{'line-up-parentheses'} ) {
+                if ($rOpts_line_up_parentheses) {
 
                     if ( $token eq ')' ) {
                         my $iequals = $last_equals_index[$depth];
@@ -8950,8 +8972,6 @@ will be a forced break at its 'and'.
                     }
                 }
             }
-            $check_for_new_minimum_depth->($depth);
-            $item_count = $item_count_stack[$depth];
         }
 
         #------------------------------------------------------------
@@ -8965,7 +8985,6 @@ will be a forced break at its 'and'.
             next if ( $last_nonblank_type eq '=>' );
             $want_comma_break[$depth]   = 1;
             $index_before_arrow[$depth] = $i_last_nonblank_token;
-            $saw_comma = 1;
             next;
         }
 
@@ -8977,7 +8996,7 @@ will be a forced break at its 'and'.
             }
         }
 
-        # Turn of alignment if we are sure that this is not a list
+        # Turn off alignment if we are sure that this is not a list
         # environment.  To be safe, we will do this if we see certain
         # non-list tokens, such as ';', and also the environment is
         # not a list.  Note that '=' could be in any of the = operators
@@ -8992,14 +9011,8 @@ will be a forced break at its 'and'.
             $index_before_arrow[$depth] = -1;
         }
 
-        # any side comment in a list forces use of old breakpoints
-        if ( $type eq '#' ) {
-            $interrupted_list[$depth] = 1;
-        }
-
         # now just handle any commas
         next unless ( $type eq ',' );
-        $saw_comma = 1;
 
         # keep track of longest item between commas
         $update_longest_term->( $i, $depth );
@@ -9035,23 +9048,9 @@ will be a forced break at its 'and'.
                 }
             }
 
-            # hack to handle list which mixes '=>'s and ','s:
-            # treat any list items so far as a broken list
-            my $dd = $depth;
-            $item_count = $item_count_stack[$dd];
-            if ( $item_count > 0 ) {
-                if ( $interrupted_list[$dd] == 0 ) {
-                    set_forced_breakpoint(
-                        $opening_structure_index_stack[$dd] );
-                    $interrupted_list[$dd] = 1;
-                }
-                $set_comma_breakpoints->($dd);
-
-                $item_count_stack[$dd]       = 0;
-                $identifier_count_stack[$dd] = 0;
-            }
-
-            $item_count = 0;
+            # handle list which mixes '=>'s and ','s:
+            # treat any list items so far as an interrupted list
+            $interrupted_list[$depth] = 1;
             next;
         }
 
@@ -9066,13 +9065,17 @@ will be a forced break at its 'and'.
         }
 
         # add this comma to the list..
+        my $item_count = $item_count_stack[$depth];
         if ( $item_count == 0 ) {
 
             # but do not form a list with no opening structure
             # for example:
-            # print $a, $b, $c;
+
+            #            open INFILE_COPY, ">$input_file_copy"
+            #              or die ("very long message");
+
             if ( ( $opening_structure_index_stack[$depth] < 0 )
-                && ( $interrupted_list[$depth] == 0 ) )
+                && $container_environment_to_go[$i] eq 'BLOCK' )
             {
                 $dont_align[$depth] = 1;
                 next;
@@ -9095,7 +9098,8 @@ will be a forced break at its 'and'.
             $max_length[$depth][ $item_count % 2 ] = $length;
         }
 
-        $comma_index[$depth][ $item_count++ ] = $i;
+        $comma_index[$depth][$item_count] = $i;
+        ++$item_count_stack[$depth];
         if ( $last_nonblank_type =~ /^[iR\]]$/ ) {
             $identifier_count_stack[$depth]++;
         }
@@ -9105,36 +9109,26 @@ will be a forced break at its 'and'.
     # end of loop over all tokens in this batch
     #-------------------------------------------
 
-    # Mark any pending list as having been interrupted
-    $interrupted_list[$current_depth] = 1;
-    $item_count_stack[$current_depth] = $item_count;
-
     # set breaks for any unfinished lists ..
     for ( my $dd = $current_depth ; $dd >= $minimum_depth ; $dd-- ) {
 
+        $interrupted_list[$dd] = 1;
         $has_broken_sublist[$dd] = 1 if ( $dd < $current_depth );
         $set_comma_breakpoints->($dd);
         $set_logical_breakpoints->($dd) if $good_old_breakpoint > 0;
 
-        # make any needed breaks at opening braces
+        # break open container...
         my $i_opening = $opening_structure_index_stack[$dd];
-        if (
-            !$is_unbreakable_container->($dd)
+        set_forced_breakpoint($i_opening)
+          unless (
+            $is_unbreakable_container->($dd)
 
             # Avoid a break which would place an isolated ' or " 
             # on a line
-            && !(
-                $type eq 'Q'
+            || ( $type eq 'Q'
                 && $i_opening >= $max_index_to_go - 2
-                && $token =~ /^['"]$/
-            )
-          )
-        {
-
-            #print "SCANLIST: dd=$dd iopen=$i_opening tok=$tokens_to_go[$i_opening] items=$item_count_stack[$dd] want=$want_comma_break[$dd] bpstk=$breakpoint_stack[$dd] count=$forced_breakpoint_count\n"; 
-
-            set_forced_breakpoint($i_opening);
-        }
+                && $token =~ /^['"]$/ )
+          );
     }
 
     # Return a flag indicating if the input file had some breakpoints,
@@ -9209,10 +9203,10 @@ sub set_comma_breakpoints {
     # of the commas to allow nice alignment if possible.  This
     # list is an example:
     my (
-        $depth,       $i_opening_paren,    $i_closing_paren,
-        $item_count,  $identifier_count,   $rcomma_index,
-        $rmax_length, $next_nonblank_type, $list_type,
-        $interrupted, $rdo_not_break_apart,
+        $depth,       $i_opening_paren,       $i_closing_paren,
+        $item_count,  $identifier_count,      $rcomma_index,
+        $rmax_length, $next_nonblank_type,    $list_type,
+        $interrupted, $maximum_nesting_depth, $rdo_not_break_apart,
       )
       = @_;
 
@@ -9221,7 +9215,8 @@ sub set_comma_breakpoints {
 
     #---------------------------------------------------------------
     # Compound List Rule 1: 
-    # Break at every comma for a list containing a broken sublist
+    # Break at every comma for a list containing a broken sublist.
+    # This has higher priority than the Interrupted List Rule.
     #---------------------------------------------------------------
     if ( $has_broken_sublist[$depth] ) {
         for ( my $j = 0 ; $j < $item_count ; $j++ ) {
@@ -9255,7 +9250,7 @@ sub set_comma_breakpoints {
     my $opening_environment = $container_environment_to_go[$i_opening_paren];
 
     #---------------------------------------------------------------
-    # Now we have to look at this thing and size it up.
+    # Looks like a list of items.  We have to look at it and size it up.
     #---------------------------------------------------------------
 
     return if ( $i_first_comma < 1 );
@@ -9269,17 +9264,13 @@ sub set_comma_breakpoints {
     #-------------------------------------------------------------------
 
     my $i_opening_minus = find_token_starting_list($i_opening_paren);
-    if ( total_line_length( $i_opening_minus, $i_closing_paren ) <=
-        $rOpts->{'maximum-line-length'} )
-    {
-        return;
-    }
+    return unless excess_line_length( $i_opening_minus, $i_closing_paren ) > 0;
 
     #-------------------------------------------------------------------
-
     # Now we know that this block spans multiple lines; we have to set
     # at least one breakpoint -- real or fake -- as a signal to break
     # open any outer containers.
+    #-------------------------------------------------------------------
     set_fake_breakpoint();
 
     # now we have to make a distinction between the comma count and item count,
@@ -9309,7 +9300,7 @@ sub set_comma_breakpoints {
         $i_effective_last_comma = $i_e + 1;
     }
 
-    # patch 20010405 to avoid extending beyond the current list length
+    # be sure we do not extend beyond the current list length
     if ( $i_effective_last_comma >= $max_index_to_go ) {
         $i_effective_last_comma = $max_index_to_go - 1;
     }
@@ -9397,12 +9388,9 @@ sub set_comma_breakpoints {
 =pod
 
         #---------------------------------------------------------------
-        # We're in trouble.  There is no simple answer here; we may
-        # have a single long list item, or many.  It's hard to code
-        # out of this.  But it is important to set breakpoints if we are
-        # contained in an outer list, to alert them to break apart.  We 
-        # could look for sublists to format nicely, but that's a lot of 
-        # work.  For now, we will just bail out as fast as possible.
+        # We're in trouble.  We can't find a single field width that works.
+        # There is no simple answer here; we may have a single long list
+        # item, or many.  
         #---------------------------------------------------------------
 
         In many cases, it may be best to not force a break if there is just one
@@ -9440,13 +9428,10 @@ sub set_comma_breakpoints {
 
 =cut
 
-        my $i_last_comma   = $$rcomma_index[ $comma_count - 1 ];
-        my $long_last_term =
-          total_line_length( 0, $i_last_comma ) <=
-          $rOpts->{'maximum-line-length'};
+        my $i_last_comma    = $$rcomma_index[ $comma_count - 1 ];
+        my $long_last_term  = excess_line_length( 0, $i_last_comma ) <= 0;
         my $long_first_term =
-          total_line_length( $i_first_comma + 1, $max_index_to_go ) <=
-          $rOpts->{'maximum-line-length'};
+          excess_line_length( $i_first_comma + 1, $max_index_to_go ) <= 0;
 
         # break at every comma ...
         if (
@@ -9483,7 +9468,10 @@ sub set_comma_breakpoints {
         return;
     }
 
+    # --------------------------------------------------------
+    # We have a tentative field count that seems to work.
     # How many lines will this require?
+    # --------------------------------------------------------
     my $formatted_lines = $item_count / ($number_of_fields);
     if ( $formatted_lines != int $formatted_lines ) {
         $formatted_lines = 1 + int $formatted_lines;
@@ -9514,8 +9502,8 @@ sub set_comma_breakpoints {
 
     my $unused_columns = $formatted_columns - $packed_columns;
 
-    # some empirical parameters to help decide if we should try to align;
-    # high sparsity does not look good, especially with few lines
+    # set some empirical parameters to help decide if we should try to
+    # align; high sparsity does not look good, especially with few lines
     my $sparsity             = ($unused_columns) / ($formatted_columns);
     my $max_allowed_sparsity =
       ( $item_count < 3 ) ? 0.1
@@ -9525,9 +9513,10 @@ sub set_comma_breakpoints {
 
     # Shortcut method 1: for 2 lines, just one comma:
     if (
-        $packed_lines <= 2                    # probably can fit in 2 lines
-        && $item_count == 2                   # two items, one comma
-        && $rOpts->{'line-up-parentheses'}    # -lp
+        $packed_lines <= 2     # probably can fit in 2 lines
+        && $item_count == 2    # two items, one comma
+        ##&& $rOpts->{'line-up-parentheses'}    # -lp
+        && $rOpts_line_up_parentheses    # -lp
         && $opening_environment eq 'BLOCK'    # not a sub-container
         && $opening_token       eq '('        # is paren list
       )
@@ -9548,7 +9537,7 @@ sub set_comma_breakpoints {
         && $item_count < 9     # doesn't have too many items
         && $opening_environment eq 'BLOCK'    # not a sub-container
         && $opening_token       eq '('        # is paren list
-        && $maximum_nesting_depth[$depth] <= $depth    # has no sublist
+        && $maximum_nesting_depth <= $depth   # has no sublist
       )
     {
 
@@ -9557,6 +9546,7 @@ sub set_comma_breakpoints {
         return;
     }
 
+    # debug stuff
     if ( $FORMATTER_DEBUG_FLAG{SPARSE} ) {
 
         print
@@ -9585,8 +9575,8 @@ sub set_comma_breakpoints {
     if ( !$too_long && $i_opening_paren > 0 && $opening_token eq '(' ) {
 
         $too_long =
-          total_line_length( $i_opening_minus, $i_effective_last_comma + 1 ) >
-          $rOpts->{'maximum-line-length'};
+          excess_line_length( $i_opening_minus, $i_effective_last_comma + 1 ) >
+          0;
     }
 
     # FIXME: For an item after a '=>', try to include the length of the thing
@@ -9596,8 +9586,8 @@ sub set_comma_breakpoints {
         my $i_opening_minus = $i_opening_paren - 4;
         if ( $i_opening_minus >= 0 ) {
             $too_long =
-              total_line_length( $i_opening_minus, $i_effective_last_comma + 1 )
-              > $rOpts->{'maximum-line-length'};
+              excess_line_length( $i_opening_minus,
+                $i_effective_last_comma + 1 ) > 0;
         }
     }
 
@@ -9685,7 +9675,7 @@ EOM
 sub table_columns_available {
     my ($i_first_comma) = @_;
     my $columns =
-      $rOpts->{'maximum-line-length'} - leading_spaces_to_go($i_first_comma);
+      $rOpts_maximum_line_length - leading_spaces_to_go($i_first_comma);
 
     # Patch: the vertical formatter does not line up lines whose lengths
     # exactly equal the available line length because of allowances
@@ -9766,6 +9756,10 @@ sub set_nobreaks {
 }
 
 sub set_fake_breakpoint {
+
+    # Just bump up the breakpoint count as a signal that there are breaks.
+    # This is useful if we have breaks but may want to postpone deciding where
+    # to make them.
     $forced_breakpoint_count++;
 }
 
@@ -10144,7 +10138,7 @@ sub recombine_breakpoints {
 
                         # and if this doesn't make a long last line
                         && total_line_length( $if, $il ) <=
-                        $rOpts->{'maximum-line-length'} / 2
+                        $rOpts_maximum_line_length / 2
                     );
 
                     # override breakpoint
@@ -10168,7 +10162,7 @@ FIXME: This is experimental..may not be too useful
 
                         # and if this doesn't make a long last line
                         && total_line_length( $if, $il ) <=
-                        $rOpts->{'maximum-line-length'} / 2
+                        $rOpts_maximum_line_length / 2
                     );
 
                     # override breakpoint
@@ -10200,7 +10194,7 @@ FIXME: This is experimental..may not be too useful
 
                     # and if this doesn't make a long last line
                     && total_line_length( $if, $il ) <=
-                    $rOpts->{'maximum-line-length'} / 2
+                    $rOpts_maximum_line_length / 2
                 );
 
                 # override breakpoint
@@ -10218,8 +10212,7 @@ FIXME: This is experimental..may not be too useful
 
             # combined line cannot be too long
             next
-              if ( total_line_length( $if, $il ) >
-                $rOpts->{'maximum-line-length'} );
+              if excess_line_length( $if, $il ) > 0;
 
             # do not recombine if we would skip in indentation levels
             if ( $n < $nmax ) {
@@ -10229,7 +10222,7 @@ FIXME: This is experimental..may not be too useful
                     $levels_to_go[$if] < $levels_to_go[$imidr]
                     && $levels_to_go[$imidr] < $levels_to_go[$if_next]
 
-                    # but an isolated 'if (' undesirable
+                    # but an isolated 'if (' is undesirable
                     && !(
                         $n == 1
                         && $imid - $if <= 2
@@ -10373,7 +10366,7 @@ sub set_continuation_breaks {
                     (
                         $leading_spaces + $lengths_to_go[ $i_next_nonblank + 1 ]
                         - $starting_sum
-                    ) > $rOpts->{'maximum-line-length'}
+                    ) > $rOpts_maximum_line_length
                 )
               )
             {
@@ -10392,7 +10385,7 @@ sub set_continuation_breaks {
                     (
                         $leading_spaces + $lengths_to_go[ $i_test + 1 ] -
                         $starting_sum
-                    ) <= $rOpts->{'maximum-line-length'}
+                    ) <= $rOpts_maximum_line_length
                 )
               )
             {
@@ -10461,7 +10454,7 @@ sub set_continuation_breaks {
                 (
                     $leading_spaces + $lengths_to_go[ $i_test + 2 ] -
                       $starting_sum
-                ) > $rOpts->{'maximum-line-length'}
+                ) > $rOpts_maximum_line_length
               );
 
             if ( $FORMATTER_DEBUG_FLAG{BREAK} ) {
@@ -10471,7 +10464,8 @@ sub set_continuation_breaks {
 
             # allow one extra terminal token after exceeding line length
             # if it would strand this token.
-            if ( $rOpts->{'fuzzy-line-length'}
+            ##if ( $rOpts->{'fuzzy-line-length'}
+            if ( $rOpts_fuzzy_line_length
                 && $too_long
                 && ( $i_lowest == $i_test )
                 && ( length($token) > 1 )
@@ -11303,6 +11297,12 @@ use vars qw(
   $logger_object
   $file_writer_object
   $rOpts
+
+  $rOpts_maximum_line_length
+  $rOpts_continuation_indentation
+  $rOpts_indent_columns
+  $rOpts_tabs
+
   %VALIGN_DEBUG_FLAG
 );
 
@@ -11333,6 +11333,12 @@ sub initialize {
     $last_outdented_line_at        = 0;
     $last_side_comment_line_number = 0;
     $last_side_comment_level       = -1;
+
+    # TBD: frequently used parameters
+##    $rOpts_maximum_line_length=$rOpts->{'maximum-line-length'};
+##    $rOpts_continuation_indentation=$rOpts->{'continuation-indentation'};
+##    $rOpts_indent_columns=$rOpts->{'indent-columns'};
+##    $rOpts_tabs=$rOpts->{'tabs'};
 
     forget_side_comment();
 
