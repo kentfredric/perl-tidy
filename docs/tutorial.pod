@@ -491,7 +491,9 @@ or, without the B<-q> flag, just
 
 It isn't necessary to format an entire file, however.  Perltidy will
 probably work well as long as you select blocks of text whose braces,
-parentheses, and square brackets are properly balanced.
+parentheses, and square brackets are properly balanced.  You can
+even format an C<elsif> block without the leading C<if> block, as
+long as the text you select has all braces balanced.
 
 For the B<emacs> editor, first mark a region and then pipe it through
 perltidy.  For example, to format an entire file, select it with C<C-x h> 

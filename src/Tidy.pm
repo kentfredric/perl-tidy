@@ -61,7 +61,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.21 2002/05/19 22:37:20 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.22 2002/08/24 18:43:12 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 # Preloaded methods go here.
@@ -1020,6 +1020,7 @@ sub process_command_line {
       noswallow-optional-blank-lines
       notabs
       nowarning-output
+      outdent-labels
       outdent-long-quotes
       paren-tightness=1
       paren-vertical-tightness-closing=0
@@ -6036,6 +6037,13 @@ sub set_white_space_flag {
             $ws = WS_OPTIONAL if $last_type eq '-';
         }
 
+        # retain any space between '-' and bare word
+        # example: avoid space between 'USER' and '-' here:
+        #   $myhash{USER-NAME}='steve'; 
+        elsif ( $type eq 'm' || $type eq '-') {
+            $ws = WS_OPTIONAL if ($last_type eq 'w');
+        }
+
         # always space before side comment
         elsif ( $type eq '#' ) { $ws = WS_YES if $j > 0 }
 
@@ -6481,7 +6489,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.21 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.22 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -6507,9 +6515,9 @@ sub set_white_space_flag {
             flush();
             $input_line =~ s/^\s*//;    # trim left end
 
-            unless ( $rOpts->{'indent-only'} ) {
-                $input_line =~ s/\s*$//;    # trim right end
-            }
+            ##unless ( $rOpts->{'indent-only'} ) {
+            $input_line =~ s/\s*$//;    # trim right end
+            ##}
 
             extract_token(0);
             $token                 = $input_line;
@@ -9988,6 +9996,9 @@ sub set_bond_strengths {
             if ( $bond_str < STRONG ) { $bond_str = STRONG }
         }
 
+        #----------------------------------------------------------------------
+        # only set NO_BREAK's from here on
+        #----------------------------------------------------------------------
         if ( $type eq 'C' or $type eq 'U' ) {
 
             # use strict requires that bare word and => not be separated
@@ -10002,6 +10013,51 @@ sub set_bond_strengths {
 
             if ( $next_nonblank_type eq 'w' ) {
                 $bond_str = NO_BREAK;
+            }
+        }
+
+        # in older version of perl, use strict can cause problems with 
+        # breaks before bare words following opening parens.  For example,
+        # this will fail under older versions if a break is made between
+        # '(' and 'MAIL':
+        #  use strict;
+        #  open( MAIL, "a long filename or command");
+        #  close MAIL;
+        elsif ( $type eq '{') {
+
+            if ( $token eq '(' && $next_nonblank_type eq 'w' ) {
+
+                # but it's fine to break if the word is followed by a '=>'
+                # or if it is obviously a sub call
+                my $i_next_next_nonblank = $i_next_nonblank + 1;
+                my $next_next_type       = $types_to_go[$i_next_next_nonblank];
+                if ( $next_next_type eq 'b'
+                    && $i_next_nonblank < $max_index_to_go )
+                {
+                    $i_next_next_nonblank++;
+                    $next_next_type = $types_to_go[$i_next_next_nonblank];
+                }
+
+                ##if ( $next_next_type ne '=>' ) {
+                # these are ok: '->xxx', '=>', '('
+                
+                # We'll check for an old breakpoint and keep a leading
+                # bareword if it was that way in the input file.  Presumably
+                # it was ok that way.  For example, the following would remain
+                # unchanged:
+                #
+                # @months = (
+                #   January,   February, March,    April,
+                #   May,       June,     July,     August,
+                #   September, October,  November, December,
+                # );
+                #
+                # This should be sufficient:
+                if ( !$old_breakpoint_to_go[$i]
+                    && ( $next_next_type eq ',' || $next_next_type eq '}' ) )
+                {
+                    $bond_str = NO_BREAK;
+                }
             }
         }
 
@@ -18381,6 +18437,29 @@ EOM
                         error_if_expecting_OPERATOR()
                           if ( $expecting == OPERATOR );
                     }
+
+                    # Check for misplaced 'elsif' and 'else', but allow isolated
+                    # else or elsif blocks to be formatted.  This is indicated
+                    # by a last noblank token of ';'
+                    elsif ( $tok eq 'elsif' || $tok eq 'else') {
+                        if (   $last_nonblank_token ne ';' 
+                            && $last_nonblank_block_type !~ /^(if|elsif)$/ )
+                        {
+                            warning(
+"'$tok' should follow an 'if' or 'elsif' block\n"
+                            );
+                        }
+                    }
+
+                    elsif ( $tok eq 'continue' ) {
+                        if (   $last_nonblank_token ne ';' 
+                            && $last_nonblank_block_type !~ /^(while|until)$/ )
+                        {
+                            warning(
+"'$tok' should follow a 'while' or 'until' block\n"
+                            );
+                        }
+                    }
                 }
 
                 # check for inline label following 
@@ -20413,7 +20492,12 @@ sub scan_number_do {
 
     # filter out non-numbers like e + - . e2  .e3 +e6
     # the rule: at least one digit, and any 'e' must be preceded by a digit
-    if ( $number !~ /\d+[eE]?/ ) {
+    if (
+        $number !~ /\d/    # no digits
+        || (   $number =~ /^(.*)[eE]/
+            && $1 !~ /\d/ )    # or no digits before the 'e'
+      )
+    {
         $number = undef;
         $type   = $input_type;
         return ( $i, $type, $number );

@@ -539,8 +539,9 @@ B<--nooutdent-long-lines>, and is equivalent to setting B<-nolq> and B<-nolc>.
 
 =item Outdenting Labels: B<-ola>,  B<--outdent-labels>
 
-This command will cause labels to be outdented by 2 spaces (or whatever
-B<-ci> has been set to), if possible.  For example, with B<perltidy -ola>:
+This command will cause labels to be outdented by 2 spaces (or whatever B<-ci>
+has been set to), if possible.  This is the default.  For example, with
+B<perltidy -ola>:
 
         my $i;
       LOOP: while ( $i = <FOTOS> ) {
@@ -550,8 +551,7 @@ B<-ci> has been set to), if possible.  For example, with B<perltidy -ola>:
         }
 
 Labels which are already at the leftmost column will not be affected by
-this command.  Use B<-nola> to not outdent labels.  The current
-default is not to outdent labels.
+this command.  Use B<-nola> to not outdent labels. 
 
 =item Outdenting Keywords
 
@@ -569,7 +569,7 @@ the next section.
 For example, using C<perltidy -ock> on the previous example gives:
 
         my $i;
-        LOOP: while ( $i = <FOTOS> ) {
+      LOOP: while ( $i = <FOTOS> ) {
             chomp($i);
           next unless $i;
             fixit($i);
@@ -1960,6 +1960,16 @@ Use B<--nolook-for-autoloader>, or B<-nlal>, to deactivate this feature.
 Likewise, if the SelfLoader module is used, perltidy will continue formatting
 code after seeing a __DATA__ line.
 Use B<--nolook-for-selfloader>, or B<-nlsl>, to deactivate this feature.
+
+=item Working around problems with older version of Perl 
+
+Perltidy contains a number of rules which help avoid known subtleties
+and problems with older versions of perl, and these rules always
+take priority over whatever formatting flags have been set.  For example,
+perltidy will usually avoid starting a new line with a bareword, because
+this might cause problems if C<use strict> is active.
+
+There is no way to override these rules.
 
 =back
 
