@@ -6,6 +6,8 @@
 
 =head2 2001 xx xx  
  
+ -Uploaded perltidy to cvs
+ 
  -A '-gnu' flag has been added which causes lists to be indented
  with extra indentation in the manner sometimes associated with
  emacs or the GNU suggestions.  (Suggested by Ian Stuart).
