@@ -292,3 +292,35 @@ make_node(
        undef, '\>', '\int', (undef) x 5, # 16th row
        (undef) x 8,
       );
+
+# Broken list with =>'s
+%Slinke::COMMANDS = ( CMD_PORT_DONE      => 0x00,  CMD_PORT_SM        => 0x1F,
+		      # port commands
+		      # general
+		      CMD_DISABLE        => 0x02,  CMD_ENABLE         => 0x03,
+		      # S-Link
+		      CMD_SENDBITMODE    => 0x04,
+		      # ir
+		      CMD_SETIRFS        => 0x04,  CMD_GETIRFS        => 0x05,
+		      CMD_SETIRCFS       => 0x06,  CMD_GETIRCFS       => 0x07,
+		      CMD_SETIRTIMEOUT   => 0x0C,  CMD_GETIRTIMEOUT   => 0x0D,
+		      CMD_SETIRMINLEN    => 0x0E,  CMD_GETIRMINLEN    => 0x0F,
+		      CMD_SETIRTXPORTS   => 0x08,  CMD_GETIRTXPORTS   => 0x13,
+		      CMD_SETIRRXPORTEN  => 0x09,  CMD_GETIRRXPORTEN  => 0x12,
+		      CMD_SETIRPORTECHO  => 0x0A,  CMD_GETIRPORTECHO  => 0x10,
+		      CMD_SETIRRXPORTPOL => 0x0B,  CMD_GETIRRXPORTPOL => 0x11,
+		      # serial
+		      CMD_SETBAUD        => 0x08,  CMD_GETBAUD        => 0x09,
+		      # parallel
+		      CMD_SETHSMODE      => 0x10,  CMD_GETHSMODE      => 0x11,
+		      CMD_SETDIR         => 0x12,  CMD_GETDIR         => 0x13,
+		      CMD_SAMPLE         => 0x14,
+		      # system
+		      CMD_GETVERSION     => 0x0B,  CMD_GETSERIALNO    => 0x0C,
+		      CMD_SETSERIALNO    => 0x0D,  CMD_SAVEDEFAULTS   => 0x0E,
+		      CMD_LOADDEFAULTS   => 0x0F,  CMD_RESUME         => 0xAA,
+		      CMD_RESET          => 0xFF,
+		      # custom for SEG
+		      CMD_PLAYMACRO1     => 0x10,  CMD_PLAYMACRO2     => 0x11,
+		      CMD_STOREMACRO1    => 0x12,  CMD_STOREMACRO2    => 0x13,
+		    );

@@ -96,3 +96,15 @@ package m;
 sub y{
 	print "Hello package m!\n";
 }
+
+# new logic insures terminal '}' of anonymous sub does not
+# have continuation indentation
+{
+    $m->command(
+        -label   => 'Save',
+        -command => sub {
+            print "DOSVEBLABLA\n";
+            save_dialog($win);
+        }
+    );
+}

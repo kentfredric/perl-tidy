@@ -1,3 +1,13 @@
+{
+    # break at all ';'s
+    for ( $i = 0 ;
+        $i < $self->{"retry"} ;
+        ++$i, $retrans *= 2, $timeout = int( $retrans / ( $#ns + 1 ) ) )
+    # commas and ';'
+    for ( my ( $xa, $ya ) = @xy[ -2, -1 ] ; my ( $xb, $yb ) = splice @xy, 0, 2 ;
+        ( $xa, $ya ) = ( $xb, $yb ) ) {}
+}
+
 # These are the same:
 for ( $i = 0 ; $i <= 10 ; $i += 2 ) {
     print "$i ";
