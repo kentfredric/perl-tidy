@@ -61,7 +61,7 @@ eval "use diagnostics";
 use IO::File;
 
 BEGIN {
-    ($VERSION=q($Id: perltidy,v 1.82 2002/01/11 14:56:12 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ($VERSION=q($Id: perltidy,v 1.83 2002/01/12 02:57:40 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 # Preloaded methods go here.
@@ -3151,15 +3151,15 @@ use vars qw{
   $last_last_nonblank_type
   $last_nonblank_block_type
   $last_output_level
-  $do_follower_pattern
-  $if_brace_follower_pattern
+  %is_do_follower
+  %is_if_brace_follower
   %space_before_paren
-  $brace_follower_pattern
+  $rbrace_follower
   $looking_for_else
-  $other_brace_follower_pattern
-  $else_brace_follower_pattern
-  $anon_sub_brace_follower_pattern
-  $anon_sub_1_brace_follower_pattern
+  %is_other_brace_follower
+  %is_else_brace_follower
+  %is_anon_sub_brace_follower
+  %is_anon_sub_1_brace_follower
 
   @has_broken_sublist
   @dont_align
@@ -3213,21 +3213,9 @@ use vars qw{
   %is_digraph
   %is_trigraph
   $bli_pattern
+  %is_closing_type
+  %is_opening_type
 };
-
-sub make_regex {
-
-    # Given a string, make the corresponding regex with qr.
-    # Versions of perl before 5.005 do not have qr,
-    # so we will just return the string, which will work
-    # but not be optimized.
-    BEGIN {
-        if ( $] < 5.005 ) {
-            sub qr { $_[0] }
-        }
-    }
-    qr($_[0]);
-}
 
 BEGIN {
 
@@ -3251,6 +3239,14 @@ BEGIN {
       split
     );
     @is_keyword_returning_list{@_} = (1) x scalar(@_);
+
+    # 'L' is token for opening { at hash key
+    @_ = qw" L { ( [ ";
+    @is_opening_type{@_} = (1) x scalar(@_);
+
+    # 'R' is token for closing } at hash key
+    @_ = qw" R } ) ] ";
+    @is_closing_type{@_} = (1) x scalar(@_);
 }
 
 # whitespace codes
@@ -3488,7 +3484,7 @@ sub prepare_for_new_input_lines {
     $last_last_nonblank_token_to_go = '';
     $forced_breakpoint_count        = 0;
     $forced_breakpoint_undo_count   = 0;
-    $brace_follower_pattern         = undef;
+    $rbrace_follower = undef;
     $lengths_to_go[0] = 0;
     $old_line_count_in_batch = 1;
 
@@ -3681,18 +3677,12 @@ sub set_leading_whitespace {
 
     # If we come to an opening token after an '=' token of some type,
     # see if it would be helpful to 'break' after the '=' to save space
-    if ( $type =~ /^[\{\(]$/ ) {
+    ##if ( $type =~ /^[\{\(]$/ ) {
+    if ( $type eq '{' || $type eq '(' ) {
 
+        # if we have an '=' after the previous assumed breakpoint
         my $last_equals = $gnu_stack[$max_gnu_stack_index]->get_LAST_EQUALS();
-        if (
-
-            # if we have an '=' after the previous assumed breakpoint
-            $last_equals > $line_start_index_to_go
-
-            # and the opening token is near or beyond the half-way mark
-            && $gnu_position_predictor + 10 > $half_maximum_line_length
-          )
-        {
+        if ( $last_equals > $line_start_index_to_go) {
 
             # find the position if we break at the '='
             my $i_test = $last_equals;
@@ -3957,10 +3947,6 @@ sub set_leading_whitespace {
         {
             check_for_long_gnu_style_lines();
             $line_start_index_to_go = $max_index_to_go;
-            ##my $tok = $tokens_to_go[$max_index_to_go];
-            ##print "BUBBA: next starting token is $tok i=$max_index_to_go\n";
-            #my $BUBBA = join ')(', @tokens_to_go[0..$max_index_to_go];
-            #print "BUBBA1: tok(max)=$tok tok=$token last=$last_nonblank_type_to_go  index=$max_index_to_go  ($BUBBA) \n";
 
             # back up 1 token if we want to break before that type
             # otherwise, we may strand tokens like '?' or ':' on a line
@@ -4292,7 +4278,6 @@ sub check_options {
 
     ($rOpts) = @_;
     my ( $tabbing_string, $tab_msg );
-    my @list;    # working storage
 
     make_static_block_comment_pattern();
     make_static_side_comment_pattern();
@@ -4360,17 +4345,17 @@ EOM
     %outdent_keyword = ();
 
     # load defaults
-    @list = qw(next last redo goto return);
+    @_ = qw(next last redo goto return);
 
     # override defaults if requested
     if ( $rOpts->{'outdent-keyword-list'} ) {
         $rOpts->{'outdent-keyword-list'} =~ s/^\s*//;
         $rOpts->{'outdent-keyword-list'} =~ s/\s*$//;
-        @list = split /\s+/, $rOpts->{'outdent-keyword-list'};
+        @_ = split /\s+/, $rOpts->{'outdent-keyword-list'};
     }
 
     # FUTURE: if not a keyword, assume that it is an identifier
-    foreach (@list) {
+    foreach (@_) {
         if ( $PerlTidy::Tokenizer::is_keyword{$_} ) {
             $outdent_keyword{$_} = 1;
         }
@@ -4381,22 +4366,22 @@ EOM
 
     # implement user whitespace preferences
     if ( $rOpts->{'want-left-space'} ) {
-        @list = split /\s/, $rOpts->{'want-left-space'};
-        @want_left_space{@list} = (1) x scalar(@list);
+        @_ = split /\s/, $rOpts->{'want-left-space'};
+        @want_left_space{@_} = (1) x scalar(@_);
     }
 
     if ( $rOpts->{'want-right-space'} ) {
-        @list = split /\s/, $rOpts->{'want-right-space'};
-        @want_right_space{@list} = (1) x scalar(@list);
+        @_ = split /\s/, $rOpts->{'want-right-space'};
+        @want_right_space{@_} = (1) x scalar(@_);
     }
     if ( $rOpts->{'nowant-left-space'} ) {
-        @list = split /\s/, $rOpts->{'nowant-left-space'};
-        @want_left_space{@list} = (-1) x scalar(@list);
+        @_ = split /\s/, $rOpts->{'nowant-left-space'};
+        @want_left_space{@_} = (-1) x scalar(@_);
     }
 
     if ( $rOpts->{'nowant-right-space'} ) {
-        @list = split /\s/, $rOpts->{'nowant-right-space'};
-        @want_right_space{@list} = (-1) x scalar(@list);
+        @_ = split /\s/, $rOpts->{'nowant-right-space'};
+        @want_right_space{@_} = (-1) x scalar(@_);
     }
     if ( $rOpts->{'dump-want-left-space'} ) {
         dump_want_left_space(*STDOUT);
@@ -4410,8 +4395,8 @@ EOM
 
     # implement user break preferences
     if ( $rOpts->{'want-break-after'} ) {
-        @list = split /\s/, $rOpts->{'want-break-after'};
-        foreach my $tok (@list) {
+        @_ = split /\s/, $rOpts->{'want-break-after'};
+        foreach my $tok (@_) {
             if ( $tok eq '?' ) { $tok = ':' }    # patch to coordinate ?/:
             my $lbs = $left_bond_strength{$tok};
             my $rbs = $right_bond_strength{$tok};
@@ -4423,8 +4408,8 @@ EOM
     }
 
     if ( $rOpts->{'want-break-before'} ) {
-        @list = split /\s/, $rOpts->{'want-break-before'};
-        foreach my $tok (@list) {
+        @_ = split /\s/, $rOpts->{'want-break-before'};
+        foreach my $tok (@_) {
             my $lbs = $left_bond_strength{$tok};
             my $rbs = $right_bond_strength{$tok};
             if ( defined($lbs) && defined($rbs) && $rbs < $lbs ) {
@@ -4451,35 +4436,43 @@ EOM
     # Define here tokens which may follow the closing brace of a do statement
     # on the same line, as in:
     #   } while ( $something);
-    $do_follower_pattern = make_regex('^(until|while|unless|if|;|,)$');
+    @_ = qw(until while unless if ; );
+    push @_, ',';
+    @is_do_follower{@_} = (1) x scalar(@_);
 
     # These tokens may follow the closing brace of an if or elsif block.
     # In other words, for cuddled else we want code to look like:
     #   } elsif ( $something) {
     #   } else {
     if ( $rOpts->{'cuddled-else'} ) {
-        $if_brace_follower_pattern = make_regex('^(else|elsif)$');
+        @_ = qw(else elsif);
+        @is_if_brace_follower{@_} = (1) x scalar(@_);
     }
-    else { $if_brace_follower_pattern = undef; }
+    else {
+        %is_if_brace_follower = ();
+    }
 
     # nothing can follow the closing curly of an else { } block:
-    $else_brace_follower_pattern = make_regex('^$');
+    %is_else_brace_follower = ();
 
     # what can follow a multi-line anonymous sub definition closing curly:
-    $anon_sub_brace_follower_pattern =
-      make_regex('^(\,|\;|:|=>|or|and|\&\&|\|\}|\)|)$');
+    @_ = qw# ; : => or and  && || ) #;
+    push @_, ',';
+    @is_anon_sub_brace_follower{@_} = (1) x scalar(@_);
 
     # what can follow a one-line anonynomous sub closing curly:
     # one-line anonumous subs also have ']' here...
     # see tk3.t and PP.pm
-    $anon_sub_1_brace_follower_pattern =
-      make_regex('^(\,|\;|:|=>|or|and|\&\&|\|\}|\]|\)|)$');
+    @_ = qw#  ; : => or and  && || ) ] #;
+    push @_, ',';
+    @is_anon_sub_1_brace_follower{@_} = (1) x scalar(@_);
 
     # What can follow a closing curly of a short block
     # which is not an if/elsif/else/do/sort/map/grep/eval/sub
     # Testfiles: 'Toolbar.pm', 'Menubar.pm', bless.t, '3rules.pl'
-    $other_brace_follower_pattern =
-      make_regex('^(\,|\;|:|=>|or|and|\&\&|\|\}|\)|)$');
+    @_ = qw#  ; : => or and  && || ) #;
+    push @_, ',';
+    @is_other_brace_follower{@_} = (1) x scalar(@_);
 
     # TESTING -- deactivated 20010614 because -bl didn't
     # work well with it.
@@ -5003,7 +4996,7 @@ sub set_white_space_flag {
         # section 1:
         # handle space on the inside of opening braces
         #---------------------------------------------------------------
-        
+
         #    $last_type =~ /^[L\{\(\[]$/ 
         if ( $is_opening_type{$last_type} ) {
 
@@ -5073,7 +5066,7 @@ sub set_white_space_flag {
         # section 2:
         # handle space on inside of closing brace pairs
         #---------------------------------------------------------------
-        
+
         #   $type =~ /[\}\)\]R]/ 
         if ( $is_closing_type{$type} ) {
 
@@ -5601,7 +5594,7 @@ sub set_white_space_flag {
          /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
      Examples:
        *VERSION = \'1.01';
-       ( $VERSION ) = '$Revision: 1.82 $ ' =~ /\$Revision:\s+([^\s]+)/;
+       ( $VERSION ) = '$Revision: 1.83 $ ' =~ /\$Revision:\s+([^\s]+)/;
      We will pass such a line straight through (by changing it
      to a quoted string) unless -npvl is used
     
@@ -5610,7 +5603,7 @@ sub set_white_space_flag {
      block sequence numbers may see a closing sequence number but not
      the corresponding opening sequence number (sidecmt.t).  Example:
 
-    my $VERSION = do { my @r = (q$Revision: 1.82 $ =~ /\d+/g); sprintf
+    my $VERSION = do { my @r = (q$Revision: 1.83 $ =~ /\d+/g); sprintf
     "%d."."%02d" x $#r, @r }; 
 
     Here, the opening brace of 'do {' will not be seen, while the closing
@@ -5744,12 +5737,12 @@ sub set_white_space_flag {
             # If we are continuing after seeing a right curly brace, flush
             # buffer unless we see what we are looking for, as in
             #   } else ...
-            if ( $brace_follower_pattern && $type ne 'b' ) {
+            if ( $rbrace_follower && $type ne 'b' ) {
 
-                unless ( $token =~ /$brace_follower_pattern/ ) {
+                unless ( $rbrace_follower->{$token} ) {
                     output_line_to_go();
                 }
-                $brace_follower_pattern = undef;
+                $rbrace_follower = undef;
             }
 
             $j_next = ( $$rtoken_type[ $j + 1 ] eq 'b' ) ? $j + 2 : $j + 1;
@@ -5978,7 +5971,6 @@ sub set_white_space_flag {
                         && $rOpts->{'add-semicolons'}
                       )
                     {
-
                         save_current_token();
                         $token  = ';';
                         $type   = ';';
@@ -6045,30 +6037,30 @@ sub set_white_space_flag {
                 # set string indicating what we need to look for brace follower
                 # tokens
                 if ( $block_type eq 'do' ) {
-                    $brace_follower_pattern = $do_follower_pattern;
+                    $rbrace_follower = \%is_do_follower;
                 }
                 elsif ( $block_type =~ /^(if|elsif|unless)$/ ) {
-                    $brace_follower_pattern = $if_brace_follower_pattern;
+                    $rbrace_follower = \%is_if_brace_follower;
                 }
                 elsif ( $block_type eq 'else' ) {
-                    $brace_follower_pattern = $else_brace_follower_pattern;
+                    $rbrace_follower = \%is_else_brace_follower;
                 }
 
                 # added eval for borris.t
                 elsif ( $block_type =~ /^(sort|map|grep|eval)$/ ) {
-                    $brace_follower_pattern = "";
+                    $rbrace_follower = undef;
                 }
 
                 # anonymous sub
                 elsif ( $block_type =~ /^sub\W*$/ ) {
 
                     if ($is_one_line_block) {
-                        $brace_follower_pattern =
-                          $anon_sub_1_brace_follower_pattern;
+                        $rbrace_follower =
+                          \%is_anon_sub_1_brace_follower;
                     }
                     else {
-                        $brace_follower_pattern =
-                          $anon_sub_brace_follower_pattern;
+                        $rbrace_follower =
+                          \%is_anon_sub_brace_follower;
                     }
                 }
 
@@ -6078,7 +6070,7 @@ sub set_white_space_flag {
                 # Testfiles: 'Toolbar.pm', 'Menubar.pm', bless.t, '3rules.pl'
                 # break1.t
                 else {
-                    $brace_follower_pattern = $other_brace_follower_pattern;
+                    $rbrace_follower = \%is_other_brace_follower;
                 }
 
                 # See if an elsif block is followed by another elsif or else;
@@ -6110,18 +6102,17 @@ sub set_white_space_flag {
                 elsif ( ( $next_nonblank_token_type eq 'b' )
                     && $rOpts_add_newlines )
                 {
-                    unless ($brace_follower_pattern) {
+                    unless ($rbrace_follower) {
                         output_line_to_go() unless ($no_internal_newlines);
                     }
                 }
 
-                elsif ($brace_follower_pattern) {
+                elsif ($rbrace_follower) {
 
-                    unless ( $next_nonblank_token =~ /$brace_follower_pattern/ )
-                    {
+                    unless ( $rbrace_follower->{$next_nonblank_token} ) {
                         output_line_to_go() unless ($no_internal_newlines);
                     }
-                    $brace_follower_pattern = undef;
+                    $rbrace_follower = undef;
                 }
 
                 else {
@@ -8419,18 +8410,14 @@ sub set_bond_strengths {
         }
 
         # good to break before 'if', 'unless', etc
-        if ( $if_brace_follower_pattern
-            && ( $next_nonblank_token =~ /$if_brace_follower_pattern/ ) )
-        {
+        if ( $is_if_brace_follower{$next_nonblank_token} ) {
             $bond_str = VERY_WEAK;
         }
 
         if ( $next_nonblank_type eq 'k' ) {
 
             # keywords like 'unless' 'if' make good breaks
-            if ( $do_follower_pattern
-                && $next_nonblank_token =~ /$do_follower_pattern/ )
-            {
+            if ( $is_do_follower{$next_nonblank_token} ) {
                 $bond_str = VERY_WEAK / 1.05;
             }
 
@@ -8581,7 +8568,8 @@ sub pad_array_to_go {
     $nesting_depth_to_go[ $max_index_to_go + 1 ] =
       $nesting_depth_to_go[$max_index_to_go];
 
-    if ( $types_to_go[$max_index_to_go] =~ /^[R\}\)\]]$/ ) {
+    ##if ( $types_to_go[$max_index_to_go] =~ /^[R\}\)\]]$/ ) {
+    if ( $is_closing_type{ $types_to_go[$max_index_to_go] } ) {
         if ( $nesting_depth_to_go[$max_index_to_go] <= 0 ) {
 
             # shouldn't happen:
@@ -8596,7 +8584,8 @@ sub pad_array_to_go {
             $nesting_depth_to_go[ $max_index_to_go + 1 ] -= 1;
         }
     }
-    elsif ( $types_to_go[$max_index_to_go] =~ /^[L\{\(\[]$/ ) {
+    ##elsif ( $types_to_go[$max_index_to_go] =~ /^[L\{\(\[]$/ ) {
+    elsif ( $is_opening_type{ $types_to_go[$max_index_to_go] } ) {
         $nesting_depth_to_go[ $max_index_to_go + 1 ] += 1;
     }
 }
@@ -10809,14 +10798,7 @@ sub set_continuation_breaks {
                 # a leading alignment of certain common tokens, and it
                 # is different from the latest candidate break
                 last
-                  if (
-                    $leading_alignment_type
-
-                    ##BUBBA!!
-                    ##&& ( $next_nonblank_type ne $leading_alignment_type
-                    ##  || $next_nonblank_token ne $leading_alignment_token )
-
-                  );
+                  if ( $leading_alignment_type);
 
                 # Force at least one breakpoint if old code had good break
                 # It is only called if a breakpoint is required or desired.
@@ -10858,7 +10840,6 @@ sub set_continuation_breaks {
                     )
                   )
                 {
-                    ##print "BUBBA: next=$next_nonblank_token type=$next_nonblank_type\n";
                     $leading_alignment_token = $next_nonblank_token;
                     $leading_alignment_type  = $next_nonblank_type;
                 }
@@ -11119,10 +11100,7 @@ sub set_closing_breakpoint {
 sub compare_indentation_levels {
 
     my ( $python_indentation_level, $structural_indentation_level ) = @_;
-    if (
-        ( $python_indentation_level ne $structural_indentation_level )
-      )
-    {
+    if ( ( $python_indentation_level ne $structural_indentation_level ) ) {
         $last_tabbing_disagreement = $input_line_number;
 
         if ($in_tabbing_disagreement) {
@@ -14853,10 +14831,8 @@ sub reset_indentation_level {
             if (
                 $is_indirect_object_taker{$last_nonblank_token}
 
-                || (
-                    ( $last_nonblank_token eq '(' )
-                    && $is_indirect_object_taker{ $paren_type[$paren_depth] }
-                )
+                || ( ( $last_nonblank_token eq '(' )
+                    && $is_indirect_object_taker{ $paren_type[$paren_depth] } )
                 || ( $last_nonblank_type eq 'U'
                     || $last_nonblank_type eq 'w' )    # possible object
                 ##=~ /^[Uw]$/ )    
@@ -15998,7 +15974,7 @@ EOM
                 }
 
                 # various quote operators
-                elsif ( $is_q_qq_qw_qx_qr_s_y_tr_m{$tok} ) {    
+                elsif ( $is_q_qq_qw_qx_qr_s_y_tr_m{$tok} ) {
                     error_if_expecting_OPERATOR()
                       if ( $expecting == OPERATOR );
                     $in_quote                = $quote_items{$tok};
@@ -16521,7 +16497,7 @@ indentation, but only single continuation-indentation
                         }
 
                         # ..but these are not terminal types:
-##                            /^(sort|grep|map|do|eval)$/ )
+                        #     /^(sort|grep|map|do|eval)$/ )
                         elsif (
                             $is_not_zero_continuation_block_type{
                                 $output_block_type[$i] } )
@@ -16580,7 +16556,6 @@ indentation, but only single continuation-indentation
                 # that they will be at the same level as its container.  For
                 # commas, this simplifies the -lp indentation logic, which
                 # counts commas.  For ?: it makes them stand out.
-                ##if ( $nesting_list_string =~ /1$/ ) {
                 if ($nesting_list_flag) {
                     if ( $type =~ /^[,\?\:]$/ ) {
                         $in_statement_continuation = 0;
@@ -16643,14 +16618,14 @@ indentation, but only single continuation-indentation
             # of the PREVIOUS TOKEN, which is convenient for setting
             # the stength of token bonds
             my $slevel_i = $slevel_in_tokenizer;
-            
+
             #    $type =~ /^[L\{\(\[]$/ 
             if ( $is_opening_type{$type} ) {
                 $slevel_in_tokenizer++;
                 $nesting_token_string .= $tok;
                 $nesting_type_string .= $type;
             }
-            
+
             #       $type =~ /^[R\}\)\]]$/ 
             elsif ( $is_closing_type{$type} ) {
                 $slevel_in_tokenizer--;
@@ -18273,8 +18248,8 @@ sub scan_bare_identifier_do {
                     # or preceded by something like 'print(' or 'printf('
                     || (
                         ( $last_nonblank_token eq '(' )
-                        &&
-                        $is_indirect_object_taker{ $paren_type[$paren_depth] }
+                        && $is_indirect_object_taker{ $paren_type[$paren_depth]
+                        }
 
                     )
                 )
