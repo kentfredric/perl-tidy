@@ -36,3 +36,7 @@ print sort sortsub @list;
 # sort with an anonymous subroutine
 my $sortsubref = sub {return $a cmp $b;};
 print sort $sortsubref @list;
+
+    # numerically has not been seen
+    foreach $mon (reverse sort numerically (keys(%flippie))) {
+    }

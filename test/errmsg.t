@@ -1,16 +1,26 @@
+
 	#!/usr/bin/perl
 
 # Some code to generate various error messages
 # No use strict, no -w
 
 # Here the space after 'redirect' will confuse perltidy
-print redirect ("hi");
+use CGI qw( :standard );
+   print redirect ( "$prefix$file" );
 
-   # missing paren between braces
-   /^[2Aa]/ && do {
-      ($newtask = <STDIN>;
-      print "Enter a priority for the new task (1-9): ";
-   };
+        # missing paren between braces
+	while ($self->match($string)
+	{
+		$string = $self->postmatch;
+	}
+
+# extra opening paren
+while ($n++ < 20) { insert($root, int(rand(1000)) }
+
+    # extra closing paren
+    while ( $position = $positions->extract_minimum ) ) {
+        return $position if $position->is_answer;
+    }
 
 # The ending ';' will be deleted
 # This line should cause a -sil warning

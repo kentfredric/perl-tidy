@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.32 2001/08/23 06:26:12 perltidy Exp $
+    $Id: perltidy,v 1.33 2001/08/24 05:47:14 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -1969,23 +1969,29 @@ sub finish {
 
     my $rOpts         = $self->{_rOpts};
     my $warning_count = $self->{_warning_count};
+    my $saw_code_bug = $self->{_saw_code_bug};
+
+    my $save_logfile= ( $saw_code_bug == 0 && $infile_syntax_ok == 1 ) 
+    || $saw_code_bug == 1 || $rOpts->{'logfile'};
+    my $log_file = $self->{_log_file};
     if ($warning_count) {
-        my $log_file = $self->{_log_file};
+        if ($save_logfile) {
         $self->block_log_output();    # avoid echoing this to the logfile
         $self->warning(
             "The logfile $log_file may contain useful information\n");
         $self->unblock_log_output();
+        }
 
-        if ( $self->{_saw_brace_error} && ( $rOpts->{'logfile-gap'} > 1 ) ) {
-            $self->warning("Running with -g may help you locate the problem\n");
+        if ( $self->{_saw_brace_error} && ( $rOpts->{'logfile-gap'} > 1 || !$save_logfile) ) {
+            $self->warning(
+            "Rerunning with -g to save a .LOG file may be helpful\n");
         }
     }
     $self->ask_user_for_bug_report( $infile_syntax_ok, $formatter );
     $self->close_log_file();
 
     # delete the log file unless it is needed or wanted
-    my $log_file = $self->{_log_file};
-    unlink($log_file) unless ( $warning_count || $rOpts->{'logfile'} );
+    unlink($log_file) unless ( $save_logfile );
 }
 
 #####################################################################
@@ -4348,7 +4354,7 @@ sub print_line_of_tokens {
     #     /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
     # Examples:
     #   *VERSION = \'1.01';
-    #   ( $VERSION ) = '$Revision: 1.32 $ ' =~ /\$Revision:\s+([^\s]+)/;
+    #   ( $VERSION ) = '$Revision: 1.33 $ ' =~ /\$Revision:\s+([^\s]+)/;
     # We will pass such a line straight through unless -npvl is used
     my $is_VERSION_statement = 0;
 
@@ -13830,7 +13836,7 @@ sub scan_number {
 # FIXME: I think perl 5.6 may have added some extensions, like X, must check 
     if ( !defined($number) ) {
         pos($input_line) = $pos_beg;
-        if ( $input_line =~ /\G0((x[0-9a-fA-F_]+)|([0-7_]+)|(b[01]+))/g ) {
+        if ( $input_line =~ /\G0((x[0-9a-fA-F_]+)|([0-7_]+)|(b[01_]+))/g ) {
             $pos = pos($input_line);
             my $numc = $pos - $pos_beg;
             $number = substr( $input_line, $pos_beg, $numc );
@@ -14444,6 +14450,7 @@ updated id_scan_state and the next index after the identifier.
             }
             elsif ( ( $tok eq '#' ) && ( $identifier eq '$' ) ) {    # $#array
                 $identifier .= $tok;    # keep same state, a $ could follow
+                write_logfile_entry('Use of $# is deprecated'."\n");
             }
             elsif ( $tok eq '{' ) {    # skip something like ${xxx} or ->{
                 $id_scan_state = '';
@@ -14507,13 +14514,30 @@ updated id_scan_state and the next index after the identifier.
                 if ( $identifier =~ /^[\$\*\@\%]$/ ) {
                     $identifier .= $tok;
                 }
+
+
                 elsif ( $identifier eq '$#' ) {
-                    $i = $i_save;
-                    if ( $tok =~ /^[\{\(\[]$/ ) { $type = 'i' }
+#                   $i = $i_save;
+#                   if ( $tok =~ /^[\{\(\[]$/ ) { $type = 'i' }
+                    if ( $tok =~ /^[\{]$/ ) { $type = 'i'; $i=$i_save }
+
+                    # perl seems to allow these: $#: $#- $#+ $#; $#,  
+                    elsif ($tok =~ /^[\:\-\+\;\,]$/) { $type = 'i'; $identifier .= $tok}
+
+                    # possible syntax error here 
+                    elsif ($tok =~ 
+                        /^[\~\`\@\$\%\^\&\*\(\)\=\]\[\}\|\\\'\"\?\/\.\>\<]$/) 
+                    { 
+                        $i=$i_save;
+                        warning( "Unexpected '$tok' after \$#\n");
+                    }
+                    else {$i=$i_save}
                 }
+
                 elsif ( $identifier eq '$$' ) {
                     $i = $i_save;
-                    if ( $tok =~ /^[\{\(\[]$/ ) { $type = 'i' }
+# TESTING           if ( $tok =~ /^[\{\(\[]$/ ) { $type = 'i' }
+                    if ( $tok =~ /^[\{]$/ ) { $type = 'i' }
                 }
                 elsif ( $identifier eq '->' ) {
                     $i = $i_save;
@@ -15257,10 +15281,9 @@ BEGIN {
     );
     push ( @Keywords, @special_keywords );
 
-    # List of keywords after which a list is accepted; this is used to
-    # allow lists after certain keywords to be formatted nicely.
+    # Keywords after which list formatting is allowed.
     # WARNING: do not include sort|map|grep|eval or perl may die on
-    # syntax errors (map1.t).  Probably should exclude system|exec.
+    # syntax errors (map1.t). 
     my @keyword_taking_list = qw(
       and
       die
@@ -15285,6 +15308,10 @@ BEGIN {
       unpack
       unshift
       until
+      splice
+      substr
+      syscall
+      sysopen
       sysread
       warn
       while
