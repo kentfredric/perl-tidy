@@ -1403,13 +1403,21 @@ so that they are essentially reversible.  The
 difference between these is that B<--mangle> puts the fewest possible
 line breaks in a script while B<--extrude> puts the maximum possible.
 Note that these options do not provided any meaningful obfuscation, because
-perltidy can be used to reformat the files.  
-A useful application of B<--mangle> is the following:
+perltidy can be used to reformat the files.  They were originally
+developed to help test the tokenization logic of perltidy, but they
+have other uses.
+One use for B<--mangle> is the following:
 
-  perltidy -mangle myfile.pl -st | perltidy -o myfile.pl.new
+  perltidy --mangle myfile.pl -st | perltidy -o myfile.pl.new
 
 This will form the maximum possible number of one-line blocks (see next
 section), and can sometimes help clean up a badly formatted script.
+
+A similar technique can be used with B<--extrude> instead of B<--mangle>
+to make the minimum number of one-line blocks.
+
+Another use for B<--mangle> is to combine it with B<-dac> to reduce
+the size of a perl script for faster loading.
 
 =item  One-line blocks 
 
