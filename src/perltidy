@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.8 2001/06/18 15:02:50 perltidy Exp $
+    $Id: perltidy,v 1.9 2001/06/25 18:29:54 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -90,6 +90,7 @@ perltidy detects an error.  The .LOG file may also be saved with a
 Some comments refer to test files, most of which are in the test directory.
 
 =cut
+
 sub main {
 
     # VMS file names are restricted to a 40.40 format, so
@@ -277,7 +278,7 @@ sub main {
         #---------------------------------------------------------------
         $source_object->close_input_file();
         $sink_object->close_output_file() if $sink_object;
-        if ($debugger_object) { $debugger_object->close_debug_file(); }
+        $debugger_object->close_debug_file() if $debugger_object; 
 
         my $infile_syntax_ok = 0;    # -1 no  0=don't know   1 yes
         if ($output_file) {
@@ -291,7 +292,7 @@ sub main {
         }
         $source_object->unlink_copy();
         $sink_object->unlink_copy();
-        if ($logger_object) { $logger_object->finish($infile_syntax_ok) }
+        $logger_object->finish($infile_syntax_ok) if $logger_object;
 
     }    # end of loop to process all files
 
@@ -1066,6 +1067,7 @@ There is no need, at present, to handle escaped quote characters.
 (They are not perltidy tokens, so needn't be in strings).
 
 =cut
+
     my ( $body, $config_file, $line_no ) = @_;
     my @body_parts = ();
     my $quote_char = "";
@@ -2053,8 +2055,8 @@ sub make_getopt_long_names {
     my ($rgetopt_names) = @_;
     while ( my ( $short_name, $name ) = each %short_to_long_names ) {
         push @$rgetopt_names, "html-color-$name=s";
-        push @$rgetopt_names, "html-italic-$name:i";
-        push @$rgetopt_names, "html-bold-$name:i";
+        push @$rgetopt_names, "html-italic-$name!";
+        push @$rgetopt_names, "html-bold-$name!";
     }
     push @$rgetopt_names, "html-color-background=s";
     push @$rgetopt_names, "html-linked-style-sheet=s";
@@ -2078,6 +2080,8 @@ sub make_abbreviated_names {
         ${$rexpansion}{"hc$short_name"} = ["html-color-$long_name"];
         ${$rexpansion}{"hb$short_name"} = ["html-bold-$long_name"];
         ${$rexpansion}{"hi$short_name"} = ["html-italic-$long_name"];
+        ${$rexpansion}{"nhb$short_name"} = ["nohtml-bold-$long_name"];
+        ${$rexpansion}{"nhi$short_name"} = ["nohtml-italic-$long_name"];
     }
 
     # abbreviations for all other html options
@@ -2103,17 +2107,6 @@ sub check_options {
     use constant MediumOrchid3 => "#B452CD";
     use constant black         => "#000000";
     use constant white         => "#FFFFFF";
-
-    # Fix input parameters because of how getopts works:
-    # 0 to become a 1; negative to become a 0 
-    while ( my ( $short_name, $name ) = each %short_to_long_names ) {
-        for my $prop ( 'bold', 'italic' ) {
-            my $key = "html-$prop-$name";
-            if ( defined( $rOpts->{$key} ) ) {
-                $rOpts->{$key} = ( $rOpts->{$key} >= 0 ) ? 1 : 0;
-            }
-        }
-    }
 
     # set default color, bold, italic properties
     # anything not listed here will be given the default (punctuation) color --
@@ -2742,6 +2735,7 @@ sub write_line {
 
     my $line_type  = $line_of_tokens->{_line_type};
     my $input_line = $line_of_tokens->{_line_text};
+    my $want_blank_line_next = 0;
 
     # handle line of code..
     if ( $line_type eq 'CODE' ) {
@@ -2770,9 +2764,11 @@ sub write_line {
                 want_blank_line();
             }
 
-            # patch to retain an existing blank line after =cut
-            if ($line_type eq 'POD_END') {
-               $file_writer_object->reset_consecutive_blank_lines();
+            # patch to put a blank line after =cut
+            # (required by podchecker)
+            if ( $line_type eq 'POD_END' ) {
+                $file_writer_object->reset_consecutive_blank_lines();
+                $want_blank_line_next = 1;
             }
         }
 
@@ -2781,6 +2777,7 @@ sub write_line {
             if ($tee_line) { $file_writer_object->tee_on() }
             write_unindented_line($input_line);
             if ($tee_line) { $file_writer_object->tee_off() }
+            if ($want_blank_line_next) { want_blank_line(); }
         }
     }
 }
@@ -2835,7 +2832,7 @@ sub new_lp_indentation_item {
     my $item =
       Perltidy::IndentationItem->new( $spaces, $level, $ci_level,
         $available_spaces, $index, $gnu_sequence_number, $align_paren,
-        $max_gnu_stack_index);
+        $max_gnu_stack_index );
 
     if ( $level >= 0 ) {
         $gnu_item_list[$max_gnu_item_index] = $item;
@@ -2950,8 +2947,8 @@ sub set_leading_whitespace {
         while (1) {
             if ($max_gnu_stack_index) {
 
-                # mark this stack item as complete
-                $gnu_stack[$max_gnu_stack_index]->set_CLOSED(1);
+                # save index of token which closes this level
+                $gnu_stack[$max_gnu_stack_index]->set_CLOSED($max_index_to_go);
 
                 # Undo any extra indentation if we saw no commas
                 my $available_spaces =
@@ -2984,7 +2981,7 @@ sub set_leading_whitespace {
                             $available_spaces);
 
                         my $j;
-                        for ( $j = $i+1 ; $j <= $max_gnu_item_index ; $j++ ) {
+                        for ( $j = $i + 1 ; $j <= $max_gnu_item_index ; $j++ ) {
                             $gnu_item_list[$j]
                               ->decrease_SPACES($available_spaces);
                         }
@@ -3068,8 +3065,8 @@ sub set_leading_whitespace {
 
             $gnu_stack[$max_gnu_stack_index]->set_HAVE_CHILD(1);
 
-            ++$max_gnu_stack_index; 
-            $gnu_stack[ $max_gnu_stack_index ] =
+            ++$max_gnu_stack_index;
+            $gnu_stack[$max_gnu_stack_index] =
               new_lp_indentation_item( $space_count, $level, $ci_level,
               $available_space, $align_paren );
         }
@@ -3086,8 +3083,11 @@ sub set_leading_whitespace {
           || $type =~ /^[\}]$/
 
           # or this is after an equality after a closing structure
+
+          # TESTING- reactivated
           || ( $last_nonblank_type =~ /^[=]/ && $last_nonblank_type ne '=>'
-          && ( $last_last_nonblank_type =~ /^[\}\)\]]$/ ) ) )
+          && ( $last_last_nonblank_type =~ /^[\}\)\]]$/ ) ) 
+        )
 
         {
             check_for_long_gnu_style_lines();
@@ -3192,7 +3192,7 @@ sub check_for_long_gnu_style_lines {
 
         # item must still be open to be a candidate (otherwise it
         # cannot influence the current token)
-        next if ( $item->get_CLOSED() );
+        next if ( $item->get_CLOSED() >= 0);
 
         my $available_spaces = $item->get_AVAILABLE_SPACES();
 
@@ -3269,7 +3269,7 @@ sub finish_lp_batch {
         my $item = $gnu_item_list[$i];
 
         # only look for open items
-        next if ( $item->get_CLOSED() );
+        next if ( $item->get_CLOSED() >= 0);
 
         # Tentatively remove all of the available space
         # (The vertical aligner will try to get it back later)
@@ -3283,7 +3283,7 @@ sub finish_lp_batch {
             # Reduce the total indentation space of any nodes that follow
             # Note that any such nodes must necessarily be dependents
             # of this node.
-            foreach my $j ( $i+1 .. $max_gnu_item_index) { 
+            foreach my $j ( $i + 1 .. $max_gnu_item_index ) {
                 $gnu_item_list[$j]->decrease_SPACES($available_spaces);
             }
         }
@@ -3309,7 +3309,7 @@ sub reduce_lp_indentation {
         if ( !$item->get_HAVE_CHILD() ) {
 
             # we'll remove these spaces, but mark them as recoverable
-            $deleted_spaces = 
+            $deleted_spaces =
               $item->tentatively_decrease_AVAILABLE_SPACES($spaces_needed);
         }
     }
@@ -3688,6 +3688,7 @@ sub is_essential_whitespace {
 sub set_white_space_flag {
 
 =pod
+
 	 This routine examines each pair of nonblank tokens and
 	 sets values for array @white_space_flag. 
 	
@@ -5032,37 +5033,129 @@ sub correct_lp_indentation {
     # predictor is usually good, but sometimes stumbles.  The corrector
     # tries to patch things up once the actual opening paren locations
     # are known.
-    my ( $ibeg, $iend ) = @_;
+    my ( $ri_first, $ri_last ) = @_;
 
-    # looking at each token in this output line..
-    my $i;
-    foreach $i ( $ibeg .. $iend ) {
+    # looking at each line of this batch..
+    my $max_line = @$ri_first - 1;
+    my ($ibeg, $iend);
+    for my $line ( 0 .. $max_line ) {
+        $ibeg = $$ri_first[$line];
+        $iend = $$ri_last[$line];
 
-        # looking for next unvisited indentation item
-        my $indentation = $leading_spaces_to_go[$i];
-        if ( !$indentation->get_MARKED() ) {
-            $indentation->set_MARKED(1);
+        # looking at each token in this output line..
+        my $i;
+        foreach $i ( $ibeg .. $iend ) {
 
-            # looking for indentation item for which we are aligning 
-            # with parens, braces, and brackets 
-            next unless ( $indentation->get_ALIGN_PAREN() );
+            # looking for next unvisited indentation item
+            my $indentation = $leading_spaces_to_go[$i];
+            if ( !$indentation->get_MARKED() ) {
+                $indentation->set_MARKED(1);
 
-            # Ok, let's see what the error is and try to fix it
-            my $actual_pos = total_line_length( $ibeg, $i - 1 );
-            my $predicted_pos = $indentation->get_SPACES();
-            my $move_left     = $predicted_pos - $actual_pos;
+                # looking for indentation item for which we are aligning 
+                # with parens, braces, and brackets 
+                next unless ( $indentation->get_ALIGN_PAREN() );
 
-            # It's ok to shift left if there are no dependents. 
-            if ( $move_left > 0 && !$indentation->get_HAVE_CHILD() ) {
-                $indentation->permanently_decrease_AVAILABLE_SPACES($move_left);
-            }
+                # Ok, let's see what the error is and try to fix it
+                my $actual_pos; 
+                my $predicted_pos = $indentation->get_SPACES();
+                if ($i > $ibeg) {
+                  $actual_pos = total_line_length( $ibeg, $i - 1 );
+                }
+                elsif ($line > 0) {
+                  my $ibegm = $$ri_first[$line-1];
+                  my $iendm = $$ri_last[$line-1];
+                  $actual_pos = total_line_length( $ibegm, $iendm ) + 1;
+                }
+                else {
+                  $actual_pos = $predicted_pos;
+                }
 
-            # But moving right, or left with dependent indentation, is not
-            # possible yet because some later lines might depend on this
-            # indentation.  So we record what we want and the vertical
-            # aligner will try to recover it.
-            elsif ( $move_left != 0 ) {
-                $indentation->set_RECOVERABLE_SPACES(-$move_left);
+                my $move_right    = $actual_pos - $predicted_pos;
+
+                # done if no error to correct
+                next unless ($move_right);
+
+                # if we have not seen closure for this indentation in
+                # this batch, we can only pass on a request to the
+                # vertical aligner
+                my $closing_index = $indentation->get_CLOSED();
+
+                if ( $closing_index < 0 ) {
+                    $indentation->set_RECOVERABLE_SPACES($move_right);
+                    next;
+                }
+
+                # If necessary, look ahead to see if there is really any
+                # leading whitespace dependent on this whitespace, and
+                # also find the longest line using this whitespace.  
+                # Since it is always safe to move left if there are no
+                # dependents, we only need to do this if we may have
+                # dependent nodes or need to move right. 
+
+                my $right_margin = 0;
+                my $ending_comma_count = 0;
+                my $have_child = $indentation->get_HAVE_CHILD();
+                if ( $have_child || $move_right > 0 ) {
+                    $have_child = 0;
+                    my $max_length = 0;
+                    if ( $i == $ibeg ) {
+                        $max_length = total_line_length( $ibeg, $iend );
+                        if ( $tokens_to_go[$iend] eq ',' ) {
+                            $ending_comma_count++;
+                        }
+                    }
+
+                    # look ahead at the rest of the lines of this batch..
+                    my $line_t;
+                    foreach $line_t ( $line + 1 .. $max_line ) {
+                        my $ibeg_t = $$ri_first[$line_t];
+                        my $iend_t = $$ri_last[$line_t];
+                        last if ( $closing_index <= $ibeg_t );
+
+                        # If this is a dependent we will not move the text;
+                        # it is very rare to get here and if we do it implies
+                        # a short complicated statement that will probably
+                        # look ok unchanged.
+                        my $indentation_t = $leading_spaces_to_go[$ibeg_t];
+                        if ( $indentation_t != $indentation ) {
+                            $have_child = 1;
+                            last;
+                        }
+                        my $length_t = total_line_length( $ibeg_t, $iend_t );
+
+                        if ( $length_t > $max_length ) {
+                            $max_length = $length_t;
+                        }
+                        if ( $tokens_to_go[$iend_t] eq ',' ) {
+                            $ending_comma_count++;
+                        }
+                    }
+                    $right_margin =
+                      $rOpts->{'maximum-line-length'} - $max_length;
+                    if ( $right_margin < 0 ) { $right_margin = 0 }
+                }
+
+                # Make the move if possible ..
+                # Must not be any dependent indentation..
+                if ( !$have_child
+
+                  # we can always move left, but we can only move right if
+                  # we are sure it will not spoil vertical alignment,
+                  # which is implied by ending commas
+                  && ( $move_right < 0 || !$ending_comma_count ) )
+                {
+                    my $move =
+                      ( $move_right <= $right_margin ) ? $move_right :
+                      $right_margin;
+                    $indentation->permanently_decrease_AVAILABLE_SPACES(
+                        -$move );
+                }
+
+                # Otherwise, record what we want and the vertical aligner 
+                # will try to recover it.
+                else {
+                    $indentation->set_RECOVERABLE_SPACES($move_right);
+                }
             }
         }
     }
@@ -5202,14 +5295,15 @@ sub output_line_to_go {
             }
         }
 
+        # do corrector step if -lp option is used
+        if ( $rOpts->{'line-up-parentheses'} ) {
+            correct_lp_indentation( $ri_first, $ri_last );
+        }
+
         # loop to dump out the line(s)
         for my $n ( 0 .. @$ri_first - 1 ) {
             my $ibeg = $$ri_first[$n];
             my $iend = $$ri_last[$n];
-
-            if ( $rOpts->{'line-up-parentheses'} ) {
-                correct_lp_indentation( $ibeg, $iend );
-            }
 
             my @patterns = ();
             my @tokens   = ();
@@ -5344,12 +5438,10 @@ sub output_line_to_go {
 
 sub terminal_type {
 
-=pod
-	returns type of last token on this line (terminal token), as follows:
-	returns # for a full-line comment
-	returns ' ' for a blank line
-	otherwise returns final token type
-=cut
+#    returns type of last token on this line (terminal token), as follows:
+#    returns # for a full-line comment
+#    returns ' ' for a blank line
+#    otherwise returns final token type
 
     my ( $rtype, $rblock_type, $ibeg, $iend ) = @_;
 
@@ -5876,6 +5968,7 @@ sub scan_list {
     my @breakpoint_undo_stack      = ();
     my @container_type             = ();
     my @last_comma_index           = ();
+    my @last_equals_index          = ();
     my $old_breakpoint_count       = 0;
     my $saw_comma                  = 0;
     $item_count_stack[$current_depth]       = 0;
@@ -5933,6 +6026,8 @@ sub scan_list {
             $breakpoint_stack[$depth]              = $forced_breakpoint_count;
             $old_breakpoint_count_stack[$depth]    = $old_breakpoint_count;
             $breakpoint_undo_stack[$depth] = $forced_breakpoint_undo_count;
+            $last_equals_index[$depth] = undef;
+            $last_comma_index[$depth] = undef;
 
             $container_type[$depth] = $last_nonblank_token;
 
@@ -6067,6 +6162,7 @@ sub scan_list {
 
                   # but not a )
                   if ( ( $type ne ')' )
+
                   # if ( ( $token ne ')' )
 
                   # unless preceded by a ','
@@ -6113,6 +6209,51 @@ sub scan_list {
                             set_forced_breakpoint($icomma);
                         }
                     }
+
+                    # With the -lp option we will break at an '=' preceding
+                    # an open paren by a significant number of spaces.
+                    # This can help save space across the page.  The
+                    # constants in this are somewhat arbitrary
+=pod
+
+Here is an example of what this is trying to accomplish:
+
+            my $result_string =
+              $candidates->result_as_string(
+                                             'Type'     => 'All',
+                                             'Category' => 'Failed'
+            );
+
+Without the break at the '=', the result would be:
+
+            my $result_string = $candidates->result_as_string(
+                                                    'Type'     => 'All',
+                                                    'Category' => 'Failed'
+            );
+
+which is not as nice.
+
+=cut
+
+                    if ( $token eq ')' && $rOpts->{'line-up-parentheses'} ) {
+                        my $iequals = $last_equals_index[$depth];
+
+                        # if there is a preceding equals
+                        if ( defined($iequals)
+
+                          # more than 10 spaces from the '=' to the '('
+                          && ( token_sequence_length( $iequals, $i_opening ) >
+                          10 )
+
+                          # and the '=' is more than 8 spaces from line start
+                          && ( token_sequence_length( 0, $iequals ) > 8 ) )
+                        {
+                            unless ( $forced_breakpoint_to_go[$iequals] ) {
+                                set_forced_breakpoint($iequals);
+                            }
+                        }
+                    }
+
                 }
             }
 
@@ -6131,6 +6272,10 @@ sub scan_list {
             $want_comma_break[$depth] = 1;
             $saw_comma = 1;
             next;
+        }
+
+        if ( $type eq '=' ) {
+            $last_equals_index[$depth] = $i;
         }
 
         # we aren't in a list if we see any of these
@@ -7057,33 +7202,33 @@ sub compare_indentation_levels {
 package Perltidy::IndentationItem;
 
 # Indexes for indentation items
-use constant GNU_ITEM_SPACES             => 0;  # total leading white spaces
-use constant GNU_ITEM_LEVEL              => 1;  # the indentation 'level'
-use constant GNU_ITEM_CI_LEVEL           => 2;  # the 'continuation level'
-use constant GNU_ITEM_AVAILABLE_SPACES   => 3;  # how many left spaces available
+use constant _SPACES             => 0;  # total leading white spaces
+use constant _LEVEL              => 1;  # the indentation 'level'
+use constant _CI_LEVEL           => 2;  # the 'continuation level'
+use constant _AVAILABLE_SPACES   => 3;  # how many left spaces available
                                                 # for this level
-use constant GNU_ITEM_CLOSED             => 4;  # tells if we saw a closing '}'
-use constant GNU_ITEM_COMMA_COUNT        => 5;  # how many commas at this level?
-use constant GNU_ITEM_SEQUENCE_NUMBER    => 6;  # output batch number
-use constant GNU_ITEM_INDEX              => 7;  # index in output batch list
-use constant GNU_ITEM_HAVE_CHILD         => 8;  # any dependents?
-use constant GNU_ITEM_RECOVERABLE_SPACES => 9;  # how many spaces to the right
+use constant _CLOSED             => 4;  # index where we saw closing '}'
+use constant _COMMA_COUNT        => 5;  # how many commas at this level?
+use constant _SEQUENCE_NUMBER    => 6;  # output batch number
+use constant _INDEX              => 7;  # index in output batch list
+use constant _HAVE_CHILD         => 8;  # any dependents?
+use constant _RECOVERABLE_SPACES => 9;  # how many spaces to the right
                                                 # we would like to move to get
                                                 # alignment (negative if left)
-use constant GNU_ITEM_ALIGN_PAREN        => 10; # do we want to try to align
+use constant _ALIGN_PAREN        => 10; # do we want to try to align
                                                 # with an opening structure?
-use constant GNU_ITEM_MARKED             => 11; # if visited by corrector logic
-use constant GNU_ITEM_STACK_DEPTH        => 12; # indentation nesting depth
+use constant _MARKED             => 11; # if visited by corrector logic
+use constant _STACK_DEPTH        => 12; # indentation nesting depth
 
 sub new {
 
     # Create an 'indentation_item' which describes one level of leading
     # whitespace when the 'gnu-style' of indentation is used.  We return
     # a reference to an anonymous array of associated variables.
-    # See constants GNU_ITEM_xxx for storage scheme.
+    # See constants _xxx for storage scheme.
     my ( $class, $spaces, $level, $ci_level, $available_spaces, $index,
       $gnu_sequence_number, $align_paren, $stack_depth ) = @_;
-    my $closed            = 0;
+    my $closed            = -1;
     my $comma_count       = 0;
     my $have_child        = 0;
     my $want_right_spaces = 0;
@@ -7104,21 +7249,27 @@ sub permanently_decrease_AVAILABLE_SPACES {
     # make a permanent reduction in the available indentation spaces
     # at one indentation item.  NOTE: if there are child nodes, their
     # total SPACES must be reduced by the caller.
-    my ($item, $spaces) = @_;
-    $item->decrease_AVAILABLE_SPACES($spaces);
-    $item->decrease_SPACES($spaces);
+
+    my ( $item, $spaces_needed ) = @_;
+    my $available_spaces = $item->get_AVAILABLE_SPACES();
+    my $deleted_spaces   =
+      ( $available_spaces > $spaces_needed ) ? $spaces_needed :
+      $available_spaces;
+    $item->decrease_AVAILABLE_SPACES($deleted_spaces);
+    $item->decrease_SPACES($deleted_spaces);
     $item->set_RECOVERABLE_SPACES(0);
+    return $deleted_spaces;
 }
 
-sub tentatively_decrease_AVAILABLE_SPACES{
+sub tentatively_decrease_AVAILABLE_SPACES {
 
     # We are asked to tentatively delete $spaces_needed of indentation
     # for a indentation item.  We may want to undo this later.  NOTE: if
     # there are child nodes, their total SPACES must be reduced by the
     # caller.
-    my ($item,$spaces_needed) = @_;
+    my ( $item, $spaces_needed ) = @_;
     my $available_spaces = $item->get_AVAILABLE_SPACES();
-    my $deleted_spaces =
+    my $deleted_spaces   =
       ( $available_spaces > $spaces_needed ) ? $spaces_needed :
       $available_spaces;
     $item->decrease_AVAILABLE_SPACES($deleted_spaces);
@@ -7129,131 +7280,131 @@ sub tentatively_decrease_AVAILABLE_SPACES{
 
 sub get_STACK_DEPTH {
     my ($self) = @_;
-    return $self->[GNU_ITEM_STACK_DEPTH];
+    return $self->[_STACK_DEPTH];
 }
 
 sub get_SPACES {
     my ($self) = @_;
-    return $self->[GNU_ITEM_SPACES];
+    return $self->[_SPACES];
 }
 
 sub get_MARKED {
     my ($self) = @_;
-    return $self->[GNU_ITEM_MARKED];
+    return $self->[_MARKED];
 }
 
 sub set_MARKED {
     my ( $self, $value ) = @_;
     if ( defined($value) ) {
-        $self->[GNU_ITEM_MARKED] = $value;
+        $self->[_MARKED] = $value;
     }
-    return $self->[GNU_ITEM_MARKED];
+    return $self->[_MARKED];
 }
 
 sub get_AVAILABLE_SPACES {
     my ($self) = @_;
-    return $self->[GNU_ITEM_AVAILABLE_SPACES];
+    return $self->[_AVAILABLE_SPACES];
 }
 
 sub decrease_SPACES {
     my ( $self, $value ) = @_;
     if ( defined($value) ) {
-        $self->[GNU_ITEM_SPACES] -= $value;
+        $self->[_SPACES] -= $value;
     }
-    return $self->[GNU_ITEM_SPACES];
+    return $self->[_SPACES];
 }
 
 sub decrease_AVAILABLE_SPACES {
     my ( $self, $value ) = @_;
     if ( defined($value) ) {
-        $self->[GNU_ITEM_AVAILABLE_SPACES] -= $value;
+        $self->[_AVAILABLE_SPACES] -= $value;
     }
-    return $self->[GNU_ITEM_AVAILABLE_SPACES];
+    return $self->[_AVAILABLE_SPACES];
 }
 
 sub get_ALIGN_PAREN {
     my ($self) = @_;
-    return $self->[GNU_ITEM_ALIGN_PAREN];
+    return $self->[_ALIGN_PAREN];
 }
 
 sub get_RECOVERABLE_SPACES {
     my ($self) = @_;
-    return $self->[GNU_ITEM_RECOVERABLE_SPACES];
+    return $self->[_RECOVERABLE_SPACES];
 }
 
 sub set_RECOVERABLE_SPACES {
     my ( $self, $value ) = @_;
     if ( defined($value) ) {
-        $self->[GNU_ITEM_RECOVERABLE_SPACES] = $value;
+        $self->[_RECOVERABLE_SPACES] = $value;
     }
-    return $self->[GNU_ITEM_RECOVERABLE_SPACES];
+    return $self->[_RECOVERABLE_SPACES];
 }
 
 sub increase_RECOVERABLE_SPACES {
     my ( $self, $value ) = @_;
     if ( defined($value) ) {
-        $self->[GNU_ITEM_RECOVERABLE_SPACES] += $value;
+        $self->[_RECOVERABLE_SPACES] += $value;
     }
-    return $self->[GNU_ITEM_RECOVERABLE_SPACES];
+    return $self->[_RECOVERABLE_SPACES];
 }
 
 sub get_CI_LEVEL {
     my ($self) = @_;
-    return $self->[GNU_ITEM_CI_LEVEL];
+    return $self->[_CI_LEVEL];
 }
 
 sub get_LEVEL {
     my ($self) = @_;
-    return $self->[GNU_ITEM_LEVEL];
+    return $self->[_LEVEL];
 }
 
 sub get_SEQUENCE_NUMBER {
     my ($self) = @_;
-    return $self->[GNU_ITEM_SEQUENCE_NUMBER];
+    return $self->[_SEQUENCE_NUMBER];
 }
 
 sub get_INDEX {
     my ($self) = @_;
-    return $self->[GNU_ITEM_INDEX];
+    return $self->[_INDEX];
 }
 
 sub set_HAVE_CHILD {
     my ( $self, $value ) = @_;
     if ( defined($value) ) {
-        $self->[GNU_ITEM_HAVE_CHILD] = $value;
+        $self->[_HAVE_CHILD] = $value;
     }
-    return $self->[GNU_ITEM_HAVE_CHILD];
+    return $self->[_HAVE_CHILD];
 }
 
 sub get_HAVE_CHILD {
     my ($self) = @_;
-    return $self->[GNU_ITEM_HAVE_CHILD];
+    return $self->[_HAVE_CHILD];
 }
 
 sub set_COMMA_COUNT {
     my ( $self, $value ) = @_;
     if ( defined($value) ) {
-        $self->[GNU_ITEM_COMMA_COUNT] = $value;
+        $self->[_COMMA_COUNT] = $value;
     }
-    return $self->[GNU_ITEM_COMMA_COUNT];
+    return $self->[_COMMA_COUNT];
 }
 
 sub get_COMMA_COUNT {
     my ($self) = @_;
-    return $self->[GNU_ITEM_COMMA_COUNT];
+    return $self->[_COMMA_COUNT];
 }
 
 sub set_CLOSED {
     my ( $self, $value ) = @_;
     if ( defined($value) ) {
-        $self->[GNU_ITEM_CLOSED] = $value;
+        $self->[_CLOSED] = $value;
     }
-    return $self->[GNU_ITEM_CLOSED];
+    return $self->[_CLOSED];
 }
 
 sub get_CLOSED {
     my ($self) = @_;
-    return $self->[GNU_ITEM_CLOSED];
+    return $self->[_CLOSED];
 }
 
 =pod
@@ -7274,6 +7425,7 @@ to flush.
 	groups            group
 
 =cut
+
 package Perltidy::VerticalAligner;
 use vars qw(
   $starting_jmax
@@ -7451,6 +7603,7 @@ side comments.  Tabs in these fields can mess up the column counting.
 The log file warns the user if there are any such tabs.
 
 =cut
+
     my ( $level, $indentation, $rfields, $rtokens, $rpatterns, $is_forced_break,
       $outdent_long_lines, $is_terminal_statement ) = @_;
 
@@ -7521,7 +7674,7 @@ The log file warns the user if there are any such tabs.
             if ( $extra_indent_ok && ref($indentation) ) {
                 my $extra_indentation_spaces_wanted =
                   get_RECOVERABLE_SPACES($indentation);
-                if ( $extra_indentation_spaces_wanted ) {
+                if ($extra_indentation_spaces_wanted) {
                     my $avail =
                       $rOpts->{'maximum-line-length'} -
                       ( length( $$rfields[0] ) + $leading_space_count );
@@ -7961,6 +8114,7 @@ sub dump_array {
 flush() sends the current Perltidy::VerticalAligner group down the pipeline to Perltidy::FileWriter.
 
 =cut
+
 sub flush {
 
     if ( $VALIGN_DEBUG_FLAG{APPEND0} ) {
@@ -8076,6 +8230,7 @@ use overload '+' => \&plus,
          'tan'   => \&tan,
          'atan2' => \&atan2,
 =cut
+
     my $min_ci_gap = $rOpts->{'maximum-line-length'};
     my $group_leader_length = $leading_space_count[0];
     if ( $maximum_field_index > 1 && !$do_not_align ) {
@@ -8099,6 +8254,7 @@ use overload '+' => \&plus,
     }
 
 =pod
+
 This old coding is no longer necessary:
 
     # Undo continuation indentation in special cases. We want to avoid
@@ -8127,6 +8283,7 @@ This old coding is no longer necessary:
     }
 
 =cut
+
     #----------------------------------------------------------
     # Define any extra indentation space (for the -lp option).  
     # Here is why:
@@ -8587,7 +8744,7 @@ sub really_open_debug_file {
     }
     $self->{_debug_file_opened} = 1;
     $self->{_fh} = $fh;
-    print $fh "Use -dump-tokens to get a list of token type codes\n";
+    print $fh "Use -dump-token-types to get a list of token type codes\n";
 }
 
 sub close_debug_file {
@@ -9416,6 +9573,7 @@ Type 2: $structural_indentation_level >= 0
  update the tabbing string, if still unknown, to make the level correct.
 
 =cut
+
 sub find_indentation_level {
     my ( $line, $structural_indentation_level ) = @_;
     my $level = 0;
@@ -9772,6 +9930,7 @@ current version.
 -----------------------------------------------------------------------
 
 =cut
+
     use constant BRACE => 0;
     use constant SQUARE_BRACKET => 1;
     use constant PAREN => 2;
@@ -10853,6 +11012,7 @@ EOM
 	  depth.
 	
 =cut
+
     foreach $i (@output_token_list) {    # scan the list of pre-tokens indexes
 
         # self-checking for valid token types
@@ -10961,6 +11121,7 @@ indentation, but only single continuation-indentation
    );
 
 =cut
+
             # save the current states
             push ( @slevel_stack,   1 + $slevel_in_tokenizer );
             push ( @levels,         $level_in_tokenizer++ );
@@ -10992,6 +11153,7 @@ indentation, but only single continuation-indentation
  This looks best when 'ci' is one-half of the indentation  (i.e., 2 and 4)
 
 =cut
+
             my $total_ci = $ci_string_sum;
             if ( !$output_block_type[$i]    # patch: skip for BLOCK
               && ($in_statement_continuation) )
@@ -11325,6 +11487,7 @@ sub write_error_indicator_pair {
 sub make_numbered_line {
 
 =pod
+
  Given an input line, its line number, and a character position of interest, 
  create a string not longer than 80 characters of the form
     $lineno: sub_string
@@ -11335,6 +11498,7 @@ sub make_numbered_line {
   $str = the text of the line
   $pos = position of interest (the error) : 0 = first character
 =cut
+
     my ( $lineno, $str, $pos ) = @_;
     my $offset = ( $pos < 60 ) ? 0 : $pos - 40;
     my $excess = length($str) - $offset - 68;
@@ -11383,8 +11547,8 @@ sub is_non_structural_brace {
 
     # EXPERIMENTAL: Mark slices as structural
     # This works, but is rarely needed.  
-    if ($last_nonblank_type eq 'i' && $last_nonblank_token =~ /^@/) {
-      return 0;
+    if ( $last_nonblank_type eq 'i' && $last_nonblank_token =~ /^@/ ) {
+        return 0;
     }
 
     # it is non-structural if it is decorated by type information
@@ -11400,6 +11564,7 @@ sub is_non_structural_brace {
 sub operator_expected {
 
 =pod
+
 Many perl symbols have two or more meanings.  For example, '<<'
 can be a shift operator or a here-doc operator.  The
 interpretation of these symbols depends on the current state of
@@ -11430,6 +11595,7 @@ character to one of the regexes in this routine or to one of the hash lists
 that it uses, which are initialized in the BEGIN section.
 
 =cut
+
     my ( $prev_type, $tok, $next_type ) = @_;
     my $op_expected = UNKNOWN;
 
@@ -11589,6 +11755,7 @@ the end of a large file (such as this one) and announces that there
 is a problem somewhere.
 
 =cut
+
 sub increase_nesting_depth {
     my ( $a, $i_tok ) = @_;
     my $b;
@@ -12350,6 +12517,7 @@ sub do_quote {
 sub scan_number {
 
 =pod
+
   scan a number in any of the formats that Perl accepts
   Underbars (_) are allowed in decimal numbers.  
   input parameters -
@@ -12361,6 +12529,7 @@ sub scan_number {
 	$i			- last pre_token index of the number just scanned
 	number		- the number (characters); or undef if not a number
 =cut
+
     my ( $input_line, $i, $rtoken_map, $input_type ) = @_;
     my $pos_beg = $$rtoken_map[$i];
     my $pos;
@@ -12632,6 +12801,7 @@ not the last nonblank token on the line, the identifier is
 scanned and handled and a value of '' is returned.
 
 =cut
+
     my ( $input_line, $i, $tok, $rtokens, $rtoken_map, $id_scan_state ) = @_;
     my $type = '';
     my ( $i_beg, $pos_beg );
@@ -12836,7 +13006,7 @@ sub do_scan_package {
 
 sub scan_identifier {
 
-=pod scan_identifier
+=pod
 
 NOTE: This develomental scanner WILL BE REPLACED by the newer version
 "scan_id".  The reason is that scan_id will be regex based, which makes
@@ -12848,6 +13018,7 @@ id_scan_state based upon current id_scan_state and token, and returns an
 updated id_scan_state and the next index after the identifier.  
 
 =cut
+
     my ( $i, $id_scan_state, $identifier, $rtokens ) = @_;
     my $i_begin   = $i;
     my $type      = '';
@@ -13792,6 +13963,7 @@ BEGIN {
     #	  );
 
 =pod
+
 	 The list of keywords was extracted from function 'keyword' in perl file
 	 toke.c version 5.005.03, using this utility, plus a little editing:
 	 (file getkwd.pl):
@@ -13803,6 +13975,7 @@ BEGIN {
 	 ARGV DATA ENV SIG STDERR STDIN STDOUT
 	 __DATA__ __END__
 =cut
+
     @is_keyword{@Keywords} = (1) x scalar(@Keywords);
 }
 

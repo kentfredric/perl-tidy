@@ -138,7 +138,7 @@ corresponding abbreviation:
       here doc target        here-doc-target  hh
       punctuation            punctuation      pu
       parentheses            paren            p
-      structural braces      structural       s
+      structural braces      structure        s
       semicolon              semicolon        sc
       colon                  colon            co
       comma                  comma            cm
@@ -184,15 +184,18 @@ located with an internet search for "HTML color tables".
 Besides color, two other character attributes may be set: bold, and italics.
 To set a token type to use bold, use the flag
 B<-html-bold-xxxxxx> or B<-hbx>, where B<xxxxxx> or B<x> are the long
-or short names from the above table.  
+or short names from the above table.  Conversely, to set a token type to 
+NOT use bold, use B<-nohtml-bold-xxxxxx> or B<-nhbx>.
 
 Likewise, to set a token type to use an italic font, use the flag
 B<-html-italic-xxxxxx> or B<-hix>, where again B<xxxxxx> or B<x> are the
-long or short names from the above table.  For example, to use bold
-braces and lime, bold, italics keywords the following command would be
-used:
+long or short names from the above table.  And to set a token type to
+NOT use italics, use B<-nohtml-italic-xxxxxx> or B<-nhix>.
 
-	perltidy -html -hbs -hck=00FF00 -hik -hbk somefile.pl
+For example, to use bold braces and lime color, non-bold, italics keywords the
+following command would be used:
+
+	perltidy -html -hbs -hck=00FF00 -nhbk -hik somefile.pl
 
 The background color can be specified with B<-html-color-background=n>,
 or B<-hcbg=n> for short, where n is a 6 character hex RGB value.  The
@@ -225,7 +228,7 @@ perltidy(1)
 
 =head1 VERSION
 
-This man page documents perltidy version 20010617.
+This man page documents perltidy version 20010625.
 
 =head1 AUTHOR
 
