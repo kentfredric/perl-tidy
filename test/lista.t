@@ -47,6 +47,15 @@ map( $matchwords{ join "", sort split //, $_ } = $_, 'cig',
   = @_;
 
 {
+    # a ragged list
+    return $c->create(
+        'polygon', $x, $y,
+        $x + $rinfo->{size},
+        $y + $rinfo->{size},
+        $x - $rinfo->{size},
+        $y + $rinfo->{size}
+    );
+
     # long last term
     glpcOpenWindow(
         $p{'x'},      $p{'y'},      $p{'width'},

@@ -5,6 +5,23 @@
  suggested improvement, please send a note to perltidy at
  users.sourceforge.net.  
 
+ -Lists which do not format well in uniform columns are now better
+  identified and formated.
+
+    OLD:
+    return $c->create( 'polygon', $x, $y, $x + $ruler_info{'size'},
+        $y + $ruler_info{'size'}, $x - $ruler_info{'size'},
+        $y + $ruler_info{'size'} );
+
+    NEW:
+    return $c->create(
+        'polygon', $x, $y,
+        $x + $ruler_info{'size'},
+        $y + $ruler_info{'size'},
+        $x - $ruler_info{'size'},
+        $y + $ruler_info{'size'}
+    );
+
  -Output file permissons are now set as follows.  An output script file
   gets the same permission as the input file, except that owner
   read/write permission is added (otherwise, perltidy could not be
