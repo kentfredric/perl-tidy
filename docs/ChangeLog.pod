@@ -46,6 +46,15 @@
                   }
                   : { a => 6, b => 8 };
 
+    OLD: (-gnu):
+    $self->note($self->{skip} ? "Hunk #$self->{hunk} ignored at 1.\n" :
+                "Hunk #$self->{hunk} failed--$@");
+
+    NEW: (-gnu):
+    $self->note($self->{skip} 
+                ? "Hunk #$self->{hunk} ignored at 1.\n"
+                : "Hunk #$self->{hunk} failed--$@");
+
     OLD:
         $which_search =
           $opts{"t"} ? 'title'   :
@@ -64,7 +73,8 @@
 
  -Tokenizer updated to do syntax checking for matched ?/: pairs.  Also,
  the tokenizer now outputs a unique serial number for every balanced
- pair of brace types and ?/: pairs.
+ pair of brace types and ?/: pairs.  This greatly simplifies the
+ formatter.
 
  -Long lines with repeated 'and', 'or', '&&', '||'  will now have
  one such item per line.  For example:
@@ -169,6 +179,17 @@
  For example, 
    old: $$< 700 
    new: $$ < 700
+
+ -Improved line break choices 'and' and 'or' to display logic better.
+ For example:
+
+    OLD:
+        exists $self->{'build_dir'} and push @e,
+          "Unwrapped into directory $self->{'build_dir'}";
+
+    NEW:
+        exists $self->{'build_dir'}
+          and push @e, "Unwrapped into directory $self->{'build_dir'}";
 
  -Fixed error of multiple use of abbreviatioin '-dsc'.  -dsc remains 
  abbreviation for delete-side-comments; -dsm is new abbreviation for 
