@@ -15,6 +15,23 @@ push @allowed, $_
     foreach (@extn_hints) { print "$_ "; }
     if ($text) { write_text_block( $text, $is_head ); $text = (); $is_head = 0; }
 
+    TRY: {
+        if ( $startname ne '' && $zielname ne '' ) {
+            last TRY
+              if (
+                (
+                    ( defined $via2 && $via2 ne '' )
+                    || ( defined $via && $via ne '' )
+                )
+                && ( !defined $vianame || $vianame eq '' )
+              );
+            warn "Wähle Kreuzung für $startname und $zielname\n"
+              if $debug;
+            get_kreuzung( $startname, $vianame, $zielname );
+            return;
+        }
+    }
+
     # want 'if' on a new line:
     $w = $w->Subwidget('frame')
       if (
@@ -27,6 +44,40 @@ push @allowed, $_
 				|size
 				|slaves)$/x
       );
+
+{
+        if (
+            -f (
+                $libperl = $self->catfile(
+                    $Config{'installarchlib'}, 'CORE',
+                    "libperl$self->{LIB_EXT}"
+                )
+            )
+          )
+        {
+        }
+
+        #  a complex if with comments
+        if (
+            (
+
+                # If the y is between the (y-) borders ...
+                ( ( $y[$i] <= $y ) && ( $y < $y[$j] ) )
+                || ( ( $y[$j] <= $y ) && ( $y < $y[$i] ) )
+            )
+            and
+
+            # ...the (x,y) to infinity line crosses the edge
+            # from the ith point to the jth point...
+            (
+                $x <
+                ( $x[$j] - $x[$i] ) * ( $y - $y[$i] ) / ( $y[$j] - $y[$i] ) +
+                $x[$i]
+            )
+          )
+        {
+        }
+}
 }
 
 # some nested if statements

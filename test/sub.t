@@ -7,6 +7,11 @@ MakeVariables
     local(*FILE_HANDLE);
 }
 
+# constant function followed by '()'
+sub usage();
+usage();
+usage ();
+
 # 'package' variations
 package    # hide this package from CPAN indexer
   Win32::ODBC;

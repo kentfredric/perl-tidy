@@ -32,6 +32,18 @@ map( $matchwords{ join "", sort split //, $_ } = $_, 'cig',
   = @_;
 
 {
+    # long last term
+    glpcOpenWindow(
+        $p{'x'},      $p{'y'},      $p{'width'},
+        $p{'height'}, $p{'parent'}, $p{'mask'},
+        @{ $p{'attributes'} }
+    );
+
+    my @alphabet = (
+        'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+        'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
+    );
+
     (
       $key,    $date, $check, $desc,    $debit,
       $credit, $cat,  $com,   $cleared, $total

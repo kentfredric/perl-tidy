@@ -61,7 +61,7 @@ use vars qw{
 use IO::File;
 
 BEGIN {
-    ($VERSION=q($Id: perltidy,v 1.85 2002/01/19 01:41:45 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ($VERSION=q($Id: perltidy,v 1.86 2002/01/24 02:16:04 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 # Preloaded methods go here.
@@ -1822,7 +1822,11 @@ sub close_input_file {
 }
 
 sub make_temporary_filename {
-    use POSIX qw(tmpnam);
+    eval "use POSIX qw(tmpnam)";
+    if ($@) {
+        print STDERR "Couldn't find POSIX.pm : use -nsyn\n";
+        return (undef, "(missing POSIX)");
+    }
     use IO::File;
     my ( $name, $fh );
     for ( 0 .. 9 ) {
@@ -1967,7 +1971,11 @@ sub close_tee_file {
 }
 
 sub make_temporary_filename {
-    use POSIX qw(tmpnam);
+    eval "use POSIX qw(tmpnam)";
+    if ($@) {
+        print STDERR "Couldn't find POSIX.pm : rerun with -nsyn\n";
+        return (undef, "(missing POSIX)");
+    }
     use IO::File;
     my ( $name, $fh );
     for ( 0 .. 9 ) {
@@ -5178,6 +5186,13 @@ sub set_white_space_flag {
             elsif ( $last_type eq 'i' && $last_token =~ /^[\$\%\@]/ ) {
                 $ws = WS_YES;
             }
+
+            # BUBBA:
+            # allow constant function followed by '()' to retain no space
+            # Note: could also use WS_NO here if desirable.
+            elsif ($last_type eq 'C' && $$rtokens[$j+1] eq ')') {;
+                    $ws = WS_OPTIONAL;
+            }
         }
 
         # keep space between 'sub' and '{' for anonymous sub definition
@@ -5625,7 +5640,7 @@ sub set_white_space_flag {
          /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
      Examples:
        *VERSION = \'1.01';
-       ( $VERSION ) = '$Revision: 1.85 $ ' =~ /\$Revision:\s+([^\s]+)/;
+       ( $VERSION ) = '$Revision: 1.86 $ ' =~ /\$Revision:\s+([^\s]+)/;
      We will pass such a line straight through (by changing it
      to a quoted string) unless -npvl is used
     
@@ -5634,7 +5649,7 @@ sub set_white_space_flag {
      block sequence numbers may see a closing sequence number but not
      the corresponding opening sequence number (sidecmt.t).  Example:
 
-    my $VERSION = do { my @r = (q$Revision: 1.85 $ =~ /\d+/g); sprintf
+    my $VERSION = do { my @r = (q$Revision: 1.86 $ =~ /\d+/g); sprintf
     "%d."."%02d" x $#r, @r }; 
 
     Here, the opening brace of 'do {' will not be seen, while the closing
@@ -8978,8 +8993,6 @@ sub pad_array_to_go {
                 $rand_or_list[$depth]                  = [];
                 $rfor_semicolon_list[$depth]           = [];
                 $want_comma_break[$depth]              = 0;
-
-                # we want to remember keywords my, local, our
                 $container_type[$depth] =
                   ( $last_nonblank_type =~ /^(k|=>|&&|\|\||\?|\:|\.)$/ )
                   ? $last_nonblank_token
@@ -9571,8 +9584,8 @@ sub find_token_starting_list {
     @is_keyword_with_special_leading_term{@_} = (1) x scalar(@_);
 
     # These keywords have prototypes which allow a list
-    push @_, qw(my local our);
-    @is_keyword_with_list{@_} = (1) x scalar(@_);
+##    push @_, qw(my local our);
+##    @is_keyword_with_list{@_} = (1) x scalar(@_);
 
     sub set_comma_breakpoints_do {
 
@@ -9717,18 +9730,19 @@ sub find_token_starting_list {
             $i_effective_last_comma = $max_index_to_go - 1;
         }
 
-        # Specify if the list must have an even number of fields or not.  It
-        # is generally safest in perl to assume an even number, because the
-        # list items might be a hash list.  But if we can be sure that it is
-        # not a hash, then we can allow an odd number for more flexibility.
+        # Specify if the list must have an even number of fields or not.  It is
+        # generally safest to assume an even number, because the list items
+        # might be a hash list.  But if we can be sure that it is not a hash,
+        # then we can allow an odd number for more flexibility.
         my $odd_or_even = 2;    # 1 = odd field count ok, 2 = want even count
-        ##if ( $list_type =~ /^(my|local|our|printf|sprintf|push|map|join|grep|pack)$/
-        if ( $is_keyword_with_list{$list_type} || $next_nonblank_type eq '=' ) {
+
+        if ( $identifier_count >= $item_count - 1  
+            || $next_nonblank_type eq '='
+            || ( $list_type && $list_type ne '=>' && $list_type !~ /^[\:\?]$/ )
+          )
+        {
             $odd_or_even = 1;
         }
-        if ( $identifier_count == $comma_count ) {
-            $odd_or_even = 1;
-        }                       # seems safe
 
         # do we have a long first term which should be
         # left on a line by itself?
@@ -9741,14 +9755,13 @@ sub find_token_starting_list {
               2 * $max_length[1] - 2    # need long first term
         );
 
-        # BUBBA: TESTING!
+        # or do we know from the type of list that the first term should
+        # be placed alone? 
         if ( !$use_separate_first_term ) {
-            if (
-                $is_keyword_with_special_leading_term{$list_type}
-                ##$list_type =~ /^(formline|grep|kill|map|printf|sprintf|push|chmod|join|pack|unshift)$/
-              )
-            {
+            if ( $is_keyword_with_special_leading_term{$list_type} ) {
                 $use_separate_first_term = 1;
+
+                # should the container be broken open?
                 if ( $item_count < 3 ) {
                     $$rdo_not_break_apart = 1;
                 }
@@ -14994,35 +15007,20 @@ sub reset_indentation_level {
             $paren_type[$paren_depth] = $container_type;
             $type_sequence = increase_nesting_depth( PAREN, $i_tok );
 
-            #-------------------------------------------------------------
-            # FUTURE UPDATE: give almost all parens full indentation.
-            # parens are trouble because the user is free to add almost
-            # as many as desired, even if they are not necessary.   And
-            # they can be misleading, because perl flattens lists.
-            #$type = '{';
-            #-------------------------------------------------------------
-
-            #print "at '(' i=$i last_type=$last_nonblank_type last_tok=$last_nonblank_token\n";
-
-            if ( $context == LIST_CONTEXT && $last_nonblank_token eq '=' ) {
-                $type = '{';
-            }
-
             # propagate types down through nested parens
             # for example: the second paren in 'if ((' would be structural
             # since the first is.
 
-            elsif ( $last_nonblank_token eq '(' ) {
+            if ( $last_nonblank_token eq '(' ) {
                 $type = $last_nonblank_type;
             }
 
-            # make most lists structural, including
-            # sub call parameter lists and &&, ||, !
-
 =pod
-                NOTE: type ',' is not here because it causes subtle
-                problems with continuation indentation for something 
-                like this, where the first 'or' will not get indented.
+
+                We exclude parens as structural after a ',' because it
+                causes subtle problems with continuation indentation for
+                something like this, where the first 'or' will not get
+                indented.
 
                     assert(
                         __LINE__,
@@ -15031,23 +15029,25 @@ sub reset_indentation_level {
                           or $check eq "new"
                           or $check eq "old",
                     );
+
+                Likewise, we exclude parens where a statement can start
+                because of problems with continuation indentation, like
+                these:
+
+                    ($firstline =~ /^#\!.*perl/)
+                    and (print $File::Find::name, "\n")
+                      and (return 1);
+
+                    (ref($usage_fref) =~ /CODE/) 
+                    ? &$usage_fref
+                      : (&blast_usage, &blast_params, &blast_general_params);
+
 =cut
 
-            # TESTING: added '.' and '=' and F
-            elsif ( $last_nonblank_type =~ /^([xwiZUF!=\?:\.]|\|\||\&\&)$/ ) {
+            elsif ( $last_nonblank_type ne ',' && !new_statement_ok() ) {
                 $type = '{';
             }
 
-            ############################################
-            # TESTING:
-            ##elsif ( $last_nonblank_type !~ /^[,]$/ ) {
-            ##    $type = '{';
-            ##}
-            ############################################
-
-            # paren after keyword..
-            # map1.t
-            elsif ( $last_nonblank_type eq 'k' ) { $type = '{' }
 
             if ( $last_nonblank_type eq ')' ) {
                 warning(
@@ -15065,7 +15065,8 @@ sub reset_indentation_level {
             }
 
             $container_type = $paren_type[$paren_depth];
-            ##if ( $paren_type[$paren_depth] =~ /^(for|foreach)$/ ) {
+            
+            #    /^(for|foreach)$/
             if ( $is_for_foreach{ $paren_type[$paren_depth] } ) {
                 my $num_sc = $paren_semicolon_count[$paren_depth];
                 if ( $num_sc > 0 && $num_sc != 2 ) {
@@ -15088,7 +15089,7 @@ sub reset_indentation_level {
             $context        = UNKNOWN_CONTEXT;
             $statement_type = '';
 
-            ##if ( $paren_type[$paren_depth] =~ /^(for|foreach)$/ )
+            #    /^(for|foreach)$/ 
             if ( $is_for_foreach{ $paren_type[$paren_depth] } )
             {    # mark ; in for loop
 
@@ -15561,12 +15562,7 @@ sub reset_indentation_level {
     @_ = qw(sub package);
     @is_sub_package{@_} = (1) x scalar(@_);
 
-##    my %is_format_END_DATA
-##    @_ = qw(format __END__ __DATA__ );
-##    @is_format_END_DATA{@_} = (1) x scalar(@_);
-##
-
-    # This hash olds the hash key in $tokenizer_self for these keywords:
+    # This hash holds the hash key in $tokenizer_self for these keywords:
     my %is_format_END_DATA = (
         'format'   => '_in_format',
         '__END__'  => '_in_end',
@@ -15924,7 +15920,6 @@ EOM
             # but do not start on blanks and comments
             if ( $id_scan_state && $pre_type !~ /[b#]/ ) {
 
-                ## BUBBA: FIXME : need ^ or $ here?
                 if ( $id_scan_state =~ /^(sub|package)/ ) {
                     scan_id();
                 }
@@ -16190,7 +16185,6 @@ EOM
                     # Since for and foreach may not be followed immediately
                     # by an opening paren, we have to remember which keyword
                     # is associated with the next '('
-                    ##if ( $tok eq 'for' || $tok eq 'foreach' ) {
                     if ( $is_for_foreach{$tok} ) {
                         if ( new_statement_ok() ) {
                             $want_paren = $tok;
@@ -16198,7 +16192,6 @@ EOM
                     }
 
                     # recognize 'use' statements, which are special
-                    ##elsif ( $tok eq 'use' || $tok eq 'require' ) {
                     elsif ( $is_use_require{$tok} ) {
                         $statement_type = $tok;
                         error_if_expecting_OPERATOR()
@@ -16207,7 +16200,7 @@ EOM
                 }
 
                 # check for inline label following 
-                #   /^(redo|last|next|goto)$/ 
+                #         /^(redo|last|next|goto)$/ 
                 elsif ( ( $last_nonblank_type eq 'k' )
                     && ( $is_redo_last_next_goto{$last_nonblank_token} ) )
                 {
