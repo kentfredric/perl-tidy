@@ -1,3 +1,22 @@
+    # Note the missing semicolon at the end; currently this will not
+    # be added because this is a map block.
+    return map {
+        my $tmp = substr( $$_, $l );
+        $tmp =~ s/^\s+//;
+        $tmp
+    } @{ $me->{'mail_hdr_hash'}{$tag} };
+
+    # A modification has been made to prevent a semicolon from being added:
+    my @ciphertext = map {
+        chr(
+            ( ord($_) + ord( $motcle[ $i++ % @motcle ] ) - 2 * 97 ) % 26 + 97 )
+    } split ( //, $plaintext );
+
+    # (one line block - no semicolon would be added here):
+    my @plaintext =
+      map { chr( ( ord($_) - ord( $motcle[ $i++ % @motcle ] ) ) % 26 + 97 ) }
+      split ( //, $ciphertext );
+
     # These can be difficiult to break well
     push ( @{"${pkg}::$var"}, map { $eort_tags{$_} ? @{ $export_tags{$_} } : scalar( ++$nontag, $_ ); } (@$syms) ? @$syms : keys %export_tags );
 

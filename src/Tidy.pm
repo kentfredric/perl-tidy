@@ -61,7 +61,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ($VERSION=q($Id: Tidy.pm,v 1.7 2002/03/02 05:38:51 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ($VERSION=q($Id: Tidy.pm,v 1.8 2002/03/08 00:54:02 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 # Preloaded methods go here.
@@ -379,8 +379,27 @@ EOM
             $Windows_type,      $rpending_complaint
           );
 
+        # there must be one entry here for every possible format
+        my %default_file_extension = (
+            tidy => 'tdy',
+            html => 'html',
+            user => '',
+        );
+
+        # be sure we have a valid output format
+        unless ( exists $default_file_extension{ $rOpts->{'format'} } ) {
+            my $formats = join ' ',
+              sort map { "'" . $_ . "'" } keys %default_file_extension;
+            die "-format='$rOpts->{format}' but must be one of: $formats\n";
+        }
+
+        my $output_extension = $default_file_extension{ $rOpts->{'format'} };
+        if ( defined( $rOpts->{'output-file-extension'} ) ) {
+            $output_extension = $rOpts->{'output-file-extension'};
+        }
+
         Perl::Tidy::Formatter::check_options($rOpts);
-        if ( $rOpts->{'html'} ) {
+        if ( $rOpts->{'format'} eq 'html' ) {
             Perl::Tidy::HtmlWriter->check_options($rOpts);
         }
 
@@ -420,6 +439,7 @@ EOM
 
         while ( $input_file = shift @ARGV ) {
             my $fileroot;
+            my $input_file_permissions;
 
             #---------------------------------------------------------------
             # determine the input file name
@@ -463,7 +483,8 @@ EOM
                 }
 
                 # we should have a valid filename now
-                $fileroot = $input_file;
+                $fileroot               = $input_file;
+                $input_file_permissions = ( stat $input_file )[2] & 07777;
 
                 if ( $^O eq 'VMS' ) {
                     ( $fileroot, $dot ) = check_vms_filename($fileroot);
@@ -497,11 +518,6 @@ EOM
             # because this can lead to a messy situation
             # with files like script.tdy.tdy.tdy ... when you rerun
             # perltidy over and over with wildcard input
-            my $output_extension = $rOpts->{'html'} ? "html" : "tdy";
-            if ( defined( $rOpts->{'output-file-extension'} ) ) {
-                $output_extension = $rOpts->{'output-file-extension'};
-            }
-
             if (
                 !$source_stream
                 && ( $input_file =~
@@ -611,32 +627,37 @@ EOM
             #---------------------------------------------------------------
             # create a formatter for this file : html writer or pretty printer
             #---------------------------------------------------------------
+
+            # we have to delete any old formatter because, for safety, 
+            # the formatter will check to see that there is only one.
+            $formatter = undef;
+
             if ($user_formatter) {
                 $formatter = $user_formatter;
             }
-
-            elsif ( $rOpts->{'html'} ) {
-                $formatter = undef;
+            elsif ( $rOpts->{'format'} eq 'html' ) {
                 $formatter =
                   Perl::Tidy::HtmlWriter->new( $fileroot, $output_file );
             }
-
-            else {
-
-                # we have to delete any old formatter because, for safety, 
-                # formatter will check to see that there is only one.
-                $formatter = undef;
+            elsif ( $rOpts->{'format'} eq 'tidy' ) {
                 $formatter = Perl::Tidy::Formatter->new(
                     logger_object      => $logger_object,
                     diagnostics_object => $diagnostics_object,
                     sink_object        => $sink_object,
                 );
             }
+            else {
+                die "I don't know how to do -format=$rOpts->{'format'}\n";
+            }
+
+            unless ($formatter) {
+                die "Unable to continue with $rOpts->{'format'} formatting\n";
+            }
 
             #---------------------------------------------------------------
             # create the tokenizer for this file
             #---------------------------------------------------------------
-            $tokenizer = undef;
+            $tokenizer = undef;                     # must destroy old tokenizer
             $tokenizer = Perl::Tidy::Tokenizer->new(
                 source_object       => $source_object,
                 logger_object       => $logger_object,
@@ -665,7 +686,20 @@ EOM
 
             my $infile_syntax_ok = 0;    # -1 no  0=don't know   1 yes
             if ($output_file) {
-                chmod 0755, $output_file;
+
+                ##chmod 0755, $output_file;
+                if ($input_file_permissions) {
+
+                    # give output script same permissions as input script, but
+                    # make it user-writable or else we can't run perltidy again.
+                    # Thus we retain whatever executable flags were set.
+                    if ( $rOpts->{'format'} eq 'tidy' ) {
+                        chmod( $input_file_permissions | 0600, $output_file );
+                    }
+
+                    # else use default permissions for html and any other format
+
+                }
                 if ( $logger_object && $rOpts->{'check-syntax'} ) {
                     my $ifname = $source_object->get_input_file_copy_name();
                     my $ofname = $sink_object->get_output_file_copy();
@@ -737,9 +771,11 @@ sub process_command_line {
     # and debugging. 
     #
     # xsc --> maximum-space-to-comment    # UNUSED
-    # fll --> fuzzy-line-length           # trivial parameter
+    # fll --> fuzzy-line-length           # a trivial parameter which gets
+    #                                       turned off for the extrude option
+    #                                       which is mainly for debugging
     # iob --> ignore-old-line-breaks      # do not follow breaks in old script
-    # tdy --> tidy-output                 # This is an internal flag
+    #                                     #    might be useful in the future
     # chk --> check-multiline-quotes      # check for old bug; to be deleted
     # mci --> maximum-continuation-indentation  # UNUSED
     # scl --> short-concatenation-item-length   # helps break at '.'
@@ -851,6 +887,7 @@ sub process_command_line {
     $add_option->( 'dump-want-right-space',             'dwrs',  '!' );
     $add_option->( 'entab-leading-whitespace',          'et',    '=i' );
     $add_option->( 'force-read-binary',                 'f',     '!' );
+    $add_option->( 'format',                            'fmt',   '=s' );
     $add_option->( 'fuzzy-line-length',                 'fll',   '!' );
     $add_option->( 'hanging-side-comments',             'hsc',   '!' );
     $add_option->( 'help',                              'h',     '' );
@@ -907,7 +944,6 @@ sub process_command_line {
     $add_option->( 'tee-block-comments',                'tbc',   '!' );
     $add_option->( 'tee-pod',                           'tp',    '!' );
     $add_option->( 'tee-side-comments',                 'tsc',   '!' );
-    $add_option->( 'tidy-output',                       'tdy',   '!' );
     $add_option->( 'trim-qw',                           'tqw',   '!' );
     $add_option->( 'version',                           'v',     '' );
     $add_option->( 'want-break-after',                  'wba',   '=s' );
@@ -976,8 +1012,8 @@ sub process_command_line {
       space-for-semicolon
       square-bracket-tightness=1
       static-block-comments
-      tidy-output
       trim-qw
+      format=tidy
     );
     push @defaults, "perl-syntax-check-flags=-c -T";
 
@@ -1025,7 +1061,9 @@ sub process_command_line {
           [qw(notee-block-comments notee-side-comments notee-pod)],
         'tac'   => [qw(tee-all-comments)],
         'ntac'  => [qw(notee-all-comments)],
-        'nhtml' => [qw(nohtml)],
+        'html'  => [qw(format=html)],
+        'nhtml' => [qw(format=tidy)],
+        'tidy'  => [qw(format=tidy)],
 
         # 'mangle' originally deleted pod and comments, but to keep it
         # reversible, it no longer does.  But if you really want to
@@ -1292,13 +1330,8 @@ EOM
         $Opts{'check-syntax'} = 0;
     }
 
-    # either html output or tidy output, not both
-    if ( $Opts{'html'} ) {
-        $Opts{'tidy-output'} = 0;
-    }
-
     # can't check syntax if no output
-    if ( !$Opts{'tidy-output'} ) {
+    if ( $Opts{'format'} ne 'tidy' ) {
         $Opts{'check-syntax'} = 0;
     }
 
@@ -1441,8 +1474,8 @@ sub expand_command_abbreviations {
                     # stuff all of the words that it expands to into the
                     # new arg list for the next pass
                     foreach my $abbrev ( @{ $rexpansion->{$abr} } ) {
-                        next unless $abbrev;  # for safety; shouldn't happen
-                        push ( @new_argv, '--' . $abbrev . $flags ); 
+                        next unless $abbrev;    # for safety; shouldn't happen
+                        push ( @new_argv, '--' . $abbrev . $flags );
                     }
                 }
 
@@ -1561,7 +1594,7 @@ sub Win_OS_Type {
 
     return "win32s" unless $id;           # If id==0 then its a win32s box.
     my $os = {                            # Magic numbers from MSDN
-            #documentation of GetOSVersion
+                                          #documentation of GetOSVersion
         1 => {
             0  => "95",
             10 => "98",
@@ -2367,7 +2400,7 @@ sub new {
     my $output_file_copy = "";
     my $output_file_open = 0;
 
-    if ( $rOpts->{'tidy-output'} ) {
+    if ( $rOpts->{'format'} eq 'tidy' ) {
         ( $fh, $output_file ) = Perl::Tidy::streamhandle( $output_file, 'w' );
         unless ($fh) { die "Cannot write to output stream\n"; }
         $output_file_open = 1;
@@ -3665,6 +3698,7 @@ use vars qw{
   $leading_block_if_elsif_text
   $leading_block_text_level
   $leading_block_text_length_exceeded
+  $leading_block_text_line_length
   $leading_block_text_line_number
   $closing_side_comment_prefix_pattern
   $closing_side_comment_list_pattern
@@ -3684,6 +3718,9 @@ use vars qw{
   %is_else_brace_follower
   %is_anon_sub_brace_follower
   %is_anon_sub_1_brace_follower
+  %is_sort_map_grep
+  %is_sort_map_grep_eval
+  %is_block_without_semicolon
 
   @has_broken_sublist
   @dont_align
@@ -3709,6 +3746,7 @@ use vars qw{
   $rOpts_add_whitespace
   $rOpts_brace_left_and_indent
   $rOpts_break_after_comma_arrows
+  $rOpts_closing_side_comment_maximum_text
   $rOpts_continuation_indentation
   $rOpts_cuddled_else
   $rOpts_delete_old_whitespace
@@ -3765,6 +3803,17 @@ BEGIN {
       split
     );
     @is_keyword_returning_list{@_} = (1) x scalar(@_);
+
+    @_ = qw(sort map grep);
+    @is_sort_map_grep{@_} = (1) x scalar(@_);
+
+    @_ = qw(sort map grep eval);
+    @is_sort_map_grep_eval{@_} = (1) x scalar(@_);
+
+    # We can remove semicolons after blocks preceded by these keywords
+    @_ = qw(BEGIN END CHECK INIT AUTOLOAD DESTROY continue if elsif else
+      unless while until for foreach);
+    @is_block_without_semicolon{@_} = (1) x scalar(@_);
 
     # 'L' is token for opening { at hash key
     @_ = qw" L { ( [ ";
@@ -3955,10 +4004,10 @@ sub new {
     %postponed_breakpoint       = ();
 
     # variables for adding side comments
-    %block_leading_text        = ();
-    %block_leading_if_elsif_text  = ();
-    %block_opening_line_number = ();
-    $csc_new_statement_ok      = 1;
+    %block_leading_text          = ();
+    %block_leading_if_elsif_text = ();
+    %block_opening_line_number   = ();
+    $csc_new_statement_ok        = 1;
 
     %saved_opening_indentation = ();
 
@@ -5058,6 +5107,8 @@ EOM
     $rOpts_block_brace_tightness    = $rOpts->{'block-brace-tightness'};
     $rOpts_brace_left_and_indent    = $rOpts->{'brace-left-and-indent'};
     $rOpts_break_after_comma_arrows = $rOpts->{'break-after-comma-arrows'};
+    $rOpts_closing_side_comment_maximum_text =
+      $rOpts->{'closing-side-comment-maximum-text'};
     $rOpts_continuation_indentation = $rOpts->{'continuation-indentation'};
     $rOpts_cuddled_else             = $rOpts->{'cuddled-else'};
     $rOpts_delete_old_whitespace    = $rOpts->{'delete-old-whitespace'};
@@ -5251,110 +5302,132 @@ EOM
     }
 }
 
-sub is_essential_whitespace {
+{
 
-    # Essential whitespace means whitespace which cannot be safely deleted.
-    # We are given three tokens and their types:
-    # ($tokenl, $typel) is the token to the left of the space in question
-    # ($tokenr, $typer) is the token to the right of the space in question
-    # ($tokenll, $typell) is previous nonblank token to the left of $tokenl
-    #
-    # This is a slow routine but is needed too often except when -mangle
-    # is used.
-    my ( $tokenll, $typell, $tokenl, $typel, $tokenr, $typer ) = @_;
+    my %is_sort_grep_map;
+    my %is_for_foreach;
 
-    # never combine two bare words or numbers
-    my $result = ( ( $tokenr =~ /^[\'\w]/ ) && ( $tokenl =~ /[\'\w]$/ ) )
+    BEGIN {
 
-      # do not combine a number with a concatination dot
-      # example: pom.caputo:
-      # $vt100_compatible ? "\e[0;0H" : ('-' x 78 . "\n");
-      || ( ( $typel eq 'n' ) && ( $tokenr eq '.' ) )
-      || ( ( $typer eq 'n' ) && ( $tokenl eq '.' ) )
+        @_ = qw(sort grep map);
+        @is_sort_grep_map{@_} = (1) x scalar(@_);
 
-      # do not join a minus with a bare word, because you might form
-      # a file test operator.  Example from Complex.pm:
-      # if (CORE::abs($z - i) < $eps); "z-i" would be taken as a file test.
-      || ( ( $tokenl eq '-' ) && ( $tokenr =~ /^[_A-Za-z]$/ ) )
+        @_ = qw(for foreach);
+        @is_for_foreach{@_} = (1) x scalar(@_);
 
-      # and something like this could become ambiguous without space
-      # after the '-':
-      #   use constant III=>1;
-      #   $a = $b - III;
-      # and even this:
-      #   $a = - III;
-      || ( ( $tokenl eq '-' )
-        && ( $typer =~ /^[wC]$/ && $tokenr =~ /^[_A-Za-z]/ ) )
+    }
 
-      # '= -' should not become =- or you will get a warning
-      # about reversed -=
-      # || ($tokenr eq '-')
+    sub is_essential_whitespace {
 
-      # keep a space between a quote and a bareword to prevent the
-      # bareword from becomming a quote modifier.
-      || ( ( $typel eq 'Q' ) && ( $tokenr =~ /^[a-zA-Z_]/ ) )
+        # Essential whitespace means whitespace which cannot be safely deleted.
+        # We are given three tokens and their types:
+        # ($tokenl, $typel) is the token to the left of the space in question
+        # ($tokenr, $typer) is the token to the right of the space in question
+        # ($tokenll, $typell) is previous nonblank token to the left of $tokenl
+        #
+        # This is a slow routine but is needed too often except when -mangle
+        # is used.
+        my ( $tokenll, $typell, $tokenl, $typel, $tokenr, $typer ) = @_;
 
-      # perl is very fussy about spaces before <<
-      || ( $tokenr =~ /^\<\</ )
+        # never combine two bare words or numbers
+        my $result = ( ( $tokenr =~ /^[\'\w]/ ) && ( $tokenl =~ /[\'\w]$/ ) )
 
-      # avoid combining tokens to create new meanings. Example:
-      #     $a+ +$b must not become $a++$b
-      || ( $is_digraph{ $tokenl . $tokenr } )
-      || ( $is_trigraph{ $tokenl . $tokenr } )
+          # do not combine a number with a concatination dot
+          # example: pom.caputo:
+          # $vt100_compatible ? "\e[0;0H" : ('-' x 78 . "\n");
+          || ( ( $typel eq 'n' ) && ( $tokenr eq '.' ) )
+          || ( ( $typer eq 'n' ) && ( $tokenl eq '.' ) )
 
-      # another example: do not combine these two &'s:
-      #     allow_options & &OPT_EXECCGI
-      || ( $is_digraph{ $tokenl . substr( $tokenr, 0, 1 ) } )
+          # do not join a minus with a bare word, because you might form
+          # a file test operator.  Example from Complex.pm:
+          # if (CORE::abs($z - i) < $eps); "z-i" would be taken as a file test.
+          || ( ( $tokenl eq '-' ) && ( $tokenr =~ /^[_A-Za-z]$/ ) )
 
-      # don't combine $$ or $# with any alphanumeric
-      # (testfile mangle.t with --mangle)
-      || ( ( $tokenl =~ /^\$[\$\#]$/ ) && ( $tokenr =~ /^\w/ ) )
+          # and something like this could become ambiguous without space
+          # after the '-':
+          #   use constant III=>1;
+          #   $a = $b - III;
+          # and even this:
+          #   $a = - III;
+          || ( ( $tokenl eq '-' )
+            && ( $typer =~ /^[wC]$/ && $tokenr =~ /^[_A-Za-z]/ ) )
 
-      # retain any space after possible filehandle
-      # (testfiles prnterr1.t with --extrude and mangle.t with --mangle)
-      || ( $typel eq 'Z' || $typell eq 'Z' )
+          # '= -' should not become =- or you will get a warning
+          # about reversed -=
+          # || ($tokenr eq '-')
 
-      # keep any space between filehandle and paren:
-      # file mangle.t with --mangle:
-      || ( $typel eq 'Y' && $tokenr eq '(' )
+          # keep a space between a quote and a bareword to prevent the
+          # bareword from becomming a quote modifier.
+          || ( ( $typel eq 'Q' ) && ( $tokenr =~ /^[a-zA-Z_]/ ) )
 
-      # retain any space after here doc operator ( hereerr.t)
-      || ( $typel eq 'h' )
+          # perl is very fussy about spaces before <<
+          || ( $tokenr =~ /^\<\</ )
 
-      # FIXME: this needs some further work; extrude.t has test cases
-      # it is safest to retain any space after start of ? : operator
-      # because of perl's quirky parser. 
-      # ie, this line will fail if you remove the space after the '?':
-      #    $b=join $comma ? ',' : ':', @_;   # ok
-      #    $b=join $comma ?',' : ':', @_;   # error!
-      # but this is ok :)
-      #    $b=join $comma?',' : ':', @_;   # not a problem!
-      ## || ($typel eq '?')
+          # avoid combining tokens to create new meanings. Example:
+          #     $a+ +$b must not become $a++$b
+          || ( $is_digraph{ $tokenl . $tokenr } )
+          || ( $is_trigraph{ $tokenl . $tokenr } )
 
-      # be careful with a space around ++ and --, to avoid ambiguity as to
-      # which token it applies
-      || ( ( $typer =~ /^(pp|mm)$/ )     && ( $tokenl !~ /^[\;\{\(\[]/ ) )
-      || ( ( $typel =~ /^(\+\+|\-\-)$/ ) && ( $tokenr !~ /^[\;\}\)\]]/ ) )
+          # another example: do not combine these two &'s:
+          #     allow_options & &OPT_EXECCGI
+          || ( $is_digraph{ $tokenl . substr( $tokenr, 0, 1 ) } )
 
-      # need space after foreach my; for example, this will fail in
-      # older versions of Perl:
-      # foreach my$ft(@filetypes)...
-      || ( $tokenl eq 'my'
-        && $tokenll =~ /^(for|foreach)$/
-        && $tokenr  =~ /^\$/ )
+          # don't combine $$ or $# with any alphanumeric
+          # (testfile mangle.t with --mangle)
+          || ( ( $tokenl =~ /^\$[\$\#]$/ ) && ( $tokenr =~ /^\w/ ) )
 
-      # must have space between grep and left paren; "grep(" will fail
-      || ( $tokenr eq '(' && $tokenl =~ /^(sort|grep|map)$/ )
+          # retain any space after possible filehandle
+          # (testfiles prnterr1.t with --extrude and mangle.t with --mangle)
+          || ( $typel eq 'Z' || $typell eq 'Z' )
 
-      # don't stick numbers next to left parens, as in:
-      #use Mail::Internet 1.28 (); (see Entity.pm, Head.pm, Test.pm)
-      || ( ( $typel eq 'n' ) && ( $tokenr eq '(' ) )
+          # keep any space between filehandle and paren:
+          # file mangle.t with --mangle:
+          || ( $typel eq 'Y' && $tokenr eq '(' )
 
-      # don't join something like: for bla::bla:: abc
-      # example is "%overload:: and" in files Dumpvalue.pm or colonbug.pl
-      || ( $tokenl =~ /\:\:$/ && ( $tokenr =~ /^[\'\w]/ ) )
-      ;    # the value of this long logic sequence is the result we want
-    return $result;
+          # retain any space after here doc operator ( hereerr.t)
+          || ( $typel eq 'h' )
+
+          # FIXME: this needs some further work; extrude.t has test cases
+          # it is safest to retain any space after start of ? : operator
+          # because of perl's quirky parser. 
+          # ie, this line will fail if you remove the space after the '?':
+          #    $b=join $comma ? ',' : ':', @_;   # ok
+          #    $b=join $comma ?',' : ':', @_;   # error!
+          # but this is ok :)
+          #    $b=join $comma?',' : ':', @_;   # not a problem!
+          ## || ($typel eq '?')
+
+          # be careful with a space around ++ and --, to avoid ambiguity as to
+          # which token it applies
+          || ( ( $typer =~ /^(pp|mm)$/ )     && ( $tokenl !~ /^[\;\{\(\[]/ ) )
+          || ( ( $typel =~ /^(\+\+|\-\-)$/ ) && ( $tokenr !~ /^[\;\}\)\]]/ ) )
+
+          # need space after foreach my; for example, this will fail in
+          # older versions of Perl:
+          # foreach my$ft(@filetypes)...
+          || (
+            $tokenl eq 'my'
+
+            ##&& $tokenll =~ /^(for|foreach)$/
+            && $is_for_foreach{$tokenll} && $tokenr =~ /^\$/
+          )
+
+          # must have space between grep and left paren; "grep(" will fail
+          ##|| ( $tokenr eq '(' && $tokenl =~ /^(sort|grep|map)$/ )
+
+          #                       /^(sort|grep|map)$/ 
+          || ( $tokenr eq '(' && $is_sort_grep_map{$tokenl} )
+
+          # don't stick numbers next to left parens, as in:
+          #use Mail::Internet 1.28 (); (see Entity.pm, Head.pm, Test.pm)
+          || ( ( $typel eq 'n' ) && ( $tokenr eq '(' ) )
+
+          # don't join something like: for bla::bla:: abc
+          # example is "%overload:: and" in files Dumpvalue.pm or colonbug.pl
+          || ( $tokenl =~ /\:\:$/ && ( $tokenr =~ /^[\'\w]/ ) )
+          ;    # the value of this long logic sequence is the result we want
+        return $result;
+    }
 }
 
 sub set_white_space_flag {
@@ -5662,7 +5735,9 @@ sub set_white_space_flag {
             # At present, the & block is not marked as a code block, so
             # this works:
             if ( $last_type eq '}' ) {
-                if ( $last_block_type =~ /^(sort|map|grep)$/ ) {
+
+                # /^(sort|map|grep)$/ 
+                if ( $is_sort_map_grep{$last_block_type} ) {
                     $ws = WS_YES;
                 }
                 else {
@@ -5675,6 +5750,7 @@ sub set_white_space_flag {
             # something like:
             #   myfun(    &myfun(   ->myfun(
             # -----------------------------------------------------
+            ##print "BUBBA: last_type=$last_type last_token=$last_token\n";
             if ( ( $last_type =~ /^[wkU]$/ )
                 || ( $last_type eq 'i' && $last_token =~ /^(\&|->)/ ) )
             {
@@ -5922,7 +5998,7 @@ sub set_white_space_flag {
             print
 "STORE: from $a $c: storing token $token type $type lev=$level slev=$slevel at $max_index_to_go\n";
         };
-    };
+    }
 
     sub insert_new_token_to_go {
 
@@ -5954,10 +6030,22 @@ sub set_white_space_flag {
 
         my $line_of_tokens = shift;
 
-        # this routine is called once per input line to process all of the
-        # tokens on that line.  Each token is sent to sub store_token_to_go,
-        # which stores them in an output buffer which is dumped whenever
-        # appropriate.
+        # This routine is called once per input line to process all of
+        # the tokens on that line.  This is the first stage of
+        # beautification.
+        #
+        # Full-line comments and blank lines may be processed immediately.
+        #
+        # For normal lines of code, the tokens are stored one-by-one,
+        # via calls to 'sub store_token_to_go', until a known line break
+        # point is reached.  Then, the batch of collected tokens is
+        # passed along to 'sub output_line_to_go' for further
+        # processing.  This routine decides if there should be
+        # whitespace between each pair of non-white tokens, so later
+        # routines only need to decide on any additional line breaks.
+        # Any whitespace is initally a single space character.  Later,
+        # the vertical aligner may expand that to be multiple space
+        # characters if necessary for alignment.
 
         # extract input line number for error messages
         $input_line_number = $line_of_tokens->{_line_number};
@@ -6147,7 +6235,7 @@ sub set_white_space_flag {
          /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
      Examples:
        *VERSION = \'1.01';
-       ( $VERSION ) = '$Revision: 1.7 $ ' =~ /\$Revision:\s+([^\s]+)/;
+       ( $VERSION ) = '$Revision: 1.8 $ ' =~ /\$Revision:\s+([^\s]+)/;
      We will pass such a line straight through (by changing it
      to a quoted string) unless -npvl is used
     
@@ -6156,7 +6244,7 @@ sub set_white_space_flag {
      block sequence numbers may see a closing sequence number but not
      the corresponding opening sequence number (sidecmt.t).  Example:
 
-    my $VERSION = do { my @r = (q$Revision: 1.7 $ =~ /\d+/g); sprintf
+    my $VERSION = do { my @r = (q$Revision: 1.8 $ =~ /\d+/g); sprintf
     "%d."."%02d" x $#r, @r }; 
 
     Here, the opening brace of 'do {' will not be seen, while the closing
@@ -6335,7 +6423,8 @@ sub set_white_space_flag {
 
                 # make note of something like '$var = s/xxx/yyy/;'
                 # in case it should have been '$var =~ s/xxx/yyy/;'
-                if ( $token =~ /^(s|tr|y|m|\/)/
+                if (
+                    $token =~ /^(s|tr|y|m|\/)/
                     && $last_nonblank_token =~ /^(=|==|!=)$/
 
                     # precededed by simple scalar
@@ -6353,9 +6442,10 @@ sub set_white_space_flag {
                     )
                   )
                 {
-                    my $guess = substr($last_nonblank_token,0,1) . '~';
+                    my $guess = substr( $last_nonblank_token, 0, 1 ) . '~';
                     complain(
-"Note: be sure you want '$last_nonblank_token' instead of '$guess' here\n");
+"Note: be sure you want '$last_nonblank_token' instead of '$guess' here\n"
+                    );
                 }
             }
 
@@ -6534,10 +6624,9 @@ sub set_white_space_flag {
                     # there are some tokens
                     if (
                         ( $max_index_to_go > 0 )
-                        &&
 
                         # and we don't have one
-                        ( $last_nonblank_type ne ';' )
+                        && ( $last_nonblank_type ne ';' )
 
                         # patch until some block type issues are fixed:
                         # Do not add semi-colon for block types '{', '}', and ';'
@@ -6545,6 +6634,11 @@ sub set_white_space_flag {
                         # is a block and not an anonomyous hash 
                         # (blktype.t, blktype1.t)
                         && ( $block_type !~ /^[\{\};]$/ )
+
+                        # it seems best not to add semicolons in these
+                        # special block types:
+                        ##&& ( $block_type !~ /^(sort|map|grep)$/)
+                        && ( !$is_sort_map_grep{$block_type} )
 
                         # and we are allowed to do so.
                         && $rOpts->{'add-semicolons'}
@@ -6629,7 +6723,8 @@ sub set_white_space_flag {
                 }
 
                 # added eval for borris.t
-                elsif ( $block_type =~ /^(sort|map|grep|eval)$/ ) {
+                # /^(sort|map|grep|eval)$/
+                elsif ( $is_sort_map_grep_eval{$block_type} ) {
                     $rbrace_follower = undef;
                 }
 
@@ -6673,7 +6768,8 @@ sub set_white_space_flag {
 
                 # keep going after these block types: map,sort,grep
                 # added eval for borris.t
-                if ( $block_type =~ /^(sort|grep|map|eval)$/ ) {
+                ##if ( $block_type =~ /^(sort|grep|map|eval)$/ ) {
+                if ( $is_sort_map_grep_eval{$block_type} ) {
 
                     # keep going
                 }
@@ -6714,13 +6810,21 @@ sub set_white_space_flag {
                 {
                     destroy_one_line_block();
                 }
+                ##&& ( $last_nonblank_block_type =~
+                ##/^(if|else|elsif|unless|while|for|foreach)$/
 
+                # Remove unnecessary semicolons, but not after bare
+                # blocks, where it could be unsafe if the brace is
+                # mistokenized.
                 if (
                     (
                         $last_nonblank_token eq '}'
-                        && ( $last_nonblank_block_type =~
-                            /^(if|else|elsif|unless|while|for|foreach)$/
-                            || $last_nonblank_block_type =~ /^sub\s+\w/ )
+                        && (
+                            $is_block_without_semicolon{
+                                $last_nonblank_block_type
+                            }
+                            || $last_nonblank_block_type =~ /^sub\s+\w/
+                            || $last_nonblank_block_type =~ /^\w+:$/ )
                     )
                     || $last_nonblank_type eq ';'
                   )
@@ -7002,7 +7106,8 @@ sub starting_one_line_block {
     # we keep old one-line blocks but do not form new ones. It is not
     # always a good idea to make as many one-line blocks as possible,
     # so other types are not done.  The user can always use -mangle.
-    if ( $block_type =~ /^(eval|map|grep|sort)/ ) {
+    ##if ( $block_type =~ /^(eval|map|grep|sort)/ ) {
+    if ( $is_sort_map_grep_eval{$block_type} ) {
         create_one_line_block( $i_start, 1 );
     }
 
@@ -7511,9 +7616,7 @@ sub reset_block_text_accumulator {
         {
             my $test_str =
               $leading_block_if_elsif_text . ' [ elsif' . $leading_block_text;
-            if (
-                length($test_str) <=
-                $rOpts->{'closing-side-comment-maximum-text'} )
+            if ( length($test_str) <= $rOpts_closing_side_comment_maximum_text )
             {
                 $leading_block_if_elsif_text = $test_str;
             }
@@ -7527,12 +7630,13 @@ sub reset_block_text_accumulator {
     $leading_block_text_level           = 0;
     $leading_block_text_length_exceeded = 0;
     $leading_block_text_line_number     = 0;
+    $leading_block_text_line_length     = $leading_block_text_line_length = 0;
 }
 
 sub set_block_text_accumulator {
     my $i = shift;
-    $accumulating_text_for_block    = $tokens_to_go[$i];
-    if ($accumulating_text_for_block !~ /^els/) {
+    $accumulating_text_for_block = $tokens_to_go[$i];
+    if ( $accumulating_text_for_block !~ /^els/ ) {
         $leading_block_if_elsif_text = "";
     }
     $leading_block_text             = "";
@@ -7540,6 +7644,13 @@ sub set_block_text_accumulator {
     $leading_block_text_line_number =
       $vertical_aligner_object->get_output_line_number();
     $leading_block_text_length_exceeded = 0;
+
+    # this will contain the column number of the last character
+    # of the closing side comment
+    $leading_block_text_line_length =
+      length($accumulating_text_for_block) +
+      length( $rOpts->{'closing-side-comment-prefix'} ) +
+      $leading_block_text_level * $rOpts_indent_columns + 3;
 }
 
 sub accumulate_block_text {
@@ -7548,13 +7659,23 @@ sub accumulate_block_text {
     # accumulate leading text, but ignore any side comments
     if ( $accumulating_text_for_block
         && !$leading_block_text_length_exceeded
-        && $tokens_to_go[$i] ne '#' )
+        && $types_to_go[$i] ne '#' )
     {
-        
+
+        my $new_length =
+          $leading_block_text_line_length + length( $tokens_to_go[$i] );
+        if ( $i == 0 ) { $new_length += 1 }
+
+        #print "BUBBA: with token '$tokens_to_go[$i]' length will be $new_length\n";
+
         # do not add more characters than allowed
         if (
             length($leading_block_text) <
-            $rOpts->{'closing-side-comment-maximum-text'}
+            $rOpts_closing_side_comment_maximum_text
+
+            # BUBBA: and we will not exceed the line length limit
+            && ( $new_length < $rOpts_maximum_line_length
+                || $new_length < $rOpts_closing_side_comment_maximum_text )
 
             # well, unless we have a closing paren before the brace we seek.
             # This is an attempt to avoid situations where the ... are longer
@@ -7565,9 +7686,16 @@ sub accumulate_block_text {
             #   } ## end foreach my $item (@a_rather_long_variable_name_here...
             || (
                 $tokens_to_go[$i] eq ')'
-                && ( $block_type_to_go[ $i + 1 ] eq $accumulating_text_for_block
-                    || $block_type_to_go[ $i + 2 ] eq
-                    $accumulating_text_for_block )
+                && (
+                    (
+                        $i + 1 <= $max_index_to_go
+                        && $block_type_to_go[ $i + 1 ] eq
+                        $accumulating_text_for_block
+                    )
+                    || ( $i + 2 <= $max_index_to_go
+                        && $block_type_to_go[ $i + 2 ] eq
+                        $accumulating_text_for_block )
+                )
             )
           )
         {
@@ -7579,6 +7707,7 @@ sub accumulate_block_text {
 
             # add the token text
             $leading_block_text .= $tokens_to_go[$i];
+            $leading_block_text_line_length = $new_length;
         }
 
         # show that text was truncated if necessary
@@ -7595,19 +7724,19 @@ sub accumulate_csc_text {
     # the text placed after certain closing block braces.
     # Defines and returns the following for this buffer:
 
-    my $block_leading_text   = "";    # the leading text of the last '}'
-    my $block_leading_if_elsif_text   = ""; 
+    my $block_leading_text          = "";    # the leading text of the last '}'
+    my $block_leading_if_elsif_text = "";
     my $i_block_leading_text = -1;    # index of token owning block_leading_text
     my $block_line_count     = 100;   # how many lines the block spans
     my $terminal_type        = 'b';   # type of last nonblank token
     my $i_terminal           = 0;     # index of last nonblank token
-    my $block_type = "";
+    my $block_type           = "";
 
     for my $i ( 0 .. $max_index_to_go ) {
-        my $type       = $types_to_go[$i];
+        my $type = $types_to_go[$i];
         ##my $block_type = $block_type_to_go[$i];
         $block_type = $block_type_to_go[$i];
-        my $token      = $tokens_to_go[$i];
+        my $token = $tokens_to_go[$i];
 
         # remember last nonblank token type
         if ( $type ne '#' && $type ne 'b' ) {
@@ -7685,13 +7814,15 @@ sub accumulate_csc_text {
             }
         }
 
-        if ( $type eq 'k'
+        if (
+            $type eq 'k'
             && $csc_new_statement_ok
-            
+
             # note: else is included to allow trailing if/elsif text 
             # to be included
             && $token =~ /^(else|if|elsif|unless|while|until|for|foreach)$/
-            && $token =~ /$closing_side_comment_list_pattern/o )
+            && $token =~ /$closing_side_comment_list_pattern/o
+          )
         {
             set_block_text_accumulator($i);
         }
@@ -7718,9 +7849,7 @@ sub accumulate_csc_text {
     # Treat an 'else' block specially by adding preceding 'if' and
     # 'elsif' text.  Otherwise, the 'end else' is not helpful,
     # especially for cuddled-else formatting.
-    if ( $block_type eq 'else'
-        && $block_leading_if_elsif_text )
-    {
+    if ( $block_type eq 'else' && $block_leading_if_elsif_text ) {
         $block_leading_text .= '[ ' . $block_leading_if_elsif_text;
     }
 
@@ -7796,7 +7925,7 @@ sub add_closing_side_comment {
         $token =~ s/\s*$//;    # trim any trailing whitespace
 
         # handle case of existing closing side comment
-        if ( $have_side_comment) {
+        if ($have_side_comment) {
 
             # warn if requested and tokens differ significantly
             if ( $rOpts->{'closing-side-comment-warnings'} ) {
@@ -7839,7 +7968,7 @@ sub add_closing_side_comment {
                     }
                 }
                 else {
-                    
+
                     # No differences.. we can safely delete old comment if we
                     # are below the threshold
                     if ( $block_line_count <
@@ -9068,7 +9197,8 @@ sub set_bond_strengths {
         if ( $token eq '('
             && $next_nonblank_type eq 'i'
             && $last_nonblank_type eq 'k'
-            && $last_nonblank_token =~ /^(sort|map|grep)$/ )
+            && $is_sort_map_grep{$last_nonblank_token} )
+          ##&& $last_nonblank_token =~ /^(sort|map|grep)$/ )
         {
             $bond_str = NO_BREAK;
         }
@@ -9387,7 +9517,7 @@ sub pad_array_to_go {
             }
         }
         return ( $bp_count, $do_not_break_apart );
-    };
+    }
 
     my %is_logical_container;
 
@@ -9418,7 +9548,8 @@ sub pad_array_to_go {
 
         # never break one of these types (map1.t)
         my $dd = shift;
-        $container_type[$dd] =~ /^(sort|map|grep)$/;
+        ##$container_type[$dd] =~ /^(sort|map|grep)$/;
+        $is_sort_map_grep{ $container_type[$dd] };
     }
 
     sub scan_list {
@@ -10716,11 +10847,14 @@ sub find_token_starting_list {
             && $item_count < 9     # doesn't have too many items
             && $opening_environment eq 'BLOCK'    # not a sub-container
             && $opening_token       eq '('        # is paren list
-            && $maximum_nesting_depth <= $depth   # has no sublist
+
+            ## Not helpful:
+            ##&& $maximum_nesting_depth <= $depth   # has no sublist
           )
         {
 
             # let breaks be defined by bond strength logic
+            # (Eventually we could add logic to optimize breaks here)
             $$rdo_not_break_apart = 1;
             return;
         }
@@ -10965,6 +11099,7 @@ sub table_columns_available {
 
 sub maximum_number_of_fields {
 
+    # how many fields will fit in the available space?
     my ( $columns, $odd_or_even, $max_width, $pair_width ) = @_;
     my $max_pairs        = int( $columns / $pair_width );
     my $number_of_fields = $max_pairs * 2;
@@ -12441,15 +12576,15 @@ package Perl::Tidy::VerticalAligner::Line;
         return $self->[MAXIMUM_LINE_LENGTH] - $self->get_column($jmax);
     }
 
-    sub set_jmax                { $_[0]->[JMAX]                = $_[1] }
-    sub set_jmax_original_line  { $_[0]->[JMAX_ORIGINAL_LINE]  = $_[1] }
-    sub set_rtokens             { $_[0]->[RTOKENS]             = $_[1] }
-    sub set_rfields             { $_[0]->[RFIELDS]             = $_[1] }
-    sub set_rpatterns           { $_[0]->[RPATTERNS]           = $_[1] }
-    sub set_indentation         { $_[0]->[INDENTATION]         = $_[1] }
-    sub set_leading_space_count { $_[0]->[LEADING_SPACE_COUNT] = $_[1] }
-    sub set_outdent_long_lines  { $_[0]->[OUTDENT_LONG_LINES]  = $_[1] }
-    sub set_list_type           { $_[0]->[LIST_TYPE]           = $_[1] }
+    sub set_jmax                    { $_[0]->[JMAX]                    = $_[1] }
+    sub set_jmax_original_line      { $_[0]->[JMAX_ORIGINAL_LINE]      = $_[1] }
+    sub set_rtokens                 { $_[0]->[RTOKENS]                 = $_[1] }
+    sub set_rfields                 { $_[0]->[RFIELDS]                 = $_[1] }
+    sub set_rpatterns               { $_[0]->[RPATTERNS]               = $_[1] }
+    sub set_indentation             { $_[0]->[INDENTATION]             = $_[1] }
+    sub set_leading_space_count     { $_[0]->[LEADING_SPACE_COUNT]     = $_[1] }
+    sub set_outdent_long_lines      { $_[0]->[OUTDENT_LONG_LINES]      = $_[1] }
+    sub set_list_type               { $_[0]->[LIST_TYPE]               = $_[1] }
     sub set_is_hanging_side_comment { $_[0]->[IS_HANGING_SIDE_COMMENT] = $_[1] }
     sub set_alignment { $_[0]->[RALIGNMENTS]->[ $_[1] ] = $_[2] }
 
@@ -13417,17 +13552,19 @@ sub check_fit {
             ( $pad > $padding_available )
 
             # or, with the exception of space to side comments, ..
-            || (
-                $j < $jmax - 1
 
-                # causes too many consecutive columns of whitespace 
-                && (
-                    (
-                        $pad + $old_line->field_width_growth($j) >
-                        $rOpts_maximum_whitespace_columns
-                    )
-                )
-            )
+## BUBBA: TESTING!
+##            || (
+##                $j < $jmax - 1
+##
+##                # causes too many consecutive columns of whitespace 
+##                && (
+##                    (
+##                        $pad + $old_line->field_width_growth($j) >
+##                        $rOpts_maximum_whitespace_columns
+##                    )
+##                )
+##            )
           )
         {
 
@@ -15766,6 +15903,60 @@ sub reset_indentation_level {
             }
             else {
                 $container_type = $last_nonblank_token;
+
+                # We can check for a syntax error here of unexpected '(',
+                # but this is going to get messy...
+                if (
+                    $expecting == OPERATOR
+
+                    # be sure this is not a method call of the form
+                    # &method(...), $method->(..), &{method}(...)
+                    # NOTE: at present, braces in something like &{ xxx }
+                    # are not marked as a block, we might have a method call
+                    && $last_nonblank_token !~ /^([\}\&]|\-\>)/
+
+                    ##&& $last_nonblank_token ne '}'
+
+                  )
+                {
+
+                    # ref: camel 3 p 703.
+                    if ( $last_last_nonblank_token eq 'do' ) {
+                        complain(
+"do SUBROUTINE is deprecated; consider & or -> notation\n"
+                        );
+                    }
+                    else {
+
+                        # if this is an empty list, (), then it is not an
+                        # error; for example, we might have a constant pi and
+                        # invoke it with pi() or just pi;
+                        my ( $next_nonblank_token, $i_next ) =
+                          find_next_nonblank_token( $i, $rtokens );
+                        if ( $next_nonblank_token ne ')' ) {
+                            my $hint;
+                            error_if_expecting_OPERATOR('(');
+
+                            if ( $last_nonblank_type eq 'C' ) {
+                                $hint =
+                                  "$last_nonblank_token has a void prototype\n";
+                            }
+                            elsif ( $last_nonblank_type eq 'i' ) {
+                                if ( $i_tok > 0
+                                    && $last_nonblank_token =~ /^\$/ )
+                                {
+                                    $hint =
+"Do you mean '$last_nonblank_token->(' ?\n";
+                                }
+                            }
+                            if ($hint) {
+                                interrupt_logfile();
+                                warning($hint);
+                                resume_logfile();
+                            }
+                        } ## end if ( $next_nonblank_token...
+                    } ## end else [ if ( $last_last_nonblank_token...
+                } ## end if ( $expecting == OPERATOR...
             }
             $paren_type[$paren_depth] = $container_type;
             $type_sequence = increase_nesting_depth( PAREN, $i_tok );
@@ -17207,7 +17398,7 @@ EOM
                 $tokenizer_self->{_in_error} = 1;
             }
 
-            # ------------------------------------------------------------------------
+            # ----------------------------------------------------------------
             # TOKEN TYPE PATCHES
             #  output __END__, __DATA__, and format as type 'k' instead of ';'
             # to make html colors correct, etc.
@@ -17217,7 +17408,7 @@ EOM
             # output anonymous 'sub' as keyword
             if ( $type eq 't' && $tok eq 'sub' ) { $fix_type = 'k' }
 
-            # ------------------------------------------------------------------------
+            # -----------------------------------------------------------------
 
             $nesting_token_string_i = $nesting_token_string;
             $nesting_type_string_i  = $nesting_type_string;

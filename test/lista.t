@@ -91,6 +91,15 @@ my %ENTITIES = (
     );
 
 { 
+        # big gaps
+        ( $junk, $w[6] ) = radlablist(
+            $w,                                   pad( 'Focus',  $p - 6 ),
+            $s->{$STYLE}->{Focus}->get_panel_ref, 'File:focus',
+            'Click',                              'ClickToFocus',
+            'Mouse',                              'MouseFocus',
+            'Sloppy ',                            'SloppyFocus'
+        );
+
         # break open with clutter like this (if contains any sublists)
         TouchFile( $TempFiles{'numeric'}, $TempFiles{'alpha'},
             $TempFiles{'blank'} );

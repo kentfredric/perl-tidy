@@ -5,12 +5,28 @@
  suggested improvement, please send a note to perltidy at
  users.sourceforge.net.  
 
+ -Output file permissons are now set as follows.  An output script file
+  gets the same permission as the input file, except that owner
+  read/write permission is added (otherwise, perltidy could not be
+  rerun).  Html output files use system defaults.  Previously chmod 0755
+  was used in all cases.  Thanks to Mark Olesen for bringing this up.
+
+ -Missing semicolons will not be added in multi-line blocks of type
+  sort, map, or grep.  This brings perltidy into closer agreement
+  with common practice.  Of course, you can still put semicolons 
+  there if you like.  Thanks to Simon Perreault for a discussion of this.
+
  -Removed undocumented parameter --maximum-space-to-comment, which isn't
   necessary and causes some unwanted limitations. Thanks to Wolfgang 
   Weisselberg.
 
- -Extra semicolons after sub definitions, and repeated semicolons,
-  are now deleted.  Thanks to Wolfgang Weisselberg.
+ -Most instances of extra semicolons are now deleted.  This is
+  particularly important if the -csc option is used.  Thanks to Wolfgang
+  Weisselberg for noting this.  For example, the following line
+  (produced by 'h2xs' :) has an extra semicolon which will now be
+  removed:
+
+     BEGIN { plan tests => 1 };
 
  -The -csc option now labels 'else' blocks with additinal information
   from the opening if statement and elsif statements, if space.
@@ -146,7 +162,7 @@
 
  -Merged patch sent by Yves Orton to handle appropriate
   configuration file locations for different Windows varieties
-  (2000, NT, XP, 95, 98).
+  (2000, NT, Me, XP, 95, 98).
 
  -Added patch to properly handle a for/foreach loop without
   parens around a list represented as a qw.  I didn't know this

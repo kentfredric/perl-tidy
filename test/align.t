@@ -52,6 +52,9 @@
         print '      <form method="post" action="">',                   "\n";
 
         {
+            print STDERR "+"                                  if $verbose == 1;
+            print STDERR "Error reading $File::Find::name \n" if $verbose == 2;
+
             {
 
                 print "IF "                          if !$applyall;
