@@ -41,9 +41,20 @@
                   '92', '94', '96', '98', '100', '102', '104'
                   );
 
+ -Perltidy will now use system-generated temporary filenames when
+  necessary, rather than create files with .TMPI and .TMPO extensions.
+  Also, a control-C handler has been added to delete temporary files if
+  perltidy is interrupted.
+
+ -Added command --dump-profile (or -dpro) which will dump to standard output
+  the name of whatever configuration file is in effect, and its contents.
+
+ -Merged patch sent by Yves Orton to handle appropriate configuration file
+  locations for different Windows varieties (2000, NT, XP, 95, 98).
+
  -Added patch to properly handle a for/foreach loop without parens
   around a list represented as a qw.  I didn't know this was possible
-  until Wolfgang Weisselberg sent me a working example:
+  until Wolfgang Weisselberg pointed it out:
 
         foreach my $key qw\Uno Due Tres Quadro\ {
             print "Set $key\n";
@@ -51,6 +62,8 @@
 
  -Merged VMS filename handling patch sent by Michael Cartmell.  (Invalid
   output filenames were being created in some cases). 
+
+ -Numerous minor improvements have been made for -lp style indentation.
 
  -Long C-style 'for' expressions will be broken after each ';'.   
 

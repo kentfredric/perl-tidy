@@ -1290,6 +1290,11 @@ file can be switched off with the B<-npro> option.
 
 =item *
 
+B<--dump-profile> or B<-dpro>  will write the name of the current 
+F<.perltidyrc> file and its contents to standard output and quit.
+
+=item *
+
 The parameter B<-log> will force a F<.LOG> file to be written, which
 contains the path to the F<.perltidyrc> file, if any, and a listing of
 its parameter settings.  
@@ -1418,10 +1423,8 @@ One use for B<--mangle> is the following:
 This will form the maximum possible number of one-line blocks (see next
 section), and can sometimes help clean up a badly formatted script.
 
-A similar technique can be used with B<--extrude> instead of B<--mangle> to
-make the minimum number of one-line blocks.  However, please be aware that
-files created with B<--extrude> occasionally bring out weaknesses in perl,
-so this option should be used with caution.
+A similar technique can be used with B<--extrude> instead of B<--mangle>
+to make the minimum number of one-line blocks.
 
 Another use for B<--mangle> is to combine it with B<-dac> to reduce
 the file size of a perl script.
@@ -1481,6 +1484,9 @@ the problem.
 The following flags are available for debugging:
 
 B<--dump-defaults> or B<-ddf> will write the default option set to standard output and quit
+
+B<--dump-profile> or B<-dpro>  will write the name of the current 
+configuration file and its contents to standard output and quit.
 
 B<--dump-options> or B<-dop>  will write current option set to standard output and quit.
 
@@ -1585,11 +1591,11 @@ in any way.  And, of course, it does not modify pod documents.
 When standard input is used, the log file, if saved, is F<perltidy.LOG>,
 and any errors are written to F<perltidy.ERR> unless the B<-se> flag is
 set.  These are saved in the current working directory.  If syntax
-checking is used, a temporary copy of the input file will be created but it
-will be removed when perltidy finishes.
+checking is used, a temporary copy of the input file will be created,
+but it will be removed when perltidy finishes.
 
 When standard output and syntax checking are used, a temporary copy of the
-output file will be created and removed when perltidy finishes.
+output file will be created.  It will be removed when perltidy finishes.
 
 =item Files overwritten
 

@@ -12,6 +12,13 @@ until (
 
 { #------------- Level 1 ------------------
 
+    # must indent to retain 2 fields here:
+    %copyhash = (
+              'keep',  "Keep a copy in your Inbox",
+              'copy',  "Continue checking other rules after applying this rule",
+              'regex', "Use regular expressions"
+              );
+
     my @a =
       grep ($_->name eq "amnesia"
               || $_->name eq "confusion"
