@@ -4,15 +4,17 @@ Perltidy Change Log
      suggested improvement, please send a note to perltidy at
      users.sourceforge.net.  
 
-  2002 xx xx
-     -Numerous minor improvements in vertical alignment.
+  2002 11 30
+     -Implemented scalar attributes.  Thanks to Sean Tobin for noting this.
 
-     -outdent-long-comments (-olc) has been re-instated as a default, since
-      it works much better now.  Use -nolc to prevent it.
+     -Fixed glitch introduced in previous release where -pre option
+     was not outputting a leading html <pre> tag.
 
-     -Improved alignment of opening braces.  Needed for improved switch/case
-      formatting, and also suggested by Mark Olesen for sort/map/grep
-      formatting.  For example:
+     -Numerous minor improvements in vertical alignment, including the following:
+
+     -Improved alignment of opening braces in many cases.  Needed for improved
+     switch/case formatting, and also suggested by Mark Olesen for sort/map/grep
+     formatting.  For example:
 
       OLD:
         @modified =
@@ -26,8 +28,22 @@ Perltidy Change Log
           sort { $a->[1] <=> $b->[1] }
           map  { [ $_, -M ] } @filenames;
 
-     -Fixed glitch introduced in previous release where -pre option
-     was not outputting a leading html <pre> tag.
+     -Eliminated alignments across unrelated statements. Example:
+      OLD:
+        $borrowerinfo->configure( -state => 'disabled' );
+        $borrowerinfo->grid( -col        => 1, -row => 0, -sticky => 'w' );
+
+      NEW:  
+        $borrowerinfo->configure( -state => 'disabled' );
+        $borrowerinfo->grid( -col => 1, -row => 0, -sticky => 'w' );
+
+      Thanks to Mark Olesen for suggesting this.
+
+     -Improved alignement of '='s in certain cases.
+      Thanks to Norbert Gruener for sending an example.
+
+     -Outdent-long-comments (-olc) has been re-instated as a default, since
+      it works much better now.  Use -nolc if you want to prevent it.
 
      -Added check for 'perltidy file.pl -o file.pl', which causes file.pl
      to be lost. (The -b option should be used instead). Thanks to mreister
@@ -35,10 +51,10 @@ Perltidy Change Log
 
   2002 11 06
      -Switch/case or given/when syntax is now recognized.  Its vertical alignment
-     is not great yet, but it parses ok.  The words 'switch', 'case', 'given', and
-     'when' are now treated as keywords.  If this causes trouble with older code,
-     we could introduce a switch to deactivate it.  Thanks to Stan Brown and Jochen
-     Schneider for recommending this.
+     is not great yet, but it parses ok.  The words 'switch', 'case', 'given',
+     and 'when' are now treated as keywords.  If this causes trouble with older
+     code, we could introduce a switch to deactivate it.  Thanks to Stan Brown
+     and Jochen Schneider for recommending this.
 
      -Corrected error parsing sub attributes with call parameters.
      Thanks to Marc Kerr for catching this.

@@ -3,14 +3,12 @@ Perltidy TODO List
     are of interest, but there is no particular schedule for implementing
     them.
 
+  Improved Vertical Alignment
+    There are many opportunities for improving vertical alignment.
+
   improved ?: formatting
     An indentation level should be associated with ?: statements. This will
     make nested ?: statements more readable.
-
-  Improved Vertical Alignment
-    Improved vertical alignment has been on the list for some time. It's
-    important, but I need a good sized block of coding time to get it done
-    because it is very tedious.
 
   Fix numerous little formatting issues
     There is, and always will be, a large number of other relatively minor

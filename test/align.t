@@ -1,5 +1,10 @@
 # some alignment tests
 
+# at present, 'last' remains aligned across a gap:
+/s/  && do { $msg->subject($arg); last SWITCH; };
+/q/  && do { return; };
+/\!/ && do { system($arg);        last SWITCH; };
+
 # good test line:
 die sprintf("Usage: %s [ -r | -a | -f fmt ] file ...\n", ($0 =~ m|.*/(.*)|o))
     if ($opt_h || (! @ARGV) || (($opt_a && $opt_r) || ($opt_a && $opt_f) ||

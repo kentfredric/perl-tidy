@@ -1,3 +1,13 @@
+# complex -- contains equals, brace, 'last'
+if    ( $i eq "-a" ) { $host = "whois.arin.net";  last; }
+elsif ( $i eq "-d" ) { $host = "whois.nic.mil";   last; }
+elsif ( $i eq "-p" ) { $host = "whois.apnic.net"; last; }
+elsif ( $i eq "-r" ) { $host = "whois.ripe.net";  last; }
+elsif ( $i eq "-g" ) { $host = "whois.nic.gov";   last; }
+elsif ( $i eq "-6" ) { $host = "whois.6bone.net"; last; }
+elsif ( $i eq "-h" ) { $host = shift;             last; }
+else { unshift ( @ARGV, $i ); last; }
+
 # the break at this if should be retained even though the line is short
 push @allowed, $_
   if PDL->rpiccan($_) && defined $formats{$_};

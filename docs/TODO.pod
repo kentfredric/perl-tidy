@@ -4,21 +4,19 @@ This is a "wish-list" of features to add and things to do.  All of these
 are of interest, but there is no particular schedule for implementing
 them.  
 
+=head2 Improved Vertical Alignment
+
+There are many opportunities for improving vertical alignment. 
+
 =head2 improved ?: formatting
 
 An indentation level should be associated with ?: statements.
 This will make nested ?: statements more readable.
 
-=head2 Improved Vertical Alignment
-
-Improved vertical alignment has been on the list for some time.  It's
-important, but I need a good sized block of coding time to get
-it done because it is very tedious.
-
 =head2 Fix numerous little formatting issues
 
 There is, and always will be, a large number of other relatively minor
-formatting issues that need to be addressed.  
+formatting issues that need to be addressed.
 
 =head2 XML Output
 

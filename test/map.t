@@ -55,20 +55,6 @@
         } @_;
     }
 
-# line up opening braces:
-sub Guess_Case {
-    my ($mdl) =
-      map  { $_->[1] }               ## sort: newest first
-      sort { $b->[0] <=> $a->[0] }
-      map  {
-        s{\.mdl$}{};                 ## kill '.mdl' extension
-        my $echo = "$_.echo";
-        [ ( -f $echo ? ( stat($echo) )[9] : 0 ), $_ ];
-      }
-      grep { -f } glob "*.mdl";
-    return $mdl;
-}
-
 # retain one-line map blocks here:
 sub NXArgs {
 	my($parnames,$parobjs,$onames,$oobjs) = @_;

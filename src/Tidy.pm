@@ -61,7 +61,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.36 2002/11/30 15:05:23 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.37 2002/12/02 14:54:46 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 sub streamhandle {
@@ -7633,7 +7633,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.36 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.37 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -16422,7 +16422,7 @@ sub improve_continuation_indentation {
     #          'tan'   => \&tan,
     #          'atan2' => \&atan2,
 
-    ## BUBBA: Deactivated####################
+    ## BUB: Deactivated####################
     # The trouble with this patch is that it may, for example,
     # move in some 'or's  or ':'s, and leave some out, so that the
     # left edge alignment suffers.
@@ -23802,7 +23802,7 @@ to perltidy.
 
 =head1 VERSION
 
-This man page documents Perl::Tidy version 20021106.
+This man page documents Perl::Tidy version 20021130.
 
 =head1 AUTHOR
 
