@@ -154,7 +154,7 @@ corresponding abbreviation:
       here doc target        here-doc-target  hh
       punctuation            punctuation      pu
       parentheses            paren            p
-      structural braces      structural       s
+      structural braces      structure        s
       semicolon              semicolon        sc
       colon                  colon            co
       comma                  comma            cm
@@ -194,14 +194,16 @@ located with an internet search for ``HTML color tables''.</P>
 <P>Besides color, two other character attributes may be set: bold, and italics.
 To set a token type to use bold, use the flag
 <STRONG>-html-bold-xxxxxx</STRONG> or <STRONG>-hbx</STRONG>, where <STRONG>xxxxxx</STRONG> or <STRONG>x</STRONG> are the long
-or short names from the above table.</P>
+or short names from the above table.  Conversely, to set a token type to 
+NOT use bold, use <STRONG>-nohtml-bold-xxxxxx</STRONG> or <STRONG>-nhbx</STRONG>.</P>
 <P>Likewise, to set a token type to use an italic font, use the flag
 <STRONG>-html-italic-xxxxxx</STRONG> or <STRONG>-hix</STRONG>, where again <STRONG>xxxxxx</STRONG> or <STRONG>x</STRONG> are the
-long or short names from the above table.  For example, to use bold
-braces and lime, bold, italics keywords the following command would be
-used:</P>
+long or short names from the above table.  And to set a token type to
+NOT use italics, use <STRONG>-nohtml-italic-xxxxxx</STRONG> or <STRONG>-nhix</STRONG>.</P>
+<P>For example, to use bold braces and lime color, non-bold, italics keywords the
+following command would be used:</P>
 <PRE>
-        perltidy -html -hbs -hck=00FF00 -hik -hbk somefile.pl</PRE>
+        perltidy -html -hbs -hck=00FF00 -nhbk -hik somefile.pl</PRE>
 <P>The background color can be specified with <STRONG>-html-color-background=n</STRONG>,
 or <STRONG>-hcbg=n</STRONG> for short, where n is a 6 character hex RGB value.  The
 default color of text is the value given to <STRONG>punctuation</STRONG>, which is
@@ -227,7 +229,7 @@ it frequently.</P>
 <P>
 <HR>
 <H1><A NAME="version">VERSION</A></H1>
-<P>This man page documents perltidy version 20010617.</P>
+<P>This man page documents perltidy version 20010701.</P>
 <P>
 <HR>
 <H1><A NAME="author">AUTHOR</A></H1>

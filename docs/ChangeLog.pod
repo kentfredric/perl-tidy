@@ -47,8 +47,8 @@
         'Nov', 'Dec'
         );
 
- -Vertical alignment updated to synchronize with tokens C<&&>, C<||>,
- C<and>, C<or>, C<if>, C<unless>.  Allowable space before forcing
+ -Vertical alignment updated to synchronize with tokens &&, ||,
+ and, or, if, unless.  Allowable space before forcing
  resynchronization has been increased.  (Suggested by  Wolfgang
  Weisselberg).
 
@@ -60,7 +60,7 @@
  -Some modifications have been made which improve the -lp formatting in
  a few cases.
 
- -Perltidy now retains or creates a blank line after an C<=cut> to keep
+ -Perltidy now retains or creates a blank line after an =cut to keep
  podchecker happy (Suggested by Manfred H. Winter).  This appears to be
  a glitch in podchecker, but it was annoying.
 

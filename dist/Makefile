@@ -97,6 +97,7 @@ dist:
 	(cd $(TMPDIR)/..; \
 	    zip $(PROGTEST).zip $(PROG)/test/*  )
 	mv /tmp/$(PROGTEST).zip ../archive
+	rm -rf $(TMPDIR)
 
 .PHONY: docs
 

@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.12 2001/07/01 04:22:48 perltidy Exp $
+    $Id: perltidy,v 1.13 2001/07/02 23:56:04 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -7329,23 +7329,23 @@ sub compare_indentation_levels {
 package Perltidy::IndentationItem;
 
 # Indexes for indentation items
-use constant _SPACES             => 0;     # total leading white spaces
-use constant _LEVEL              => 1;     # the indentation 'level'
-use constant _CI_LEVEL           => 2;     # the 'continuation level'
-use constant _AVAILABLE_SPACES   => 3;     # how many left spaces available
-                                           # for this level
-use constant _CLOSED             => 4;     # index where we saw closing '}'
-use constant _COMMA_COUNT        => 5;     # how many commas at this level?
-use constant _SEQUENCE_NUMBER    => 6;     # output batch number
-use constant _INDEX              => 7;     # index in output batch list
-use constant _HAVE_CHILD         => 8;     # any dependents?
-use constant _RECOVERABLE_SPACES => 9;     # how many spaces to the right
-                                           # we would like to move to get
-                                           # alignment (negative if left)
-use constant _ALIGN_PAREN        => 10;    # do we want to try to align
-                                           # with an opening structure?
-use constant _MARKED             => 11;    # if visited by corrector logic
-use constant _STACK_DEPTH        => 12;    # indentation nesting depth
+use constant XX_SPACES             => 0;     # total leading white spaces
+use constant XX_LEVEL              => 1;     # the indentation 'level'
+use constant XX_CI_LEVEL           => 2;     # the 'continuation level'
+use constant XX_AVAILABLE_SPACES   => 3;     # how many left spaces available
+                                             # for this level
+use constant XX_CLOSED             => 4;     # index where we saw closing '}'
+use constant XX_COMMA_COUNT        => 5;     # how many commas at this level?
+use constant XX_SEQUENCE_NUMBER    => 6;     # output batch number
+use constant XX_INDEX              => 7;     # index in output batch list
+use constant XX_HAVE_CHILD         => 8;     # any dependents?
+use constant XX_RECOVERABLE_SPACES => 9;     # how many spaces to the right
+                                             # we would like to move to get
+                                             # alignment (negative if left)
+use constant XX_ALIGN_PAREN        => 10;    # do we want to try to align
+                                             # with an opening structure?
+use constant XX_MARKED             => 11;    # if visited by corrector logic
+use constant XX_STACK_DEPTH        => 12;    # indentation nesting depth
 
 sub new {
 
@@ -7407,131 +7407,131 @@ sub tentatively_decrease_AVAILABLE_SPACES {
 
 sub get_STACK_DEPTH {
     my ($self) = @_;
-    return $self->[_STACK_DEPTH];
+    return $self->[XX_STACK_DEPTH];
 }
 
 sub get_SPACES {
     my ($self) = @_;
-    return $self->[_SPACES];
+    return $self->[XX_SPACES];
 }
 
 sub get_MARKED {
     my ($self) = @_;
-    return $self->[_MARKED];
+    return $self->[XX_MARKED];
 }
 
 sub set_MARKED {
     my ( $self, $value ) = @_;
     if ( defined($value) ) {
-        $self->[_MARKED] = $value;
+        $self->[XX_MARKED] = $value;
     }
-    return $self->[_MARKED];
+    return $self->[XX_MARKED];
 }
 
 sub get_AVAILABLE_SPACES {
     my ($self) = @_;
-    return $self->[_AVAILABLE_SPACES];
+    return $self->[XX_AVAILABLE_SPACES];
 }
 
 sub decrease_SPACES {
     my ( $self, $value ) = @_;
     if ( defined($value) ) {
-        $self->[_SPACES] -= $value;
+        $self->[XX_SPACES] -= $value;
     }
-    return $self->[_SPACES];
+    return $self->[XX_SPACES];
 }
 
 sub decrease_AVAILABLE_SPACES {
     my ( $self, $value ) = @_;
     if ( defined($value) ) {
-        $self->[_AVAILABLE_SPACES] -= $value;
+        $self->[XX_AVAILABLE_SPACES] -= $value;
     }
-    return $self->[_AVAILABLE_SPACES];
+    return $self->[XX_AVAILABLE_SPACES];
 }
 
 sub get_ALIGN_PAREN {
     my ($self) = @_;
-    return $self->[_ALIGN_PAREN];
+    return $self->[XX_ALIGN_PAREN];
 }
 
 sub get_RECOVERABLE_SPACES {
     my ($self) = @_;
-    return $self->[_RECOVERABLE_SPACES];
+    return $self->[XX_RECOVERABLE_SPACES];
 }
 
 sub set_RECOVERABLE_SPACES {
     my ( $self, $value ) = @_;
     if ( defined($value) ) {
-        $self->[_RECOVERABLE_SPACES] = $value;
+        $self->[XX_RECOVERABLE_SPACES] = $value;
     }
-    return $self->[_RECOVERABLE_SPACES];
+    return $self->[XX_RECOVERABLE_SPACES];
 }
 
 sub increase_RECOVERABLE_SPACES {
     my ( $self, $value ) = @_;
     if ( defined($value) ) {
-        $self->[_RECOVERABLE_SPACES] += $value;
+        $self->[XX_RECOVERABLE_SPACES] += $value;
     }
-    return $self->[_RECOVERABLE_SPACES];
+    return $self->[XX_RECOVERABLE_SPACES];
 }
 
 sub get_CI_LEVEL {
     my ($self) = @_;
-    return $self->[_CI_LEVEL];
+    return $self->[XX_CI_LEVEL];
 }
 
 sub get_LEVEL {
     my ($self) = @_;
-    return $self->[_LEVEL];
+    return $self->[XX_LEVEL];
 }
 
 sub get_SEQUENCE_NUMBER {
     my ($self) = @_;
-    return $self->[_SEQUENCE_NUMBER];
+    return $self->[XX_SEQUENCE_NUMBER];
 }
 
 sub get_INDEX {
     my ($self) = @_;
-    return $self->[_INDEX];
+    return $self->[XX_INDEX];
 }
 
 sub set_HAVE_CHILD {
     my ( $self, $value ) = @_;
     if ( defined($value) ) {
-        $self->[_HAVE_CHILD] = $value;
+        $self->[XX_HAVE_CHILD] = $value;
     }
-    return $self->[_HAVE_CHILD];
+    return $self->[XX_HAVE_CHILD];
 }
 
 sub get_HAVE_CHILD {
     my ($self) = @_;
-    return $self->[_HAVE_CHILD];
+    return $self->[XX_HAVE_CHILD];
 }
 
 sub set_COMMA_COUNT {
     my ( $self, $value ) = @_;
     if ( defined($value) ) {
-        $self->[_COMMA_COUNT] = $value;
+        $self->[XX_COMMA_COUNT] = $value;
     }
-    return $self->[_COMMA_COUNT];
+    return $self->[XX_COMMA_COUNT];
 }
 
 sub get_COMMA_COUNT {
     my ($self) = @_;
-    return $self->[_COMMA_COUNT];
+    return $self->[XX_COMMA_COUNT];
 }
 
 sub set_CLOSED {
     my ( $self, $value ) = @_;
     if ( defined($value) ) {
-        $self->[_CLOSED] = $value;
+        $self->[XX_CLOSED] = $value;
     }
-    return $self->[_CLOSED];
+    return $self->[XX_CLOSED];
 }
 
 sub get_CLOSED {
     my ($self) = @_;
-    return $self->[_CLOSED];
+    return $self->[XX_CLOSED];
 }
 
 =pod

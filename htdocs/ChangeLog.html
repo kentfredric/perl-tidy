@@ -14,6 +14,7 @@
 	<LI><A HREF="#perltidy change log">Perltidy Change Log</A></LI>
 	<UL>
 
+		<LI><A HREF="#2001 07 01">2001 07 01</A></LI>
 		<LI><A HREF="#2001 06 17">2001 06 17</A></LI>
 		<LI><A HREF="#2001 06 08">2001 06 08</A></LI>
 		<LI><A HREF="#2001 04 06">2001 04 06 </A></LI>
@@ -33,6 +34,66 @@
  You can help perltidy evolve into a better program.  If you 
  have hit a bug, unusual behavior, annoyance, or have a suggested
  improvement, please send a note to perltidy at users.sourceforge.net.</PRE>
+<P>
+<H2><A NAME="2001 07 01">2001 07 01</A></H2>
+<PRE>
+ -the directory of test files has been moved to a separate distribution
+ file because it is getting large but is of little interest to most users.
+ For the current distribution:
+   perltidy-20010701.tgz        contains the source and docs for perltidy
+   perltidy-20010701-test.tgz   contains the test files</PRE>
+<PRE>
+ -fixed bug where temporary file perltidy.TMPI was not being deleted 
+ when input was from stdin.</PRE>
+<PRE>
+ -adjusted line break logic to not break after closing brace of an
+ eval block (suggested by Boris Zentner).</PRE>
+<PRE>
+ -added flag -gnu (--gnu-style) to give an approximation to the GNU
+ style as sometimes applied to perl.  The programming style in GNU
+ 'automake' was used as a guide in setting the parameters; these
+ parameters will probably be adjusted over time.</PRE>
+<PRE>
+ -an empty code block now has one space for emphasis:
+   if ( $cmd eq &quot;bg_untested&quot; ) {}    # old
+   if ( $cmd eq &quot;bg_untested&quot; ) { }   # new
+ If this bothers anyone, we could create a parameter.</PRE>
+<PRE>
+ -the -bt (--brace-tightness) parameter has been split into two
+ parameters to give more control. -bt now applies only to non-BLOCK
+ braces, while a new parameter -bbt (block-brace-tightness) applies to
+ curly braces which contain code BLOCKS. The default value is -bbt=1.</PRE>
+<PRE>
+ -added flag -icp (--indent-closing-paren) which leaves a statment
+ termination of the form );, };, or ]; indented with the same
+ indentation as the previous line.  For example,</PRE>
+<PRE>
+    @month_of_year = (          # default, or -nicp
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct',
+        'Nov', 'Dec'
+    );</PRE>
+<PRE>
+    @month_of_year = (          # -icp
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct',
+        'Nov', 'Dec'
+        );</PRE>
+<PRE>
+ -Vertical alignment updated to synchronize with tokens &amp;&amp;, ||,
+ and, or, if, unless.  Allowable space before forcing
+ resynchronization has been increased.  (Suggested by  Wolfgang
+ Weisselberg).</PRE>
+<PRE>
+ -html corrected to use -nohtml-bold-xxxxxxx or -nhbx to negate bold,
+ and likewise -nohtml-italic-xxxxxxx or -nhbi to negate italic.  There
+ was no way to negate these previously.  html documentation updated and
+ corrected.  (Suggested by  Wolfgang Weisselberg).</PRE>
+<PRE>
+ -Some modifications have been made which improve the -lp formatting in
+ a few cases.</PRE>
+<PRE>
+ -Perltidy now retains or creates a blank line after an =cut to keep
+ podchecker happy (Suggested by Manfred H. Winter).  This appears to be
+ a glitch in podchecker, but it was annoying.</PRE>
 <P>
 <H2><A NAME="2001 06 17">2001 06 17</A></H2>
 <PRE>

@@ -14,11 +14,10 @@
 	<LI><A HREF="#perltidy todo list">Perltidy TODO List</A></LI>
 	<UL>
 
-		<LI><A HREF="#clean up a few lp issues">Clean up a few -lp issues</A></LI>
-		<LI><A HREF="#add more formatting options">Add more formatting options</A></LI>
+		<LI><A HREF="#fix numerous little formatting issues">Fix numerous little formatting issues</A></LI>
+		<LI><A HREF="#bugs">BUGS</A></LI>
 		<LI><A HREF="#automated testing">Automated testing</A></LI>
 		<LI><A HREF="#documentation">Documentation</A></LI>
-		<LI><A HREF="#bugs">BUGS</A></LI>
 		<LI><A HREF="#tokenization issues">Tokenization issues</A></LI>
 		<LI><A HREF="#modularization">Modularization</A></LI>
 	</UL>
@@ -31,15 +30,17 @@
 <H1><A NAME="perltidy todo list">Perltidy TODO List</A></H1>
 <P>This is a ``wish-list'' of features to add and things to do.</P>
 <P>
-<H2><A NAME="clean up a few lp issues">Clean up a few -lp issues</A></H2>
-<P>The new -lp feature seems to be working well, but there are a few
-situations where it might be improved.  In particular, it needs
-to be updated to handle lists following certain perl keywords.</P>
+<H2><A NAME="fix numerous little formatting issues">Fix numerous little formatting issues</A></H2>
+<P>There is (and always will be) a large backlog of little formatting
+issues in which the formatting could be better.  These are things like
+improving line break choices and improving vertical alignment.  I'm
+working on them as time permits, with priority given to items that are
+of interest to perltidy users.</P>
 <P>
-<H2><A NAME="add more formatting options">Add more formatting options</A></H2>
-<P>Although there are many options already, there is still a need for
-more options to help programmers match particular styles.  An example
-would be the manner in which terminal parens of lists are handled.</P>
+<H2><A NAME="bugs">BUGS</A></H2>
+<P>There are still a couple of bugs listed in the BUGS file that need
+to be fixed.  These are low priority compared to formatting
+issues, but need to be done.</P>
 <P>
 <H2><A NAME="automated testing">Automated testing</A></H2>
 <P>An automated method for testing many combinations of parameter options 
@@ -49,15 +50,11 @@ on a variety of test files would be very helpful.</P>
 <P>A FAQ or maybe COOKBOOK needs to be written, to explain some of the
 more subtle formatting issues.</P>
 <P>
-<H2><A NAME="bugs">BUGS</A></H2>
-<P>There are still a couple of bugs listed in the BUGS file that need
-to be addressed.  These are low priority, but need to be done.</P>
-<P>
 <H2><A NAME="tokenization issues">Tokenization issues</A></H2>
 <P>It would be nice to introduce some more token types, such as procedure
 calls, so that they can be given separate colors in html files.</P>
 <P>There are some subtle issues with distinguishing block types that should
-eventually be addressed to make the tokenizer more correct, even though
+be addressed to make the tokenizer more correct, even though
 they do not interfere with code beautification.</P>
 <P>
 <H2><A NAME="modularization">Modularization</A></H2>

@@ -9,7 +9,7 @@ Welcome to perltidy!
     the line endings have been changed to <cr><lf> for the Windows version.
 
     Besides the source distribution files, a set of test files is available
-    in a separate package (but there is not automated test procedure yet).
+    in a separate package (but there is no automated test procedure yet).
     These are distributed separately because they will not be of interest to
     the average user. If you do want the test files, you should untar or
     unzip them at the same directory that you untar or unzip the source

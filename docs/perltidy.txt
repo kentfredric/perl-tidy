@@ -345,7 +345,7 @@ OPTIONS
          # this comment is not indented              (-nibc)
                      if ($task) { yyy(); }
 
-    Hanging side comments
+    -hsc, --hanging-side-comments
         By default, perltidy tries to identify and align "hanging side
         comments", which are something like this:
 
@@ -355,7 +355,7 @@ OPTIONS
 
         A comment is considered to be a hanging side comment if it
         immediately follows a line with a side comment, or another hanging
-        side comment. To deactivate this feature, use
+        side comment. To deactivate this feature, use -nhsc or
         --nohanging-side-comments. If block comments are preceded by a blank
         line, they will not be mistaken as hanging side comments.
 

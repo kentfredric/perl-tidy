@@ -373,7 +373,7 @@ Do not indent block comments.  Here is an example:
  # this comment is not indented              (-nibc)
 	     if ($task) { yyy(); }
 
-=item Hanging side comments
+=item B<-hsc>, B<--hanging-side-comments>
 
 By default, perltidy tries to identify and align "hanging side
 comments", which are something like this:
@@ -384,8 +384,8 @@ comments", which are something like this:
 
 A comment is considered to be a hanging side comment if it immediately
 follows a line with a side comment, or another hanging side comment.
-To deactivate this feature, use B<--nohanging-side-comments>.  If block
-comments are preceded by a blank line, they will not be mistaken as
+To deactivate this feature, use B<-nhsc> or B<--nohanging-side-comments>.  
+If block comments are preceded by a blank line, they will not be mistaken as
 hanging side comments.
 
 =item B<-oll>, B<--outdent-long-lines>
