@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.16 2001/07/09 13:54:58 perltidy Exp $
+    $Id: perltidy,v 1.17 2001/07/10 03:07:50 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -7665,14 +7665,12 @@ use vars qw(
   $extra_indent_ok
   $group_list_type
   $zero_count
+  @group_lines
   @columns
   @starting_columns
   @matching_tokens
   @matching_patterns
   @fields
-  @leading_space_count
-  @outdent_long_lines
-  @indentation
   $last_comment_column
   $lines_since_last_side_comment
   $last_lines_since_last_side_comment
@@ -7728,10 +7726,8 @@ sub initialize {
     $previous_maximum_jmax_seen         = 0;
 
     # variables describing each line of the group
-    @leading_space_count = ();    # number of leading spaces
+    @group_lines         = ();    # list of all lines in group
     @fields              = ();    # reference to list of columns
-    @outdent_long_lines  = ();    # flag indicating if ok to outdent long lines
-    @indentation         = ();    # indentation object
 
     $outdented_line_count    = 0;
     $first_outdented_line_at = 0;
@@ -7941,50 +7937,43 @@ The log file warns the user if there are any such tabs.
     # --------------------------------------------------------------------
     # create a structure to hold this line
     # --------------------------------------------------------------------
-    my $line                    = [];
-    my $is_hanging_side_comment = 0;
-    my $list_type               = "";
-    $line->[JMAX]                    = $jmax;
-    $line->[JMAX_ORIGINAL_LINE]      = $jmax;
-    $line->[RTOKENS]                 = $rtokens;
-    $line->[RFIELDS]                 = $rfields;
-    $line->[RPATTERNS]               = $rpatterns;
-    $line->[INDENTATION]             = $indentation;
-    $line->[LEADING_SPACE_COUNT]     = $leading_space_count;
-    $line->[IS_FORCED_BREAK]         = $is_forced_break;
-    $line->[OUTDENT_LONG_LINES]      = $outdent_long_lines;
-    $line->[LIST_TYPE]               = $list_type;
-    $line->[IS_HANGING_SIDE_COMMENT] = $is_hanging_side_comment;
+    my $new_line                    = [];
+    $new_line->[JMAX]                    = $jmax;
+    $new_line->[JMAX_ORIGINAL_LINE]      = $jmax;
+    $new_line->[RTOKENS]                 = $rtokens;
+    $new_line->[RFIELDS]                 = $rfields;
+    $new_line->[RPATTERNS]               = $rpatterns;
+    $new_line->[INDENTATION]             = $indentation;
+    $new_line->[LEADING_SPACE_COUNT]     = $leading_space_count;
+    $new_line->[IS_FORCED_BREAK]         = $is_forced_break;
+    $new_line->[OUTDENT_LONG_LINES]      = $outdent_long_lines;
+    $new_line->[LIST_TYPE]               = "";
+    $new_line->[IS_HANGING_SIDE_COMMENT] = 0;
+
+    my $old_line=undef;
+    if ($maximum_line_index >= 0) {
+        $old_line = $group_lines[0];
+    }
 
     # --------------------------------------------------------------------
     # Step 1a. Allow hanging side comment to join current group, if any
     # This will help keep side comments aligned, because otherwise we
     # will have to start a new group, making alignment less likely.
     # --------------------------------------------------------------------
-    hanging_comment_check($line);
+    hanging_comment_check($new_line);
 
     # --------------------------------------------------------------------
     # Step 2. It simplifies things to create a zero length side comment
     # if none exists.
     # --------------------------------------------------------------------
-    $jmax = $line->[JMAX];
-    if ( ( $jmax == 0 ) || ( $$rtokens[ $jmax - 1 ] ne '#' ) ) {
-        $$rtokens[$jmax] = '#';
-        $$rfields[ ++$jmax ] = '';
-        $$rpatterns[$jmax] = '#';
-        $lines_since_last_side_comment++;
-        $line->[JMAX] = $jmax;
-    }
-    else {
-        $lines_since_last_side_comment = 0;
-    }
+    make_side_comment($new_line);
 
     # --------------------------------------------------------------------
     # Step 2a. Decide if this is a simple list of items
     # Select from 3 list types: none, comma, comma-arrow
     # We use this below to be less restrictive in deciding what to align
     # --------------------------------------------------------------------
-    list_check($line);
+    list_check($new_line);
 
     # --------------------------------------------------------------------
     # Step 3. If there is just one previous line, and it has more fields
@@ -8000,29 +7989,37 @@ The log file warns the user if there are any such tabs.
     # This situation does not occur if there are no side comments
     # because scan_list would put a break after the opening '('.
     # --------------------------------------------------------------------
-    eliminate_group_fields($line);
+    if ($maximum_line_index >= 0) {
+        eliminate_group_fields($new_line, $old_line);
+    }
 
     # --------------------------------------------------------------------
     # Step 4. If the new line has more fields than the current group,
     # see if we can match the first fields and combine the remaining
     # fields of the new line.  
     # --------------------------------------------------------------------
-    eliminate_line_fields($line);
+    if ($maximum_line_index >= 0) {
+        eliminate_line_fields($new_line, $old_line);
+    }
 
     # --------------------------------------------------------------------
     # Step 5. Flush previous group unless all common tokens and patterns match..
     # --------------------------------------------------------------------
-    check_match ( $line);
+    if ($maximum_line_index >= 0) {
+        check_match ( $new_line, $old_line);
+    }
 
     # --------------------------------------------------------------------
     # Step 6. See if there is space for this line in the current group
     # --------------------------------------------------------------------
-    check_fit ( $line);
+    if ($maximum_line_index >= 0) {
+        check_fit ( $new_line, $old_line);
+    }
 
     # --------------------------------------------------------------------
     # Step 7. Append this line to the current group (or start new group)
     # --------------------------------------------------------------------
-    accept_line ( $line);
+    accept_line ( $new_line);
 
     # --------------------------------------------------------------------
     # Step 8. Some old debugging stuff
@@ -8068,11 +8065,12 @@ sub hanging_comment_check {
 }
 
 sub eliminate_group_fields {
-    my $line = shift;
-    my $jmax = $line->[JMAX];
-    my $rtokens = $line->[RTOKENS];
-    my $rfields = $line->[RFIELDS];
-    my $rpatterns = $line->[RPATTERNS];
+    my $new_line = shift;
+    my $old_line = shift;
+    my $jmax = $new_line->[JMAX];
+    my $rtokens = $new_line->[RTOKENS];
+    my $rfields = $new_line->[RFIELDS];
+    my $rpatterns = $new_line->[RPATTERNS];
     my $hid_equals = 0;
 
     if ( $jmax > $maximum_jmax_seen ) { $maximum_jmax_seen = $jmax }
@@ -8143,6 +8141,24 @@ sub eliminate_group_fields {
     }
 }
 
+sub make_side_comment {
+    my $new_line = shift;
+    my $jmax = $new_line->[JMAX];
+    my $rtokens = $new_line->[RTOKENS];
+    my $rfields = $new_line->[RFIELDS];
+    my $rpatterns = $new_line->[RPATTERNS];
+    if ( ( $jmax == 0 ) || ( $$rtokens[ $jmax - 1 ] ne '#' ) ) {
+        $$rtokens[$jmax] = '#';
+        $$rfields[ ++$jmax ] = '';
+        $$rpatterns[$jmax] = '#';
+        $lines_since_last_side_comment++;
+        $new_line->[JMAX] = $jmax;
+    }
+    else {
+        $lines_since_last_side_comment = 0;
+    }
+}
+
 sub list_check {
 
     my $line = shift;
@@ -8178,12 +8194,13 @@ sub list_check {
 }
 
 sub eliminate_line_fields {
-    my $line = shift;
-    my $jmax = $line->[JMAX];
-    my $list_type = $line->[LIST_TYPE];
-    my $rtokens = $line->[RTOKENS];
-    my $rfields = $line->[RFIELDS];
-    my $rpatterns = $line->[RPATTERNS];
+    my $new_line = shift;
+    my $old_line = shift;
+    my $jmax = $new_line->[JMAX];
+    my $list_type = $new_line->[LIST_TYPE];
+    my $rtokens = $new_line->[RTOKENS];
+    my $rfields = $new_line->[RFIELDS];
+    my $rpatterns = $new_line->[RPATTERNS];
     if ( ( $maximum_line_index >= 0 ) && ( $maximum_field_index < $jmax )
       && ( $starting_jmax == $minimum_jmax_seen )    # only if monotonic
       && ( $previous_maximum_jmax_seen <= $jmax )    # only if monotonic
@@ -8219,20 +8236,21 @@ sub eliminate_line_fields {
             $jmax = $maximum_field_index;
         }
     }
-    $line->[JMAX] = $jmax;
+    $new_line->[JMAX] = $jmax;
 }
 
 
 sub check_match {
-    my $line = shift;
-    my $jmax = $line->[JMAX];
-    my $jmax_original_line = $line->[JMAX_ORIGINAL_LINE];
-    my $leading_space_count = $line->[LEADING_SPACE_COUNT];
-    my $is_hanging_side_comment = $line->[IS_HANGING_SIDE_COMMENT];
-    my $list_type = $line->[LIST_TYPE];
-    my $rtokens = $line->[RTOKENS];
-    my $rfields = $line->[RFIELDS];
-    my $rpatterns = $line->[RPATTERNS];
+    my $new_line = shift;
+    my $old_line = shift;
+    my $jmax = $new_line->[JMAX];
+    my $jmax_original_line = $new_line->[JMAX_ORIGINAL_LINE];
+    my $leading_space_count = $new_line->[LEADING_SPACE_COUNT];
+    my $is_hanging_side_comment = $new_line->[IS_HANGING_SIDE_COMMENT];
+    my $list_type = $new_line->[LIST_TYPE];
+    my $rtokens = $new_line->[RTOKENS];
+    my $rfields = $new_line->[RFIELDS];
+    my $rpatterns = $new_line->[RPATTERNS];
 
     # flush if this line has too many fields
     if ( $jmax > $maximum_field_index ) { flush(); }
@@ -8299,6 +8317,7 @@ sub check_match {
                     $$rpatterns[$jmax] = $matching_patterns[$jmax];
                 }
                 $$rfields[$jmax] = $comment;
+                $new_line->[JMAX] = $jmax;
             }
         }
 
@@ -8308,15 +8327,14 @@ sub check_match {
 
 sub check_fit {
 
-    #my ( $jmax, $leading_space_count, $is_hanging_side_comment, $rfields, 
-    #  $rtokens, $rpatterns ) = @_;
-    my $line = shift;
-    my $jmax = $line->[JMAX];
-    my $leading_space_count = $line->[LEADING_SPACE_COUNT];
-    my $is_hanging_side_comment = $line->[IS_HANGING_SIDE_COMMENT];
-    my $rtokens = $line->[RTOKENS];
-    my $rfields = $line->[RFIELDS];
-    my $rpatterns = $line->[RPATTERNS];
+    my $new_line = shift;
+    my $old_line = shift;
+    my $jmax = $new_line->[JMAX];
+    my $leading_space_count = $new_line->[LEADING_SPACE_COUNT];
+    my $is_hanging_side_comment = $new_line->[IS_HANGING_SIDE_COMMENT];
+    my $rtokens = $new_line->[RTOKENS];
+    my $rfields = $new_line->[RFIELDS];
+    my $rpatterns = $new_line->[RPATTERNS];
 
     if ( $maximum_line_index >= 0 ) {
         my $padding_so_far    = 0;
@@ -8397,20 +8415,16 @@ sub check_fit {
 
 sub accept_line {
 
-    my $line = shift;
-    my $jmax = $line->[JMAX];
-    my $list_type = $line->[LIST_TYPE];
-    my $leading_space_count = $line->[LEADING_SPACE_COUNT];
-    my $indentation = $line->[INDENTATION];
-    my $outdent_long_lines = $line->[OUTDENT_LONG_LINES];
-    my $rtokens = $line->[RTOKENS];
-    my $rfields = $line->[RFIELDS];
-    my $rpatterns = $line->[RPATTERNS];
+    my $new_line = shift;
+    my $jmax = $new_line->[JMAX];
+    my $list_type = $new_line->[LIST_TYPE];
+    my $leading_space_count = $new_line->[LEADING_SPACE_COUNT];
+    my $rtokens = $new_line->[RTOKENS];
+    my $rfields = $new_line->[RFIELDS];
+    my $rpatterns = $new_line->[RPATTERNS];
 
     $maximum_line_index++;
-    $leading_space_count[$maximum_line_index] = $leading_space_count;
-    $indentation[$maximum_line_index]         = $indentation;
-    $outdent_long_lines[$maximum_line_index]  = $outdent_long_lines;
+    $group_lines[$maximum_line_index]         = $new_line;
     $fields[$maximum_line_index]              = $rfields;
 
     # initialize field lengths if starting new group
@@ -8492,7 +8506,7 @@ sub flush {
     $do_not_align = adjust_side_comment($do_not_align);
 
     # all lines of this group have the same basic leading spacing
-    my $group_leader_length = $leading_space_count[0];
+    my $group_leader_length = $group_lines[0]->[LEADING_SPACE_COUNT];
 
     # add extra leading spaces if helpful
     my $min_ci_gap = improve_continuation_indentation($do_not_align,
@@ -8647,7 +8661,8 @@ use overload '+' => \&plus,
     if ( $maximum_field_index > 1 && !$do_not_align ) {
 
         for my $i ( 0 .. $maximum_line_index ) {
-            my $leading_space_count = $leading_space_count[$i];
+            my $line = $group_lines[$i];
+            my $leading_space_count = $line->[LEADING_SPACE_COUNT];
             my $gap                 =
               $columns[1] - $leading_space_count - length( $fields[$i][0] );
 
@@ -8672,8 +8687,9 @@ sub write_line {
     # output one vertically aligned line 
     my ($i, $min_ci_gap, $do_not_align, $group_leader_length, 
       $extra_leading_spaces) = @_;
-    my $leading_space_count = $leading_space_count[$i];
-    my $outdent_long_lines  = $outdent_long_lines[$i];
+    my $line = $group_lines[$i];
+    my $leading_space_count = $line->[LEADING_SPACE_COUNT];
+    my $outdent_long_lines = $line->[OUTDENT_LONG_LINES];
 
     # add any extra spaces
     if ( $leading_space_count > $group_leader_length ) {
@@ -8742,14 +8758,14 @@ sub get_extra_leading_spaces {
 
     my $extra_leading_spaces = 0;
     if ($extra_indent_ok) {
-        my $object = $indentation[0];
+        my $object = $group_lines[0]->[INDENTATION];
         if ( ref($object) ) {
             my $extra_indentation_spaces_wanted =
               get_RECOVERABLE_SPACES($object);
 
             # all indentation objects must be the same
             for my $i ( 1 .. $maximum_line_index ) {
-                if ( $indentation[$i] != $object ) {
+                if ($object != $group_lines[$i]->[INDENTATION]) {
                     $extra_indentation_spaces_wanted = 0;
                     last;
                 }
@@ -8793,7 +8809,7 @@ sub combine_fields {
     for $j ( 0 .. $maximum_line_index ) {
         for $k ( 0 .. $maximum_field_index ) {
             my $pad = length( $fields[$j][$k] ) - current_field_width($k);
-            if ( $k == 0 ) { $pad += $leading_space_count[$k]; }
+            if ( $k == 0 ) { $pad += $group_lines[$j]->[LEADING_SPACE_COUNT];}
 
             if ( $pad > 0 ) {
                 increase_field_width($k, $pad);
@@ -9577,7 +9593,8 @@ It is very possible that this is syntax is unambiguous to perl, which
 may know what 'bareword' is by parsing any 'use' and 'require' modules
 that you have referenced, but perltidy does not currently parse other
 modules, so it has not seen any function prototypes that they might
-contain.
+contain.  To prevent this message, use -w=0.
+
 EOM
     }
 
