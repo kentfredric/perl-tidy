@@ -12,6 +12,12 @@ if ( $field[0] eq "unitwidth" ) { $unitwidth  = $field[1]; }
 if ( $field[0] eq "sizescale" ) { $sizescale  = $field[1]; }
 }
 
+# align Numbers and Quotes , and keyword 'unless'
+$Indent  = 2 unless defined $Indent;
+$Purity    = 0 unless defined $Purity;
+$Pad  = "" unless defined $Pad;
+$Varname   = "VAR" unless defined $Varname;
+
 # another matrix
 my $xyz_shield = [
     [ -0.060,  -0.060,  0. ],    [ 0.060,   -0.060,  0. ],

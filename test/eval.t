@@ -62,3 +62,6 @@
         }
         }
 }
+
+$res = eval {0};
+$res = eval {1} unless ($res);

@@ -2,6 +2,8 @@
         # triggerd a fake forced breakpoint.  
 	return 1 unless ( eval { $t->tagNextrange( sel => '1.0', 'end' ) });
 
+    # do not break this mixed one-line block:
+    $over->Apply( -entercommand => $X, $Y, 0 );
 
 # should break after the initial '[' and before the ending ] 
 my $ado_info = [ qw{

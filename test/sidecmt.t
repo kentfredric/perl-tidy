@@ -9,8 +9,8 @@ my $pos  = 0; # start of patch data
 my $endkit = 0; # saw end of kit
 my $fail  = 0; # failed
 
-# A more complicated case.
-# The first line will not get lined up because the ',' gives it
+# A more complicated case.  
+# Formerly the first line did not get lined up because the ',' gives it
 # a different pattern from the others.
 # The 6th and 7th go through sub 'combine_fields' to get lined up
 local ( $qL, $qR );  # left and right quote chars, like `' or ()
@@ -46,6 +46,6 @@ my %fields = ( tag => 1,    # old/new
 
 # should outdent '};' with following side comment
 $VERSION = do {
-    my @r = (q$Revision: 1.1 $ =~ /\d+/g);
+    my @r = (q$Revision: 1.2 $ =~ /\d+/g);
     sprintf "%d." . "%02d" x $#r, @r;
   };    # must be all one line, for MakeMaker

@@ -28,7 +28,8 @@ which are described in L<"OPTIONS">.
   perltidy somefile.pl
 
 This will produce a file F<somefile.pl.tdy> containing the script reformatted
-using the default options.
+using the default options, which approximate the style suggested in 
+perlstyle(1).  Perltidy never changes the input file.
 
   perltidy *.pl
 
@@ -37,29 +38,28 @@ default options.  The output will be in files with an appended F<.tdy>
 extension.  For any file with an error, there will be files with extensions
 F<.ERR> and F<.LOG>.
 
+  perltidy -gnu somefile.pl
+
+Execute perltidy on file F<somefile.pl> with a style which approximates the
+GNU Coding Standards for C programs.  The output will be F<somefile.pl.tdy>.
+
   perltidy -i=3 somefile.pl
 
-Execute perltidy on file F<somefile.pl>, with 3 columns for each
-level of indentation (instead of the default 4 columns).  There will not
-be any tabs in the reformatted script, except for any which already
-exist in comments, pod documents, quotes, and here documents.
-Output will be F<somefile.pl.tdy>. 
+Execute perltidy on file F<somefile.pl>, with 3 columns for each level of
+indentation (B<-i=3>) instead of the default 4 columns.  There will not be any
+tabs in the reformatted script, except for any which already exist in comments,
+pod documents, quotes, and here documents.  Output will be F<somefile.pl.tdy>. 
 
   perltidy -i=3 -t somefile.pl
 
-Same as the previous example, except that each set of 3 columns of
-indentation will be represented by one leading tab character.
+Same as the previous example, except that each set of 3 columns of indentation
+(B<-i=3>) will be represented by one leading tab character (B<-t>).
 
   perltidy -ce -l=72 somefile.pl
 
-Execute perltidy on file F<somefile.pl> with all defaults except use
-"cuddled elses" and a maximum line length of 72 columns (instead of the
-default 80 columns).  
-
-  perltidy -io somefile.pl
-
-Execute perltidy on file F<somefile.pl> but restrict changes to "indentation
-only", which means that existing line breaks and whitespace will be unchanged.
+Execute perltidy on file F<somefile.pl> with all defaults except use "cuddled
+elses" (B<-ce>) and a maximum line length of 72 columns (B<-l=72>) instead of
+the default 80 columns.  
 
   perltidy -g somefile.pl
 
@@ -272,19 +272,27 @@ of a ')'.  For n=2 there is never a space.  For n=1, the default, there
 is a space unless the quantity within the parens is a single token, such
 as an identifier or quoted string.  
 
-Likewise, the parameter B<-bt=n> or B<--brace-tightness=n> controls the
-space within curly braces, as illustrated in the example below. 
-
- if ( $Opts{ help } ) { usage(); exit 1; }    # -bt=0
- if ( $Opts{help} ) { usage(); exit 1; }      # -bt=1 (default)
- if ( $Opts{help} ) {usage(); exit 1;}        # -bt=2
-
-And finally, the parameter B<-sbt=n> or B<--square-bracket-tightness>
+Likewise, the parameter B<-sbt=n> or B<--square-bracket-tightness>
 controls the space within square brackets, as illustrated below.
 
  $width = $col[ $j + $k ] - $col[ $j ];  # -sbt=0
  $width = $col[ $j + $k ] - $col[$j];    # -sbt=1 (default)
  $width = $col[$j + $k] - $col[$j];      # -sbt=2 
+
+Curly braces which do not contain code blocks are controlled by
+the parameter B<-bt=n> or B<--brace-tightness=n>. 
+
+ $obj->{ $parsed_sql->{ 'table' }[0] };    # -bt=0
+ $obj->{ $parsed_sql->{'table'}[0] };      # -bt=1 (default)
+ $obj->{$parsed_sql->{'table'}[0]};        # -bt=2
+
+And finally, curly braces which contain blocks of code are controlled by the
+parameter B<-bbt=n> or B<--block-brace-tightness=n> as illustrated in the
+example below.   
+
+ %bf = map { $_ => -M $_ } grep { /\.deb$/ } dirents '.'; # -bbt=0 (default)
+ %bf = map { $_ => -M $_ } grep {/\.deb$/} dirents '.';   # -bbt=1
+ %bf = map {$_ => -M $_} grep {/\.deb$/} dirents '.';     # -bbt=2
 
 =item B<-ci=n>, B<--continuation-indentation=n>
 
@@ -831,7 +839,16 @@ B<n>, then it will be reduced to B<n>.  While this value should probably
 be left unchanged as a general rule, it might be used on a small section
 of code to force a list to have a particular number of fields per line,
 and then a single comment could be introduced somewhere to freeze the
-formatting in future applications of perltidy.
+formatting in future applications of perltidy, like this:
+
+    @month_of_year = (    # -mft=2
+        'Jan', 'Feb',
+        'Mar', 'Apr',
+        'May', 'Jun',
+        'Jul', 'Aug',
+        'Sep', 'Oct',
+        'Nov', 'Dec'
+    );
 
 Vertical alignment refers to lining up similar tokens vertically, like
 this:
