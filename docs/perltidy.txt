@@ -330,6 +330,20 @@ OPTIONS
                 'Nov', 'Dec'
                 );
 
+    -icb, --indent-closing-brace
+        The -icb option leaves a brace which terminates a code block
+        indented with the same indentation as the previous line. For
+        example,
+
+                if ($task) {
+                    yyy();
+                    }    # -icb
+                else {
+                    zzz();
+                    }
+
+        The default is not to do this, indicated by -nicb.
+
     -ibc, --indent-block-comments
         Block comments, meaning full-line comments, normally look best when
         they are indented to the same level as the code which follows them.

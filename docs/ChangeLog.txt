@@ -3,6 +3,27 @@ Perltidy Change Log
      have hit a bug, unusual behavior, annoyance, or have a suggested
      improvement, please send a note to perltidy at users.sourceforge.net.  
 
+     -Added -icb (-indent-closing-brace) parameter to indent a 
+     brace which terminates a code block to the same level as the previous
+     line.  Suggested by Andrew Cutler.  For example, 
+
+            if ($task) {
+                yyy();
+                }    # -icb
+            else {
+                zzz();
+                }
+
+     -Rewrote error message triggered by an unknown bareword in a
+     print or printf filehandle position, and added flag -w=0 to prevent
+     issuing this error message.  Suggested by Byron Jones.
+
+     -Added modification to align a one-line 'if' block with similar
+     following 'elsif' one-line blocks, like this:
+          if    ( $something eq "simple" )  { &handle_simple }
+          elsif ( $something eq "hard" )    { &handle_hard }
+     (Suggested by  Wolfgang Weisselberg).
+
   2001 07 02
 
      -Eliminated all constants with leading underscores because perl 5.005_03

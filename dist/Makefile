@@ -41,7 +41,7 @@ uninstall:
 # I've removed pods because they waste space and can be obtained from CVS
 ###############################################################
 
-VERSION=20010702
+VERSION=20010716
 PROG=$(PROGRAM)-$(VERSION)
 PROGTEST=$(PROGRAM)-$(VERSION)-test
 TMPDIR=/tmp/$(PROG)
