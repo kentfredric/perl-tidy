@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.19 2001/07/20 16:16:37 perltidy Exp $
+    $Id: perltidy,v 1.20 2001/07/22 17:11:18 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -7774,6 +7774,7 @@ sub set_list_type           { $_[0]->[LIST_TYPE]           = $_[1] }
 sub set_is_hanging_side_comment { $_[0]->[IS_HANGING_SIDE_COMMENT] = $_[1] }
 
 package Perltidy::VerticalAligner;
+
 =pod
 
 The Perltidy::VerticalAligner package collects output lines and attempts to line
@@ -7794,23 +7795,18 @@ to flush.
 =cut
 
 use vars qw(
-  $starting_jmax
   $maximum_jmax_seen
   $minimum_jmax_seen
   $previous_minimum_jmax_seen
   $previous_maximum_jmax_seen
   $maximum_line_index
-  $maximum_field_index
   $group_level
   $last_group_level_written
   $extra_indent_ok
-  $group_list_type
   $zero_count
   @group_lines
-  @columns
-  @starting_columns
-  @matching_tokens
-  @matching_patterns
+  $rcolumns
+  $rstarting_columns
   $last_comment_column
   $lines_since_last_side_comment
   $last_lines_since_last_side_comment
@@ -7830,30 +7826,25 @@ sub initialize {
     ( $rOpts, $file_writer_object, $logger_object, $diagnostics_object ) = @_;
 
     # variables describing the entire space group:
-    $maximum_line_index  = -1;    # lines in the current group
-    $maximum_field_index = -1;    # fields in the current group
+    $maximum_line_index = -1;    # lines in the current group
 
     $group_level              = 0;
     $last_group_level_written = -1;
-    $extra_indent_ok          = 0;     # can we move all lines to the right?
-    $group_list_type          = "";
-    $zero_count               = 0;     # count consecutive lines without tokens
-    @columns                  = ();    # list of columns of matching tokens
-    @starting_columns         = ();    # list of columns of matching tokens
-    @matching_tokens          = ();    # tokens being matched
-    @matching_patterns        = ();    # patterns being matched
+    $extra_indent_ok          = 0;    # can we move all lines to the right?
+    $zero_count               = 0;    # count consecutive lines without tokens
+    $rcolumns                 = [];
+    $rstarting_columns        = [];
     $last_comment_column      = 0;
     $lines_since_last_side_comment      = 100;
     $last_lines_since_last_side_comment = 100;
     $last_side_comment_length           = 0;
-    $starting_jmax                      = 0;
     $maximum_jmax_seen                  = 0;
     $minimum_jmax_seen                  = 0;
     $previous_minimum_jmax_seen         = 0;
     $previous_maximum_jmax_seen         = 0;
 
     # variables describing each line of the group
-    @group_lines = ();                 # list of all lines in group
+    @group_lines = ();                # list of all lines in group
 
     $outdented_line_count    = 0;
     $first_outdented_line_at = 0;
@@ -8025,6 +8016,7 @@ The log file warns the user if there are any such tabs.
         $zero_count++;
 
         if ( $maximum_line_index >= 0 ) {
+            my $maximum_field_index = $group_lines[0]->get_jmax();
             if ( $maximum_field_index > 1 ) { flush() }
 
             # flush current group unless we are just collecting side
@@ -8159,35 +8151,38 @@ The log file warns the user if there are any such tabs.
         print "APPEND patterns:";
         dump_array(@$rpatterns);
         print "APPEND common columns:";
-        dump_array(@columns);
+        dump_array(@$rcolumns);
     }
 }
 
 sub hanging_comment_check {
 
     my $line                    = shift;
-    my $jmax                    = $line->get_jmax();
-    my $rtokens                 = $line->get_rtokens();
-    my $rfields                 = $line->get_rfields();
-    my $rpatterns               = $line->get_rpatterns();
     my $is_hanging_side_comment = 0;
 
-    if ( $jmax == 1 && $$rtokens[ $jmax - 1 ] eq '#' && $$rfields[0] =~ /^\s*$/
-      && $maximum_line_index >= 0 && $maximum_field_index > $jmax )
-    {
+    if ( $maximum_line_index >= 0 ) {
+        my $jmax                = $line->get_jmax();
+        my $rtokens             = $line->get_rtokens();
+        my $rfields             = $line->get_rfields();
+        my $rpatterns           = $line->get_rpatterns();
+        my $maximum_field_index = $group_lines[0]->get_jmax();
+        if ( $jmax == 1 && $$rtokens[ $jmax - 1 ] eq '#'
+          && $$rfields[0] =~ /^\s*$/ && $maximum_field_index > $jmax )
+        {
 
-        $is_hanging_side_comment = 1;
-        $jmax                    = $maximum_field_index;
-        $$rfields[$jmax] = $$rfields[1];
-        $$rtokens[ $jmax - 1 ]   = $$rtokens[0];
-        $$rpatterns[ $jmax - 1 ] = $$rpatterns[0];
-        for ( my $j = 1 ; $j < $jmax ; $j++ ) {
-            $$rfields[$j] = " ";    # NOTE: caused glitch unless 1 blank, why?
-            $$rtokens[ $j - 1 ]   = "";
-            $$rpatterns[ $j - 1 ] = "";
+            $is_hanging_side_comment = 1;
+            $jmax                    = $maximum_field_index;
+            $line->set_jmax($jmax);
+            $$rfields[$jmax] = $$rfields[1];
+            $$rtokens[ $jmax - 1 ]   = $$rtokens[0];
+            $$rpatterns[ $jmax - 1 ] = $$rpatterns[0];
+            for ( my $j = 1 ; $j < $jmax ; $j++ ) {
+                $$rfields[$j] = " ";  # NOTE: caused glitch unless 1 blank, why?
+                $$rtokens[ $j - 1 ]   = "";
+                $$rpatterns[ $j - 1 ] = "";
+            }
         }
     }
-    $line->set_jmax($jmax);
     $line->set_is_hanging_side_comment($is_hanging_side_comment);
 }
 
@@ -8200,7 +8195,11 @@ sub eliminate_group_fields {
     my $rpatterns  = $new_line->get_rpatterns();
     my $hid_equals = 0;
 
-    my $old_rfields    = $old_line->get_rfields();
+    my $old_rfields   = $old_line->get_rfields();
+    my $old_rtokens   = $old_line->get_rtokens();
+    my $old_rpatterns = $old_line->get_rpatterns();
+
+    my $maximum_field_index = $group_lines[0]->get_jmax();
 
     if ( $jmax > $maximum_jmax_seen ) { $maximum_jmax_seen = $jmax }
     if ( $jmax < $minimum_jmax_seen ) { $minimum_jmax_seen = $jmax }
@@ -8208,7 +8207,8 @@ sub eliminate_group_fields {
     if ( ( $maximum_field_index > $jmax )    # this line has fewer fields
       && ( $maximum_field_index - 2 <= $jmax )    # be reasonable, not too few
       && ( $maximum_line_index == 0 )             # there is one previous line
-      && ( length( $$old_rfields[$maximum_field_index] ) > 0 )  # with side comment
+      && ( length( $$old_rfields[$maximum_field_index] ) >
+      0 )    # with side comment
       )
     {
         my @new_columns           = ();
@@ -8216,8 +8216,7 @@ sub eliminate_group_fields {
         my @new_fields            = ();
         my @new_matching_patterns = ();
         my @new_matching_tokens   = ();
-        $new_columns[0]          = $columns[0];
-        $new_starting_columns[0] = $starting_columns[0];
+
         my $j = 0;
         my $k;
         my $current_field   = '';
@@ -8227,23 +8226,23 @@ sub eliminate_group_fields {
         my $in_match = 0;
         for ( $k = 0 ; $k < $maximum_field_index ; $k++ ) {
             $current_field .= $$old_rfields[$k];
-            $current_pattern .= $matching_patterns[$k];
+            $current_pattern .= $$old_rpatterns[$k];
             last if ( $j > $jmax - 1 );
 
-            if ( $matching_tokens[$k] eq $$rtokens[$j] ) {
+            if ( $$old_rtokens[$k] eq $$rtokens[$j] ) {
                 $in_match = 1;
-                $new_matching_tokens[$j]   = $matching_tokens[$k];
+                $new_matching_tokens[$j]   = $$old_rtokens[$k];
                 $new_fields[$j]            = $current_field;
                 $new_matching_patterns[$j] = $current_pattern;
                 $current_field   = '';
                 $current_pattern = '';
-                $new_columns[ $j + 1 ]          = $columns[ $k + 1 ];
-                $new_starting_columns[ $j + 1 ] = $starting_columns[ $k + 1 ];
+                $new_columns[ $j + 1 ]          = get_column($k);
+                $new_starting_columns[ $j + 1 ] = get_starting_column($k);
                 $j++;
             }
             else {
 
-                if ( $matching_tokens[$k] =~ /^\=\d*$/ ) {
+                if ( $$old_rtokens[$k] =~ /^\=\d*$/ ) {
                     $hid_equals = 1;
                 }
                 last if $in_match;    # disallow gaps in matching field types
@@ -8255,40 +8254,38 @@ sub eliminate_group_fields {
         if ( ( $j == $jmax ) && ( $current_field eq '' ) && $hid_equals ) {
             $k = $maximum_field_index;
             $current_field .= $$old_rfields[$k];
-            $current_pattern .= $matching_patterns[$k];
+            $current_pattern .= $$old_rpatterns[$k];
             $new_fields[$j]            = $current_field;
             $new_matching_patterns[$j] = $current_pattern;
-            $new_columns[ $j + 1 ]          = $columns[ $k + 1 ];
-            $new_starting_columns[ $j + 1 ] = $starting_columns[ $k + 1 ];
+            $new_columns[ $j + 1 ]          = get_column($k);
+            $new_starting_columns[ $j + 1 ] = get_starting_column($k);
             $maximum_field_index = $j;
 
-            @columns           = @new_columns;
-            @starting_columns  = @new_starting_columns;
-            @matching_tokens   = @new_matching_tokens;
-            @matching_patterns = @$rpatterns;
+            @$rcolumns          = @new_columns;
+            @$rstarting_columns = @new_starting_columns;
 
             $old_line->set_jmax($jmax);
             $old_line->set_rtokens( \@new_matching_tokens );
             $old_line->set_rfields( \@new_fields );
             $old_line->set_rpatterns( \@$rpatterns );
-
         }
     }
 }
 
 sub make_side_comment {
-    my $new_line  = shift;
-    my $jmax      = $new_line->get_jmax();
-    my $rtokens   = $new_line->get_rtokens();
-    my $rfields   = $new_line->get_rfields();
-    my $rpatterns = $new_line->get_rpatterns();
+    my $new_line = shift;
+    my $jmax     = $new_line->get_jmax();
+    my $rtokens  = $new_line->get_rtokens();
 
     if ( ( $jmax == 0 ) || ( $$rtokens[ $jmax - 1 ] ne '#' ) ) {
+        my $rfields   = $new_line->get_rfields();
+        my $rpatterns = $new_line->get_rpatterns();
         $$rtokens[$jmax] = '#';
         $$rfields[ ++$jmax ] = '';
         $$rpatterns[$jmax] = '#';
         $lines_since_last_side_comment++;
         $new_line->set_jmax($jmax);
+        $new_line->set_jmax_original_line($jmax);
     }
     else {
         $lines_since_last_side_comment = 0;
@@ -8340,6 +8337,11 @@ sub eliminate_line_fields {
     my $rpatterns = $new_line->get_rpatterns();
     my $list_type = $new_line->get_list_type();
 
+    my $old_rpatterns = $old_line->get_rpatterns();
+    my $old_rtokens   = $old_line->get_rtokens();
+    my $starting_jmax = $old_line->get_jmax_original_line();
+
+    my $maximum_field_index = $group_lines[0]->get_jmax();
     if ( ( $maximum_line_index >= 0 ) && ( $maximum_field_index < $jmax )
       && ( $starting_jmax == $minimum_jmax_seen )    # only if monotonic
       && ( $previous_maximum_jmax_seen <= $jmax )    # only if monotonic
@@ -8351,8 +8353,8 @@ sub eliminate_line_fields {
         my $match = 1;
         my $k;
         for ( $k = 0 ; $k < $maximum_field_index - 1 ; $k++ ) {
-            if ( ( $matching_tokens[$k] ne $$rtokens[$k] )
-              || ( $matching_patterns[$k] ne $$rpatterns[$k] ) )
+            if ( ( $$old_rtokens[$k] ne $$rtokens[$k] )
+              || ( $$old_rpatterns[$k] ne $$rpatterns[$k] ) )
             {
                 $match = 0;
                 last;
@@ -8379,8 +8381,10 @@ sub eliminate_line_fields {
 }
 
 sub check_match {
-    my $new_line = shift;
-    my $old_line = shift;
+
+    my $new_line            = shift;
+    my $old_line            = shift;
+    my $maximum_field_index = $group_lines[0]->get_jmax();
 
     my $jmax                    = $new_line->get_jmax();
     my $jmax_original_line      = $new_line->get_jmax_original_line();
@@ -8390,6 +8394,11 @@ sub check_match {
     my $rfields                 = $new_line->get_rfields();
     my $rpatterns               = $new_line->get_rpatterns();
     my $list_type               = $new_line->get_list_type();
+
+    my $old_rpatterns   = $old_line->get_rpatterns();
+    my $old_rtokens     = $old_line->get_rtokens();
+    my $starting_jmax   = $old_line->get_jmax_original_line();
+    my $group_list_type = $old_line->get_list_type();
 
     # flush if this line has too many fields
     if ( $jmax > $maximum_field_index ) { flush(); }
@@ -8408,6 +8417,7 @@ sub check_match {
         my $jlimit = $jmax - 1;
         if ( $maximum_field_index > $jmax ) {
             $jlimit = $jmax_original_line;
+            --$jlimit unless ( length( $new_line->get_rfields()->[$jmax] ) );
         }
 
         my $everything_matches = 1;
@@ -8420,8 +8430,8 @@ sub check_match {
             for my $j ( 0 .. $jlimit ) {
                 my $match = 1;
                 if ( ( $j < $jlimit )
-                  && ( ( $matching_tokens[$j] ne $$rtokens[$j] )
-                  || ( $matching_patterns[$j] ne $$rpatterns[$j] ) ) )
+                  && ( ( $$old_rtokens[$j] ne $$rtokens[$j] )
+                  || ( $$old_rpatterns[$j] ne $$rpatterns[$j] ) ) )
                 {
                     $match = 0;
                 }
@@ -8450,9 +8460,9 @@ sub check_match {
 
                 my $comment = $$rfields[$jmax];
                 for $jmax ( $jlimit .. $maximum_field_index ) {
-                    $$rtokens[$jmax] = $matching_tokens[$jmax];
+                    $$rtokens[$jmax] = $$old_rtokens[$jmax];
                     $$rfields[ ++$jmax ] = '';
-                    $$rpatterns[$jmax] = $matching_patterns[$jmax];
+                    $$rpatterns[$jmax] = $$old_rpatterns[$jmax];
                 }
                 $$rfields[$jmax] = $comment;
                 $new_line->set_jmax($jmax);
@@ -8468,6 +8478,8 @@ sub check_fit {
     my $new_line = shift;
     my $old_line = shift;
 
+    my $maximum_field_index = $group_lines[0]->get_jmax();
+
     my $jmax                    = $new_line->get_jmax();
     my $leading_space_count     = $new_line->get_leading_space_count();
     my $is_hanging_side_comment = $new_line->get_is_hanging_side_comment();
@@ -8475,13 +8487,15 @@ sub check_fit {
     my $rfields                 = $new_line->get_rfields();
     my $rpatterns               = $new_line->get_rpatterns();
 
+    my $group_list_type = $group_lines[0]->get_list_type();
+
     if ( $maximum_line_index >= 0 ) {
         my $padding_so_far    = 0;
         my $padding_available =
           $rOpts->{'maximum-line-length'} - get_column($maximum_field_index);
 
         # save current columns in case this doesn't work
-        my @old_columns = @columns;
+        my @old_columns = @$rcolumns;
 
         for my $j ( 0 .. $jmax ) {
             my $pad = length( $$rfields[$j] ) - current_field_width($j);
@@ -8539,7 +8553,7 @@ sub check_fit {
             {
 
                 # revert to starting state then flush; things didn't work out
-                @columns = @old_columns;
+                @$rcolumns = @old_columns;
                 flush();
                 last;
             }
@@ -8554,68 +8568,75 @@ sub check_fit {
 sub accept_line {
 
     my $new_line = shift;
-
-    my $jmax                = $new_line->get_jmax();
-    my $leading_space_count = $new_line->get_leading_space_count();
-    my $rtokens             = $new_line->get_rtokens();
-    my $rfields             = $new_line->get_rfields();
-    my $rpatterns           = $new_line->get_rpatterns();
-    my $list_type           = $new_line->get_list_type();
-
-    $maximum_line_index++;
-    $group_lines[$maximum_line_index] = $new_line;
+    $group_lines[ ++$maximum_line_index ] = $new_line;
 
     # initialize field lengths if starting new group
     if ( $maximum_line_index == 0 ) {
-        $group_list_type     = $list_type;
-        $maximum_field_index = $jmax;
+
+        my $jmax    = $new_line->get_jmax();
+        my $rfields = $new_line->get_rfields();
         my $j;
-        my $col = $leading_space_count;
+        my $col = $new_line->get_leading_space_count();
 
-        for $j ( 0 .. $maximum_field_index ) {
-            $col += length( $$rfields[$j] );
-            $columns[ $j + 1 ] = $col;
-        }
         for $j ( 0 .. $jmax ) {
-            $matching_patterns[$j] = $$rpatterns[$j];
+            $col += length( $$rfields[$j] );
+            set_column( $j, $col );
         }
-        $columns[0] = 0;
-        @starting_columns  = @columns;
-        $starting_jmax     = $jmax;
-        $maximum_jmax_seen = $jmax;
-        $minimum_jmax_seen = $jmax;
 
-        for $j ( 0 .. $jmax - 1 ) {
-            $matching_tokens[$j] = $$rtokens[$j];
-        }
+        @$rstarting_columns = @$rcolumns;
+        $maximum_jmax_seen  = $jmax;
+        $minimum_jmax_seen  = $jmax;
     }
 }
 
+sub set_column {
+    $$rcolumns[ $_[0] + 1 ] = $_[1];
+}
+
+sub increment_column {
+    $$rcolumns[ $_[0] + 1 ] += $_[1];
+}
+
+sub get_starting_column {
+    return $$rstarting_columns[ $_[0] + 1 ];
+}
+
 sub get_column {
-    my ($j) = @_;
-    return $columns[ $j + 1 ];
+    return $$rcolumns[ $_[0] + 1 ];
 }
 
 sub increase_field_width {
+
+    my $maximum_field_index = $group_lines[0]->get_jmax();
     my ( $j, $pad ) = @_;
     for my $k ( $j .. $maximum_field_index ) {
-        $columns[ $k + 1 ] += $pad;
+        increment_column( $k, $pad );
     }
 }
 
 sub field_width_growth {
     my ($j) = @_;
-    return $columns[ $j + 1 ] - $starting_columns[ $j + 1 ];
+    return $$rcolumns[ $j + 1 ] - $$rstarting_columns[ $j + 1 ];
 }
 
 sub current_field_width {
     my ($j) = @_;
-    return $columns[ $j + 1 ] - $columns[$j];
+    if ( $j == 0 ) {
+        return $$rcolumns[ $j + 1 ];
+    }
+    else {
+        return $$rcolumns[ $j + 1 ] - $$rcolumns[$j];
+    }
 }
 
 sub starting_field_width {
     my ($j) = @_;
-    return $starting_columns[ $j + 1 ] - $starting_columns[$j];
+    if ( $j == 0 ) {
+        return $$rstarting_columns[ $j + 1 ];
+    }
+    else {
+        return $$rstarting_columns[ $j + 1 ] - $$rstarting_columns[$j];
+    }
 }
 
 sub dump_array {
@@ -8633,13 +8654,15 @@ flush() sends the current Perltidy::VerticalAligner group down the pipeline to P
 
 sub flush {
 
+    return unless ( $maximum_line_index >= 0 );
+
     if ( $VALIGN_DEBUG_FLAG{APPEND0} ) {
+        my $group_list_type = $group_lines[0]->get_list_type();
         my ( $a, $b, $c ) = caller();
+        my $maximum_field_index = $group_lines[0]->get_jmax();
         print
 "APPEND0: Flush called from $a $b $c fields=$maximum_field_index list=$group_list_type lines=$maximum_line_index extra=$extra_indent_ok\n";
     }
-
-    return unless ( $maximum_line_index >= 0 );
 
     # some small groups are best left unaligned
     my $do_not_align = decide_if_aligned();
@@ -8664,21 +8687,22 @@ sub flush {
     }
 
     # initialize for new group
-    $maximum_line_index  = -1;
-    $maximum_field_index = -1;
-    $zero_count          = 0;
+    $maximum_line_index = -1;
+    $zero_count         = 0;
 }
 
 sub decide_if_aligned {
 
     # Do not try to align two lines which are not really similar
-    my $do_not_align =
+    my $group_list_type = $group_lines[0]->get_list_type();
+    my $do_not_align    =
       ( $maximum_line_index < 2 && !$group_list_type
       && ( $previous_maximum_jmax_seen != $previous_minimum_jmax_seen ) );
 
     # But try to convert them into a simple comment group if the first line 
     # a has side comment
-    my $rfields = $group_lines[0]->get_rfields();
+    my $rfields             = $group_lines[0]->get_rfields();
+    my $maximum_field_index = $group_lines[0]->get_jmax();
     if ( $do_not_align && ( $maximum_line_index > 0 )
       && ( length( $$rfields[$maximum_field_index] ) > 0 ) )
     {
@@ -8696,8 +8720,10 @@ sub adjust_side_comment {
     # to improve readability (the last field is always a side comment field)
     my $have_side_comment       = 0;
     my $first_side_comment_line = -1;
+    my $maximum_field_index     = $group_lines[0]->get_jmax();
     for my $i ( 0 .. $maximum_line_index ) {
-        my $line                = $group_lines[$i];
+        my $line = $group_lines[$i];
+
         if ( length( $line->get_rfields()->[$maximum_field_index] ) ) {
             $have_side_comment       = 1;
             $first_side_comment_line = $i;
@@ -8710,10 +8736,10 @@ sub adjust_side_comment {
     if ($have_side_comment) {
 
         # the maximum space without exceeding the line length:
-        my $avail = $rOpts->{'maximum-line-length'} - $columns[$kmax];
+        my $avail = $rOpts->{'maximum-line-length'} - get_column( $kmax - 1 );
 
         # try to use the previous comment column
-        my $move = $last_comment_column - $columns[ $kmax - 1 ];
+        my $move = $last_comment_column - get_column( $kmax - 2 );
 
         if ( $kmax > 0 && !$do_not_align ) {
 
@@ -8749,7 +8775,7 @@ sub adjust_side_comment {
             }
 
             # remember this column for the next group
-            $last_comment_column = $columns[ $kmax - 1 ];
+            $last_comment_column = get_column( $kmax - 2 );
         }
 
         else {
@@ -8800,15 +8826,17 @@ use overload '+' => \&plus,
          'atan2' => \&atan2,
 =cut
 
+    my $maximum_field_index = $group_lines[0]->get_jmax();
+
     my $min_ci_gap = $rOpts->{'maximum-line-length'};
     if ( $maximum_field_index > 1 && !$do_not_align ) {
 
         for my $i ( 0 .. $maximum_line_index ) {
             my $line                = $group_lines[$i];
             my $leading_space_count = $line->get_leading_space_count();
-            my $rfields = $line->get_rfields();
+            my $rfields             = $line->get_rfields();
             my $gap                 =
-              $columns[1] - $leading_space_count - length( $$rfields[0] );
+              get_column(0) - $leading_space_count - length( $$rfields[0] );
 
             if ( $leading_space_count > $group_leader_length ) {
                 if ( $gap < $min_ci_gap ) { $min_ci_gap = $gap }
@@ -8828,12 +8856,15 @@ use overload '+' => \&plus,
 sub write_line {
 
     # output one vertically aligned line 
+
     my ( $i, $min_ci_gap, $do_not_align, $group_leader_length,
       $extra_leading_spaces ) = @_;
     my $line                = $group_lines[$i];
-    my $rfields                 = $line->get_rfields();
+    my $rfields             = $line->get_rfields();
     my $leading_space_count = $line->get_leading_space_count();
     my $outdent_long_lines  = $line->get_outdent_long_lines();
+
+    my $maximum_field_index = $group_lines[0]->get_jmax();
 
     # add any extra spaces
     if ( $leading_space_count > $group_leader_length ) {
@@ -8850,11 +8881,12 @@ sub write_line {
         last
 
           if ( ( $j == $maximum_field_index )
-          && ( !defined( $$rfields[$j] )
-          || ( length( $$rfields[$j] ) == 0 ) ) );
+          && ( !defined( $$rfields[$j] ) || ( length( $$rfields[$j] ) == 0 ) )
+        );
 
         # compute spaces of padding before this field
-        my $pad = $columns[$j] - ( length($str) + $leading_space_count );
+        my $pad =
+          get_column( $j - 1 ) - ( length($str) + $leading_space_count );
 
         if ($do_not_align) {
             $pad =
@@ -8916,6 +8948,8 @@ sub get_extra_leading_spaces {
 
             if ($extra_indentation_spaces_wanted) {
 
+                my $maximum_field_index = $group_lines[0]->get_jmax();
+
                 # the maximum space without exceeding the line length:
                 my $avail =
                   $rOpts->{'maximum-line-length'} -
@@ -8938,8 +8972,9 @@ sub combine_fields {
 
     # combine all fields except for the comment field  ( sidecmt.t )
     my ( $j, $k );
+    my $maximum_field_index = $group_lines[0]->get_jmax();
     for ( $j = 0 ; $j <= $maximum_line_index ; $j++ ) {
-        my $line = $group_lines[$j];
+        my $line    = $group_lines[$j];
         my $rfields = $line->get_rfields();
         for ( $k = 1 ; $k < $maximum_field_index ; $k++ ) {
             $$rfields[0] .= $$rfields[$k];
@@ -8949,12 +8984,11 @@ sub combine_fields {
     }
     $maximum_field_index = 1;
 
-    $columns[0] = 0;
-    $columns[1] = 0;
-    $columns[2] = 0;
+    set_column( 0, 0 );
+    set_column( 1, 0 );
 
     for $j ( 0 .. $maximum_line_index ) {
-        my $line = $group_lines[$j];
+        my $line    = $group_lines[$j];
         my $rfields = $line->get_rfields();
         for $k ( 0 .. $maximum_field_index ) {
             my $pad = length( $$rfields[$k] ) - current_field_width($k);
@@ -9072,7 +9106,6 @@ sub report_anything_unusual {
         write_logfile_entry("\n");
     }
 }
-
 
 #####################################################################
 #
