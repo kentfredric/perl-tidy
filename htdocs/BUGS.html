@@ -1,0 +1,58 @@
+<HTML>
+<HEAD>
+<TITLE>Perltidy open BUGS</TITLE>
+<LINK REV="made" HREF="mailto:perl@packages.debian.org">
+</HEAD>
+
+<BODY>
+
+<A NAME="__index__"></A>
+<!-- INDEX BEGIN -->
+
+<UL>
+
+	<LI><A HREF="#perltidy open bugs">Perltidy open BUGS</A></LI>
+	<UL>
+
+		<LI><A HREF="#perl v5.6.0 features not yet parsed correctly (slh, 20010331)">perl v5.6.0 features not yet parsed correctly (SLH, 2001-03-31)</A></LI>
+	</UL>
+
+</UL>
+<!-- INDEX END -->
+
+<HR>
+<P>
+<H1><A NAME="perltidy open bugs">Perltidy open BUGS</A></H1>
+<PRE>
+ You can help perltidy evolve into a better program.  If you think you
+ have hit a bug or weird behavior, or have a suggested improvement,
+ please send a note to perltidy at users.sourceforge.net.</PRE>
+<PRE>
+ This file only lists open bugs.  For bugs which have been fixed, 
+ see the ChangeLog.</PRE>
+<P>
+<H2><A NAME="perl v5.6.0 features not yet parsed correctly (slh, 20010331)">perl v5.6.0 features not yet parsed correctly (SLH, 2001-03-31)</A></H2>
+<P>Subroutine attributes have not been implemented in perltdy yet.  For example:</P>
+<PRE>
+   sub witch : locked {
+     ...        
+   }</PRE>
+<P>Perltidy does not correctly parse prototypes when they are on a separate
+line from the subroutine name.  For example, this would cause an error:</P>
+<PRE>
+   sub pi 
+   ()
+   {
+     4 * atan2(1,1);
+   }</PRE>
+<P>For now, the workaround is to place the prototype on the same line as the sub
+name, like this:</P>
+<PRE>
+   sub pi ()
+   {
+     4 * atan2(1,1);
+   }</PRE>
+
+</BODY>
+
+</HTML>

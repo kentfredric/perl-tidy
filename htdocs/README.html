@@ -1,0 +1,193 @@
+<HTML>
+<HEAD>
+<TITLE>Welcome to perltidy!</TITLE>
+<LINK REV="made" HREF="mailto:perl@packages.debian.org">
+</HEAD>
+
+<BODY>
+
+<A NAME="__index__"></A>
+<!-- INDEX BEGIN -->
+
+<UL>
+
+	<LI><A HREF="#welcome to perltidy!">Welcome to perltidy!</A></LI>
+	<UL>
+
+		<LI><A HREF="#installation  unix">Installation - Unix</A></LI>
+		<LI><A HREF="#installation  windows">Installation - Windows</A></LI>
+		<LI><A HREF="#windows problem with command.com">Windows problem with command.com</A></LI>
+		<LI><A HREF="#vms notes">VMS Notes</A></LI>
+		<LI><A HREF="#bug notices for current users">Bug Notices for Current Users</A></LI>
+	</UL>
+
+	<LI><A HREF="#what next">WHAT NEXT</A></LI>
+	<LI><A HREF="#feedback / bug reports">FEEDBACK / BUG REPORTS</A></LI>
+</UL>
+<!-- INDEX END -->
+
+<HR>
+<P>
+<H1><A NAME="welcome to perltidy!">Welcome to perltidy!</A></H1>
+<P>Perltidy is a tool to indent and reformat perl scripts.  It is
+considered by its author to be stable, although there will always be
+formatting improvements to be made, and suggestions are welcome.</P>
+<P>Perltidy is free software released under the GNU General Public
+License -- please see the included file ``LICENSE'' for details.</P>
+<P>There are two source distribution files, a <EM>.tgz</EM> ``tarball'' for unix
+systems and a zip file, <EM>.zip</EM> for Windows.  The only differences is
+that the line endings have been changed to &lt;cr&gt;&lt;lf&gt; for the Windows
+version.</P>
+<P>
+<H2><A NAME="installation  unix">Installation - Unix</A></H2>
+<P>Try this quick test. Look at <EM>lextest.pl</EM> with your editor - it's a mess.</P>
+<P>Now issue the command</P>
+<PRE>
+ perl ./perltidy lextest.pl</PRE>
+<P>and then look at the output file, which will be <EM>lextest.pl.tdy</EM>.  You
+should see a nicely formatted version of the program, in which perltidy
+has added indentation, whitespace, and line breaks.  This simple example
+illustrates what perltidy does.</P>
+<P>Perltidy does not require any special modules.  We just have to get the
+script in your path and, optionally, install a man page.</P>
+<P>1. If the script is not executable, use</P>
+<PRE>
+ chmod +x perltidy</PRE>
+<P>2. Verify that the initial line in perltidy works for your system by
+entering:</P>
+<PRE>
+ ./perltidy -h</PRE>
+<P>which should produce the usage text and then exit.  This should usually
+work, but if it does not, you will need to change the first line in
+perltidy to reflect the location of perl on your system.  On a Unix
+system, you might find the path to perl with the command 'which perl'.</P>
+<P>3. EDIT <EM>Makefile</EM> to have the correct paths.  See the comments in the
+<EM>Makefile</EM>.</P>
+<P>You will need to become root unless you change the paths to point to
+somewhere in your home directory.  Then issue the command</P>
+<PRE>
+ make install</PRE>
+<P>This installs perltidy and the man page perltidy.1.</P>
+<P>5. Test the installation using</P>
+<PRE>
+ perltidy -h</PRE>
+<P>You should see the usage screen.  Then try</P>
+<PRE>
+ man perltidy</PRE>
+<P>which should bring up the manual page if you installed it.</P>
+<P>If you ever want to remove perltidy, you can remove perltidy and its man
+page by hand or use</P>
+<PRE>
+ make uninstall</PRE>
+<P>
+<H2><A NAME="installation  windows">Installation - Windows</A></H2>
+<P>After unpacking the zip file, test the script:</P>
+<PRE>
+ perl perltidy lextest.pl</PRE>
+<P>This will produce an output file lextest.pl.tdy which can be
+compared to the input file.</P>
+<P>Placing <EM>perltidy</EM> and <EM>perltidy.bat</EM> in your path should work.  (You can
+determine your path by issuing the msdos command <CODE>PATH</CODE>).  However,
+the batch file probably will not support file redirection.  So, for
+example, to pipe the long help message through 'more', you might have
+to invoke perltidy with perl directly, like this:</P>
+<PRE>
+ perl \somepath\perltidy -h | more</PRE>
+<P>
+<H2><A NAME="windows problem with command.com">Windows problem with command.com</A></H2>
+<P>There is a minor problem that you should be aware of if you are running
+perltidy (and perl) under Windows with the standard <EM>command.com</EM> shell.
+The problem is that <EM>command.com</EM> always sends the standard output to
+the screen.  This makes it impossible for perltidy to capture the
+message 'syntax OK' when it runs 'perl -c' with the following code:</P>
+<PRE>
+        my $perl_output = &lt;&lt;`END`;
+                perl -c $filename 2&gt;&amp;1
+        END</PRE>
+<P>It also creates an empty
+file named <EM>&amp;1</EM>.  This means that you will have to check for syntax
+errors yourself.   If you do not want to create the empty file <EM>&amp;1</EM>,
+you can turn off syntax checking with the flag <STRONG>-nsyn</STRONG>.  You can
+check the syntax of a file manually by issuing the command</P>
+<PRE>
+ perl -c filename</PRE>
+<P>The best way to solve this problem is to use a better shell, such as
+bash - see <A HREF="http://www.cygwin.com">http://www.cygwin.com</A></P>
+<P>
+<H2><A NAME="vms notes">VMS Notes</A></H2>
+<P>Perltidy runs under VMS.  You will probably want to use the .zip
+distribution file to get the &lt;cr&gt;&lt;lf&gt; line endings.  File extensions
+will use an underscore character instead of a dot, so</P>
+<PRE>
+      perltidy myfile.pl</PRE>
+<P>will generate the output file <EM>myfile.pl_tdy</EM> instead of
+<EM>myfile.pl.tdy</EM>, and so on.</P>
+<P>If your script starts with a non-perl invocation, eg the following,
+</P>
+<PRE>
+
+ $ perl                               !This is DCL not perl
+ $ deck/dollar=&quot;$$Not-In-Perl$$&quot;      !This is DCL not perl
+ #!/usr/bin/perl</PRE>
+<P>you must use the <STRONG>-x</STRONG> flag to tell perltidy to wait until the
+``hash bang'' line to start parsing, like this:</P>
+<PRE>
+      perltidy -x myfile.pl</PRE>
+<P>Information on running perl under VMS can be found at:</P>
+<PRE>
+ <A HREF="http://w4.lns.cornell.edu/~pvhp/perl/VMS.html">http://w4.lns.cornell.edu/~pvhp/perl/VMS.html</A></PRE>
+<P>
+<H2><A NAME="bug notices for current users">Bug Notices for Current Users</A></H2>
+<P>Please see the ChangeLog for details.  The most serious bugs that have
+been reported are as follows:</P>
+<P>Prior to release 20010608, there was a bug which perltidy removed trailing 
+white space from multiline quotes.</P>
+<P>Prior to release 20010406, there was a bug which perltidy accidentally
+added continuation indentation to the last line of some multi-line
+quotes and patterns.  A special new flag, -chk, has been added to check
+for this error.  You should rerun previously formatted scripts once with
+the -chk flag to check for this.  It will warn of all possible occurances
+of this error.</P>
+<P>Prior to release 20010328, there was a bug which perltidy accidentally
+promoted a function name following a print or printf to a filehandle.
+For example,</P>
+<PRE>
+  print usage() and exit;</PRE>
+<P>became</P>
+<PRE>
+  print usage () and exit;</PRE>
+<P>The result is that perl then considers 'usage' to be a filehandle.
+To fix this, just rerun with the latest version of perltidy.  It will
+look for this situation and issue a warning.</P>
+<P>
+<HR>
+<H1><A NAME="what next">WHAT NEXT</A></H1>
+<P>The documentation has been supplied in three formats: as the man page, as an
+html file, and as a text file.  These were produced from perltidy.pod
+and perl2web.pod.</P>
+<P>Reading the brief tutorial should help you use perltidy effectively.</P>
+<P>These documents can also be found at <A HREF="http://perltidy.sourceforge.net">http://perltidy.sourceforge.net</A></P>
+<P>Perltidy is still being developed, so please check sourceforge occasionally
+for updates if you find that it is useful.  New releases are announced
+on freshmeat.net.</P>
+<P>
+<HR>
+<H1><A NAME="feedback / bug reports">FEEDBACK / BUG REPORTS</A></H1>
+<P>If you see ways to improve this document for the particular system on
+which you install perltidy, please let the author know so that it can be
+updated.</P>
+<P>Comments and suggestions are welcome.  If you feel that you have
+encountered a bug, please send an email with a brief description of the
+problem to:</P>
+<PRE>
+ Steve Hancock
+ perltidy at users.sourceforge.net
+ <A HREF="http://perltidy.sourceforge.net">http://perltidy.sourceforge.net</A></PRE>
+<P>Attach the smallest piece of code which demonstrates the bug, plus a
+.LOG file from a perltidy run, if appropriate.  Your efforts are
+greatly appreciated.</P>
+<P>Thank You</P>
+
+</BODY>
+
+</HTML>

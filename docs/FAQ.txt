@@ -1,0 +1,4 @@
+Frequently Asked Questions
+  Incomplete
+This is a placeholder file for a future FAQ on perltidy
+

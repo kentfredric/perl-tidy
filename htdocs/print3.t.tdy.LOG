@@ -1,0 +1,26 @@
+perltidy version 20010131 log file
+Found Configuration File >>> /home/steve/.perltidyrc 
+Configuration and command line parameters for this run:
+-I -html
+To find error messages search for 'WARNING' with your editor
+Indentation will be with 4 spaces
+Line 3 implies starting-indentation-level = 0
+The nesting depths in the table below are at the start of the lines.
+The indicated output line numbers are not always exact.
+
+in/out   indent  nesting   code + messages; (messages begin with >>>)
+lines    levels  depths    (code begins with one '.' per indent level)
+-------  ------ --------   -------------------------------------------
+L3->1     i0->0 (0 [0 {0   >>>operator in print statement not recommended
+L4->1     i0->0 (0 [0 {0   >>>operator in print statement not recommended
+L5->1     i0->0 (0 [0 {0   >>>operator in print statement not recommended
+L6->1     i0->0 (0 [0 {0   >>>Start multi-line quote or pattern ending in "
+L7->1     i0->0 (0 [0 {0   >>>Last line
+
+WARNING: hit EOF seeking end of quote/pattern starting at line 7 ending in "
+No indentation disagreement seen
+
+No lines exceeded 80 characters
+  Maximum output line length was 0 at line 0
+Suggest including '-w parameter'
+Suggest including 'use strict;'

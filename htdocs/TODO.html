@@ -1,0 +1,88 @@
+<HTML>
+<HEAD>
+<TITLE>Perltidy TODO List</TITLE>
+<LINK REV="made" HREF="mailto:perl@packages.debian.org">
+</HEAD>
+
+<BODY>
+
+<A NAME="__index__"></A>
+<!-- INDEX BEGIN -->
+
+<UL>
+
+	<LI><A HREF="#perltidy todo list">Perltidy TODO List</A></LI>
+	<UL>
+
+		<LI><A HREF="#hanging comments">Hanging comments</A></LI>
+		<LI><A HREF="#gnu/emacs style indentation">Gnu/emacs style indentation</A></LI>
+		<LI><A HREF="#documentation">Documentation</A></LI>
+		<LI><A HREF="#bugs">BUGS</A></LI>
+		<LI><A HREF="#tokenization issues">Tokenization issues</A></LI>
+		<LI><A HREF="#modularization">Modularization</A></LI>
+	</UL>
+
+</UL>
+<!-- INDEX END -->
+
+<HR>
+<P>
+<H1><A NAME="perltidy todo list">Perltidy TODO List</A></H1>
+<P>This is a ``wish-list'' of features to add and things to do.</P>
+<P>
+<H2><A NAME="hanging comments">Hanging comments</A></H2>
+<P>We would like to be able to recognize and format hanging side comments 
+as shown below, rather than format them as full-line block comments.</P>
+<PRE>
+  my $IGNORE = 0;    # number of initial packets to ignore
+                     # Not resending old packets on startup.
+                     # Get old packets from the database.</PRE>
+<P>This update is planned for the near future.</P>
+<P>
+<H2><A NAME="gnu/emacs style indentation">Gnu/emacs style indentation</A></H2>
+<P>We would like to be able to indent tables and function calls in the
+manner sometimes associated with emacs or GNU:</P>
+<PRE>
+    %TV = (
+            flintstones =&gt; {
+                             series  =&gt; &quot;flintstones&quot;,
+                             nights  =&gt; [qw(monday thursday friday)],
+                             members =&gt; [
+                                          {
+                                              name =&gt; &quot;fred&quot;,
+                                              role =&gt; &quot;lead&quot;,
+                                              age  =&gt; 36,
+                                          },
+   (...)</PRE>
+<P>Programming for this is underway.  An experimental implementation, which
+is selected with the '-gnu' flag, is being tested.  It formats
+lists, without side comments, at the present time.  It does not format
+sub call lists.</P>
+<P>
+<H2><A NAME="documentation">Documentation</A></H2>
+<P>A FAQ or maybe COOKBOOK needs to be written, to explain some of the
+more subtle formatting issues.</P>
+<P>
+<H2><A NAME="bugs">BUGS</A></H2>
+<P>There are still a couple of bugs listed in the BUGS file that need
+to be addressed.  These are low priority, but need to be done.</P>
+<P>
+<H2><A NAME="tokenization issues">Tokenization issues</A></H2>
+<P>It would be nice to introduce some more token types, such as procedure
+calls, so that they can be given separate colors in html files.</P>
+<P>There are some subtle issues with distinguishing block types that should
+eventually be addressed to make the tokenizer more correct, even though
+they do not interfere with code beautification.</P>
+<P>
+<H2><A NAME="modularization">Modularization</A></H2>
+<P>It is planned to release perltidy in modules, hopefully this year.
+However, the development of the tokenizer and formatter is still very
+tightly coupled, and there are still some open tokenization issues that
+need to be resolved before the program is split into pieces.  Anyone is
+welcome, of course, to extract the tokenizer and use it for other
+projects, but it would be good to let me know so that we can coordinate
+updates to the tokenizer.</P>
+
+</BODY>
+
+</HTML>

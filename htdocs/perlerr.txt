@@ -1,0 +1,3 @@
+Missing right curly or square bracket at latex2html.tdy.save line 18543, at end of line
+syntax error at latex2html.tdy.save line 18543, at EOF
+latex2html.tdy.save had compilation errors.

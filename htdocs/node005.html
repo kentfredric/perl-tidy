@@ -1,0 +1,110 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+  <TITLE>A complex data structure</TITLE>
+  <META NAME="GENERATOR" CONTENT="alconv $Revision: 1.1 $ by Galen and Steven Hancock">
+  <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+</HEAD>
+<BODY bgcolor="#A0E0E0">
+<DIV ALIGN=CENTER>
+<A HREF="node004.html"><IMG SRC="prev.gif" ALT="Previous" border=0></A>
+<A HREF="node006.html"><IMG SRC="next.gif" ALT="Next" border=0></A>
+<A HREF="node000.html#node005"><IMG SRC="up.gif" ALT="Up" border=0></A>
+</DIV>
+<DIV ALIGN=center>
+<h1>A complex data structure</h1>
+</DIV>
+<DIV ALIGN=left>
+Here is a script named <code>hoh.t</code> taken from the
+perldsc(1) man page and then compacted to hide the structure:
+<p></DIV>
+<hr>
+<pre>
+%TV=(flintstones=&gt;{series=&gt;&quot;flintstones&quot;,nights=&gt;[qw(monday thursday friday)],
+members=&gt;[{name=&gt;&quot;fred&quot;,role=&gt;&quot;lead&quot;,age=&gt;36,},{name=&gt;&quot;wilma&quot;,role=&gt;&quot;wife&quot;,
+age=&gt;31,},{name=&gt;&quot;pebbles&quot;,role=&gt;&quot;kid&quot;,age=&gt;4,},],},jetsons=&gt;{series=&gt;&quot;jetsons&quot;,
+nights=&gt;[qw(wednesday saturday)],members=&gt;[{name=&gt;&quot;george&quot;,role=&gt;&quot;lead&quot;,age=&gt;41,
+},{name=&gt;&quot;jane&quot;,role=&gt;&quot;wife&quot;,age=&gt;39,},{name=&gt;&quot;elroy&quot;,role=&gt;&quot;kid&quot;,age=&gt;9,},],},
+simpsons=&gt;{series=&gt;&quot;simpsons&quot;,nights=&gt;[qw(monday)],members=&gt;[{name=&gt;&quot;homer&quot;,
+role=&gt;&quot;lead&quot;,age=&gt;34,},{name=&gt;&quot;marge&quot;,role=&gt;&quot;wife&quot;,age=&gt;37,},{name=&gt;&quot;bart&quot;,
+role=&gt;&quot;kid&quot;,age=&gt;11,},],},);
+</pre>
+<hr>
+The command <code>perltidy hoh.t</code> produces a file named
+<code>hoh.t.tdy</code> with this result:
+<hr>
+<pre>
+%TV = (
+  flintstones =&gt; {
+      series  =&gt; &quot;flintstones&quot;,
+      nights  =&gt; [qw(monday thursday friday)],
+      members =&gt; [
+          {
+              name =&gt; &quot;fred&quot;,
+              role =&gt; &quot;lead&quot;,
+              age  =&gt; 36,
+          },
+          {
+              name =&gt; &quot;wilma&quot;,
+              role =&gt; &quot;wife&quot;,
+              age  =&gt; 31,
+          },
+          {
+              name =&gt; &quot;pebbles&quot;,
+              role =&gt; &quot;kid&quot;,
+              age  =&gt; 4,
+          },
+      ],
+  },
+  jetsons =&gt; {
+      series  =&gt; &quot;jetsons&quot;,
+      nights  =&gt; [qw(wednesday saturday)],
+      members =&gt; [
+          {
+              name =&gt; &quot;george&quot;,
+              role =&gt; &quot;lead&quot;,
+              age  =&gt; 41,
+          },
+          {
+              name =&gt; &quot;jane&quot;,
+              role =&gt; &quot;wife&quot;,
+              age  =&gt; 39,
+          },
+          {
+              name =&gt; &quot;elroy&quot;,
+              role =&gt; &quot;kid&quot;,
+              age  =&gt; 9,
+          },
+      ],
+  },
+  simpsons =&gt; {
+      series  =&gt; &quot;simpsons&quot;,
+      nights  =&gt; [qw(monday)],
+      members =&gt; [
+          {
+              name =&gt; &quot;homer&quot;,
+              role =&gt; &quot;lead&quot;,
+              age  =&gt; 34,
+          },
+          {
+              name =&gt; &quot;marge&quot;,
+              role =&gt; &quot;wife&quot;,
+              age  =&gt; 37,
+          },
+          {
+              name =&gt; &quot;bart&quot;,
+              role =&gt; &quot;kid&quot;,
+              age  =&gt; 11,
+          },
+      ],
+  },
+);
+</pre>
+<hr>
+<DIV ALIGN=CENTER>
+<A HREF="node004.html"><IMG SRC="prev.gif" ALT="Previous" border=0></A>
+<A HREF="node006.html"><IMG SRC="next.gif" ALT="Next" border=0></A>
+<A HREF="node000.html#node005"><IMG SRC="up.gif" ALT="Up" border=0></A>
+</DIV>
+</BODY>
+</HTML>

@@ -1,0 +1,68 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+  <TITLE>An example of finding a nesting error</TITLE>
+  <META NAME="GENERATOR" CONTENT="alconv $Revision: 1.1 $ by Galen and Steven Hancock">
+  <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+</HEAD>
+<BODY bgcolor="#A0E0E0">
+<DIV ALIGN=CENTER>
+<A HREF="node000.html#node009"><IMG SRC="up.gif" ALT="Up" border=0></A>
+</DIV>
+<DIV ALIGN=center>
+<h1>An example of finding a nesting error</h1>
+</DIV>
+<DIV ALIGN=left>
+If you have ever tried to track down an extra brace or paren in a large
+script, you know how difficult it can be.  Perltidy makes it very easy.
+To show this, I took the largest Perl script that I could find,
+<code>latex2html</code>, and added an extra opening curly brace at a
+random place near the middle of the file (line 8046 out of about
+16000).  Then I used Perl to check the syntax with <code>perl -c
+latex2html</code>.  Perl reported this:
+<p></DIV>
+<hr>
+<pre>
+Missing right curly or square bracket at latex2html line 16291, at end of line
+syntax error at latex2html line 16291, at EOF
+latex2html had compilation errors.
+</pre>
+<hr>
+That's not very useful!  Perl does not even tell us if
+the problem is a curly brace or square bracket, and it
+gives no indication as to where the problem is.  With no other
+tool, one would have to perform a manual binary search
+for the problem by running <code>perl -c</code> on
+pieces of the code.
+<p>
+When Perltidy is run on this script with the command
+<code>perltidy latex2html</code> it produces an error file
+<code>latex2html.ERR</code> with this information:
+<hr>
+<pre>
+Final nesting depth of '{'s is 1
+The most recent un-matched '{' is on line 8004
+8004: sub extract_captions {
+                           ^
+</pre>
+<hr>
+That's much better.  It shows what the problem is, and approximately where.
+Since I knew that the indicated <code>{</code> is valid, and should be matched
+by the <code>}</code> at the end of that <code>sub</code>, I pointed my editor
+(vim) to the closing brace of <code>sub extract_captions</code> and used the
+percent key to find the matching, extra brace at line 8046.  It couldn't be
+much easier.
+<p>
+Actually, it can be!  
+Perltidy always compares the
+indentation spaces in the input file with the indentation implied by its
+braces, and reports any differences.  
+So if you are as careful as a python programmer to 
+keep your file properly indented, for example by running
+it through perltidy on a regular basis, this
+can pinpoint any brace error immediately.
+<DIV ALIGN=CENTER>
+<A HREF="node000.html#node009"><IMG SRC="up.gif" ALT="Up" border=0></A>
+</DIV>
+</BODY>
+</HTML>

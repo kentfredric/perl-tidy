@@ -1,0 +1,111 @@
+   The program can be mostly explained by explaining the global variables
+used:
+
+    $.  The current line number of stdin doubles as the current round number.
+        It is initialized to 1 (along with $| to enable autoflush) at the
+        beginning of the program.
+
+    %a  Maps user input (one of the letters 'p', 'r', or 's') to an integer
+        value.  Paper is represented by 0, rock by 1, and scissors by 2.
+
+    $r  Various strings used multiple times in the program.
+	$s
+
+    @b  Maps the integer representation of user and computer choices to a
+        human readable string (0 -> Paper, etc.).
+
+    @c  A table representing the result of any pair of choices.  It has 9
+        elements.  A value of 0 is a win for the user, a value of 1 is a
+        win for the computer, and a value of 2 is a draw.  The result for
+        a given round is obtained by taking the integer value of the user's
+        choice, multiplying it by 3, and adding the integer value of the
+        computer's choice to that value.  The result is an index to be used
+        with @c.
+
+    @d  Maps the values in @c to a human readable string (0 is "You", 1 is
+        "Computer", 2 is "Draw").  This is also used to output the overall
+        standings.
+
+    @e  Holds the overall results (the number of rounds won by the user,
+        the number of rounds won by the computer, and the number of rounds
+        that resulted in a draw, respectively).
+
+    $p  Holds the choices made in the previous round by the user and the
+        computer.  Its value is the same as the index generated to lookup
+        the result in table @c above.
+
+    @h  Holds a rudimentary sort of history.  This is so that the computer
+        can remember what choice the user last made after a particular
+        set of choices was made in the previous round.  For instance, if
+        the user chooses rock after a round in which the user chose scissors
+        and the computer chose rock, then a value of 1 (representing
+        rock) is stored in $h[7] (7 = scissors * 3 + rock = 2 * 3 + 1).
+        The next time the user chooses scissors and the computer chooses rock,
+        the computer will choose paper for the next round, in an attempt to
+        predict what the user will choose.
+
+   Here is the program, a little bit at a time.  First, the initialization of
+some of the variables listed above:
+
+    $. = $| =1;
+    %a = (p => 0, r => 1, s => 2);
+    $r = 'Round ';
+    $s = ': [p/r/s/q]? ';
+    @b = (Paper, Rock, Scissors);
+    @c = (2, 0, 1, 1, 2, 0, 0, 1, 2);
+    @d = (You, Computer, Draw);
+    @e = (0, 0, 0);
+    $p = int(9 * rand);
+    print "$r$.$s";
+
+   The program consists of a while loop, iterating over the lines of input
+available on stdin (plus all of the file arguments, if any).  Before the
+line of input is processed, the computer makes its choice:
+
+    while(<>) {
+      $y = $h[$p] ? ($h[$p] + 1) % 3 : int(3 * rand);
+
+   The variable $y represents the computer's choice.  The history is
+consulted, it is used to set $y.  Otherwise, a value is chosen randomly.
+Now the user's input is examined:
+
+    if($_ =~ /^[prs]/x) {
+      $x = $a{$&};
+      $h[$p] = $x + 1;
+      $p = 3 * $x + $y;
+      $e[$c[$p]]++;
+      print"$r$.: $d[$[]: $b[$x], $d[1]: $b[$y]\n";
+      print"$r$. Winner: $d[$c[$p]]\n";print"$r$. Score:";
+      foreach $i (0..$#d) {
+	print " $d[$i]: $e[$i] ";
+      }
+      print"\n\n";
+    }
+
+   If the first character is 'p', 'r', or 's', it is interpreted as a
+choice by the user of paper, rock, or scissors, respectively.  The variable
+$x holds the user's choice, and is summarily stored in the history array @h.
+The variable $p is then reset with the values of this round's choices.  Then
+the results of this round and the overall results are output.
+
+   If the first character is 'q', the program exits:
+
+    elsif($_ =~ /^q/i) {
+      exit;
+    }
+
+   Otherwise the line of input is ignored and $. is decremented to preserve
+the current round number.
+    
+    else {
+      $.--;
+    }
+
+   Finally, $. is artificially incremented in order to make the rounds start
+from 1 instead of 0, and then decremented to keep things sane.
+
+    $.++;
+    print "$r$.$s";
+    $.--;
+  }
+

@@ -1,0 +1,54 @@
+.title Cleaning up code from a code generator
+
+.line_comment 0
+.side_comment 0
+
+A good application of perltidy is to clean up code which has been produced
+by a code generator.  Here is a snippet from <code>weave.pl</code>,
+which in turn was produced from <code>weave.web</code> with
+a literate programming tool
+(see <a href="http://users.ox.ac.uk/~pemb0468/webperl/">webperl</a>).
+Here is the input file <code>weave.t</code>.  (Note: the original
+code is one long line, but it has been wrapped at 80 columns here
+for display purposes only).
+<hr>
+<pre>
+# 31
+elsif (/\|/) {            if ($nextchar eq &quot;\|&quot;)  {
+$_=$formatter{&quot;or&quot;} ;            } else {
+$_=&quot;\$\\|\$&quot;; }        } elsif (/_/) {            $_=&quot;\\_{}&quot;;        }
+elsif (/\\\\/) {            $_=&quot;\\&quot;;        } elsif (/\$/) {
+$_=&quot;\\\$&quot;;        } elsif (/\^/) {           $_=&quot;\\\^{}&quot;;        } elsif
+(/&lt;|&gt;/) {           $_=&quot;\$$_\$&quot;;        } elsif (/%/) {
+$_=&quot;\\%&quot;;        } elsif ($_ eq $hash) {            $_=&quot;\\$hash&quot;;}	     
+
+</pre>
+<hr>
+The command <code> perltidy weave.t </code> produces <code> weave.t.tdy</code>
+containing this result:
+<hr>
+<pre>
+# 31
+elsif (/\|/) {
+    if ( $nextchar eq &quot;\|&quot; ) {
+        $_ = $formatter{&quot;or&quot;};
+    }
+    else {
+        $_ = &quot;\$\\|\$&quot;;
+    }
+}
+elsif (/_/)    { $_ = &quot;\\_{}&quot;; }
+elsif (/\\\\/) { $_ = &quot;\\&quot;; }
+elsif (/\$/)   {
+    $_ = &quot;\\\$&quot;;
+}
+elsif (/\^/)  { $_ = &quot;\\\^{}&quot;; }
+elsif (/&lt;|&gt;/) { $_ = &quot;\$$_\$&quot;; }
+elsif (/%/)   {
+    $_ = &quot;\\%&quot;;
+}
+elsif ( $_ eq $hash ) { $_ = &quot;\\$hash&quot;; }
+</pre>
+<hr>
+This ability to reformat code produced by a code generator can
+be invaluable if the code needs to be debugged.

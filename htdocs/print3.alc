@@ -1,0 +1,78 @@
+.title Html Syntax Coloring
+
+.line_comment 0
+.side_comment 0
+
+The many entries to this annual
+<a href="http://www.itknowledge.com/tpj/obfusc-5-awards.html"> contest</a>.
+provided an invaluable source of test scripts during the development
+of perltidy.
+Here is the input file <code>prs.t</code>, by Logan Hanks. 
+<hr>
+<pre>
+# Entry by Logan Hanks in 5th Annual Obfuscated Perl Contest
+# p=paper, r=rock, s=scissors, q=quit
+$.=$|=1;%a=(p=&gt;0,r=&gt;1,s=&gt;2);$r='Round ';$s=': [p/r/s/q]? ';@b=(Paper,Rock,
+Scissors);@c=(2,0,1,1,2,0,0,1,2);@d=(You,Computer,Draw);@e=(0,0,0);$p=int(9*
+rand);print&quot;$r$.$s&quot;;while(&lt;&gt;){$y=$h[$p]?($h[$p]+1)%3:int(3*rand);if($_=~/
+^[prs]/x){$x=$a{$&amp;};$h[$p]=$x+1;$p=3*$x+$y;$e[$c[$p]]++;print&quot;$r$.: &quot;.
+&quot;$d[$[]: $b[$x], $d[1]: $b[$y]\n&quot;;print&quot;$r$. Winner: $d[$c[$p]]\n&quot;;print&quot;$r&quot;.
+&quot;$. Score:&quot;;foreach$i(0..$#d){print&quot; $d[$i]: $e[$i] &quot;;}print&quot;\n\n&quot;;}elsif($_
+=~/^q/i){exit}else{$.--;}$.++;print&quot;$r$.$s&quot;;$.--;}
+</pre>
+<hr>
+The command <code> perltidy prs.t </code> produces <code> prs.t.tdy</code>
+containing this result:
+<hr>
+<pre>
+# Entry by Logan Hanks in 5th Annual Obfuscated Perl Contest
+# p=paper, r=rock, s=scissors, q=quit
+$. = $| = 1;
+%a = (
+  p =&gt; 0,
+  r =&gt; 1,
+  s =&gt; 2 );
+$r = 'Round ';
+$s = ': [p/r/s/q]? ';
+@b = ( Paper, Rock, Scissors );
+@c = ( 2, 0, 1, 1, 2, 0, 0, 1, 2 );
+@d = ( You, Computer, Draw );
+@e = ( 0, 0, 0 );
+$p = int( 9 * rand );
+print &quot;$r$.$s&quot;;
+
+while (&lt;&gt;) {
+    $y = $h[$p] ? ( $h[$p] + 1 ) % 3 : int( 3 * rand );
+    if ( $_ =~ /
+  ^[prs]/x ) {
+        $x = $a{$&amp;};
+        $h[$p] = $x + 1;
+        $p = 3 * $x + $y;
+        $e[ $c[$p] ]++;
+        print &quot;$r$.: &quot; . &quot;$d[$[]: $b[$x], $d[1]: $b[$y]\n&quot;;
+        print &quot;$r$. Winner: $d[$c[$p]]\n&quot;;
+        print &quot;$r&quot; . &quot;$. Score:&quot;;
+
+        foreach $i( 0 .. $#d ) { print &quot; $d[$i]: $e[$i] &quot;; }
+        print &quot;\n\n&quot;;
+    }
+    elsif ( $_ =~ /^q/i ) {exit}
+    else { $.--; }
+    $.++;
+    print &quot;$r$.$s&quot;;
+    $.--;
+}
+</pre>
+<hr>
+This makes it easier to read.  You could do this by hand, but would be tedious.
+It plays the game paper, rock, scissors; to learn how it works, see 
+<a href="prs.html">Logan's description</a>.
+
+A point of interest is the reformatted line
+<pre>
+    if ( $_ =~ /
+  ^[prs]/x ) {
+</pre>
+in which perltidy has retained the line break within the pattern.  While this
+is not necessary in this case, sometimes it is, so perltidy always keeps
+patterns precisely as they are written, including any line breaks. 

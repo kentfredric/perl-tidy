@@ -1,0 +1,33 @@
+.title Some code with side comments
+
+Here is the input file <code>sidecmt.t</code>:
+<hr>
+<pre>
+my $lines  = 0; # checksum: #lines
+my $bytes  = 0; # checksum: #bytes
+my $sum  = 0; # checksum: system V sum
+my $patchdata = 0; # saw patch data
+my $pos  = 0; # start of patch data
+my $endkit = 0; # saw end of kit
+my $fail  = 0; # failed
+
+</pre>
+<hr>
+
+The command <code>perltidy sidecmt.t</code> produces a file
+named <code>sidecmt.t.tdy</code> with this result:
+
+<hr>
+<pre>
+my $lines     = 0;    # checksum: #lines
+my $bytes     = 0;    # checksum: #bytes
+my $sum       = 0;    # checksum: system V sum
+my $patchdata = 0;    # saw patch data
+my $pos       = 0;    # start of patch data
+my $endkit    = 0;    # saw end of kit
+my $fail      = 0;    # failed
+
+</pre>
+<hr>
+This example shows how perltidy lines up equals signs and side comments.
+

@@ -1,0 +1,4 @@
+=head1 Frequently Asked Questions
+
+=head2 Incomplete
+This is a placeholder file for a future FAQ on perltidy

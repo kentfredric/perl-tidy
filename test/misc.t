@@ -1,0 +1,2 @@
+# whitespace check:
+$a = ( presynthetic => [ [] ] );

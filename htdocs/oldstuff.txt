@@ -1,0 +1,10 @@
+#and for RPM's for RedHat 7 and Mandrake 7 (rpm 4.0), and a .deb file for recent versions of Debian Linux, 
+.h2 About Perltidy
+
+Around June of 2000 I needed to clean up some Perl scripts but was
+unable to find a suitable tool for the job.  So I wrote Perltidy.  My
+intention was to just write an indenter, but once indenting was
+working correctly, I decided that it would be nice to extend it to be a
+full-featured formatter, covering as many of the recommendations in the
+perlstyle man page as possible.  I hope you find it useful.
+

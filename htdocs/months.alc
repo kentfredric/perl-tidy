@@ -1,0 +1,23 @@
+.title A simple hash definition
+
+Here is the input file <code>months.t</code>:
+<hr>
+<pre>
+# conversions of month number into letters (0-11)
+my %MonthChars = ('0', 'Jan', '1', 'Feb', '2', 'Mar', '3', 'Apr', '4', 'May', 
+'5', 'Jun', '6', 'Jul', '7', 'Aug', '8', 'Sep', '9', 'Oct', '10','Nov', 
+'11','Dec');
+</pre>
+
+<hr>
+The command <code> perltidy months.t </code> produces a file named
+<code>months.t.tdy</code> with this result:
+<hr>
+<pre>
+# conversions of month number into letters (0-11)
+my %MonthChars = (
+  '0',  'Jan', '1',  'Feb', '2', 'Mar', '3', 'Apr', '4', 'May',
+  '5',  'Jun', '6',  'Jul', '7', 'Aug', '8', 'Sep', '9', 'Oct',
+  '10', 'Nov', '11', 'Dec'
+);
+</pre>

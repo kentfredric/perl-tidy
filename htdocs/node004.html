@@ -1,0 +1,45 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+  <TITLE>A matrix</TITLE>
+  <META NAME="GENERATOR" CONTENT="alconv $Revision: 1.1 $ by Galen and Steven Hancock">
+  <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+</HEAD>
+<BODY bgcolor="#A0E0E0">
+<DIV ALIGN=CENTER>
+<A HREF="node003.html"><IMG SRC="prev.gif" ALT="Previous" border=0></A>
+<A HREF="node005.html"><IMG SRC="next.gif" ALT="Next" border=0></A>
+<A HREF="node000.html#node004"><IMG SRC="up.gif" ALT="Up" border=0></A>
+</DIV>
+<DIV ALIGN=center>
+<h1>A matrix</h1>
+</DIV>
+Here is the input file <code>matrix.t</code>:
+<hr>
+<pre>
+my $a_box = [ [ $a11, $a12, $a13, $a14, $a15, $a16 ], 
+[ $a21, $a22, $a23, $a24, $a25, $a26 ], [ $a31, $a32, $a33, $a34, $a35, $a36 ],
+[ $a41, $a42, $a43, $a44, $a45, $a46 ], [ $a51, $a52, $a53, $a54, $a55, $a56 ],
+	  [ $a61, $a62, $a63, $a64, $a65, $a66 ], ];
+</pre>
+<hr>
+The command <code>perltidy matrix.t</code> produces a file
+named <code>matrix.t.tdy</code> with this result:
+<hr>
+<pre>
+my $a_box = [
+    [ $a11, $a12, $a13, $a14, $a15, $a16 ],
+    [ $a21, $a22, $a23, $a24, $a25, $a26 ],
+    [ $a31, $a32, $a33, $a34, $a35, $a36 ],
+    [ $a41, $a42, $a43, $a44, $a45, $a46 ],
+    [ $a51, $a52, $a53, $a54, $a55, $a56 ],
+    [ $a61, $a62, $a63, $a64, $a65, $a66 ],
+];
+</pre>
+<DIV ALIGN=CENTER>
+<A HREF="node003.html"><IMG SRC="prev.gif" ALT="Previous" border=0></A>
+<A HREF="node005.html"><IMG SRC="next.gif" ALT="Next" border=0></A>
+<A HREF="node000.html#node004"><IMG SRC="up.gif" ALT="Up" border=0></A>
+</DIV>
+</BODY>
+</HTML>

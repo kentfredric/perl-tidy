@@ -1,0 +1,96 @@
+.title A complex Tk call
+
+.line_comment 0
+.side_comment 0
+
+Here is the input file <code>tk3.t</code>.
+<hr>
+<pre>
+
+my $file_menu = $mframe->Menubutton(
+-text => 'File',
+-width => '10',
+-menuitems => [
+['Button' => '~Disassemble',
+-command => \&disassemble 
+],
+[Button => '~Load file',
+-command => sub { 
+my $file = $fs
+->Show(-popover => $top,
+	   -create => 0, 
+	   -verify => ['-r']
+	   );
+$text->Load($file) if (defined $file);
+}
+],
+['Button' => '~Save', 
+-command => [ $text , 'Save' ]
+],
+['Button' => 'Save ~As',
+-command => sub { 
+my $file = $fs->Show(
+		 -popover => $top, 
+		 -create => 1, 
+		 -verify => ['-w']
+		 );
+$text->Save($file) if (defined $file);
+}
+],
+'-',
+['Button' => '~Exit',
+-command => sub { exit; }
+]
+]
+)
+->pack( -side => 'left' );
+
+</pre>
+<hr>
+The command <code> perltidy tk3.t </code> produces <code> tk3.t.tdy</code>
+containing this result:
+<hr>
+<pre>
+
+my $file_menu = $mframe->Menubutton(
+  -text      => 'File',
+  -width     => '10',
+  -menuitems => [
+      [
+          'Button' => '~Disassemble',
+          -command => \&disassemble
+      ],
+      [
+          Button => '~Load file',
+          -command => sub {
+              my $file = $fs->Show(
+              -popover => $top,
+              -create  => 0,
+              -verify  => ['-r'] );
+              $text->Load($file) if ( defined $file );
+          }
+      ],
+      [
+          'Button' => '~Save',
+          -command => [ $text, 'Save' ]
+      ],
+      [
+          'Button' => 'Save ~As',
+          -command => sub {
+              my $file = $fs->Show(
+              -popover => $top,
+              -create  => 1,
+              -verify  => ['-w'] );
+              $text->Save($file) if ( defined $file );
+          }
+      ],
+      '-',
+      [
+          'Button' => '~Exit',
+          -command => sub { exit; }
+      ]
+  ] )->pack( -side => 'left' );
+</pre>
+<hr>
+These calls are not easy to read under the best of circumstances, but the
+use of a consistent indentation scheme helps.

@@ -1,0 +1,65 @@
+=head1 Perltidy TODO List
+
+This is a "wish-list" of features to add and things to do.
+
+=head2 Hanging comments
+
+We would like to be able to recognize and format hanging side comments 
+as shown below, rather than format them as full-line block comments.
+
+  my $IGNORE = 0;    # number of initial packets to ignore
+                     # Not resending old packets on startup.
+                     # Get old packets from the database.
+
+This update is planned for the near future.
+
+=head2 Gnu/emacs style indentation
+
+We would like to be able to indent tables and function calls in the
+manner sometimes associated with emacs or GNU:
+
+    %TV = (
+            flintstones => {
+                             series  => "flintstones",
+                             nights  => [qw(monday thursday friday)],
+                             members => [
+                                          {
+                                              name => "fred",
+                                              role => "lead",
+                                              age  => 36,
+                                          },
+   (...)
+
+Programming for this is underway.  An experimental implementation, which
+is selected with the '-gnu' flag, is being tested.  It formats
+lists, without side comments, at the present time.  It does not format
+sub call lists.
+
+=head2 Documentation
+
+A FAQ or maybe COOKBOOK needs to be written, to explain some of the
+more subtle formatting issues.
+
+=head2 BUGS
+
+There are still a couple of bugs listed in the BUGS file that need
+to be addressed.  These are low priority, but need to be done.
+
+=head2 Tokenization issues
+
+It would be nice to introduce some more token types, such as procedure
+calls, so that they can be given separate colors in html files.  
+
+There are some subtle issues with distinguishing block types that should
+eventually be addressed to make the tokenizer more correct, even though
+they do not interfere with code beautification.
+
+=head2 Modularization
+
+It is planned to release perltidy in modules, hopefully this year.
+However, the development of the tokenizer and formatter is still very
+tightly coupled, and there are still some open tokenization issues that
+need to be resolved before the program is split into pieces.  Anyone is
+welcome, of course, to extract the tokenizer and use it for other
+projects, but it would be good to let me know so that we can coordinate
+updates to the tokenizer.

@@ -1,0 +1,259 @@
+<HTML>
+<HEAD>
+<TITLE>PERLTIDY HTML DOCUMENTATION</TITLE>
+<LINK REV="made" HREF="mailto:perl@packages.debian.org">
+</HEAD>
+
+<BODY>
+
+<A NAME="__index__"></A>
+<!-- INDEX BEGIN -->
+
+<UL>
+
+	<LI><A HREF="#perltidy html documentation">PERLTIDY HTML DOCUMENTATION</A></LI>
+	<LI><A HREF="#synopsis">SYNOPSIS</A></LI>
+	<LI><A HREF="#description">DESCRIPTION</A></LI>
+	<LI><A HREF="#examples">EXAMPLES</A></LI>
+	<LI><A HREF="#options">OPTIONS</A></LI>
+	<LI><A HREF="#see also">SEE ALSO</A></LI>
+	<LI><A HREF="#version">VERSION</A></LI>
+	<LI><A HREF="#author">AUTHOR</A></LI>
+	<LI><A HREF="#copyright">COPYRIGHT</A></LI>
+	<LI><A HREF="#license">LICENSE</A></LI>
+	<LI><A HREF="#disclaimer">DISCLAIMER</A></LI>
+</UL>
+<!-- INDEX END -->
+
+<HR>
+<P>
+<H1><A NAME="perltidy html documentation">PERLTIDY HTML DOCUMENTATION</A></H1>
+<P>This document explains perltidy options available for outputting perl
+scripts in html format.  For other perltidy options, see the perltidy
+man page, or go to the home page at <A HREF="http://perltidy.sourceforge.net.">http://perltidy.sourceforge.net.</A></P>
+<P>Please note that the <STRONG>-html</STRONG> flag is the ``master switch'' which tells
+perltidy to write output in html; without it, the html formatting
+parameters described here will all be ignored.  Also please note that at
+present perltidy is either in ``html mode'' or ``beautification mode'', but
+not both, so it does not do any beautification when the <STRONG>-html</STRONG> option
+is used.  This means that any beautification must be done in a
+preliminary separate run without the <STRONG>-html</STRONG> switch.</P>
+<P>This documentation has been split from the rest of the perltidy
+documentation because it is expected that the perltidy -html capability
+will eventually be spun off into a new, independent program, to allow it
+to grow more easily.</P>
+<P>
+<HR>
+<H1><A NAME="synopsis">SYNOPSIS</A></H1>
+<PRE>
+    perltidy -html [ other options ] file1 file2 file3 ...
+            (output goes to file1.html, file2.html, file3.html, ...)
+    perltidy -html [ other options ] file1 -o outfile
+    perltidy -html [ options ] file1 -st &gt;outfile
+    perltidy -html [ options ] &lt;infile &gt;outfile</PRE>
+<P>
+<HR>
+<H1><A NAME="description">DESCRIPTION</A></H1>
+<P>Perltidy -html reads a Perl script and writes an a copy suitable for
+viewing with a web browser.</P>
+<P>The short <A HREF="#examples">EXAMPLES</A> section should help you get started quickly.</P>
+<P>The <A HREF="#options">OPTIONS</A> section describes all of the command line parameters.</P>
+<P>
+<HR>
+<H1><A NAME="examples">EXAMPLES</A></H1>
+<PRE>
+  perltidy -html somefile.pl</PRE>
+<P>This will produce a file <EM>somefile.pl.html</EM> containing the script with
+html markup.  The output file will contain an embedded style sheet in
+the &lt;HEAD&gt; section which may be edited to change the appearance.</P>
+<PRE>
+  perltidy -html -css=mystyle.css somefile.pl</PRE>
+<P>This will produce a file <EM>somefile.pl.html</EM> containing the script with
+html markup.  This output file will contain a link to a separate style
+sheet file <EM>mystyle.css</EM>.  If the file <EM>mystyle.css</EM> does not exist,
+it will be created.  If it exists, it will not be overwritten.</P>
+<PRE>
+  perltidy -html -pre somefile.pl</PRE>
+<P>Write an html snippet with only the PRE section to <EM>somefile.pl.html</EM>.
+This is useful when code snippets are being formatted for inclusion in a
+larger web page.  No style sheet will be written in this case.</P>
+<PRE>
+  perltidy -html -ss &gt;mystyle.css</PRE>
+<P>Write a style sheet to <EM>mystyle.css</EM> and exit.</P>
+<P>
+<HR>
+<H1><A NAME="options">OPTIONS</A></H1>
+<DL>
+<DT><STRONG><A NAME="item_The_%2Dhtml_master_switch">The <STRONG>-html</STRONG> master switch</A></STRONG><BR>
+<DD>
+The flag <STRONG>-html</STRONG> causes perltidy to write an html file with extension
+<EM>.html</EM>.  So, for example, the following command
+<PRE>
+        perltidy -html somefile.pl</PRE>
+<P>will produce a syntax-colored html file named <EM>somefile.pl.html</EM>
+which may be viewed with a browser.</P>
+<P><STRONG>Please Note</STRONG>: In this case, perltidy does not do any formatting to the
+input file, and it does not write a formatted file with extension
+<EM>.tdy</EM>.  This means that two perltidy runs are required to create a
+fully reformatted, html copy of a script.</P>
+<P></P>
+<DT><STRONG><A NAME="item_The_%2Dpre_flag_for_code_snippets">The <STRONG>-pre</STRONG> flag for code snippets</A></STRONG><BR>
+<DD>
+When the <STRONG>-pre</STRONG> flag is given, only the pre-formatted section, within
+the &lt;PRE&gt; and &lt;/PRE&gt; tags, will be output.  This simplifies inclusion
+of the output in other files.  The default is to output a complete
+web page.
+<P></P>
+<DT><STRONG><A NAME="item_The_%2Dnnn_flag_for_line_numbering">The <STRONG>-nnn</STRONG> flag for line numbering</A></STRONG><BR>
+<DD>
+When the <STRONG>-nnn</STRONG> flag is given, the output lines will be numbered.
+<P></P>
+<DT><STRONG><A NAME="item_Style_Sheets">Style Sheets</A></STRONG><BR>
+<DD>
+Style sheets make it very convenient to control and adjust the
+appearance of html pages.  The default behavior is to write a page of
+html with an embedded style sheet.
+<P>An alternative to an embedded style sheet is to create a page with a
+link to an external style sheet.  This is indicated with the
+<STRONG>-css=filename</STRONG>,  where the external style sheet is <EM>filename</EM>.  The
+external style sheet <EM>filename</EM> will be created if and only if it does
+not exist.  This option is useful for controlling multiple pages from a
+single style sheet.</P>
+<P>To cause perltidy to write a style sheet to standard output and exit,
+use the <STRONG>-ss</STRONG>, or <STRONG>--stylesheet</STRONG>, flag.  This is useful if the style
+sheet could not be written for some reason, such as if the <STRONG>-pre</STRONG> flag
+was used.  Thus, for example,
+</P>
+<PRE>
+
+  perltidy -html -ss &gt;mystyle.css</PRE>
+<P>will write a style sheet with the default properties to file
+<EM>mystyle.css</EM>.</P>
+<P>The use of style sheets is encouraged, but a web page without a style
+sheets can be created with the flag <STRONG>-nss</STRONG>.  Use this option if you
+must to be sure that older browsers (roughly speaking, versions prior to
+4.0 of Netscape Navigator and Internet Explorer) can display the
+syntax-coloring of the html files.</P>
+<P></P>
+<DT><STRONG><A NAME="item_Controlling_HTML_properties">Controlling HTML properties</A></STRONG><BR>
+<DD>
+Syntax colors may be changed from their default values by flags of the either
+the long form, <STRONG>-html-color-xxxxxx=n</STRONG>, or more conveniently the short form,
+<STRONG>-hcx=n</STRONG>, where <STRONG>xxxxxx</STRONG> is one of the following words, and <STRONG>x</STRONG> is the
+corresponding abbreviation:
+<PRE>
+      Token Type             xxxxxx           x 
+      ----------             --------         --
+      comment                comment          c
+      number                 numeric          n
+      identifier             identifier       i
+      bareword, function     bareword         w
+      keyword                keyword          k
+      quite, pattern         quote            q
+      here doc text          here-doc-text    h
+      here doc target        here-doc-target  hh
+      punctuation            punctuation      pu
+      parentheses            paren            p
+      structural braces      structural       s
+      semicolon              semicolon        sc
+      colon                  colon            co
+      comma                  comma            cm
+      label                  label            j</PRE>
+<P>A default set of colors has been defined, but they may be changed by providing
+values to any of the following parameters, where <STRONG>n</STRONG> is either a 6 digit 
+hex RGB color value or an ascii name for a color, such as 'red'.</P>
+<P>To illustrate, the following command will produce an html 
+file <EM>somefile.pl.html</EM> with ``aqua'' keywords:</P>
+<PRE>
+        perltidy -html -hck=00ffff somefile.pl</PRE>
+<P>and this should be equivalent for most browsers:</P>
+<PRE>
+        perltidy -html -hck=aqua somefile.pl</PRE>
+<P>Perltidy merely writes any non-hex names that it sees in the html file.
+The following 16 color names are defined in the HTML 3.2 standard:</P>
+<PRE>
+        black   =&gt; 000000,
+        silver  =&gt; c0c0c0,
+        gray    =&gt; 808080,
+        white   =&gt; ffffff,
+        maroon  =&gt; 800000,
+        red     =&gt; ff0000,
+        purple  =&gt; 800080,
+        fuchsia =&gt; ff00ff,
+        green   =&gt; 008000,
+        lime    =&gt; 00ff00,
+        olive   =&gt; 808000,
+        yellow  =&gt; ffff00
+        navy    =&gt; 000080,
+        blue    =&gt; 0000ff,
+        teal    =&gt; 008080,
+        aqua    =&gt; 00ffff,</PRE>
+<P>Many more names are supported in specific browsers, but it is safest
+to use the hex codes for other colors.  Helpful color tables can be
+located with an internet search for ``HTML color tables''.</P>
+<P>Besides color, two other character attributes may be set: bold, and italics.
+To set a token type to use bold, use the flag
+<STRONG>-html-bold-xxxxxx</STRONG> or <STRONG>-hbx</STRONG>, where <STRONG>xxxxxx</STRONG> or <STRONG>x</STRONG> are the long
+or short names from the above table.</P>
+<P>Likewise, to set a token type to use an italic font, use the flag
+<STRONG>-html-italic-xxxxxx</STRONG> or <STRONG>-hix</STRONG>, where again <STRONG>xxxxxx</STRONG> or <STRONG>x</STRONG> are the
+long or short names from the above table.  For example, to use bold
+braces and lime, bold, italics keywords the following command would be
+used:</P>
+<PRE>
+        perltidy -html -hbs -hck=00FF00 -hik -hbk somefile.pl</PRE>
+<P>The background color can be specified with <STRONG>-html-color-background=n</STRONG>,
+or <STRONG>-hcbg=n</STRONG> for short, where n is a 6 character hex RGB value.  The
+default color of text is the value given to <STRONG>punctuation</STRONG>, which is
+black as a default.</P>
+<P>Here are some notes and hints:</P>
+<P>1. If you find a preferred set of these parameters, you may want
+to create a <EM>.perltidyrc</EM> file containing them.  See the perltidy man
+page for an explanation.</P>
+<P>2. Rather than specifying values for these parameters, it may be easier
+to accept the defaults and then edit a style sheet.  The style sheet
+contains helpful comments which should make this easy.</P>
+<P>3. The syntax-colored html files can be very large, so it may be best to
+split large files into smaller pieces to improve download times.</P>
+<P>4. The list of token types is expected to evolve over time as further
+tokenizer improvements allow a refinement in the available token types,
+so you should occasionally check for updates to this program if you use
+it frequently.</P>
+<P></P></DL>
+<P>
+<HR>
+<H1><A NAME="see also">SEE ALSO</A></H1>
+<P><CODE>perltidy(1)</CODE></P>
+<P>
+<HR>
+<H1><A NAME="version">VERSION</A></H1>
+<P>This man page documents perltidy version 20010610.</P>
+<P>
+<HR>
+<H1><A NAME="author">AUTHOR</A></H1>
+<PRE>
+  Steven L. Hancock
+  email: perltidy at users.sourceforge.net
+  <A HREF="http://perltidy.sourceforge.net">http://perltidy.sourceforge.net</A></PRE>
+<P>Bug reports and suggestions for new features are always welcome.</P>
+<P>
+<HR>
+<H1><A NAME="copyright">COPYRIGHT</A></H1>
+<P>Copyright (c) 2000, 2001 by Steven L. Hancock</P>
+<P>
+<HR>
+<H1><A NAME="license">LICENSE</A></H1>
+<P>This package is free software; you can redistribute it and/or modify it
+under the terms of the ``GNU General Public License''.</P>
+<P>Please refer to the file ``COPYING'' for details.</P>
+<P>
+<HR>
+<H1><A NAME="disclaimer">DISCLAIMER</A></H1>
+<P>This package is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.</P>
+<P>See the ``GNU General Public License'' for more details.</P>
+
+</BODY>
+
+</HTML>

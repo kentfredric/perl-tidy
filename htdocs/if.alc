@@ -1,0 +1,69 @@
+.title An if block
+
+Here is the input file <code>if.t</code>
+<hr>
+<pre>
+    if ($PREPROCESS_IMAGES) {
+	local($pre_env,$which, $done, $indic);
+	while ($contents =~ /$pre_processor_env_rx/) {
+	    $done .= $`; $pre_env = $5; $which =$1; $contents = $';
+	    if (($which =~ /begin/)&&($pre_env =~ /indica/)) {
+		if ($contents =~ s/^\[(\w+)]//o) { $done .= '#'.$1 }
+	    } elsif (($which =~ /end/)&&($pre_env =~ /indica/)) {
+		$done .= '#NIL';
+	    } elsif (($which =~ /begin/)&&($pre_env =~ /itrans/)) {
+		if ($contents =~ s/^\[(\w+)]/$indic=$1;''/e)
+	            { $done .= "\#$indic" }
+	    } elsif (($which =~ /end/)&&($pre_env =~ /itrans/)) {
+		$done .= "\#end$indic";
+	    } elsif ($which =~ /begin/) {
+		$done .= (($which =~ /end/)? $end_preprocessor{$pre_env}
+		          : $begin_preprocessor{$pre_env} )
+	    }
+	}
+	$contents = $done . $contents;
+    }
+</pre>
+<hr>
+The command <code> perltidy if.t </code> produces this result:
+<hr>
+<pre>
+
+    if ($PREPROCESS_IMAGES) {
+        local ( $pre_env, $which, $done, $indic );
+        while ( $contents =~ /$pre_processor_env_rx/ ) {
+            $done .= $`;
+            $pre_env  = $5;
+            $which    = $1;
+            $contents = $';
+            if ( ( $which =~ /begin/ ) && ( $pre_env =~ /indica/ ) ) {
+                if ( $contents =~ s/^\[(\w+)]//o ) { $done .= '#' . $1 }
+            }
+            elsif ( ( $which =~ /end/ ) && ( $pre_env =~ /indica/ ) ) {
+                $done .= '#NIL';
+            }
+            elsif ( ( $which =~ /begin/ ) && ( $pre_env =~ /itrans/ ) ) {
+
+                if ( $contents =~ s/^\[(\w+)]/$indic=$1;''/e ) {
+                    $done .= "\#$indic";
+                }
+            }
+            elsif ( ( $which =~ /end/ ) && ( $pre_env =~ /itrans/ ) ) {
+                $done .= "\#end$indic";
+            }
+            elsif ( $which =~ /begin/ ) {
+                $done .= ( ( $which =~ /end/ ) ? $end_preprocessor{$pre_env} :
+                  $begin_preprocessor{$pre_env} );
+            }
+        }
+        $contents = $done . $contents;
+    }
+</pre>
+<hr>
+Notice that the line below the <code>while</code> with multiple statements
+has been broken into single statements, and that they have been aligned.
+The cuddled elses have been changed to be uncuddled, which is the default
+and follows the suggested standard in perlstyle(1).  The ability of non-cuddled
+elses to improve readability by providing some whitespace between elsif blocks
+can be seen here.  For those who prefer cuddled elses, however, the flag <code>
+-ce</code> can be given.

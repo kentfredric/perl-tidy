@@ -1,0 +1,30 @@
+.title A hash definition list
+
+Here is the input file <code>unit.t</code>:
+<hr>
+<pre>
+
+%unitscale=(&quot;in&quot;,72,&quot;pt&quot;,72.27/72,&quot;pc&quot;,12,&quot;mm&quot;,72/25.4,&quot;cm&quot;,72/2.54,
+&quot;\\hsize&quot;,100,&quot;\\vsize&quot;,100,&quot;\\textwidth&quot;,100,&quot;\\textheight&quot;,100,
+&quot;\\pagewidth&quot;,100,&quot;\\linewidth&quot;,100);
+
+</pre>
+<hr>
+
+The command <code>perltidy unit.t</code> produces a file
+named <code>unit.t.tdy</code> with this result:
+
+<hr>
+<pre>
+
+%unitscale = (
+  &quot;in&quot;,           72,        &quot;pt&quot;,          72.27 / 72,
+  &quot;pc&quot;,           12,        &quot;mm&quot;,          72 / 25.4,
+  &quot;cm&quot;,           72 / 2.54, &quot;\\hsize&quot;,     100,
+  &quot;\\vsize&quot;,      100,       &quot;\\textwidth&quot;, 100,
+  &quot;\\textheight&quot;, 100,       &quot;\\pagewidth&quot;, 100,
+  &quot;\\linewidth&quot;,  100
+);
+
+</pre>
+<hr>

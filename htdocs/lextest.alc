@@ -1,0 +1,43 @@
+.title A loop
+
+Here is a script named <code>lextest.t</code> copied from the perlop(1) man
+page and compacted to hide the structure:
+<hr>
+<pre>
+$_= &lt;&lt;'EOL';
+   $url = new URI::URL &quot;http://www/&quot;;   die if $url eq &quot;xXx&quot;;
+EOL
+LOOP:{print(&quot; digits&quot;),redo LOOP if/\G\d+\b[,.;]?\s*/gc;print(&quot; lowercase&quot;),
+redo LOOP if/\G[a-z]+\b[,.;]?\s*/gc;print(&quot; UPPERCASE&quot;),redo LOOP 
+if/\G[A-Z]+\b[,.;]?\s*/gc;print(&quot; Capitalized&quot;),
+redo LOOP if/\G[A-Z][a-z]+\b[,.;]?\s*/gc;
+print(&quot; MiXeD&quot;),redo LOOP if/\G[A-Za-z]+\b[,.;]?\s*/gc;print(
+&quot; alphanumeric&quot;),redo LOOP if/\G[A-Za-z0-9]+\b[,.;]?\s*/gc;print(&quot; line-noise&quot;
+),redo LOOP if/\G[^A-Za-z0-9]+/gc;print&quot;. That's all!\n&quot;;}
+
+</pre>
+
+<hr>
+The command <code>perltidy lextest.t</code> produces a file
+named <code>lextest.t.tdy</code> with this result:
+<hr>
+
+<pre>
+
+$_ = &lt;&lt;'EOL';
+   $url = new URI::URL &quot;http://www/&quot;;   die if $url eq &quot;xXx&quot;;
+EOL
+LOOP: {
+    print(&quot; digits&quot;),       redo LOOP if /\G\d+\b[,.;]?\s*/gc;
+    print(&quot; lowercase&quot;),    redo LOOP if /\G[a-z]+\b[,.;]?\s*/gc;
+    print(&quot; UPPERCASE&quot;),    redo LOOP if /\G[A-Z]+\b[,.;]?\s*/gc;
+    print(&quot; Capitalized&quot;),  redo LOOP if /\G[A-Z][a-z]+\b[,.;]?\s*/gc;
+    print(&quot; MiXeD&quot;),        redo LOOP if /\G[A-Za-z]+\b[,.;]?\s*/gc;
+    print(&quot; alphanumeric&quot;), redo LOOP if /\G[A-Za-z0-9]+\b[,.;]?\s*/gc;
+    print(&quot; line-noise&quot;),   redo LOOP if /\G[^A-Za-z0-9]+/gc;
+    print &quot;. That's all!\n&quot;;
+}
+</pre>
+<hr>
+Notice how perltidy has done some nice vertical alignment here.
+

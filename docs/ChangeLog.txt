@@ -1,0 +1,164 @@
+Perltidy Change Log
+     You can help perltidy evolve into a better program.  If you think you
+     have hit a bug or unusual behavior, or have a suggested improvement,
+     please send a note to perltidy at users.sourceforge.net.  
+
+  2001 xx xx
+
+     -A '-gnu' flag has been added which causes lists to be indented
+     with extra indentation in the manner sometimes associated with
+     emacs or the GNU suggestions.  (Suggested by Ian Stuart).
+
+     -Subroutine call parameter lists are now formatted as other lists.
+     This will improve formatting of tables being passed via subroutine
+     calls.  This will also cause full indentation ('-i=n) of continued
+     parameter list lines.  
+ 
+     -Added support for hanging side comments.  Perltidy identifies a hanging
+     side comment as a comment immediately following a line with a side
+     comment or another hanging side comment.  This should work in most
+     cases.  It can be deactivated with --no-hanging-side-comments.
+     (Suggested by Brad Eisenberg).
+
+  2001 06 08
+
+     -fixed problem with parsing command parameters containing quoted
+     strings in .perltidyrc files. (Reported by Roger Esper Llima 2001-06-07).
+
+     -added two command line flags, --want-break-after and 
+     --want-break-before, which allow changing whether perltidy
+     breaks lines before or after any operators.  Please see the revised 
+     man pages for details.
+
+     -added system-wide configuration file capability.
+     If perltidy does not find a .perltidyrc command line file in
+     the current directory, nor in the home directory, it now looks
+     for '/usr/local/etc/perltidyrc' and then for '/etc/perltidyrc'.
+     (Suggested by Roger Esper Llima 2001-05-31).
+
+     -fixed problem in which spaces were trimmed from lines of a multi-line
+     quote. (Reported by Roger Esper Llima 2001-05-30).  This is an 
+     uncommon situation, but serious, because it could conceivably change
+     the proper function of a script.
+
+     -fixed problem in which a semicolon was incorrectly added within 
+     an anonymous hash.  (Reported by A.C. Yardley, 2001-5-23).
+     (You would know if this happened, because perl would give a syntax
+     error for the resulting script).
+
+     -fixed problem in which an incorrect error message was produced
+      after a version number on a 'use' line, like this ( Reported 
+      by Andres Kroonmaa, 2001-5-14):
+
+                  use CGI 2.42 qw(fatalsToBrowser);
+
+      Other than the extraneous error message, this bug was harmless.
+
+  2001 04 06
+
+     -fixed serious bug in which the last line of some multi-line quotes or
+      patterns was given continuation indentation spaces.  This may make
+      a pattern incorrect unless it uses the /x modifier.  To find
+      instances of this error in scripts which have been formatted with
+      earlier versions of perltidy, run with the -chk flag, which has
+      been added for this purpose (SLH, 2001-04-05).
+
+      ** So, please check previously formatted scripts by running with -chk
+      at least once **
+
+     -continuation indentation has been reprogrammed to be hierarchical, 
+      which improves deeply nested structures.
+
+     -fixed problem with undefined value in list formatting (reported by Michael
+      Langner 2001-04-05)
+
+     -Switched to graphical display of nesting in .LOG files.  If an
+      old format string was "(1 [0 {2", the new string is "{{(".  This
+      is easier to read and also shows the order of nesting.
+
+     -added outdenting of cuddled paren structures, like  ")->pack(".
+
+     -added line break and outdenting of ')->' so that instead of
+
+            $mw->Label(
+              -text   => "perltidy",
+              -relief => 'ridge')->pack;
+ 
+      the current default is:
+
+            $mw->Label(
+              -text   => "perltidy",
+              -relief => 'ridge'
+            )->pack;
+
+      (requested by Michael Langner 2001-03-31; in the future this could 
+      be controlled by a command-line parameter).
+
+     -revised list indentation logic, so that lists following an assignment
+      operator get one full indentation level, rather than just continuation 
+      indentation.  Also corrected some minor glitches in the continuation 
+      indentation logic. 
+
+     -Fixed problem with unwanted continuation indentation after a blank line 
+     (reported by Erik Thaysen 2001-03-28):
+
+     -minor update to avoid stranding a single '(' on one line
+
+  2001 03 28:
+
+     -corrected serious error tokenizing filehandles, in which a sub call 
+     after a print or printf, like this:
+        print usage() and exit;
+     became this:
+        print usage () and exit;
+     Unfortunately, this converts 'usage' to a filehandle.  To fix this, rerun
+     perltidy; it will look for this situation and issue a warning. 
+
+     -fixed another cuddled-else formatting bug (Reported by Craig Bourne)
+
+     -added several diagnostic --dump routines
+ 
+     -added token-level whitespace controls (suggested by Hans Ecke)
+
+  2001 03 23:
+
+     -added support for special variables of the form ${^WANT_BITS}
+
+     -space added between scalar and left paren in 'for' and 'foreach' loops,
+      (suggestion by Michael Cartmell):
+
+        for $i( 1 .. 20 )   # old
+        for $i ( 1 .. 20 )   # new
+
+     -html now outputs cascading style sheets (thanks to suggestion from
+      Hans Ecke)
+
+     -flags -o and -st now work with -html
+
+     -added missing -html documentation for comments (noted by Alex Izvorski)
+
+     -support for VMS added (thanks to Michael Cartmell for code patches and 
+       testing)
+
+     -v-strings implemented (noted by Hans Ecke and Michael Cartmell; extensive
+       testing by Michael Cartmell)
+
+     -fixed problem where operand may be empty at line 3970 
+      (\b should be just b in lines 3970, 3973) (Thanks to Erik Thaysen, 
+      Keith Marshall for bug reports)
+
+     -fixed -ce bug (cuddled else), where lines like '} else {' were indented
+      (Thanks to Shawn Stepper and Rick Measham for reporting this)
+
+  2001 03 04:
+
+     -fixed undefined value in line 153 (only worked with -I set)
+     (Thanks to Mike Stok, Phantom of the Opcodes, Ian Ehrenwald, and others)
+
+     -fixed undefined value in line 1069 (filehandle problem with perl versions <
+     5.6) (Thanks to Yuri Leikind, Mike Stok, Michael Holve, Jeff Kolber)
+
+  2001 03 03:
+
+     -Initial announcement at freshmeat.net; started Change Log
+     (Unfortunately this version was DOA, but it was fixed the next day)

@@ -1,0 +1,78 @@
+<HTML>
+<HEAD>
+<TITLE>Perltidy Status and TODO List</TITLE>
+<LINK REV="made" HREF="mailto:perl@packages.debian.org">
+</HEAD>
+
+<BODY>
+
+<A NAME="__index__"></A>
+<!-- INDEX BEGIN -->
+
+<UL>
+
+	<LI><A HREF="#perltidy status and todo list">Perltidy Status and TODO List</A></LI>
+	<UL>
+
+		<LI><A HREF="#status">Status</A></LI>
+		<LI><A HREF="#oneline block issues">One-Line block issues</A></LI>
+		<LI><A HREF="#vertical alignment issues">Vertical Alignment issues</A></LI>
+		<LI><A HREF="#develop a standard set of test scripts">Develop a standard set of test scripts</A></LI>
+		<LI><A HREF="#documentation">Documentation</A></LI>
+		<LI><A HREF="#html output">Html output</A></LI>
+	</UL>
+
+</UL>
+<!-- INDEX END -->
+
+<HR>
+<P>
+<H1><A NAME="perltidy status and todo list">Perltidy Status and TODO List</A></H1>
+<P>
+<H2><A NAME="status">Status</A></H2>
+<P>Perltidy has been robust and stable for several months.  There are no
+known bugs at the present time (I call them ``issues'' instead).  There
+are (and will always be) areas for formatting improvement.  I expect to
+update the program frequently during year 2001 as formatting
+improvements are made.  Please keep your version up to date, and report
+any bugs.</P>
+<P>
+<H2><A NAME="oneline block issues">One-Line block issues</A></H2>
+<P>One-line blocks can be surprisingly tricky to handle.  Perltidy
+currently retains existing one-line blocks but does not form new
+one-line blocks, which is something I plan to implement soon.  Another
+issue is that it currently looks ahead to check the length of existing
+one-line blocks, using the old whitespace, and consequently it sometimes
+mistakenly keeps a block which should be broken up.  An example of this
+can be seen in the file <STRONG>braces.t</STRONG> in the <EM>test</EM> directory.  A
+temporary fix for this problem is to simply run the script through
+perltidy a second time.  I'm planning a general fix.</P>
+<P>
+<H2><A NAME="vertical alignment issues">Vertical Alignment issues</A></H2>
+<P>The VerticalAligner package works very well, but every once in a while it
+makes a bad decision which, for example, prevents a side comment from
+aligning with its neighbors, or leaves some extra white space in the
+middle of a line.  These are low priority problems, but it would be nice
+to correct them as they are discovered.  One example of this can be seen
+in the second section of file <EM>sidecmt.t</EM> in the <EM>test</EM> directory.</P>
+<P>
+<H2><A NAME="develop a standard set of test scripts">Develop a standard set of test scripts</A></H2>
+<P>I've made a small start on this, and plan to add more.  I have an almost
+unlimited supply, and the problem is to sift out those that are really
+useful.</P>
+<P>
+<H2><A NAME="documentation">Documentation</A></H2>
+<P>There are still a few undocumented options which need to be either
+documented or removed from the code.</P>
+<P>A FAQ or maybe COOKBOOK needs to be written, to explain some of the
+more subtle formatting issues.</P>
+<P>
+<H2><A NAME="html output">Html output</A></H2>
+<P>Since perltidy does an accurate tokenization of input files, it would be
+straightforward to add a -html flag to produce html output with syntax
+coloring.  I don't have any plans to do this, but could if there is
+interest.</P>
+
+</BODY>
+
+</HTML>

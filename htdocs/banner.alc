@@ -1,0 +1,60 @@
+.title An entry from the Fifth Annual Obfuscated Perl Contest
+
+.line_comment 0
+.side_comment 0
+
+Here is the input file <code>banner.t</code>, the entry by Matt Armstrong in
+this <a href=http://www.itknowledge.com/tpj/obfusc-5-awards.html> contest</a>.
+<hr>
+<pre>
+#!/usr/bin/perl -l
+
+$A=25755;$E=       71317;$H=  55755;$J=74452;    $L=
+11117  ;$N=25555;  $O=        25552  ;$P=35311;  $R=
+35355  ;$T=72222;  $U=        55557 ;for(split   //,
+uc<>){@b=split     //,$$_;    for(0..4){$c       =$b
+[$_];              $t[        $_].=" "x4;while   ($c
+){$d=              int        log(     $c)/log   2;$c
+-=2**              $d;substr  ($t[     $_],$d+   $p,1)="@"}
+                                                 }$p+=4}for
+                                                 (@t){print}
+
+</pre>
+<hr>
+The command <code> perltidy banner.t </code> produces <code> banner.t.tdy</code>
+containing this result:
+<hr>
+<pre>
+#!/usr/bin/perl -l
+
+$A = 25755;
+$E = 71317;
+$H = 55755;
+$J = 74452;
+$L = 11117;
+$N = 25555;
+$O = 25552;
+$P = 35311;
+$R = 35355;
+$T = 72222;
+$U = 55557;
+for ( split //, uc <> ) {
+	@b = split //, $$_;
+
+	for ( 0 .. 4 ) {
+		$c = $b[$_];
+		$t[$_] .= " " x 4;
+		while ( $c ) {
+			$d = int log($c) / log 2;
+			$c -= 2**$d;
+			substr( $t[$_], $d + $p, 1 ) = "@";
+		}
+	}
+	$p += 4;
+}
+
+for (@t) {print}
+</pre>
+<hr>
+At least this makes it easier to read.  To learn what it does and how
+it works, see Matt's description.
