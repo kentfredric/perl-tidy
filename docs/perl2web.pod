@@ -31,9 +31,9 @@ to grow more easily.
 Perltidy -html reads a Perl script and writes an a copy suitable for
 viewing with a web browser.
 
-The short L<"EXAMPLES"> section should help you get started quickly.
+For a quick introduction, see L<"EXAMPLES">. 
 
-The L<"OPTIONS"> section describes all of the command line parameters. 
+For a complete description of the command line parameters, see L<"OPTIONS">. 
 
 =head1 EXAMPLES
 

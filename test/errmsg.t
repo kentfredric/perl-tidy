@@ -3,6 +3,15 @@
 # Some code to generate various error messages
 # No use strict, no -w
 
+# Here the space after 'redirect' will confuse perltidy
+print redirect ("hi");
+
+   # missing paren between braces
+   /^[2Aa]/ && do {
+      ($newtask = <STDIN>;
+      print "Enter a priority for the new task (1-9): ";
+   };
+
 # The ending ';' will be deleted
 # This line should cause a -sil warning
     if ( !$key || $key < $MAX_SPLIT_DEPTH ) { $pre = '' };

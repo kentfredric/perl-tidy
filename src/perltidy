@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.31 2001/08/19 15:42:11 perltidy Exp $
+    $Id: perltidy,v 1.32 2001/08/23 06:26:12 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -239,10 +239,10 @@ sub main {
               Perltidy::Debugger->new( $fileroot . $dot . "DEBUG" );
         }
 
+        my $formatter=undef;
         #---------------------------------------------------------------
         # create a formatter for this file : html writer or pretty printer
         #---------------------------------------------------------------
-        $formatter = undef;
         if ( $rOpts->{'html'} ) {
             $formatter = Perltidy::HtmlWriter->new( $fileroot, $output_file );
         }
@@ -1930,20 +1930,24 @@ sub ask_user_for_bug_report {
     if ( ( $saw_code_bug == 0 ) && ( $infile_syntax_ok == 1 ) ) {
         $self->warning(<<EOM);
 
-You may have encountered a code bug in perltidy.  If you have a valid
-script, please report it so that it can be corrected.  Include the
-smallest possible script which has the problem, along with the .LOG
-file. See the manual pages for contact information.  Thank you!
+You may have encountered a code bug in perltidy.  If you think so, and
+the problem is not listed in the BUGS file at
+http://perltidy.sourceforge.net, please report it so that it can be
+corrected.  Include the smallest possible script which has the problem,
+along with the .LOG file. See the manual pages for contact information.
+Thank you!
 EOM
 
     }
     elsif ( $saw_code_bug == 1 ) {
         $self->warning(<<EOM);
 
-Oops, you seem to have encountered a bug in perltidy.  Please report it
-so that it can be corrected.  Include the smallest possible script which
-produces this message, along with the .LOG file if appropriate. See the
-manual pages for contact information.  Your efforts are appreciated.  
+Oops, you seem to have encountered a bug in perltidy.  Please check the
+BUGS file at http://perltidy.sourceforge.net.  If the problem is not
+listed there, please report it so that it can be corrected.  Include the
+smallest possible script which produces this message, along with the
+.LOG file if appropriate.  See the manual pages for contact information.
+Your efforts are appreciated.  
 Thank you!
 EOM
         my $added_semicolon_count = $formatter->get_added_semicolon_count();
@@ -2496,9 +2500,12 @@ sub write_line {
 # The Perltidy::Formatter package adds indentation, whitespace, and line breaks
 # to the token stream
 #
+# WARNING: This is not a real class yet.  Only one Formatter my be used.
+#
 #####################################################################
 
 package Perltidy::Formatter;
+use Carp;
 use vars qw{
 
   @gnu_stack
@@ -2793,7 +2800,7 @@ sub new {
 
     # Safety check.. 
     if ( _increment_count() > 1 ) {
-        die
+        confess
 "Attempt to create more than 1 object in $class, which is not a true class yet\n";
     }
 
@@ -3329,7 +3336,7 @@ sub check_for_long_gnu_style_lines {
                 my $old_level    = $gnu_item_list[$i]->get_LEVEL();
                 my $old_ci_level = $gnu_item_list[$i]->get_CI_LEVEL();
                 warning(
-"program bug with -lp: want to delete $deleted_spaces from item $i, but old=$old_spaces deleter: lev=$level ci=$ci_level  deleted: level=$old_level ci=$ci_level\n"
+"program bug with -lp: want to delete $deleted_spaces from item $i, but old=$old_spaces deleted: lev=$level ci=$ci_level  deleted: level=$old_level ci=$ci_level\n"
                 );
                 report_definite_bug();
             }
@@ -3759,7 +3766,8 @@ sub is_essential_whitespace {
       || ( ( $typer =~ /^(pp|mm)$/ )     && ( $tokenl !~ /^[\;\{\(\[]/ ) )
       || ( ( $typel =~ /^(\+\+|\-\-)$/ ) && ( $tokenr !~ /^[\;\}\)\]]/ ) )
 
-      # need space after foreach my; for example, this will fail:
+      # need space after foreach my; for example, this will fail in
+      # older versions of Perl:
       # foreach my$ft(@filetypes)...
       || ( $tokenll =~ /^(for|foreach)$/ && ( $tokenl eq 'my' )
         && ( $tokenr =~ /^\$/ ) )
@@ -3840,12 +3848,12 @@ sub set_white_space_flag {
         my @spaces_left_side = qw"
           t ! ~ m p { \ h pp mm Z j
           ";
-        push ( @spaces_left_side, '#' );
+        push ( @spaces_left_side, '#' );  # avoids warning message
 
         my @spaces_right_side = qw"
           ; } ) ] R J ++ --
           ";
-        push ( @spaces_right_side, ',' );
+        push ( @spaces_right_side, ',' ); # avoids warning message
         my @space_before_paren = qw(
           my local and or eq ne if else elsif until unless while
           for foreach push return shift unshift pop join split die
@@ -4334,12 +4342,13 @@ sub print_line_of_tokens {
         || ( ( $python_indentation_level == 0 ) && $$rtoken_type[0] eq 'Q' ) );
 
     # Patch needed for MakeMaker.  Do not break a statement
-    # in which $VERSION may be calculated.  See MakeMaker.pm.
+    # in which $VERSION may be calculated.  See MakeMaker.pm;
+    # this is based on the coding in it.
     # The first line of a file that matches this will be eval'd:
     #     /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
     # Examples:
     #   *VERSION = \'1.01';
-    #   ( $VERSION ) = '$Revision: 1.31 $ ' =~ /\$Revision:\s+([^\s]+)/;
+    #   ( $VERSION ) = '$Revision: 1.32 $ ' =~ /\$Revision:\s+([^\s]+)/;
     # We will pass such a line straight through unless -npvl is used
     my $is_VERSION_statement = 0;
 
@@ -8016,7 +8025,6 @@ package Perltidy::VerticalAligner::Line;
             return $self->get_starting_column($j);
         }
         else {
-            #return $self->get_starting_column($j) - $self->get_column($j);
             return $self->get_starting_column($j) - $self->get_starting_column($j-1);
         }
     }
@@ -8701,6 +8709,7 @@ sub eliminate_old_fields {
     }
 }
 
+# create an empty side comment if none exists
 sub make_side_comment {
     my $new_line = shift;
     my $jmax     = $new_line->get_jmax();
@@ -8917,7 +8926,6 @@ sub check_fit {
         my $padding_available = $old_line->get_available_space_on_right();
 
         # save current columns in case this doesn't work
-        #$old_line->save_columns();
         save_alignment_columns();
 
         for my $j ( 0 .. $jmax ) {
@@ -8981,7 +8989,6 @@ sub check_fit {
             {
 
                 # revert to starting state then flush; things didn't work out
-                #$old_line->restore_columns();
                 restore_alignment_columns();
                 flush();
                 last;
@@ -9872,10 +9879,12 @@ sub get_line {
 # The Tokenizer returns a reference to a data structure 'line_of_tokens'
 # containing one tokenized line for each call to its get_line() method.
 #
+# WARNING: This is not a real class yet.  Only one tokenizer my be used.
+#
 ########################################################################
 
 package Perltidy::Tokenizer;
-
+use Carp;
 use vars qw{
   $tokenizer_self
   $level_in_tokenizer
@@ -9934,6 +9943,9 @@ use vars qw{
   $in_statement_continuation
 
   %TOKENIZER_DEBUG_FLAG
+
+  $indirect_object_taker
+  $keywords_without_list
   $block_list_operator
   $block_operator
   %expecting_operator_token
@@ -10071,7 +10083,7 @@ sub new {
     # create more than one object.
 
     if ( _increment_count() > 1 ) {
-        die
+        confess
 "Attempt to create more than 1 object in $class, which is not a true class yet\n";
     }
 
@@ -10182,10 +10194,11 @@ sub report_errors {
     if ( $tokenizer_self->{_saw_lc_filehandle} ) {
 
         warning( <<'EOM' );
+------------------------------------------------------------------
 PLEASE NOTE: If you get this message, it is because perltidy noticed
 possible ambiguous syntax at one or more places in your script, as
-noted above.  The problem is with print and printf statements of the
-form
+noted above.  The problem is with statements accepting indirect objects,
+such as print and printf statements of the form
 
     print bareword ( $etc
 
@@ -10197,22 +10210,22 @@ globally capitalize 'bareword' to be BAREWORD.  So the above line
 would be: 
 
     print bareword( $etc    # function
-
 or
-
     print bareword @list    # filehandle
-
 or
-
     print BAREWORD ( $etc   # filehandle
 
-It is very possible that this is syntax is unambiguous to perl, which
-may know what 'bareword' is by parsing any 'use' and 'require' modules
-that you have referenced, but perltidy does not currently parse other
-modules, so it has not seen any function prototypes that they might
-contain.  To prevent this message, use -w=0.
-
+If you want to keep the line as it is, and are sure it is correct,
+you can use -w=0 to prevent this message and I'll shut up.
+------------------------------------------------------------------
 EOM
+
+#It is very possible that this is syntax is unambiguous to perl, which
+#may know what 'bareword' is by parsing any 'use' and 'require' modules
+#that you have referenced, but perltidy does not currently parse other
+#modules, so it has not seen any function prototypes that they might
+#contain.  To prevent this message, use -w=0.
+
     }
 
     if ( $tokenizer_self->{_in_pod} ) {
@@ -10368,9 +10381,9 @@ sub get_line {
         $line_of_tokens->{_line_type} = 'HERE';
         my $here_doc_target = $tokenizer_self->{_here_doc_target};
 
-        # note that this match will work even if $here_doc_target is a quote 
-        # containing backslashed characters
-        if ( $input_line =~ /^$here_doc_target$/ ) {
+        my $chompped_line = $input_line;
+        chomp $chompped_line;
+        if ($chompped_line eq $here_doc_target) {
             $line_of_tokens->{_line_type} = 'HERE_END';
             write_logfile_entry("Exiting HERE document $here_doc_target\n");
 
@@ -10871,7 +10884,7 @@ The following additional token types are defined:
     v    a v-string
     F    a file test operator (like -e)
     Y    File handle
-    Z    identifier which may be file handle or object
+    Z    identifier in indirect object slot: may be file handle, object
     J    LABEL:  code block label
     j    LABEL after next, last, redo, goto
     p    unary +
@@ -11425,14 +11438,22 @@ EOM
             elsif ( ( $tok eq 'strict' ) and ( $last_nonblank_token eq 'use' ) )
             {
                 $tokenizer_self->{_saw_use_strict} = 1;
-                $type = 'k';
+                #$type = 'k';
+                ( $i, $tok, $type ) =
+                  scan_bare_identifier( $input_line, $i, $tok, $type,
+                    $rtoken_map );
             }
 
             elsif ( ( $tok eq 'warnings' )
                 and ( $last_nonblank_token eq 'use' ) )
             {
                 $tokenizer_self->{_saw_perl_dash_w} = 1;
-                $type = 'k';
+
+                # scan as identifier, so that we pick up something like:
+                # use warnings::register
+                ( $i, $tok, $type ) =
+                  scan_bare_identifier( $input_line, $i, $tok, $type,
+                    $rtoken_map );
             }
 
             elsif ( $tok eq 'AutoLoader'
@@ -11449,7 +11470,10 @@ EOM
                 write_logfile_entry("AutoLoader seen, -nlal deactivates\n");
                 $tokenizer_self->{_saw_autoloader}      = 1;
                 $tokenizer_self->{_look_for_autoloader} = 0;
-                $type = 'k';
+                #$type = 'k';
+                ( $i, $tok, $type ) =
+                  scan_bare_identifier( $input_line, $i, $tok, $type,
+                    $rtoken_map );
             }
 
             elsif ( $tok eq 'SelfLoader'
@@ -11461,13 +11485,19 @@ EOM
                 write_logfile_entry("SelfLoader seen, -nlsl deactivates\n");
                 $tokenizer_self->{_saw_selfloader}      = 1;
                 $tokenizer_self->{_look_for_selfloader} = 0;
-                $type = 'k';
+                ( $i, $tok, $type ) =
+                  scan_bare_identifier( $input_line, $i, $tok, $type,
+                    $rtoken_map );
+                #$type = 'k';
             }
 
             elsif ( ( $tok eq 'constant' )
                 and ( $last_nonblank_token eq 'use' ) )
             {
-                $type = 'k';
+                #$type = 'k';
+                ( $i, $tok, $type ) =
+                  scan_bare_identifier( $input_line, $i, $tok, $type,
+                    $rtoken_map );
                 my ( $next_nonblank_token, $i_next ) =
                   find_next_nonblank_token( $i, $rtokens );
 
@@ -11556,8 +11586,12 @@ EOM
                 next;
             }
 
+            # Note on token types for format, __DATA__, __END__:
+            # It simplifies things to give these type ';', so that when we
+            # start rescanning we will be expecting a token of type TERM.
+            # We will switch to type 'k' before outputting the tokens.
             elsif ( $tok eq 'format' ) {
-                $type = 'k';
+                $type = ';';    # make tokenizer look for TERM next
                 $tokenizer_self->{_in_format} = 1;
                 last;
             }
@@ -11655,10 +11689,13 @@ EOM
                     $tokenizer_self->{_saw_perl_dash_w} = 1;
                 }
 
-                # Test problem is vorboard.pl
-                if ( ( $last_nonblank_token =~ /^(print|printf)$/ )
+                # Check for indentifier in indirect object slot
+                # (vorboard.pl, sort.t)
+                if ( ( $last_nonblank_token =~ /$indirect_object_taker/)
+                    #/^(print|printf|sort|exec|system)$/ )
                     || ( ( $last_nonblank_token eq '(' )
-                        && ( $paren_type[$paren_depth] =~ /^(print|printf)$/ ) )
+                        && ( $paren_type[$paren_depth] =~ /$indirect_object_taker/))
+                    #/^(print|printf|sort|exec|system)$/ ) )
                     || ( $last_nonblank_type =~ /^[Uw]$/ )    # possible object
                   )
                 {
@@ -11689,8 +11726,12 @@ EOM
                 }
 
                 # paren after keyword..
-                elsif ( $last_nonblank_type =~ /^[k]$/ ) {
-                    $type = '{';
+                # map1.t
+                elsif ( $last_nonblank_type =~ /^[k]$/ 
+                    && $is_keyword_taking_list{$last_nonblank_token} )
+#                    && $last_nonblank_token !~ /$keywords_without_list/) 
+                {
+                        $type = '{';
                 }
 
                 if ( $last_nonblank_type =~ /^(\))$/ ) {
@@ -12220,7 +12261,14 @@ EOM
             $tokenizer_self->{_in_error} = 1;
 
         }
-        push ( @token_type, $output_token_type[$i] );
+
+        # PATCH: output __END__, __DATA__, and format as type 'k' instead of ';'
+        # to make html colors correct, etc.
+        my $fix_type = $type;
+        if ($type eq ';' && $tok =~ /\w/) {$fix_type = 'k'}
+
+        #push ( @token_type, $output_token_type[$i] );
+        push ( @token_type, $fix_type );
         push ( @block_type, $output_block_type[$i] );
 
         push ( @nesting_tokens, $nesting_token_string );
@@ -13599,8 +13647,14 @@ sub find_here_doc {
             my $j;
             $found_target = 1;
 
+            my $tokj;
             for ( $j = $i_next_nonblank + 1 ; $j < $i ; $j++ ) {
-                $here_doc_target .= $$rtokens[$j];
+                $tokj = $$rtokens[$j];
+
+                # we have to remove any backslash before the quote character
+                # so that the here-doc-target exactly matches this string
+                next if ($tokj eq "\\" && $j < $i-1 && $$rtokens[$j+1] eq $quote_character);
+                $here_doc_target .= $tokj;
             }
         }
     }
@@ -13921,11 +13975,13 @@ sub scan_bare_identifier {
                 && (
 
                     # preceded by 'print' or 'printf'
-                    ( $last_nonblank_token =~ /^(print|printf)$/ )
+                    #( $last_nonblank_token =~ /^(print|printf)$/ )
+                    ( $last_nonblank_token =~ /$indirect_object_taker/ )
 
                     # or preceded by 'print(' or 'printf('
                     || ( ( $last_nonblank_token eq '(' )
-                        && ( $paren_type[$paren_depth] =~ /^(print|printf)$/ ) )
+                        #&& ( $paren_type[$paren_depth] =~ /^(print|printf)$/ ) )
+                        && ( $paren_type[$paren_depth] =~ /$indirect_object_taker/ ) )
                 )
               )
             {
@@ -14882,9 +14938,15 @@ BEGIN {
     # operator.
     $block_list_operator = '^(sort|grep|map)$';
 
-    # these operators have prototypes of the form (&), so when they are
+    # these functions have prototypes of the form (&), so when they are
     # followed by a block, that block MAY BE followed by an operator.
     $block_operator = '^(do|eval)$';
+
+    # these functions allow an identifier in the indirect object slot
+    $indirect_object_taker = '^(print|printf|sort|exec|system)$';
+
+    # a paren after these must never be made structural:
+    # $keywords_without_list = '^(sort|grep|map|eval)$';
 
     # I'll build the list of keywords incrementally
     my @Keywords = ();
@@ -15195,13 +15257,37 @@ BEGIN {
     );
     push ( @Keywords, @special_keywords );
 
-    # List of keywords after which a list is accepted:
-    # FIXME: this list needs to be filled in to allow lists
-    # after certain keywords to be formatted nicely
+    # List of keywords after which a list is accepted; this is used to
+    # allow lists after certain keywords to be formatted nicely.
+    # WARNING: do not include sort|map|grep|eval or perl may die on
+    # syntax errors (map1.t).  Probably should exclude system|exec.
     my @keyword_taking_list = qw(
+      and
+      die
+      elsif
+      if
+      for
+      foreach
       join
+      local
+      my
+      or
+      our
       pack
+      pop
+      print
+      printf
+      push
+      return
       sprintf
+      unless
+      unlink
+      unpack
+      unshift
+      until
+      sysread
+      warn
+      while
     );
     @is_keyword_taking_list{@keyword_taking_list} =
       (1) x scalar(@keyword_taking_list);

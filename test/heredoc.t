@@ -1,4 +1,99 @@
-# some here_doc tests
+# some here_doc tests for perltidy
+# syntax is ok on all of these
+
+# unusual target characters
+print <<".*E\t  $X\n^;";
+Hello,
+World 0
+.*E\t  $X\n^;
+
+print << "EOM\n";
+Hello, 
+World 1
+EOM\n
+
+print << "EOM'";
+Hello, 
+World 2
+EOM'
+
+print << "EOM\"";
+Hello, 
+World 3
+EOM"
+
+print << 'EOM\"';
+Hello, 
+World 4
+EOM\"
+
+# quoted backtick works
+print << `E\`OM`;
+echo "Hello, World 5";
+E`OM
+
+# This works if it is in quotes, otherwise
+# it works but we get stopped at the __END__
+# go figure.  but see __DATA__
+print << "__END__";
+Hello, 
+World 6
+__END__
+
+# no interpolation in target string
+$a = "STILL_GOING";
+print <<"$a";
+Hello, 
+World 7
+STILL_GOING
+$a
+=b
+;
+=cut
+
+#this works
+print <<format;
+Hello, 
+World 8
+format
+
+#this works
+print <<"=head1 HERE-TARGETS";
+Hello, 
+World 9
+
+=head1 HERE-TARGETS
+
+#this works without quotes (but __END__ needs quotes)
+print <<__DATA__;
+Hello, 
+World 10
+__DATA__
+
+print <<"LABEL:";
+Hello, 
+World 11
+LABEL:
+
+# this does nothing useful:
+<<';';
+
+(secret hiding place)
+
+;
+
+print <<; # target is emptyline
+# Hello World 12!
+
+print <<# empty target string, still need a ;
+# Hello World 13!
+
+;<<'}'# leading ; terminates previous statement
+
+if (another secret place) {
+  print "Syntax ok!\n;
+}
+;#
 
 # Escaped here doc target with numerical target
 my $a = <<\1;

@@ -26,3 +26,13 @@
 # starting with all on one line:
 @sorted=sort { $SortDir*$PageTotal{$a} <=> $SortDir*$PageTotal{$b} } keys(%PageTotal);
 
+# sort with a block
+print sort {$a cmp $b} @list;
+
+# sort with a named subroutine
+sub sortsub { return $a cmp $b }
+print sort sortsub @list;
+
+# sort with an anonymous subroutine
+my $sortsubref = sub {return $a cmp $b;};
+print sort $sortsubref @list;
