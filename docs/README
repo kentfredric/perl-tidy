@@ -20,7 +20,6 @@ Welcome to Perltidy!
     Please see the BUGS file for a list of all known open bugs.
 
   Installation - Unix
-
     Try this quick test. Look at lextest.pl with your editor - it's a mess.
 
     Now issue the command
@@ -77,9 +76,8 @@ Welcome to Perltidy!
      make uninstall
 
   Windows ME Caution
-
     Perltidy should run under all versions of Windows. I test it on a
-    Windows 95 system using Perl version 5.005_03 before each release, and I
+    Windows 95 system using Perl version 5.004_02 before each release, and I
     occasionally test it on a Windows 2000 system. I have seen one Windows
     ME system with Active State Perl that froze when attempting to run
     Perltidy, but I have other reports of success with Windows ME. In any
@@ -88,7 +86,6 @@ Welcome to Perltidy!
     system freezes. If the first test works, it should be fine.
 
   Installation - Windows
-
     Here is how to install Perltidy under Windows. On a Windows 9x system it
     is a good idea to close any existing applications to avoid losing
     unsaved data in case of trouble.
@@ -113,7 +110,6 @@ Welcome to Perltidy!
     installation options.
 
   Windows 95/98 problem with syntax check
-
     There is a minor problem that you should be aware of if you are running
     perltidy (and perl) under Windows 95/98. The problem is that command.com
     always sends the standard error output to the screen. This makes it
@@ -138,10 +134,8 @@ Welcome to Perltidy!
     versions of Windows do not require the -nsyn switch.
 
   VMS Notes
-
-    Perltidy runs under VMS, thanks to Michael Cartmell. You will probably
-    want to use the .zip distribution file to get the <cr><lf> line endings.
-    File extensions will use an underscore character instead of a dot, so
+    Perltidy runs under VMS, thanks to Michael Cartmell. File extensions
+    will use an underscore character instead of a dot, so
 
           perltidy myfile.pl
 

@@ -3,14 +3,20 @@ Perltidy Change Log
      have hit a bug, unusual behavior, annoyance, or have a suggested
      improvement, please send a note to perltidy at users.sourceforge.net.  
 
-  2001 xx xx
+  2001 12 31
+     -This version is about 20 percent faster than the previous version as a result
+     of optimization work.  The largest gain came from switching to a dispatch hash
+     table in the tokenizer.
 
-     -Merged modifications created by Hugh Myers into perltidy.  These
-      include a 'streamhandle' routine which allows perltidy as a module to
-      operate on input and output arrays and strings, as well as files.
-      Documentation and new packaging as a module should be ready after the
-      holidays.  This is an elegant, powerful update; many thanks to Hugh for
-      contributing it.
+     -perltidy -html will check to see if HTML::Entities is installed, and if so,
+     it will use it to encode unsafe characters.
+
+     -Added flag -oext=ext to change the output file extension to be different
+     from the default ('tdy' or 'html').  For example:
+
+        perltidy -html -oext=htm filename
+
+     will produce filename.htm
 
      -Added flag -cscw to issue warnings if a closing side comment would replace
      an existing, different side comments.  See the man page for details.
@@ -21,19 +27,26 @@ Perltidy Change Log
      but the second one was not:
         if ( ( $tmp >= 0x80_00_00 ) || ( $tmp < -0x80_00_00 ) ) { }
 
-     -I experimented with different ways of reporting syntax errors found
-     when perl -c is run on the INPUT file.  I decided that the best thing
-     to do for now is to output 'perl -c' error messages only if perltidy is
-     invoked with -w.  The reason is that perl will report lots of problems
-     and syntax errors which are not of interest when only a small snippet
-     is being formatted (such as missing modules and unknown bare words).  It
-     would be nice if there were a simple way to extract just the really
-     low-level syntax errors, but I don't see one yet.  So, use -w to see
-     all possible error messages.  Perltidy will continue to report what
-     appear to be significant syntax errors that it finds.
+     -'**=' was incorrectly tokenized as '**' and '='.  This only
+         caused a problem with the -extrude opton.
+
+     -Corrected a divide by zero when -extrude option is used
+
+     -The flag -w will now contain all errors reported by 'perl -c' on the
+     input file, but otherwise they are not reported.  The reason is that
+     perl will report lots of problems and syntax errors which are not of
+     interest when only a small snippet is being formatted (such as missing
+     modules and unknown bare words).  Perltidy will always report all
+     significant syntax errors that it finds, such as unbalanced braces,
+     unless the -q (quiet) flag is set.
+
+     -Merged modifications created by Hugh Myers into perltidy.  These include a
+     'streamhandle' routine which allows perltidy as a module to operate on input
+     and output arrays and strings in addition to files.  Documentation and new
+     packaging as a module should be ready early next year; This is an elegant,
+     powerful update; many thanks to Hugh for contributing it.
 
   2001 11 28
-
      -added a tentative patch which tries to keep any existing breakpoints
      at lines with leading keywords map,sort,eval,grep. The idea is to
      improve formatting of sequences of list operations, as in a schwartzian
@@ -351,7 +364,6 @@ Perltidy Change Log
       marker(!)
 
   2001 10 20
-
      -Corrected a bug in which a break was not being made after a full-line
      comment within a short eval/sort/map/grep block.  A flag was not being
      zeroed.  The syntax error check catches this.  Here is a snippet which
@@ -389,7 +401,6 @@ Perltidy Change Log
      all report themselves as MSWin32.
 
   2001 10 16
-
      -Fixed tokenization error in which a method call of the form
 
         Module::->new();
@@ -622,7 +633,6 @@ Perltidy Change Log
      current default could always be recovered with the '-nlp' flag.  
 
   2001 09 03
-
      -html updates:
          - sub definition names are now specially colored, red by default.  
            The letter 'm' is used to identify them.
@@ -816,7 +826,6 @@ Perltidy Change Log
      as the sub name.
 
   2001 07 31
-
      -Corrected minor, uncommon bug found during routine testing, in which a
      blank got inserted between a function name and its opening paren after
      a file test operator, but only in the case that the function had not
@@ -845,7 +854,6 @@ Perltidy Change Log
      examples.
 
   2001 07 23
-
      -Fixed a very rare problem in which an unwanted semicolon was inserted
      due to misidentification of anonymous hash reference curly as a code
      block curly.  (No instances of this have been reported; I discovered it
@@ -874,13 +882,11 @@ Perltidy Change Log
      (Suggested by  Wolfgang Weisselberg).
 
   2001 07 02
-
      -Eliminated all constants with leading underscores because perl 5.005_03
      does not support that.  For example, _SPACES changed to XX_SPACES.
      Thanks to kromJx for this update.
 
   2001 07 01
-
      -the directory of test files has been moved to a separate distribution
      file because it is getting large but is of little interest to most users.
      For the current distribution:
@@ -940,7 +946,6 @@ Perltidy Change Log
      a glitch in podchecker, but it was annoying.
 
   2001 06 17
-
      -Added -bli flag to give continuation indentation to braces, like this
 
             if ($bli_flag)
@@ -998,7 +1003,6 @@ Perltidy Change Log
      Eisenberg some time ago, and finally implemented.
 
   2001 06 08
-
      -fixed problem with parsing command parameters containing quoted
      strings in .perltidyrc files. (Reported by Roger Espel Llima 2001-06-07).
 
@@ -1032,7 +1036,6 @@ Perltidy Change Log
       Other than the extraneous error message, this bug was harmless.
 
   2001 04 06
-
      -fixed serious bug in which the last line of some multi-line quotes or
       patterns was given continuation indentation spaces.  This may make
       a pattern incorrect unless it uses the /x modifier.  To find
@@ -1082,7 +1085,6 @@ Perltidy Change Log
      -minor update to avoid stranding a single '(' on one line
 
   2001 03 28:
-
      -corrected serious error tokenizing filehandles, in which a sub call 
      after a print or printf, like this:
         print usage() and exit;
@@ -1098,7 +1100,6 @@ Perltidy Change Log
      -added token-level whitespace controls (suggested by Hans Ecke)
 
   2001 03 23:
-
      -added support for special variables of the form ${^WANT_BITS}
 
      -space added between scalar and left paren in 'for' and 'foreach' loops,
@@ -1128,7 +1129,6 @@ Perltidy Change Log
       (Thanks to Shawn Stepper and Rick Measham for reporting this)
 
   2001 03 04:
-
      -fixed undefined value in line 153 (only worked with -I set)
      (Thanks to Mike Stok, Phantom of the Opcodes, Ian Ehrenwald, and others)
 
@@ -1136,6 +1136,5 @@ Perltidy Change Log
      5.6) (Thanks to Yuri Leikind, Mike Stok, Michael Holve, Jeff Kolber)
 
   2001 03 03:
-
      -Initial announcement at freshmeat.net; started Change Log
      (Unfortunately this version was DOA, but it was fixed the next day)

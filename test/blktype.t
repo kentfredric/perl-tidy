@@ -14,3 +14,5 @@ sub _directives {
     };
 }
 
+# inner braces are anonymous hash reference
+$a = [ sub { {} } ];

@@ -1,11 +1,20 @@
 {
     # break at all ';'s
-    for ( $i = 0 ;
-        $i < $self->{"retry"} ;
-        ++$i, $retrans *= 2, $timeout = int( $retrans / ( $#ns + 1 ) ) )
-    # commas and ';'
-    for ( my ( $xa, $ya ) = @xy[ -2, -1 ] ; my ( $xb, $yb ) = splice @xy, 0, 2 ;
-        ( $xa, $ya ) = ( $xb, $yb ) ) {}
+    for ($i = 0 ;
+         $i < $self->{"retry"} ;
+         ++$i, $retrans *= 2, $timeout = int($retrans / ($#ns + 1)))
+
+      # commas and ';'
+      for (my ($xa, $ya) = @xy[-2, -1] ;
+           my ($xb, $yb) = splice @xy, 0, 2 ;
+           ($xa, $ya) = ($xb, $yb))
+    {
+    }
+
+    # bond strength of ';' must be less than 'and' here:
+    for ($status = $db->seq($key, $value, R_CURSOR()) ;
+         $status == 0 and $key eq $origkey ;
+         $status = $db->seq($key, $value, R_NEXT()))
 }
 
 # These are the same:
@@ -24,9 +33,10 @@ foreach ( $i = 0 ; $i <= 10 ; $i += 2 ) {
             &&
 
             # changed from naive_string_matcher
-            $sub->[$j] eq $big->[ $i + $j ] ; $j++
+            $sub->[$j] eq $big->[$i + $j] ; $j++
           )
-          {}
+        {
+        }
 
 	# a foreach loop with large list, from dh_debstd
 	# We'd like the opening '{' to be outdented inline with 'foreach':

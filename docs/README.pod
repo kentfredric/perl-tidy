@@ -80,7 +80,7 @@ pages by hand or use
 =head2 Windows ME Caution
 
 Perltidy should run under all versions of Windows.  I test it on
-a Windows 95 system using Perl version 5.005_03 before each release,
+a Windows 95 system using Perl version 5.004_02 before each release,
 and I occasionally test it on a Windows 2000 system.  I have seen one
 Windows ME system with Active State Perl that froze when attempting to
 run Perltidy, but I have other reports of success with Windows ME.  In

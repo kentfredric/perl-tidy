@@ -13,12 +13,12 @@ DESCRIPTION
     The default formatting tries to follow the recommendations in
     perlstyle(1).
 
-    Many users will find enough information in the section on "EXAMPLES" to
-    get started. New users may benefit from the short tutorial which comes
-    with the distribution.
+    Many users will find enough information in "EXAMPLES" to get started.
+    New users may benefit from the short tutorial which comes with the
+    distribution.
 
     The formatting can be controlled in detail with numerous input
-    parameters, which are described in the section on "OPTIONS".
+    parameters, which are described in "OPTIONS".
 
 EXAMPLES
       perltidy somefile.pl
@@ -91,7 +91,6 @@ OPTIONS
     this command.
 
   I/O control
-
     The following parameters concern the files which are read and written.
 
     -h, --help
@@ -118,6 +117,10 @@ OPTIONS
         checking, unless allow syntax checking is disabled. This file will
         be deleted when the job finishes. The default is -nst or
         -nostandard-output.
+
+    -oext=ext, --output-file-extension=ext
+        Change the extension of the output file to be .ext instead of the
+        default .tdy.
 
     -se, --standard-error-output
         If perltidy detects an error when processing file somefile.pl, its
@@ -219,7 +222,6 @@ OPTIONS
         to process them.
 
   Basic Options
-
     -l=n, --maximum-line-length=n
         The default maximum line length is n=80 characters. Perltidy will
         try to find line break points to keep lines below this length.
@@ -274,7 +276,6 @@ OPTIONS
         --freeze-whitespace.
 
   Code Indentation Control
-
     -ci=n, --continuation-indentation=n
         Continuation indentation is extra indentation spaces applied when a
         long line is broken. The default is n=2, illustrated here:
@@ -392,6 +393,7 @@ OPTIONS
         default is not to outdent labels.
 
     Outdenting Keywords
+
         -okw, --outdent-keywords
             The command -okw will will cause certain leading control
             keywords to be outdented by 2 spaces (or whatever -ci has been
@@ -425,7 +427,6 @@ OPTIONS
             simplest to place any -okwl command in a .perltidyrc file.
 
   Whitespace Control
-
     Whitespace refers to the blank space between variables, operators, and
     other code tokens.
 
@@ -577,7 +578,6 @@ OPTIONS
         tree.
 
   Comment Controls
-
     Perltidy has a number of ways to control the appearance of both block
     comments and side comments. The term block comment here refers to a
     full-line comment, whereas side comment will refer to a comment which
@@ -710,11 +710,11 @@ OPTIONS
             the purpose of this parameter. The default value is "n=20",
             meaning that no additional tokens will be appended to this text
             after its length reaches 20 characters. Omitted text is
-            indicated with "...". (Tokens, including sub names, are never
+            indicated with .... (Tokens, including sub names, are never
             truncated, however, so actual lengths may exceed this). To
             illustrate, in the above example, the appended text of the first
             block is " ( !defined( $_[0] )...". The existing limit of "n=20"
-            caused this text to be truncated, as indicated by the "...".
+            caused this text to be truncated, as indicated by the ....
 
         -cscw, or -closing-side-comment-warnings
             This parameter is intended to help make the initial transition
@@ -779,7 +779,7 @@ OPTIONS
 
             *   such a comment will never become a hanging side comment.
 
-            For example, assuming "@month_of_year" is left-adjusted:
+            For example, assuming @month_of_year is left-adjusted:
 
                 @month_of_year = (    # -sbc (default)
                     'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct',
@@ -838,7 +838,6 @@ OPTIONS
             must enable a valid regular expression to be formed.
 
   Line Break Control
-
     -fnl, --freeze-newlines
         If you do not want any changes to the line breaks in your script,
         set -fnl, and they will remain fixed, and the rest of the commands
@@ -972,13 +971,13 @@ OPTIONS
         And perltidy breaks before these token types by default: . << >> ->
         && ||
 
-        To illustrate, to cause a break after a concatenation operator,
-        "'.'", rather than before it, the command line would be
+        To illustrate, to cause a break after a concatenation operator, '.',
+        rather than before it, the command line would be
 
           -wba="."
 
         As another example, the following command would cause a break before
-        math operators "'+'", "'-'", "'/'", and "'*'":
+        math operators '+', '-', '/', and '*':
 
           -wbb="+ - / *"
 
@@ -992,7 +991,6 @@ OPTIONS
         provided for that purpose.
 
   Blank Line Control
-
     Blank lines can improve the readability of a script if they are
     carefully placed. Perltidy has several commands for controlling the
     insertion, retention, and removal of blank lines.
@@ -1049,7 +1047,6 @@ OPTIONS
         --maximum-consecutive-blank-lines, however.
 
   Styles
-
     A style refers to a convenient collection of existing parameters.
 
     -gnu, --gnu-style
@@ -1061,7 +1058,6 @@ OPTIONS
             -lp -bl -noll -pt=2 -bt=2 -sbt=2 -icp
 
   Other Controls
-
     Deleting selected text
         Perltidy can selectively delete comments and/or pod documentation.
         The command -dac or --delete-all-comments will delete all comments
@@ -1251,13 +1247,21 @@ OPTIONS
         fewest possible line breaks in a script while --extrude puts the
         maximum possible. Note that these options do not provided any
         meaningful obfuscation, because perltidy can be used to reformat the
-        files. A useful application of --mangle is the following:
+        files. They were originally developed to help test the tokenization
+        logic of perltidy, but they have other uses. One use for --mangle is
+        the following:
 
-          perltidy -mangle myfile.pl -st | perltidy -o myfile.pl.new
+          perltidy --mangle myfile.pl -st | perltidy -o myfile.pl.new
 
         This will form the maximum possible number of one-line blocks (see
         next section), and can sometimes help clean up a badly formatted
         script.
+
+        A similar technique can be used with --extrude instead of --mangle
+        to make the minimum number of one-line blocks.
+
+        Another use for --mangle is to combine it with -dac to reduce the
+        file size of a perl script.
 
     One-line blocks
         There are a few points to note regarding one-line blocks. A one-line
@@ -1426,7 +1430,7 @@ SEE ALSO
     perl2web(1), perlstyle(1)
 
 VERSION
-    This man page documents perltidy version 20011212.
+    This man page documents perltidy version 20011231.
 
 AUTHOR
       Steven L. Hancock

@@ -75,10 +75,10 @@ tested on several varieties of Unix systems, Windows 95, and VMS.
 
 <li>Please check the <a href="README.html">README Installation Notes</a>
 
-<li>download <a href="http://prdownloads.sourceforge.net/perltidy/perltidy-20011128.tgz">
+<li>download <a href="http://prdownloads.sourceforge.net/perltidy/perltidy-20011231.tgz">
 The latest release for unix (.tgz)</a>
 
-<li>download <a href="http://prdownloads.sourceforge.net/perltidy/perltidy-20011128.zip">
+<li>download <a href="http://prdownloads.sourceforge.net/perltidy/perltidy-20011231.zip">
 The latest release for Windows (.zip)</a>
 
 <li> If these links are broken, 

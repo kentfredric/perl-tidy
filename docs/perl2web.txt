@@ -28,10 +28,10 @@ DESCRIPTION
     Perltidy -html reads a Perl script and writes an a copy suitable for
     viewing with a web browser.
 
-    For a quick introduction, see the section on "EXAMPLES".
+    For a quick introduction, see "EXAMPLES".
 
-    For a complete description of the command line parameters, see the
-    section on "OPTIONS".
+    For a complete description of the command line parameters, see
+    "OPTIONS".
 
 EXAMPLES
       perltidy -html somefile.pl
@@ -71,6 +71,10 @@ OPTIONS
         the input file, and it does not write a formatted file with
         extension .tdy. This means that two perltidy runs are required to
         create a fully reformatted, html copy of a script.
+
+    -oext=ext, --output-file-extension=ext
+        Change the extension of the output file to be .ext instead of the
+        default .html.
 
     The -pre flag for code snippets
         When the -pre flag is given, only the pre-formatted section, within
@@ -218,7 +222,7 @@ SEE ALSO
     perltidy(1)
 
 VERSION
-    This man page documents perltidy version 20011212.
+    This man page documents perltidy version 20011231.
 
 AUTHOR
       Steven L. Hancock

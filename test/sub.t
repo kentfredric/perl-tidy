@@ -34,6 +34,8 @@ sub verbose (@) { print STDERR (@_) if $opt_verbose; }
 sub debug   (@) { print STDERR (@_) if $opt_debug;   }
 sub trace   (@) { print STDERR (@_) if $opt_trace;   }
 
+sub tell { shift->{Pos} }
+
     # examples of formatting anonymous subs
     # continuation indentation continues after the closing curly brace
     $convert = sub { byte( $_[0] ) }
