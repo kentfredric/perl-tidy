@@ -13,7 +13,7 @@
 	# 'goodbye' is a file handle, not a sub call
 	# since we haven't seen sub goodbye, and there is a space after it
 	# This will generate an error message
-        print goodbye ();
+        print main::main::main::goodbye ();
 
         sub goodbye {
 	return "GoodBye World!\n";

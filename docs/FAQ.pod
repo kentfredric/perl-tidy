@@ -2,3 +2,20 @@
 
 =head2 Incomplete
 This is a placeholder file for a future FAQ on perltidy
+
+=head2 Do you know how to use perltidy within vim?
+
+You use the '!' key to run it as a filter.  For example:
+Assuming perltidy is in your path, to run it on the whole text, use
+:%!perltidy -q
+
+To run it on a selected group of lines, you can first select
+the lines in command mode with
+V  
+(then use arrows or any other movement method)
+:!perltidy -q
+
+The '-q' is optional (quiet), and keeps any error messages from appearing 
+on the screen.  If you don't use -q, you might have to use the 'u'
+undo key to go back to the previous state.
+

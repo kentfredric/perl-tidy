@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.13 2001/07/02 23:56:04 perltidy Exp $
+    $Id: perltidy,v 1.14 2001/07/06 02:08:35 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -266,6 +266,7 @@ sub main {
             indent_columns     => $rOpts->{'indent-columns'},
             look_for_hash_bang => $rOpts->{'look-for-hash-bang'},
             trim_qw            => $rOpts->{'trim-qw'},
+            warning_level      => $rOpts->{'warning-level'},
         );
 
         #---------------------------------------------------------------
@@ -433,6 +434,7 @@ sub process_command_line {
       break-after-opening-brace!
       maximum-continuation-indentation=i
       big-space-jump=i
+      warning-level=i
     );
 
     # The Perltidy::HtmlWriter will add its own options to the string
@@ -488,6 +490,7 @@ sub process_command_line {
       big-space-jump=24
       noindent-closing-paren
       break-after-opening-brace
+      warning-level=1
     );
 
     #---------------------------------------------------------------
@@ -636,6 +639,7 @@ sub process_command_line {
         'bsj'                => [qw(big-space-jump)],
         'bob'                => [qw(break-after-opening-brace)],
         'nbob'               => [qw(nobreak-after-opening-brace)],
+        'w'                  => [qw(warning-level)],
 
         # 'mangle' originally deleted pod and comments, but to keep it
         # reversible, it no longer does because i have removed:
@@ -2440,7 +2444,7 @@ sub write_line {
     # markup line of non-code..
     else {
         my $line_character;
-        if ( $line_type eq 'HERE' )        { $line_character = 'H' }
+        if    ( $line_type eq 'HERE' )     { $line_character = 'H' }
         elsif ( $line_type eq 'HERE_END' ) { $line_character = 'h' }
         else { $line_character = 'Q' }
         $html_line = $self->markup_html_element( $input_line, $line_character );
@@ -2839,7 +2843,7 @@ sub get_AVAILABLE_SPACES_to_go {
     my $item = $leading_spaces_to_go[ $_[0] ];
 
     # return the number of available leading spaces associated with an
-    # indentation variable $indentation is either a constant number of
+    # indentation variable.  $indentation is either a constant number of
     # spaces or an object with a get_AVAILABLE_SPACES method.
     return ref($item) ? $item->get_AVAILABLE_SPACES() : 0;
 }
@@ -3369,7 +3373,7 @@ sub finish_up {
     we_are_at_the_last_line();
     if ( $added_semicolon_count > 0 ) {
         my $first = ( $added_semicolon_count > 1 ) ? "First" : "";
-        my $what  =
+        my $what =
           ( $added_semicolon_count > 1 ) ? "semicolons were" : "semicolon was";
         write_logfile_entry("$added_semicolon_count $what added:\n");
         write_logfile_entry(
@@ -3385,7 +3389,7 @@ sub finish_up {
 
     if ( $deleted_semicolon_count > 0 ) {
         my $first = ( $deleted_semicolon_count > 1 ) ? "First" : "";
-        my $what  =
+        my $what =
           ( $deleted_semicolon_count > 1 ) ? "semicolons were" :
           "semicolon was";
         write_logfile_entry(
@@ -3403,7 +3407,7 @@ sub finish_up {
 
     if ( $embedded_tab_count > 0 ) {
         my $first = ( $embedded_tab_count > 1 ) ? "First" : "";
-        my $what  =
+        my $what =
           ( $embedded_tab_count > 1 ) ? "quotes or patterns" :
           "quote or pattern";
         write_logfile_entry("$embedded_tab_count $what had embedded tabs:\n");
@@ -4118,7 +4122,7 @@ sub print_line_of_tokens {
     my ($line_of_tokens) = @_;
 
     # this routine is called once per input line to process all of the
-    # tokens on that line.  Each token is sent to sub store_tokens_to_go,
+    # tokens on that line.  Each token is sent to sub store_token_to_go,
     # which stores them in an output buffer which is dumped whenever
     # appropriate.
 
@@ -4857,7 +4861,7 @@ sub starting_one_line_block {
     my ( $j, $jmax, $level, $slevel, $ci_level, $rtokens, $rtoken_type,
       $rblock_type ) = @_;
 
-    # kill any current block
+    # kill any current block - we can only go 1 deep
     destroy_one_line_block();
 
     # return value:  
@@ -5021,41 +5025,7 @@ sub store_token_to_go {
         $last_nonblank_token_to_go      = $token;
     }
 
-    # Set a flag for tokens which might be vertically aligned.  The flag
-    # equals the token type being aligned.
-    $matching_token_to_go[$max_index_to_go] = ' ';
-
-    if ( $rOpts->{'add-whitespace'} ) {
-
-        if ( vertically_align_before_token($max_index_to_go) ) {
-
-            if ( ( $max_index_to_go > 1 )
-              && ( $types_to_go[ $max_index_to_go - 1 ] eq 'b' )
-
-              # but do not create blank field: ( align1.t and undoci.t )
-              && ( $type eq '#'
-              || !vertically_align_before_token( $max_index_to_go - 2 ) ) )
-            {
-                if ( $type ne 'k' ) {
-                    $matching_token_to_go[$max_index_to_go] = $type;
-                }
-                else {
-                    $matching_token_to_go[$max_index_to_go] = $token;
-                }
-            }
-        }
-
-        # We want to line up ',' and interior ';' tokens, with the added
-        # space AFTER these tokens.  (Note: interior ';' is included
-        # because it may occur in short blocks).
-        elsif ( ( $type !~ /^[b\#\)\]\}]$/ ) && ( $max_index_to_go > 0 )
-          && ( $last_nonblank_type =~ /^[\,\;]$/ )
-          && $types_to_go[ $max_index_to_go - 1 ] eq 'b' )
-        {
-            $matching_token_to_go[$max_index_to_go] = $last_nonblank_type;
-        }
-    }
-    $levels_to_go[$max_index_to_go]        = $level;
+    $levels_to_go[$max_index_to_go] = $level;
     $nesting_depth_to_go[$max_index_to_go] = ( $slevel >= 0 ) ? $slevel : 0;
     $lengths_to_go[ $max_index_to_go + 1 ] =
       $lengths_to_go[$max_index_to_go] + length($token);
@@ -5066,18 +5036,6 @@ sub store_token_to_go {
         print
 "STORE: from $a $c: storing token $token type $type lev=$level slev=$slevel at $max_index_to_go\n";
     }
-}
-
-sub vertically_align_before_token {
-
-    # decide if we want to do tie vertical alignment to a token, with
-    # variable space before it
-
-    my ($i) = @_;
-    ( $types_to_go[$i] =~ /^(\{|#|=>|=|\+=|\-=|=~|\*=|\/=|&&|\|\|)$/ )
-      || ( $types_to_go[$i] eq 'k'
-      && $tokens_to_go[$i] =~ /^(if|unless|and|or)$/ );
-
 }
 
 sub want_blank_line {
@@ -5361,6 +5319,8 @@ sub output_line_to_go {
             }
         }
 
+        set_vertical_alignment_markers( $ri_first, $ri_last );
+
         # do corrector step if -lp option is used
         if ( $rOpts->{'line-up-parentheses'} ) {
             correct_lp_indentation( $ri_first, $ri_last );
@@ -5382,9 +5342,9 @@ sub output_line_to_go {
             $patterns[0] = "";
             for $i ( $ibeg .. $iend ) {
 
-# if we find a new synchronization token, we are done with a field
-                if ( ( $i > $i_start ) && ( $matching_token_to_go[$i] ne ' ' ) )
-                {
+                # if we find a new synchronization token, we are done with 
+                # a field
+                if ( $i > $i_start && $matching_token_to_go[$i] ne '' ) {
 
                     # make separators in different nesting depths unique
                     # by appending the nesting depth digit.
@@ -5393,7 +5353,8 @@ sub output_line_to_go {
                         $tok .= "$nesting_depth_to_go[$i]";
                     }
 
-# concatenate the text of the consecutive tokens to form the field
+                    # concatenate the text of the consecutive tokens to form 
+                    # the field
                     push ( @fields,
                       join ( '', @tokens_to_go[ $i_start .. $i - 1 ] ) );
 
@@ -5460,7 +5421,8 @@ sub output_line_to_go {
             #      -1 - indent
             my $adjust_indentation = 0;
 
-# Patch - really should be sure this is not a block termination here:
+            # Patch - really should be sure this is not a block termination 
+            # here:
             if ( $ci_levels_to_go[$ibeg] > 0 ) {
 
                 # if we are at a closing structural token..
@@ -5505,6 +5467,7 @@ sub output_line_to_go {
                 }
             }
 
+            # Handle variation in indentation styles...
             # Select the indentation object to define leading
             # whitespace.  If we are outdenting something like '} } );'
             # then we want to use one level below the last token
@@ -5548,6 +5511,131 @@ sub output_line_to_go {
         }
     }
     prepare_for_a_new_line();
+}
+
+sub set_vertical_alignment_markers {
+
+    # Look at the tokens in this output batch and define the array
+    # 'matching_token_to_go' which marks tokens at which we would
+    # accept vertical alignment.
+
+    # nothing to do if we aren't allowed to change whitespace
+    if ( !$rOpts->{'add-whitespace'} ) {
+        for my $i ( 0 .. $max_index_to_go ) {
+            $matching_token_to_go[$i] = '';
+        }
+        return;
+    }
+
+    my ( $ri_first, $ri_last ) = @_;
+
+    # look at each line of this batch..
+    my $last_vertical_alignment_before_index;
+    my $max_line = @$ri_first - 1;
+    my ( $ibeg, $iend );
+    for my $line ( 0 .. $max_line ) {
+        $ibeg = $$ri_first[$line];
+        $iend = $$ri_last[$line];
+        $last_vertical_alignment_before_index = -1;
+        $last_nonblank_type                   = '';
+
+        # look at each token in this output line..
+        my ( $i, $type, $token, $last_nonblank_token, $alignment_type );
+        foreach $i ( $ibeg .. $iend ) {
+            $alignment_type = '';
+            $type           = $types_to_go[$i];
+            $token          = $tokens_to_go[$i];
+
+            #--------------------------------------------------------
+            # First see if we want to align BEFORE this token
+            #--------------------------------------------------------
+
+            # The first possible token that we can alignment_type before
+            # is index 2 because: 1) it doesn't normally make sense to
+            # alignment_type before the first token and 2) the second
+            # token must be a blank if we are to alignment_type before
+            # the third
+            if ( $i < $ibeg + 2 ) {
+            }
+
+            # must follow a blank token
+            elsif ( $types_to_go[ $i - 1 ] ne 'b' ) {
+            }
+
+            # side comment always ok
+            elsif ( $type eq '#' ) {
+                $alignment_type = $type;
+            }
+
+            # otherwise, do not alignment_type two in a row to create a
+            # blank field
+            elsif ( $last_vertical_alignment_before_index == $i - 2 ) {
+            }
+
+            # alignment_type before one of these types..
+            elsif ( $type =~ /^(\{|\?|:|=>|=|\+=|\-=|=~|\*=|\/=|&&|\|\|)$/ ) {
+                $alignment_type = $type;
+            }
+
+            # alignment_type before one of these keywords 
+            # (within a line, since $i>1)
+            elsif ( $type eq 'k' && $token =~ /^(if|unless|and|or)$/ ) {
+                $alignment_type = $token;
+            }
+
+            # We have to be very careful about alignment before opening parens.
+            # It is ok to line up sequences like this:
+            #    if    ( $something eq "simple" )  { &handle_simple }
+            #    elsif ( $something eq "hard" )    { &handle_hard }
+            # Note that this is a hard '2' and not $nbeg+2:
+            elsif ( $type eq '(' && $i == 2
+              && $tokens_to_go[0] =~ /^(if|elsif)/ )
+            {
+                $alignment_type = $type;
+            }
+
+            if ($alignment_type) {
+                $last_vertical_alignment_before_index = $i;
+            }
+
+            #--------------------------------------------------------
+            # Next see if we want to align AFTER the previous nonblank
+            #--------------------------------------------------------
+
+            # We want to line up ',' and interior ';' tokens, with the added
+            # space AFTER these tokens.  (Note: interior ';' is included
+            # because it may occur in short blocks).
+            if (
+
+              # we haven't already set it
+              !$alignment_type
+
+              # and its not the first token of the line
+              && ( $i > $ibeg )
+
+              # and it's NOT one of these
+              && ( $type !~ /^[b\#\)\]\}]$/ )
+
+              # and previous token IS one of these:
+              && ( $last_nonblank_type =~ /^[\,\;]$/ )
+
+              # and it follows a blank
+              && $types_to_go[ $i - 1 ] eq 'b'
+
+              # then go ahead and align 
+              )
+
+            {
+                $alignment_type = $last_nonblank_type;
+            }
+
+            #--------------------------------------------------------
+            # then store the value
+            #--------------------------------------------------------
+            $matching_token_to_go[$i] = $alignment_type;
+            if ( $type ne 'b' ) { $last_nonblank_type = $type }
+        }
+    }
 }
 
 sub terminal_type {
@@ -6188,7 +6276,7 @@ sub scan_list {
                 my $im2    = $i_opening - 2;
                 my $im3    = $i_opening - 3;
                 my $typem1 = $types_to_go[$im1];
-                if ( $token eq ')' )     { $i_opening_minus = $im1 }
+                if    ( $token eq ')' )  { $i_opening_minus = $im1 }
                 elsif ( $typem1 eq 'k' ) { $i_opening_minus = $im1 }
                 elsif ( $typem1 eq 'b' && $im2 >= 0
                   && $types_to_go[$im2] eq 'k' )
@@ -7571,7 +7659,6 @@ use vars qw(
   @starting_columns
   @matching_tokens
   @matching_patterns
-  @ci
   @fields
   @leading_space_count
   @outdent_long_lines
@@ -7618,7 +7705,6 @@ sub initialize {
     $previous_maximum_jmax_seen         = 0;
 
     # variables describing each line of the group
-    @ci                  = ();    # continuation indentation
     @leading_space_count = ();    # number of leading spaces
     @fields              = ();    # reference to list of columns
     @outdent_long_lines  = ();    # flag indicating if ok to outdent long lines
@@ -7687,7 +7773,6 @@ sub append is called to place one line in the current vertical group.
 
 The input parameters are:
 	$level = indentation level of this line
-	$ci	   = continuation indentation string
 	$rfields = reference to array of fields
 	$rpatterns	= reference to array of patterns, one per field
 	$rtokens	= reference to array of tokens starting fields 1,2,..
@@ -7915,7 +8000,7 @@ The log file warns the user if there are any such tabs.
     if ( $jmax > $maximum_jmax_seen ) { $maximum_jmax_seen = $jmax }
     if ( $jmax < $minimum_jmax_seen ) { $minimum_jmax_seen = $jmax }
 
-    if ( ( $maximum_field_index > $jmax )         # this line has fewer fields
+    if ( ( $maximum_field_index > $jmax )    # this line has fewer fields
       && ( $maximum_field_index - 2 <= $jmax )    # be reasonable, not too few
       && ( $maximum_line_index == 0 )             # there is one previous line
       && ( length( $fields[0][$maximum_field_index] ) > 0 )  # with side comment
@@ -8029,7 +8114,7 @@ The log file warns the user if there are any such tabs.
     if ( $jmax > $maximum_field_index ) { flush(); }
 
     # flush if adding this line would make a non-monotonic field count
-    elsif ( ( $maximum_field_index > $jmax )         # this has too few fields
+    elsif ( ( $maximum_field_index > $jmax )    # this has too few fields
       && ( ( $previous_minimum_jmax_seen < $jmax )   # and wouldn't be monotonic
       || ( $starting_jmax != $maximum_jmax_seen ) ) )
     {
@@ -9152,6 +9237,7 @@ sub new {
         tabs               => 0,
         look_for_hash_bang => 0,
         trim_qw            => 1,
+        warning_level      => 1,
     );
     my %args = ( %defaults, @_ );
 
@@ -9194,6 +9280,7 @@ sub new {
         _indent_columns      => $args{indent_columns},
         _look_for_hash_bang  => $args{look_for_hash_bang},
         _trim_qw             => $args{trim_qw},
+        _warning_level       => $args{warning_level},
         _input_tabstr        => "",
         _know_input_tabstr   => -1,
         _last_line_number    => 0,
@@ -9305,21 +9392,37 @@ sub report_errors {
 
     # this check may be removed after a year or so
     if ( $tokenizer_self->{_saw_lc_filehandle} ) {
+
         warning( <<'EOM' );
-PLEASE NOTE: Prior to perltidy release 20010328, perltidy incorrectly
-parsed a function call after a print/printf, with the result that a
-space got added before the opening paren, with the result that something
-like this:
+PLEASE NOTE: If you get this message, it is because perltidy noticed
+possible ambiguous syntax at one or more places in your script, as
+noted above.  The problem is with print and printf statements of the
+form
 
-  print usage() and exit;
+    print bareword ( $etc
 
-became this:
+Perltidy needs your help in deciding if 'bareword' is a filehandle or a
+function call.  The problem is the space between 'bareword' and '('.  If
+'bareword' is a function call, you should remove the trailing space.  If
+'bareword' is a filehandle, you should avoid the opening paren or else
+globally capitalize 'bareword' to be BAREWORD.  So the above line
+would be: 
 
-  print usage () and exit;
+    print bareword( $etc    # function
 
-thereby converting the function name to a filehandle according to perl's
-weird parsing rules.  If this has happened to your script, you will 
-need to remove the space before the opening paren by hand.
+or
+
+    print bareword @list    # filehandle
+
+or
+
+    print BAREWORD ( $etc   # filehandle
+
+It is very possible that this is syntax is unambiguous to perl, which
+may know what 'bareword' is by parsing any 'use' and 'require' modules
+that you have referenced, but perltidy does not currently parse other
+modules, so it has not seen any function prototypes that they might
+contain.
 EOM
     }
 
@@ -10291,7 +10394,7 @@ EOM
 
         # handle whitespace tokens..
         next if ( $type eq 'b' );
-        my $prev_tok  = $i > 0 ? $$rtokens[ $i - 1 ] : ' ';
+        my $prev_tok  = $i > 0 ? $$rtokens[ $i - 1 ]     : ' ';
         my $prev_type = $i > 0 ? $$rtoken_type[ $i - 1 ] : 'b';
 
         # Build larger tokens where possible, since we are not in a quote.
@@ -12894,10 +12997,14 @@ sub scan_bare_identifier {
                         # could be bug caused by older perltidy if 
                         # followed by '('
                         if ( $input_line =~ m/\G\s*\(/gc ) {
-                            warning(
-"Filehandle '$tok' should be in caps; see NOTE below\n"
-                            );
-                            $tokenizer_self->{_saw_lc_filehandle} = 1;
+                            if ( $tokenizer_self->{_warning_level} > 0 ) {
+                                my $method_name = $tok;
+                                $method_name =~ s/.*:://;
+                                warning(
+"'$method_name' is ambiguous because of the trailing space; see NOTE below\n"
+                                );
+                                $tokenizer_self->{_saw_lc_filehandle} = 1;
+                            }
                         }
 
                         # probably not bug caused by older perltidy, but note

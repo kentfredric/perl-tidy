@@ -4,6 +4,18 @@
  have hit a bug, unusual behavior, annoyance, or have a suggested
  improvement, please send a note to perltidy at users.sourceforge.net.  
 
+ -Added modification to align a one-line 'if' block with similar
+ following 'elsif' one-line blocks, like this:
+      if    ( $something eq "simple" )  { &handle_simple }
+      elsif ( $something eq "hard" )    { &handle_hard }
+ (Suggested by  Wolfgang Weisselberg).
+
+=head2 2001 07 02 
+
+ -Eliminated all constants with leading underscores because perl 5.005_03
+ does not support that.  For example, _SPACES changed to XX_SPACES.
+ Thanks to kromJx for this update.
+
 =head2 2001 07 01 
 
  -the directory of test files has been moved to a separate distribution
@@ -31,7 +43,7 @@
  -the -bt (--brace-tightness) parameter has been split into two
  parameters to give more control. -bt now applies only to non-BLOCK
  braces, while a new parameter -bbt (block-brace-tightness) applies to
- curly braces which contain code BLOCKS. The default value is -bbt=1.
+ curly braces which contain code BLOCKS. The default value is -bbt=0.
 
  -added flag -icp (--indent-closing-paren) which leaves a statment
  termination of the form );, };, or ]; indented with the same

@@ -14,6 +14,7 @@
 	<LI><A HREF="#perltidy change log">Perltidy Change Log</A></LI>
 	<UL>
 
+		<LI><A HREF="#2001 07 02">2001 07 02</A></LI>
 		<LI><A HREF="#2001 07 01">2001 07 01</A></LI>
 		<LI><A HREF="#2001 06 17">2001 06 17</A></LI>
 		<LI><A HREF="#2001 06 08">2001 06 08</A></LI>
@@ -34,6 +35,12 @@
  You can help perltidy evolve into a better program.  If you 
  have hit a bug, unusual behavior, annoyance, or have a suggested
  improvement, please send a note to perltidy at users.sourceforge.net.</PRE>
+<P>
+<H2><A NAME="2001 07 02">2001 07 02</A></H2>
+<PRE>
+ -Eliminated all constants with leading underscores because perl 5.005_03
+ does not support that.  For example, _SPACES changed to XX_SPACES.
+ Thanks to kromJx for this update.</PRE>
 <P>
 <H2><A NAME="2001 07 01">2001 07 01</A></H2>
 <PRE>
@@ -62,7 +69,7 @@
  -the -bt (--brace-tightness) parameter has been split into two
  parameters to give more control. -bt now applies only to non-BLOCK
  braces, while a new parameter -bbt (block-brace-tightness) applies to
- curly braces which contain code BLOCKS. The default value is -bbt=1.</PRE>
+ curly braces which contain code BLOCKS. The default value is -bbt=0.</PRE>
 <PRE>
  -added flag -icp (--indent-closing-paren) which leaves a statment
  termination of the form );, };, or ]; indented with the same
