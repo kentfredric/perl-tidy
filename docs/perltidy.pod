@@ -200,6 +200,18 @@ in your home directory.
 
 If you set the B<-npro> flag, perltidy will not look for this file.
 
+=item B<-pro=filename> or  B<--profile=filename>    
+
+To simplify testing and switching .perltidyrc files, this command may be
+used to specify a configuration file which will override the default
+name of .perltidyrc.  There must not be a space on either side of the
+'=' sign.  For example, the line
+
+   perltidy -pro=testcfg
+
+would cause file F<testcfg> to be used instead of the 
+default F<.perltidyrc>.
+
 =item B<-opt>,   B<--show-options>      
 
 Write a list of all options used to the F<.LOG> file.  This is useful for
@@ -247,6 +259,10 @@ Except for these possible tab indentation characters, Perltidy does not
 introduce any tab characters into your file, and it removes any tabs
 from the code (unless requested not to do so with B<-fws>).  If you have
 any tabs in your comments, quotes, or here-documents, they will remain.
+
+Certain commands are incompatable with tabs, and if these are given,
+then a warning message will be given and tabs will be deactivated.  An
+example is the B<-lp> option.
 
 =item B<-nt>,   B<--notabs>
 
@@ -334,6 +350,10 @@ The same example, with n=0, is a little harder to read:
 
  my $level =   # -ci=0    
  ( $max_index_to_go >= 0 ) ? $levels_to_go[0] : $last_output_level;
+
+The value given to B<-ci> is also used by some commands when a small
+space is required.  Examples are commands for outdenting labels, B<-ola>,
+and control keywords, B<-ock>.
 
 =item List indentation using B<-lp>, B<--line-up-parentheses>
 
@@ -433,8 +453,11 @@ whitespace, they will not be mistaken as hanging side comments.
 =item B<-sbc>, B<--static-block-comments>
 
 Perltidy has a simple mechanism for displaying commented code.  When
-B<-sbc> is used, a block comment with two (or more) leading hash
-symbols, C<##>, will be treated specially, as follows: (1) No blank line
+B<-sbc> is used, a block comment with a special leading pattern
+will be treated specially.
+By default, this special pattern is two (or more) leading hash
+symbols, C<##>, but this can be changed (see next item, B<-sbcp>).
+Comments so identified  are treated as follows: (1) No blank line
 will be inserted before such a comment, (2) If there is no leading space
 on the line, then the comment will not be indented, and otherwise it
 will, and (3) such a comment will never become a hanging side comment.
@@ -443,8 +466,7 @@ For example, assuming C<@month_of_year> is left-adjusted:
     @month_of_year = (
         'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct',
     ##  'nov', 'dec'
-        'Nov', 'Dec'
-    );
+        'Nov', 'Dec');
 
 The default is to use B<-sbc>.  This may be deactivated with B<-nsbc>.
 Without this convention, the above code would become:
@@ -456,6 +478,18 @@ Without this convention, the above code would become:
         'Nov', 'Dec'
     );
 
+=item B<-sbcp=string>, B<--static-block-comment-prefix=string>
+
+This parameter defines the prefix used to identify static block comments
+when the B<-sbc> parameter is set.  The default prefix is C<##>,
+corresponding to C<-sbcp="##">.  The first character must be a C<#>
+symbol, since this must only match comments.  Also, this string is used
+in a perl regular expression, so it must not form an invalid regular
+expression.  As a simple example, to identify all comments as static
+block comments, one would use C<-sbcp=#>.  Please note that B<-sbcp>
+merely defines the pattern used to identify static block comments; it
+will not be used unless the switch B<-sbc> is set.
+
 =item B<-oll>, B<--outdent-long-lines>
 
 When B<-oll> is set, lines which cannot be broken into pieces less than
@@ -464,7 +498,52 @@ them more readable.  This is the default.  This can mainly occur for
 long quoted strings and long comments.  To prevent such out-denting, use
 B<-noll> or B<--nooutdent-long-lines>.
 
-=item B<-msc=n>,  B<minimum-space-to-comment=n>
+=item B<-ola>,  B<--outdent-labels>
+
+This command will cause labels to be outdented by 2 spaces (or whatever
+B<-ci> has been set to), if possible.  For example, with B<perltidy -ola>:
+
+        my $i;
+      LOOP: while ( $i = <FOTOS> ) {
+            chomp($i);
+            next unless $i;
+            fixit($i);
+        }
+
+The current default is not to do this.  Use B<-nola> to not outdent
+labels.
+
+=item B<-ock>,  B<--outdent-control-keywords>
+
+This command will cause certain leading control keywords to be outdented
+by 2 spaces (or whatever B<-ci> has been set to), if possible.  The
+keywords are C<redo>, C<next>, C<last>, C<goto>, and C<return>.  The
+intention is to make these control keywords easier to see.  (To control
+which keywords are outdented, see the next section).
+
+For example, using C<perltidy -ock> on the previous example gives:
+
+        my $i;
+        LOOP: while ( $i = <FOTOS> ) {
+            chomp($i);
+          next unless $i;
+            fixit($i);
+        }
+
+Normally, B<-ock> would be used with B<-ola>.  The default is not to do
+this.  
+
+=item B<-okl=string>,  B<--outdent-keywords-list=string>
+
+This command is a generalization of B<-ock>, and will cause any selected
+leading keywords to be outdented by 2 spaces (or whatever B<-ci> has
+been set to), if possible.  The parameter B<string> is a required list
+of perl keywords.  
+
+For example, the command C<-okl="next last redo goto"> will cause 
+those four keywords to be outdented.
+
+=item B<-msc=n>,  B<--minimum-space-to-comment=n>
 
 Side comments look best when lined up several spaces to the right of
 code.  Perltidy will try to keep comments at least n spaces to the
@@ -908,15 +987,19 @@ file which would cause some kind of dump and an exit.  These are:
  -h -v -ddf -dln -dop -dsn -dtt -dwls -dwrs -ss
 
 There are several options may be helpful in debugging a F<.perltidyrc>
-file.  First, B<-log> will force a F<.LOG> file to be written, which
+file:  (1) B<-log> will force a F<.LOG> file to be written, which
 contains the path to the F<.perltidyrc> file, if any, and a listing of
-its parameter settings.  Second, B<-opt> will force a F<.LOG> file to be
+its parameter settings.  (2) B<-opt> will force a F<.LOG> file to be
 written with a complete listing of all option flags in use for a run,
 taking into account the default settings, the F<.perltidyrc> file, plus
-any command line options.  Third, the parameters in the F<.perltidyrc>
-file can be ignored with the B<-npro> option.  Finally, the
+any command line options.  (3) the parameters in the F<.perltidyrc>
+file can be ignored with the B<-npro> option.  (4) the
 commands B<-dump-options>, B<-dump-defaults>, B<-dump-long-names>,
 and B<-dump-short-names>, all described below, may all be helpful.
+(5) It may be simplest to develop and test configuration files
+with alternative names, and invoke them with B<-pro=filename> on
+the command line.  Then rename the desired file to F<.perltidyrc> 
+when finished.
 
 =item Creating a new abbreviation
 

@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.58 2001/11/08 05:48:31 perltidy Exp $
+    $Id: perltidy,v 1.59 2001/11/10 06:30:00 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -399,7 +399,7 @@ sub process_command_line {
     # here is a summary of the Getopt codes:
     # <none> does not take an argument
     # =s takes a mandatory string
-    # :s takes an optional string
+    # :s takes an optional string  (DO NOT USE - filenames will get eaten up)
     # =i takes a mandatory integer
     # :i takes an optional integer
     # ! does not take an argument and may be negated
@@ -435,7 +435,7 @@ sub process_command_line {
     # abbreviations)
     add_option( 'DEBUG',                            'D',    '!',  $rop, $rex );
     add_option( 'DIAGNOSTICS',                      'I',    '!',  $rop, $rex );
-    add_option( 'add-closing-side-comment',         'acsc', '!',  $rop, $rex );
+    add_option( 'add-closing-side-comments',        'acsc', '!', $rop, $rex );
     add_option( 'add-newlines',                     'anl',  '!',  $rop, $rex );
     add_option( 'add-semicolons',                   'asc',  '!',  $rop, $rex );
     add_option( 'add-whitespace',                   'aws',  '!',  $rop, $rex );
@@ -451,12 +451,15 @@ sub process_command_line {
     add_option( 'check-multiline-quotes',           'chk',  '!',  $rop, $rex );
     add_option( 'check-syntax',                     'syn',  '!',  $rop, $rex );
     add_option( 'continuation-indentation',         'ci',   '=i', $rop, $rex );
+    add_option( 'closing-side-comment-prefix',      'cscp', '=s', $rop, $rex );
+    add_option( 'closing-side-comment-list',        'cscl', '=s', $rop, $rex );
     add_option( 'cuddled-else',                     'ce',   '!',  $rop, $rex );
     add_option( 'delete-block-comments',            'dbc',  '!',  $rop, $rex );
     add_option( 'delete-old-newlines',              'dnl',  '!',  $rop, $rex );
     add_option( 'delete-old-whitespace',            'dws',  '!',  $rop, $rex );
     add_option( 'delete-pod',                       'dp',   '!',  $rop, $rex );
     add_option( 'delete-semicolons',                'dsm',  '!',  $rop, $rex );
+    add_option( 'delete-closing-side-comments',     'dcsc', '!',  $rop, $rex );
     add_option( 'delete-side-comments',             'dsc',  '!',  $rop, $rex );
     add_option( 'dump-defaults',                    'ddf',  '!',  $rop, $rex );
     add_option( 'dump-long-names',                  'dln',  '!',  $rop, $rex );
@@ -493,11 +496,13 @@ sub process_command_line {
     add_option( 'opening-brace-on-new-line',        'bl',   '!',  $rop, $rex );
     add_option( 'opening-sub-brace-on-new-line',    'sbl',  '!',  $rop, $rex );
     add_option( 'outdent-labels',                   'ola',  '!',  $rop, $rex );
-    add_option( 'outdent-control-keywords',         'ock',  '!',  $rop, $rex );
+    add_option( 'outdent-control-keywords',         'ock',  '!', $rop, $rex );
+    add_option( 'outdent-keyword-list',             'okl',  '=s', $rop, $rex );
     add_option( 'outdent-long-lines',               'oll',  '!',  $rop, $rex );
     add_option( 'outfile',                          'o',    '=s', $rop, $rex );
     add_option( 'paren-tightness',                  'pt',   '=i', $rop, $rex );
     add_option( 'pass-version-line',                'pvl',  '!',  $rop, $rex );
+    add_option( 'profile',                          'pro',  '=s', $rop, $rex );
     add_option( 'quiet',                            'q',    '!',  $rop, $rex );
     add_option( 'short-concatenation-item-length',  'scl',  '=i', $rop, $rex );
     add_option( 'show-options',                     'opt',  '!',  $rop, $rex );
@@ -508,6 +513,7 @@ sub process_command_line {
     add_option( 'standard-output',                  'st',   '!',  $rop, $rex );
     add_option( 'starting-indentation-level',       'sil',  '=i', $rop, $rex );
     add_option( 'static-block-comments',            'sbc',  '!', $rop, $rex );
+    add_option( 'static-block-comment-prefix',      'sbcp', '=s', $rop, $rex );
     add_option( 'swallow-optional-blank-lines',     'sob',  '!',  $rop, $rex );
     add_option( 'tabs',                             't',    '!',  $rop, $rex );
     add_option( 'tee-block-comments',               'tbc',  '!',  $rop, $rex );
@@ -714,6 +720,17 @@ sub process_command_line {
         if ( $i =~ /-(npro|noprofile)$/ ) {
             $saw_ignore_profile = 1;
         }
+        elsif ( $i =~ /-(pro|profile)=(.+)/ ) {
+           if ($config_file) {
+              print STDERR 
+"Only one -pro=filename allowed, using '$2' instead of '$config_file'\n";
+           }
+           $config_file=$2;
+        }
+        elsif ( $i =~ /-(pro|profile)=?$/ ) {
+           print STDERR "usage: -pro=filename or --profile=filename, no spaces\n";
+           exit 1;
+        }
         elsif ( $i =~ /-(help|h)$/ ) {
             usage();
             exit 1;
@@ -744,7 +761,11 @@ sub process_command_line {
     # read any .perltidyrc configuration file
     #---------------------------------------------------------------
     unless ($saw_ignore_profile) {
-        ( $config_file, my $rconfig_list ) = read_config_file( \%expansion );
+
+        $config_file = find_config_file() unless $config_file;
+        my $rconfig_list;
+        ($config_file, $rconfig_list) = 
+          read_config_file($config_file, \%expansion );
 
         # process any .perltidyrc parameters right now so we can localize errors
         if (@$rconfig_list) {
@@ -831,6 +852,14 @@ sub process_command_line {
         }
     }
 
+    # append control keywords to any keyword list
+    if ( $Opts{'outdent-control-keywords'} ) {
+        if ( !$Opts{'outdent-keyword-list'} ) {
+            $Opts{'outdent-keyword-list'} = "";
+        }
+        $Opts{'outdent-keyword-list'} .= " redo next last goto return";
+    }
+      
     # see if user set a non-negative logfile-gap
     if ( defined( $Opts{'logfile-gap'} ) && $Opts{'logfile-gap'} >= 0 ) {
 
@@ -1031,9 +1060,8 @@ EOM
     }
 }
 
-sub read_config_file {
+sub find_config_file {
 
-    my @config_list = ();
     my $config_file;
 
     # look in current directory first
@@ -1053,8 +1081,15 @@ sub read_config_file {
     elsif ( -e "/etc/perltidyrc" ) {
         $config_file = "/etc/perltidyrc";
     }
+    return $config_file;
+}
 
-    my ($rexpansion) = @_;
+sub read_config_file {
+
+    my @config_list = ();
+
+    my ($config_file, $rexpansion) = @_;
+
     my $name = undef;
     my $line_no;
     if ( defined($config_file) && -e $config_file ) {
@@ -1068,7 +1103,12 @@ sub read_config_file {
             while (<CONFIG>) {
                 $line_no++;
                 chomp;
-                s/\#.*$//;              # trim comments
+                next if /^\s*#/;        # skip full-line comment
+
+                # FIXME: this is a crude workaround to allow '#' in strings;
+                # at present they will not be preceded by a space.
+                # Should really parse properly.
+                s/\s+\#.*$//;           # trim comments
                 s/^\s*(.*?)\s*$/$1/;    # trim both ends
                 next unless $_;
 
@@ -2749,6 +2789,7 @@ use vars qw{
   $last_line_leading_level
   $last_last_line_leading_level
 
+  $closing_side_comment_prefix_pattern
   $last_nonblank_token
   $last_nonblank_type
   $last_last_nonblank_token
@@ -2778,6 +2819,8 @@ use vars qw{
   @ci_stack
   $last_line_had_side_comment
   %want_break_before
+  %outdent_keyword
+  $static_block_comment_pattern
 
   %FORMATTER_DEBUG_FLAG
   %tightness
@@ -3219,6 +3262,35 @@ sub set_leading_whitespace {
     my $type  = $types_to_go[$max_index_to_go];
     my $token = $tokens_to_go[$max_index_to_go];
 
+    # If we come to an opening paren far to the right of the '=', then
+    # backup starting index to the '=' to avoid going beyond the right margin
+    #if ( $token eq '(' ) {
+    if ( $type =~ /^[\{\(\[]$/) {
+        my $last_equals = $gnu_stack[$max_gnu_stack_index]->get_LAST_EQUALS();
+
+        # if we have an '=' after the previous assumed breakpoint
+        if ( $last_equals > $line_start_index_to_go ) {
+
+            # and we are far to the right
+            if ( $gnu_position_predictor > $rOpts->{'maximum-line-length'} / 2 )
+            {
+
+                # ok, make the switch -- note that we do not set a real
+                # breakpoint here because we may not really need one; sub
+                # scan_list will do that if necessary
+                $line_start_index_to_go = $last_equals;
+                if ( $types_to_go[ $line_start_index_to_go + 1 ] eq 'b' ) {
+                    $line_start_index_to_go++;
+                }
+
+                # and update the position predictor
+                $gnu_position_predictor =
+                  total_line_length( $line_start_index_to_go,
+                    $max_index_to_go - 1 );
+            }
+        }
+    }
+
     # Check for decreasing depth ..
     # Note that one token may have both decreasing and then increasing
     # depth. For example, (level, ci) can go from (1,1) to (2,0).  So,
@@ -3239,6 +3311,16 @@ sub set_leading_whitespace {
                   $gnu_stack[$max_gnu_stack_index]->get_AVAILABLE_SPACES();
                 my $comma_count =
                   $gnu_stack[$max_gnu_stack_index]->get_COMMA_COUNT();
+
+##              ##########TESTING############
+##              this patch doesn't seem to be too helpful
+##                if ( $max_index_to_go > 0
+##                    && $container_environment_to_go[ $max_index_to_go - 1 ] eq
+##                    'LIST' )
+##                {
+##                    $comma_count = 1;
+##                }
+##              ############################
 
                 if ( $comma_count <= 0 && $available_spaces > 0 ) {
 
@@ -3366,13 +3448,13 @@ sub set_leading_whitespace {
     # non-list character, we give up and don't look for any more commas.
     if ( $type eq ',' ) {
 
-        my $BOOGA = 0;
-        my $comma_count = $gnu_stack[$max_gnu_stack_index-$BOOGA]->get_COMMA_COUNT();
-        #print "BOOGA: at a comma, level=$level ci = $ci_level
-        #old count=$comma_count\n";
+        my $comma_count = $gnu_stack[$max_gnu_stack_index]->get_COMMA_COUNT();
         if ( $comma_count >= 0 ) {
-            $gnu_stack[$max_gnu_stack_index-$BOOGA]->set_COMMA_COUNT( ++$comma_count );
+            $gnu_stack[$max_gnu_stack_index]->set_COMMA_COUNT( ++$comma_count );
         }
+    }
+    elsif ( $type eq '=' ) {
+        $gnu_stack[$max_gnu_stack_index]->set_LAST_EQUALS( $max_index_to_go );
     }
 
     # Filter out non-lists.  Note that '=' in this filter could be in
@@ -3391,8 +3473,6 @@ sub set_leading_whitespace {
     #elsif ( $type =~ /(^[\?\:\;\<\>\~]$)|[=]/ && $type !~ /^=>$/ ) {
     #    $gnu_stack[$max_gnu_stack_index]->set_COMMA_COUNT(-1);
     #}
-
-
 
     # this token might start a new line
     # if this is a non-blank..
@@ -3633,6 +3713,9 @@ sub finish_lp_batch {
         # only look for open items
         next if ( $item->get_CLOSED() >= 0 );
 
+        # forget index of any '='
+        $item->set_LAST_EQUALS( -1 );
+
         # Tentatively remove all of the available space
         # (The vertical aligner will try to get it back later)
         my $available_spaces = $item->get_AVAILABLE_SPACES();
@@ -3798,6 +3881,11 @@ sub check_options {
 
     ($rOpts) = @_;
     my ( $tabbing_string, $tab_msg );
+    my @list;  # working storage
+
+    make_static_block_comment_pattern();
+    make_closing_side_comment_prefix();
+    make_closing_side_comment_pattern(); 
 
     # The -lp indentation logic requires that perltidy examine large
     # blocks of code between flushing.  When the user takes control
@@ -3827,9 +3915,9 @@ EOM
     }
 
     # Likewise, tabs are not compatable with outdenting..
-    if ( $rOpts->{'outdent-control-keywords'} && $rOpts->{'tabs'} ) {
+    if ( $rOpts->{'outdent-keyword-list'} && $rOpts->{'tabs'} ) {
         print STDERR <<EOM;
-Conflict: -t (tabs) cannot be used with the -ock  option; ignoring -t.
+Conflict: -t (tabs) cannot be used with the -ock and -okl options; ignoring -t.
 EOM
         $rOpts->{'tabs'} = 0;
     }
@@ -3856,8 +3944,25 @@ EOM
         $want_left_space{';'} = 1;
     }
 
+    # implement outdenting preferences for keywords
+    %outdent_keyword = ();
+    if ($rOpts->{'outdent-keyword-list'}) {
+        $rOpts->{'outdent-keyword-list'} =~ s/^\s*//;
+        $rOpts->{'outdent-keyword-list'} =~ s/\s*$//;
+        @list = split /\s+/, $rOpts->{'outdent-keyword-list'};
+
+        # FUTURE: if not a keyword, assume that it is an identifier
+        foreach my $i(@list) {
+            if ($Perltidy::Tokenizer::is_keyword{$i}) {
+               $outdent_keyword{$i} = 1;
+            }
+            else {
+               print STDERR "ignoring '$i' in -okl list; not a perl keyword"
+            }
+        }
+    }
+
     # implement user whitespace preferences
-    my @list;
     if ( $rOpts->{'want-left-space'} ) {
         @list = split /\s/, $rOpts->{'want-left-space'};
         @want_left_space{@list} = (1) x scalar(@list);
@@ -3977,6 +4082,122 @@ EOM
         '[' => ']',
         '?' => ':',
     );
+}
+
+sub make_static_block_comment_pattern {
+
+    # create the pattern used to identify static block comments
+    $static_block_comment_pattern = '^(\s*)##';
+
+    # allow the user to change it
+    if ( $rOpts->{'static-block-comment-prefix'} ) {
+        my $prefix = $rOpts->{'static-block-comment-prefix'};
+        $prefix =~ s/^\s*//;
+        if ( $prefix !~ /^#/ ) {
+            die "ERROR: the -sbcp prefix '$prefix' must begin with '#'\n";
+
+        }
+        my $pattern = '^(\s*)' . $prefix;
+        eval "'##'=~/$pattern/";
+        if ($@) {
+            die
+"ERROR: the -sbc prefix '$prefix' causes the invalid regex '$pattern'\n";
+        }
+        $static_block_comment_pattern = $pattern;
+    }
+}
+
+sub make_closing_side_comment_pattern {
+
+    # turn any input list into a regex
+    my $pattern = '^\w+';
+    if ( defined( $rOpts->{'closing-side-comment-list'} )
+        && $rOpts->{'closing-side-comment-list'} )
+    {
+        $pattern =
+          make_block_pattern( $rOpts->{'closing-side-comment-list'});
+    }
+
+    if ( $rOpts->{'add-closing-side-comments'} ) {
+        $rOpts->{'add-closing-side-comments'} = $pattern;
+    }
+
+    if ( $rOpts->{'delete-closing-side-comments'} ) {
+        $rOpts->{'delete-closing-side-comments'} = $pattern;
+    }
+}
+
+sub make_block_pattern {
+
+=pod
+
+   given a string of block-type keywords, return a regex to match them
+   The only tricky part is that labels are indicated with a single ':'
+   and the 'sub' token text may have additional text after it (name of sub).
+
+   Example:
+
+    input string: "if else elsif unless while for foreach do : sub";
+    pattern:  '^((if|else|elsif|unless|while|for|foreach|do|\w+:)$|sub)';
+
+=cut
+
+    my ( $string, $abbrev ) = @_;
+    $string =~ s/^\s*//;
+    $string =~ s/\s$//;
+    my @list = split /\s+/, $string;
+    my $saw_sub = 0;
+    my @words   = ();
+    for my $i (@list) {
+        if ( $i eq 'sub' ) { $saw_sub = 1 }
+        elsif ( $i eq ':' ) {
+            push @words, '\w+:';
+        }
+        elsif ( $i =~ /^\w/ ) {
+            push @words, $i;
+        }
+        else {
+            print STDERR "unrecognized block type $i after -cscl, ignoring\n";
+        }
+    }
+    my $pattern = '(' . join ( '|', @words ) . ')$';
+    if ($saw_sub) {
+        $pattern = '(' . $pattern . '|sub)';
+    }
+    $pattern = '^' . $pattern;
+
+    return $pattern;
+}
+
+sub make_closing_side_comment_prefix {
+
+    # Be sure we have a valid closing side comment prefix
+    my $csc_prefix = $rOpts->{'closing-side-comment-prefix'};
+    my $csc_prefix_pattern; 
+    if ( !defined($csc_prefix) ) {
+        $csc_prefix = '##  end';
+        $csc_prefix_pattern = '^##\s+end';
+    }
+    else {
+        if ( $csc_prefix !~ /^#/ ) {
+            $csc_prefix = '#' . $csc_prefix;
+        }
+
+        # FIXME: need to check for valid pattern here
+        # and correct as necessary!
+        $csc_prefix_pattern = '^'. $csc_prefix;
+
+        # allow exact number of intermediate spaces to vary
+        $csc_prefix_pattern =~ s/\s+/\\s\+/g;
+
+        eval "'##'=~/$csc_prefix_pattern/";
+        if ($@) {
+            die
+"ERROR: the -cscp prefix '$csc_prefix' causes the invalid regex '$csc_prefix_pattern'\n";
+        }
+    }
+    $rOpts->{'closing-side-comment-prefix'} = $csc_prefix;
+    $closing_side_comment_prefix_pattern = '^##  end';
 }
 
 sub dump_want_left_space {
@@ -4597,7 +4818,8 @@ sub print_line_of_tokens {
     if ( $jmax == 0
         && $$rtoken_type[0] eq '#'
         && $rOpts->{'static-block-comments'} 
-        && $input_line =~ /^(\s*)##/ )
+        #&& $input_line =~ /^(\s*)##/ )
+        && $input_line =~ /$static_block_comment_pattern/o )
     {
         $is_static_block_comment = 1;
         $is_static_block_comment_without_leading_space = (length($1)<=0);
@@ -4689,7 +4911,7 @@ sub print_line_of_tokens {
     #     /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
     # Examples:
     #   *VERSION = \'1.01';
-    #   ( $VERSION ) = '$Revision: 1.58 $ ' =~ /\$Revision:\s+([^\s]+)/;
+    #   ( $VERSION ) = '$Revision: 1.59 $ ' =~ /\$Revision:\s+([^\s]+)/;
     # We will pass such a line straight through unless -npvl is used
     my $is_VERSION_statement = 0;
 
@@ -4788,7 +5010,16 @@ sub print_line_of_tokens {
         my $slevel         = $$rslevels[$j];
         my $nesting_blocks = $$rnesting_blocks[$j];
         my $ci_level       = $$rci_levels[$j];
-        last if ( ( $type eq '#' ) && ( $rOpts->{'delete-side-comments'} ) );
+        #last if ( ( $type eq '#' ) && ( $rOpts->{'delete-side-comments'} ) );
+        if ( $type eq '#' ) {
+
+            #my $closing_side_comment_prefix_pattern = '^##  end';
+            last if $rOpts->{'delete-side-comments'};
+            last
+              if ( $rOpts->{'delete-closing-side-comments'}
+                && $token =~ /$closing_side_comment_prefix_pattern/
+                && $last_nonblank_block_type =~ /$rOpts->{'delete-closing-side-comments'}/o);
+        }
 
         # If we are continuing after seeing a right curly brace, flush buffer 
         # unless we see what we are looking for, as in
@@ -5811,7 +6042,7 @@ sub output_line_to_go {
         return;
     }
 
-    add_closing_side_comment() if ($rOpts->{'add-closing-side-comment'});
+    add_closing_side_comment() if ($rOpts->{'add-closing-side-comments'});
 
     # tell the -lp option we are outputting a batch so it can close
     # any unfinished items in its stack
@@ -5962,16 +6193,15 @@ sub output_line_to_go {
 
 sub add_closing_side_comment {
 
-    # Experimental routine to add closing side comments
-    my $csc_pattern = '^((if|else|elsif|unless|while|for|foreach|do|\w+:)$|sub)';
 
     my ( $terminal_type, $i_terminal ) =
       terminal_type( \@types_to_go, \@block_type_to_go, 0, $max_index_to_go );
     if ( $terminal_type eq '}'
-        && $block_type_to_go[$i_terminal] =~ /$csc_pattern/o )
+        && $block_type_to_go[$i_terminal] =~ /$rOpts->{'add-closing-side-comments'}/o )
     {
-        my $token = "### end $block_type_to_go[$i_terminal]";
-        #print "at type $terminal_type  block=$block_type_to_go[$i_terminal]\n";
+
+        my $token = "$rOpts->{'closing-side-comment-prefix'} $block_type_to_go[$i_terminal]";
+        #print "CSC:at type $terminal_type  block=$block_type_to_go[$i_terminal]\n";
         if ( $i_terminal eq $max_index_to_go ) {
 
             my $type                  = '#';
@@ -5999,11 +6229,12 @@ sub add_closing_side_comment {
             );
         }
 
-        # Really, we should check for existing csc here
-        # and skip if exists
+        # A comment already exists; for now do nothing
         elsif ( $types_to_go[$max_index_to_go] eq '#' ) {
-            $tokens_to_go[$max_index_to_go] =
-              $token . ' ' . $tokens_to_go[$max_index_to_go];
+
+            # we shouldn't append to the existing comment
+            # $tokens_to_go[$max_index_to_go] =
+            #  $token . ' ' . $tokens_to_go[$max_index_to_go];
         }
         else {
 
@@ -6274,9 +6505,9 @@ sub set_adjusted_indentation {
     # outdent lines with leading labels and control keywords if requested
     if ( $ibeg == 0    # must be first word of this batch
 
-        && ( $rOpts->{'outdent-control-keywords'}
+        && ( $rOpts->{'outdent-keyword-list'}
             && $types_to_go[$ibeg] eq 'k'
-            && $tokens_to_go[$ibeg] =~ /^(redo|next|last|goto)$/ )
+            && $outdent_keyword{$tokens_to_go[$ibeg]} )
 
         || ( $rOpts->{'outdent-labels'} && $types_to_go[$ibeg] eq 'J' )
       )
@@ -7185,6 +7416,7 @@ sub scan_list {
         # block -- but we will break in logical breaks below so that
         # they do not add to the forced_breakpoint_count
         if ( $type eq 'k' && $token eq 'or' ) {
+            ##if (!$container_environment_to_go[$i]) { 
             if ( defined( $container_type[$depth] )
                 && $container_type[$depth] =~ /$logical_pattern/o )
             {
@@ -7734,6 +7966,15 @@ will be a forced break at its 'and'.
 
                             }
 
+                            if ( $FORMATTER_DEBUG_FLAG{EQUALS} ) {
+                                if (defined($iequals)) {
+                                    print "EQUALS: considering = break iequals=$iequals rec=$recoverable\n";
+                                }
+                                else{
+                                    print "EQUALS: at = break but '=' undefined\n";
+                                }
+                            }
+
                             if ( defined($iequals)
 
                                 && ( $recoverable > 0 )
@@ -7761,6 +8002,9 @@ will be a forced break at its 'and'.
                         # might be left with a big gap.
                         if ( $depth >= 1 ) {
                             $last_equals_index[ $depth - 1 ] = undef;
+                            if ( $FORMATTER_DEBUG_FLAG{EQUALS} ) {
+                            print "EQUALS: undefining iequals after breaking a container at depth $depth\n";
+                            }
                         }
                     }    # end -lp logic
                 }
@@ -7776,6 +8020,9 @@ will be a forced break at its 'and'.
                     # avoid possible -lp problems (see note above)
                     if ( $depth >= 1 ) {
                         $last_equals_index[ $depth - 1 ] = undef;
+                        if ( $FORMATTER_DEBUG_FLAG{EQUALS} ) {
+                        print "EQUALS: undefining iequals after long block for depth $depth\n";
+                        }
                     }
             }
 
@@ -7805,6 +8052,10 @@ will be a forced break at its 'and'.
         # remember location of any of the assignment operators
         if ( $type =~ /=/ && $type !~ /(==|!=|>=|<=|=~|=>)/ ) {
             $last_equals_index[$depth] = $i;
+            if ( $FORMATTER_DEBUG_FLAG{EQUALS} ) {
+              print "EQUALS: found equals at i=$i for depth=$depth\n";
+            }
+
         }
 
         # we aren't in a list if we see any of these
@@ -7857,13 +8108,18 @@ will be a forced break at its 'and'.
 
             $want_comma_break[$depth]   = 0;
             $index_before_arrow[$depth] = -1;
+
+            # items after '=>' may be long, so breaking at a preceding
+            # '=' might leave a gap when -lp is used.
             if ( $depth >= 1 ) {
                 $last_equals_index[ $depth - 1 ] = undef;
+                if ( $FORMATTER_DEBUG_FLAG{EQUALS} ) {
+                print "EQUALS: comma-arrow: undef equals at depth above $depth\n";
+                }
             }
 
             # hack to handle list which mixes '=>'s and ','s:
             # treat any list items so far as a broken list
-
             my $dd        = $depth;
             my $list_type = "";
             $item_count = $item_count_stack[$dd];
@@ -8311,7 +8567,7 @@ sub set_list_breakpoints {
         }
         elsif ($long_last_term) {
 
-            #BUBBA: TESTING: It is best to set a real breakpoint, if possible,
+            #TESTING: It is best to set a real breakpoint, if possible,
             # to avoid problems with -lp indentation.
             #set_fake_forced_breakpoint();
             set_forced_breakpoint($i_last_comma);
@@ -9607,6 +9863,7 @@ use constant ALIGN_PAREN        => 10;    # do we want to try to align
 use constant MARKED             => 11;    # if visited by corrector logic
 use constant STACK_DEPTH        => 12;    # indentation nesting depth
 use constant STARTING_INDEX     => 13;    # first token index of this level
+use constant LAST_EQUALS        => 14;    # index of last '=' in this batch
 
 sub new {
 
@@ -9622,16 +9879,17 @@ sub new {
       )
       = @_;
     my $closed            = -1;
+    my $last_equals       = -1;
     my $comma_count       = 0;
     my $have_child        = 0;
     my $want_right_spaces = 0;
     my $marked            = 0;
     bless [
-        $spaces,              $level,        $ci_level,
-        $available_spaces,    $closed,       $comma_count,
-        $gnu_sequence_number, $index,        $have_child,
-        $want_right_spaces,   $align_paren,  $marked,
-        $stack_depth,         $starting_index
+        $spaces,              $level,          $ci_level,
+        $available_spaces,    $closed,         $comma_count,
+        $gnu_sequence_number, $index,          $have_child,
+        $want_right_spaces,   $align_paren,    $marked,
+        $stack_depth,         $starting_index, $last_equals,
     ], $class;
 }
 
@@ -9778,6 +10036,19 @@ sub set_HAVE_CHILD {
 sub get_HAVE_CHILD {
     my ($self) = @_;
     return $self->[HAVE_CHILD];
+}
+
+sub set_LAST_EQUALS {
+    my ( $self, $value ) = @_;
+    if ( defined($value) ) {
+        $self->[LAST_EQUALS] = $value;
+    }
+    return $self->[LAST_EQUALS];
+}
+
+sub get_LAST_EQUALS {
+    my ($self) = @_;
+    return $self->[LAST_EQUALS];
 }
 
 sub set_COMMA_COUNT {
@@ -13842,7 +14113,7 @@ EOM
                     );
 =cut
 
-                # BUBBA: added '.' and '='
+                # TESTING: added '.' and '='
                 elsif ( $last_nonblank_type =~ /^([xwiZU!=\?:\.]|\|\||\&\&)$/ ) {
                     $type = '{';
                 }
@@ -14714,7 +14985,7 @@ indentation, but only single continuation-indentation
                     );
 =cut
 
-                #BUBBA: elsif ( $nesting_list_string =~ /1$/ ) {
+                #OLD: elsif ( $nesting_list_string =~ /1$/ ) {
                 #    $in_statement_continuation=1;
                 #}
 
@@ -17901,6 +18172,7 @@ BEGIN {
     # Caution: these debug flags produce a lot of output
     # They should all be 0 except when debugging small scripts
     %FORMATTER_DEBUG_FLAG = (
+        EQUALS  => 0,
         BOND    => 0,
         BREAK   => 0,
         CI      => 0,

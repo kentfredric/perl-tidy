@@ -9,6 +9,10 @@
  to introduce this problem when cutting and pasting, and perl does not
  complain about it.  
 
+ -New commands -ola, for outdenting labels, and -ock, for outdenting
+  (selected) control keywords, were implemented.  See the perltidy man
+  page for details.  Thanks to Peter Masiar for this suggestion.
+
  -Hanging side comment change: a comment will not be considered to be a
   hanging side comment if there is no leading whitespace on the line.
   This should improve the reliability of identifying hanging side comments.
@@ -129,6 +133,12 @@
   to a '.TEE' file.  Complete control over the treatment of pod and
   comments is still possible, as described in the updated help message 
   and man page.
+
+  -To simplify development and testing of .perltidyrc files, the command
+    -pro=filename  or -profile=filename may be used to specify a
+  configuration file which will override the default name of
+  .perltidyrc.  There must not be a space on either side of the '='
+  sign.  
 
   -Corrected tokenization error for the following (non-recommended) construct:
     $user = @vars[1] / 100;
