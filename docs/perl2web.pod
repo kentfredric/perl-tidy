@@ -80,6 +80,11 @@ input file, and it does not write a formatted file with extension
 F<.tdy>.  This means that two perltidy runs are required to create a
 fully reformatted, html copy of a script.  
 
+=item	B<-oext>=ext,    B<--output-file-extension>=ext  
+
+Change the extension of the output file to be F<.ext> instead of the
+default F<.html>.
+
 =item  The B<-pre> flag for code snippets
 
 When the B<-pre> flag is given, only the pre-formatted section, within

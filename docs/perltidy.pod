@@ -124,6 +124,11 @@ the output file, perltidy.TMPO, to feed to perl for syntax checking,
 unless allow syntax checking is disabled.  This file will be deleted
 when the job finishes.  The default is B<-nst> or B<-nostandard-output>.
 
+=item	B<-oext>=ext,    B<--output-file-extension>=ext  
+
+Change the extension of the output file to be F<.ext> instead of the
+default F<.tdy>.
+
 =item	B<-se>,    B<--standard-error-output>
 
 If perltidy detects an error when processing file F<somefile.pl>, its
