@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.38 2001/08/31 00:36:55 perltidy Exp $
+    $Id: perltidy,v 1.39 2001/09/01 00:07:48 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -1308,17 +1308,16 @@ EOF
 
 sub process_this_file {
 
-    my ( $tokenizer, $formatter ) = @_;
+    my ( $truth, $beauty ) = @_;
 
     # loop to process each line of this file
-    my $line_of_tokens;
-    while ( $line_of_tokens = $tokenizer->get_line() ) {
-        $formatter->write_line($line_of_tokens);
+    while ( my $line_of_tokens = $truth->get_line() ) {
+        $beauty->write_line($line_of_tokens);
     }
 
     # finish up
-    $formatter->finish_up();
-    $tokenizer->report_errors();
+    $beauty->finish_formatting();
+    $truth->report_tokenization_errors();
 }
 
 sub check_syntax {
@@ -2448,12 +2447,20 @@ sub markup_tokens {
 
         #-------------------------------------------------------
         # Patch : intercept a sub name here and split it
-        # into keyword 'sub' and sub name. 
+        # into keyword 'sub' and sub name
         if ( $type eq 'i' && $token =~ /^(sub\s+)(\w.*)$/ ) {
             $token = $self->markup_html_element( $1, 'k' );
             push @colored_tokens, $token;
             $token = $2;
             $type  = 'M';
+        }
+        # Patch : intercept a package name here and split it
+        # into keyword 'package' and name
+        if ( $type eq 'i' && $token =~ /^(package\s+)(\w.*)$/ ) {
+            $token = $self->markup_html_element( $1, 'k' );
+            push @colored_tokens, $token;
+            $token = $2;
+            $type  = 'i';
         }
 
         #-------------------------------------------------------
@@ -2501,7 +2508,7 @@ sub markup_html_element {
     return $token;
 }
 
-sub finish_up {
+sub finish_formatting {
 
     # called after last line
     my $self = shift;
@@ -3512,7 +3519,7 @@ sub total_line_length {
       token_sequence_length( $ifirst, $ilast );
 }
 
-sub finish_up {
+sub finish_formatting {
 
     # flush buffer and write any informative messages
     my $self = shift;
@@ -4153,6 +4160,23 @@ sub set_white_space_flag {
         #---------------------------------------------------------------
         if ( $token eq '(' ) {
 
+            # This will have to be tweaked as tokenization changes.
+            # We want a space after certain block types:
+            #     map { 1 * $_; } ( $y, $M, $w, $d, $h, $m, $s );
+            #
+            # But not others:
+            #     &{ $_->[1] } ( delete $_[$#_]{ $_->[0] } );
+            # At present, the & block is not marked as a code block, so
+            # this works:
+            if ( $last_type eq '}' ) {
+                if ($last_block_type =~ /^(sort|map|grep)$/) {
+                   $ws=WS_YES;
+                }
+                else{
+                   $ws=WS_NO;
+                }
+            }
+
             # -----------------------------------------------------
             # added 'w' and 'i' checks for TESTING gnu-style update
             # something like:
@@ -4178,6 +4202,7 @@ sub set_white_space_flag {
                 $ws = WS_YES;
             }
         }
+
 
         # keep space between 'sub' and '{' for anonymous sub definition
         if ( $type eq '{' ) {
@@ -4428,7 +4453,7 @@ sub print_line_of_tokens {
     #     /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
     # Examples:
     #   *VERSION = \'1.01';
-    #   ( $VERSION ) = '$Revision: 1.38 $ ' =~ /\$Revision:\s+([^\s]+)/;
+    #   ( $VERSION ) = '$Revision: 1.39 $ ' =~ /\$Revision:\s+([^\s]+)/;
     # We will pass such a line straight through unless -npvl is used
     my $is_VERSION_statement = 0;
 
@@ -5486,8 +5511,9 @@ sub output_line_to_go {
             }
 
             # break before all package declarations
+            # MCONVERSION LOCATION - for tokenizaton change
             elsif ( $leading_token =~ /^(package\s)/ 
-                 && $leading_type eq 'k' ) 
+                 && $leading_type eq 'i' ) 
             {
                 $want_blank = ( $rOpts->{'blanks-before-subs'} );
             }
@@ -7081,7 +7107,6 @@ sub set_list_breakpoints {
         $odd_or_even = 1;
     }
 
-    # TESTING
     if ( $identifier_count == $item_count ) { $odd_or_even = 1 }    # seems safe
 
     # are we an item contained in an outer list?
@@ -7261,14 +7286,14 @@ sub set_list_breakpoints {
     # How many spaces across the page will we fill?
     my $columns_per_line =
       ( int $number_of_fields / 2 ) * $pair_width + ( $number_of_fields % 2 ) *
-      $max_width;    #$$rmax_length[1];
+      $max_width; 
 
     my $formatted_columns;
 
     if ( $number_of_fields > 1 ) {
         $formatted_columns =
           ( $pair_width * ( int( $item_count / 2 ) ) + ( $item_count % 2 ) *
-          $max_width );    #$$rmax_length[0] );
+          $max_width );
     }
     else {
         $formatted_columns = $max_width * $item_count;
@@ -7290,7 +7315,8 @@ sub set_list_breakpoints {
     # Require dense lists if mostly identifiers or few items
 
 =pod    
-    We're trying to avoid breaking open small 2-line function calls, like this:
+    For -lp, 
+    we're need to avoid breaking open small 2-line function calls, like this:
              printf(
                     ",%d,%d", do conv($italic_correction),
                     do conv($left_math_fit)
@@ -7300,12 +7326,26 @@ sub set_list_breakpoints {
             printf(",%d,%d", do conv($italic_correction),
                    do conv($left_math_fit));
 
-    This still needs tweaking
+    For non-lp, we probably want to break this type of expression
+    open except for common keywords.  This will then produce
+
+            printf( ",%d,%d", do conv($italic_correction),
+                do conv($left_math_fit) );
+
+   which is not as good as the -lp, but probably better than
+   fully expanded.
+
+   This still needs tweaking.  For non-lp, we really should shift
+   the second line to the right (in the aligner) to make it look
+   like -lp.
+
 =cut
 
     if ( ( ( $identifier_count > 0.4 * $item_count )
         || $item_count < 6 )        # ad-hoc
-        && $formatted_lines <= 2    # 2 liners are the problem
+        && $formatted_lines <= 2    # 2 liners are the problem for -lp
+        && ($rOpts->{'line-up-parentheses'}  # either -lp
+        || $list_type =~ /^\w/)     # or, for now, also for certain keywords
         && $odd_or_even == 2        # my, local, our type lists look ok broken
       )
     {
@@ -10305,6 +10345,7 @@ use vars qw{
   $ci_string_in_tokenizer
   $continuation_string_in_tokenizer
   $in_statement_continuation
+  $nearly_matched_here_target_at
 
   %TOKENIZER_DEBUG_FLAG
 
@@ -10529,7 +10570,7 @@ sub write_diagnostics {
     }
 }
 
-sub report_errors {
+sub report_tokenization_errors {
 
     my $self = shift;
 
@@ -10611,6 +10652,7 @@ EOM
     if ( $tokenizer_self->{_in_here_doc} ) {
         my $here_doc_target = $tokenizer_self->{_here_doc_target};
         warning("hit EOF while in here document $here_doc_target\n");
+        warning("NOTE: almost matched at input line $nearly_matched_here_target_at except for whitespace\n"); 
     }
 
     if ( $tokenizer_self->{_in_quote} ) {
@@ -10742,9 +10784,10 @@ sub get_line {
         $line_of_tokens->{_line_type} = 'HERE';
         my $here_doc_target = $tokenizer_self->{_here_doc_target};
 
-        my $chompped_line = $input_line;
-        chomp $chompped_line;
-        if ( $chompped_line eq $here_doc_target ) {
+        my $candidate_target = $input_line;
+        chomp $candidate_target;
+        if ( $candidate_target eq $here_doc_target ) {
+            $nearly_matched_here_target_at = undef; 
             $line_of_tokens->{_line_type} = 'HERE_END';
             write_logfile_entry("Exiting HERE document $here_doc_target\n");
 
@@ -10754,11 +10797,21 @@ sub get_line {
                 $tokenizer_self->{_here_doc_target} = $here_doc_target;
                 write_logfile_entry(
                     "Entering HERE document $here_doc_target\n");
+                $nearly_matched_here_target_at = undef; 
             }
             else {
                 $tokenizer_self->{_in_here_doc}     = 0;
                 $tokenizer_self->{_here_doc_target} = "";
             }
+        }
+
+        # check for error of extra whitespace
+        else {
+          $candidate_target =~ s/\s*$//; 
+          $candidate_target =~ s/^\s*//; 
+          if ( $candidate_target eq $here_doc_target ) {
+              $nearly_matched_here_target_at = $input_line_number;
+          }
         }
         return $line_of_tokens;
     }
@@ -11354,6 +11407,7 @@ sub prepare_for_a_new_file {
     $nesting_token_string = "";
     $nesting_type_string  = "";
     $nesting_block_string = '1';
+    $nearly_matched_here_target_at    = undef;
 }
 
 sub get_quote_target {
@@ -12128,7 +12182,10 @@ EOM
                 }
                 increase_nesting_depth( PAREN, $i_tok );
 
-                # give a list full indentation if appropriate
+                # FUTURE UPDATE: give all parens full indentation 
+                # $type = '{';
+                #-------------------------------------------------------------
+
                 if ( $context == LIST_CONTEXT && $last_nonblank_token eq '=' ) {
                     $type = '{';
                 }
@@ -12553,6 +12610,13 @@ EOM
                     if ($found_target) {
                         push ( @here_target_list, $here_doc_target );
                         $type = 'h';
+                        if (length($here_doc_target) > 80) {
+                           my $truncated = substr($here_doc_target,0,80);
+                           complain("Long here-target: '$truncated' ...\n");
+                        }
+                        elsif ($here_doc_target !~ /^[A-Z_]\w+$/) {
+                           complain("Unconventional here-target: '$here_doc_target'\n");
+                        }
                     }
                     elsif ( $expecting == TERM ) {
 
@@ -15498,6 +15562,7 @@ BEGIN {
       each
       else
       elsif
+      eof
       eq
       exec
       exists
@@ -15510,6 +15575,7 @@ BEGIN {
       foreach
       formline
       ge
+      getc
       getgrgid
       getgrnam
       gethostbyaddr
@@ -15525,6 +15591,8 @@ BEGIN {
       getpwuid
       getservbyname
       getservbyport
+      getsockname
+      getsockopt
       glob
       gmtime
       goto
@@ -15581,6 +15649,8 @@ BEGIN {
       read
       readdir
       readlink
+      readline
+      readpipe
       recv
       redo
       ref
@@ -15748,14 +15818,17 @@ BEGIN {
       do
       eval
       format
+      m
       package
       q
       qq
       qr
       qw
       qx
+      s
       sub
       tr
+      y
     );
     push ( @Keywords, @special_keywords );
 
@@ -15843,12 +15916,6 @@ BEGIN {
     #	  __FILE__
     #	  __LINE__
     #	  __PACKAGE__
-    #	  eof
-    #	  getc
-    #	  getsockname
-    #	  getsockopt
-    #	  readline
-    #	  readpipe
     #	  );
 
 =pod

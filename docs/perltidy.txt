@@ -555,9 +555,8 @@ OPTIONS
 
     -lbl=n --long-block-line-count=n
         This controls how often perltidy is allowed to add blank lines
-        before certain block types (see previous section). The default is
-        12. Entering a value of 0 is equivalent to entering a very large
-        number.
+        before certain block types (see previous section). The default is 8.
+        Entering a value of 0 is equivalent to entering a very large number.
 
     -mbl=n --maximum-consecutive-blank-lines=n
         This parameter specifies the maximum number of consecutive blank

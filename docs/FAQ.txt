@@ -1,18 +1,275 @@
-Frequently Asked Questions
-I get this message when I try to run perltidy, but my script is a valid
-program.  
-skipping file: somefile.pl: Non-text (override with -f)
-What's wrong?
-    How reliable is perltidy
+NAME
+    Perltidy FAQ - frequently asked questions about Perltidy
 
-    Why is is so slow?
+DESCRIPTION
+    Perltidy is a perl script indenter and reformatter. It reads a perl
+    script and writes a new version which is identical in functionality but,
+    hopefully, easier to read.
 
-    perltidy perltidy: time 2m10.451s
+    This document is intended to answer common questions about Perltidy, and
+    to explain some of the more subtle aspects in more detail.
 
-  Incomplete
-This is a placeholder file for a future FAQ on perltidy
+    This document is maintained by Steve Hancock (perltidy at
+    users.sourceforge.net), and is available from
+    http://perltidy.sourceforge.net/FAQ.html
 
-  Do you know how to use perltidy within vim?
+    It is also available as a pod file as part of the Perltidy distribution.
+
+BASIC INFORMATION
+  Does Perltidy have an official web site?
+
+    Yes, at http://perltidy.sourceforge.net
+
+  Where do I obtain Perltidy?
+
+    Go to the website and follow the download links.
+
+  Who are the intended users of Perltidy?
+
+     TBD
+
+  What is the history of Perltidy?
+
+    It's about what you might expect. I had some scripts to reformat, but
+    couldn't find a good tool to do it. So I decided to try to write one.
+
+    More specifically, in July 2000 I decided to spend an afternoon cleaning
+    up some Perl scripts that I had put together rather hurriedly over the
+    previous year. They were a real mess from lots of cutting and pasting
+    and little modifications made over time, and it was becoming very
+    difficult to work with them. Of course, I should have properly formatted
+    them in the first place, but I wasn't very skilled with my editor at the
+    time I wrote them, and my focus at the time of writing them was just
+    solving an immediate problem.
+
+    I started to reformat them manually, but grew discouraged because I knew
+    that they would get messed up the next time I had to patch them. So I
+    looked for a tool on the internet, and was surprised not to find
+    anything really useful. The most useful information on the subject was
+    at Tim Maher's web site
+    http://www.consultix-inc.com/perl_beautifier.html . Tim was working on
+    an interesting approach but hadn't posted a program yet.
+
+    I thought I could put something together fairly quickly to at least
+    properly indent them. I was soooo wrong. I did get a simple indenter
+    working fairly quickly which worked on simple scripts, but its
+    reliability was not very good.
+
+    I found the problem of reformatting scripts very intriguing, and as a
+    result of experimenting with my simple indenter I gained some insight
+    into parsing perl. In October of 2000 I wrote a tokenizer, and that
+    formed the basis of the present Perltidy. By November I had a fairly
+    reliable indenter. I decided that it was good enough to distribute, but
+    that it would need a formatter (beautifier) before anyone would want to
+    use it, so I added the formatter. Sourceforge kindly provided me with a
+    website in December, and after several months of refinement and testing,
+    I announced its availability in March of 2001. Since then, many people
+    have kindly sent helpful comments, and these have helped Perltidy to
+    steadily improve over time. The updates to perltidy after that are
+    recorded in the ChangeLog at
+    http://perltidy.sourceforge.net/ChangeLog.html
+
+  How reliable is Perltidy?
+
+    Well first, we should really distinguish between a problem with
+    beautification and a problem in which a reformatted script does not
+    function the same as the original script. There will always be ways in
+    which the beautification of a script can be improved, so this type of
+    problem is undesirable but not too serious. On the other hand, an error
+    in which a reformatted script does not function correctly is quite
+    serious.
+
+    As you probably know, Perl is notoriously difficult to parse. And what
+    makes parsing even more difficult is that there is no really precise
+    description of the language, in the computer science sense.
+
+    Furthermore, perltidy makes a major simplification by not parsing
+    modules which are used with "require" and "use" statements, so it
+    sometimes has to guess how to parse a statement.
+
+    So, as a safety precaution, you should be very careful to make backups
+    of your scripts before switching to a script reformatted by perltidy. If
+    you are developing a significant program, you should definitely use
+    something like RCS or CVS to maintain version control.
+
+    On the other hand, perltidy goes to great lengths to catch any mistakes
+    that it might make, and it reports all such errors. For example, it
+    checks for balanced braces, parentheses, and square brackets. And it
+    runs a perl syntax check on the reformatted script if possible. (It
+    cannot do this unless all modules referenced on use statements are
+    available). There is no guarantee that these checks will catch every
+    error, but they are quite effective. For example, if perltidy were to
+    accidentally miss the start of a here document, it would most likely
+    report a syntax error after trying to parse the contents of the here
+    document.
+
+    It's difficult to give an absolute measure of reliability, but to give
+    some sense of it, I can mention that I have a growing collection of perl
+    scripts, currently about 500 MB in size, that I process in nightly runs
+    after every programming change. Of the scripts that were written by
+    people other than myself, perltidy only fails to parse 1 correctly, as
+    far as I can tell, and for that file, perltidy catches its own error and
+    ends with a message to that effect.
+
+    That bug, and any other known perltidy bugs are posted at
+    http://perltidy.sourceforge.net/BUGS.html
+
+  I think I've found a bug in Perltidy, what should I do?
+
+    Check the known bugs page at http://perltidy.sourceforge.net/BUGS.html
+    to see if it's already been reported. If not, send enough information to
+    allow me to reproduce it to
+
+    perltidy at users.sourceforge.net
+
+    If Perltidy write a .LOG file, please send that too.
+
+INSTALLATION
+  What else do I need to use Perltidy?
+
+    You just need to have Perl on your system. It should run on versions as
+    old as 5.004, but this has not been carefully tested.
+
+  What platforms does Perltidy run on.
+
+    Because Perltidy consists of only Perl code, with a minimal use of
+    system calls, it should work anywhere Perl runs, including most Unix
+    variants, Windows 95/98, Windows 2000, and VMS.
+
+    However, there may be problems with ActiveState Perl under Windows ME. I
+    have not received enough reports to know for sure, and would appreciate
+    hearing of any successes or failures under Windows ME.
+
+  Perltidy seems slow; can you speed it up?
+
+    Yes, it is slow. On a newer PC and a small snippet of code, you may not
+    notice much of a delay, but on an older PC and a large script, you will
+    have time to go get a snack while it runs. For example, reformatting
+    perltidy itself (about 16000 lines) takes about 2 minutes and 10 seconds
+    on a 333 MHz Pentium processor.
+
+    As far as speeding it up goes, there may be some minor speed-ups that
+    can be made eventually, but the basic problem is that it is a large Perl
+    script, and it does a lot of work trying to decide how best to format
+    your script. As far as I know, there are no bottlenecks in the program,
+    and its run time is simply proportional to the length of the script
+    being processed.
+
+  What does "skipping file: somefile.pl: Non-text (override with -f)" mean?
+
+    In order to avoid any problems that might arise in attempting to parse
+    binary files, Perltidy's default behavior is to only processes files
+    which are reported by the simple system tests as text files. It is very
+    possible, though uncommon, for a perfectly good perl script to be
+    reported as non-text. In this case, you need to use the -f flag to tell
+    Perltidy to go ahead and process the file.
+
+  Why doesn't Perltidy behave like a normal unix filter by default?
+
+    I mentioned above that Perltidy is run on thousands of test scripts
+    after each programming change. Perltidy is a large program, and it would
+    be too inefficient to reload it for each file to be processed. So it is
+    important that Perltidy be able to operate on a large number of files in
+    a single run. If it wrote to standard output, all such scripts would be
+    concatenated, which would be rather unexpected result, to say the least.
+    A secondary reason also has to do with efficiency. When Perltidy runs as
+    a filter, it has to make a copy of its output file in order to run Perl
+    for a syntax check. It can avoid this if it knows the name of the file
+    that it writes.
+
+    As the manual explains, you may operate Perltidy as a filter by using
+    the -st flag. You will probably also want to use -se, which sends all
+    error messages to the standard error output. You may want to put these
+    in a .perltidyrc file to prevent having to enter them each time. The
+    main disadvantage to this is that you will not be able to run Perltidy
+    on multiple files without overriding these flags on the command line.
+
+  What information is in the .LOG file?
+
+    Perltidy always writes a .LOG file, but you probably won't see it unless
+    you explicitly ask for it to be saved. The only circumstance in which
+    the log file is not automatically deleted is in the event Perltidy
+    detects that it made a mistake.
+
+    You can ask for the log file to be saved with either -log or -g. The
+    first method creates a sparse file, and the second method creates a
+    complete log file.
+
+    The .LOG file can be helpful if you are trying to track down a brace
+    nesting error, because it prints out the nesting of braces, parens, and
+    square brackets. It also prints out numerous informative messages,
+    including the starting and ending locations of here documents and
+    multi-line quotes.
+
+    You will see the nesting depths for each line of square brackets,
+    parens, and braces in the left column. On the right are any warning
+    messages plus the first few characters of each line. Warning messages
+    start with ">>>", and lines of code start with dots, one dot per level
+    of indentation. You could also determine the indentation level by
+    examining output script, but sometimes, with deep indentation, it is
+    easier to examine the dots in the log file.
+
+    For example, here one line from a .LOG file
+
+     L7:7     i1:1 {          .print "Too cold!\n";
+
+    The "L7:7" means that old line 7 became *approximately* new line 7.
+    (Actually it becomes new line 8; the discrepancy is because logfile
+    entries are written when old lines are read, and before their final
+    destinations are precisely known). The "i1:1" tells us that line 7 of
+    the input file had leading spaces implying an indentation level 1 and
+    that the braces also imply a structural indentation level of 1. The "{"
+    tells us that the starting nesting level of this line was one opening
+    curly brace.
+
+    The text
+
+     .print "Too cold!\n"
+
+    shows the first characters of this particular line of the script, with
+    one leading dot per indentation level. At the end of the log file is
+    some useful summary information. One particular item worth noting is the
+    summary of indentation disagreements. If you try to keep your script
+    properly indented, by using perltidy regurlarly, then this should show
+    you precisely the location of any extra or missing curly brace in the
+    script.
+
+  What is the difference between warning messages and error messages
+
+    Error messages are written when Perltidy is convinced that there is a
+    serious error with the script that you need to know about. An example
+    would be unbalanced braces.
+
+    A warning message is only written if you turn warnings on with -w, and
+    it is about something that probably will not prevent your script from
+    running correctly, but which you might be interested in knowing. An
+    example would be something like starting a pod section with an =cut.
+    Perl doesn't care, but it might cause trouble in the future for some pod
+    utility.
+
+  Why do I get a warning message about a bareword in an indirect object slot?
+
+    If you get this message, it is because perltidy is alerting you of a
+    possible ambiguous syntax at one or more places in your script. The
+    problem is with statements accepting indirect objects, such as print and
+    printf statements of the form
+
+        print bareword ( $etc
+
+    If 'bareword' has not been previously seen in the script, Perltidy
+    cannot tell if 'bareword' is a filehandle or a function call. The
+    problem is the space between 'bareword' and '('. There are two possible
+    interpretations of bareword in this example. One is that it might be a
+    filehandle, and the other is that it might be a function call. If
+    bareword is defined by another module and included with a 'use'
+    statement, then Perltidy will not have seen it but Perl will have no
+    problem, so you need do nothing. But if bareword is a function which
+    hasn't been defined yet, then Perl will guess that 'bareword' is a
+    filehandle, and script may not perform as expected.
+
+  How do I run Perltidy on selected text from within my editor?
+
+    Well, here is how to do it with vim.
 
     You use the '!' key to run it as a filter. For example: Assuming
     perltidy is in your path, to run it on the whole text, use :%!perltidy
@@ -25,4 +282,116 @@ This is a placeholder file for a future FAQ on perltidy
     The '-q' is optional (quiet), and keeps any error messages from
     appearing on the screen. If you don't use -q, you might have to use the
     'u' undo key to go back to the previous state.
+
+FORMATTING QUESTIONS
+  How well does the default formatting follow the perlstyle(1) guidelines?
+
+    Let's look at each of the main formatting issues and see how close it
+    comes.
+
+    Closing curly bracket of a multi-line BLOCK should line up with the
+    keyword that started the construct.
+        Yes.
+
+    * 4-column indent.
+        This is the default value of -i=n.
+
+    * Opening curly on same line as keyword, if possible, otherwise line up.
+        Yes.
+
+    * Space before the opening curly of a multi-line BLOCK.
+        Yes.
+
+    * One-line BLOCK may be put on one line, including curlies.
+        Yes.
+
+    * No space before the semicolon.
+        Yes, but the default has a space before a semicolon in a for(;;)
+        statement.
+
+    * Semicolon omitted in "short" one-line BLOCK.
+        Perltidy accepts this.
+
+    * Space around most operators.
+        Yes.
+
+    * Space around a "complex" subscript (inside brackets).
+        Well, perltidy tries to do this with a rather simple definition of
+        "complex". A single token, regardless of length, is considered to be
+        "simple", and more than one token within brackets is considered to
+        be "complex". There are several flags which control this for the
+        various types of braces and brackets: -pt, -bt, -bbt, and -sbt.
+
+    * Blank lines between chunks that do different things.
+        This is mainly up to the programmer, who knows which chunks do
+        different things. Perltidy will cooperate by retaining blank lines.
+
+        But in addition, by perltidy will put a blank line before certain
+        key sections such as subroutines, "BEGIN", "END", and "package"
+        statements, unless they are preceded by a comment or the -bbs option
+        has been deactivated.
+
+        Also, Perltidy will place blank lines before certain key blocks of
+        code if it hasn't seen a comment or blank for "a while". The -lbl=n
+        flag controls what we mean by "a while".
+
+    * Uncuddled elses.
+        Yes; use -ce to get cuddled elses.
+
+    * No space between function name and its opening parenthesis.
+        Yes. There is no option to put a space there because it is
+        considered too risky.
+
+    * Space after each comma.
+        Yes.
+
+    * Long lines broken after an operator (except "and" and "or").
+        Yes, with just a few of exceptions:
+
+        Perltidy breaks before the concatenation operator, ., because this
+        can make it easier to see. For example, here is a snippet from
+        CPAN.pm:
+
+                    $CPAN::Frontend->myprint("Valid options for debug are ".
+                                             join(", ",sort(keys %CPAN::DEBUG), 'all').
+                            qq{ or a number. Completion works on the options. }.
+                                qq{Case is ignored.\n\n});
+
+        and here is the reformatted version:
+
+                    $CPAN::Frontend->myprint( "Valid options for debug are "
+                        . join ( ", ", sort( keys %CPAN::DEBUG ), 'all' )
+                        . qq{ or a number. Completion works on the options. }
+                        . qq{Case is ignored.\n\n} );
+
+        The other exceptions are that Perltidy breaks before operators "&&",
+        "||", "<<", and ">>" by default.
+
+        To cause breaks after these operators, use this flag:
+
+                -wba='<< >> && || .'
+
+    * Space after last parenthesis matching on current line.
+        This one is as "clear as mud". Does anybody know what this means?
+        Matching what? Opening or closing parenthesis?
+
+    * Line up corresponding items vertically.
+        Perltidy has a simple vertical alignment scheme, and work is
+        underway to improve it.
+
+    * Omit redundant punctuation as long as clarity doesn't suffer.
+        This is mainly up to the programmer, but Perltidy will eliminate
+        unnecessary semicolons unless told not to with -ndsc.
+
+    * Line up your transliterations when it makes sense:
+            tr [abc]
+               [xyz];
+
+        No; that is currently too difficult for Perltidy.
+
+    * Outdent Labels a little
+        No; this is impossible for code at zero level indentation, so no
+        attempt has been made to implement it.
+
+  What logic does Perltidy's use to format lists?
 
