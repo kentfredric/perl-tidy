@@ -130,7 +130,7 @@
 .\" ========================================================================
 .\"
 .IX Title "PERLTIDY 1"
-.TH PERLTIDY 1 "2002-03-27" "perl v5.6.1" "User Contributed Perl Documentation"
+.TH PERLTIDY 1 "2002-04-02" "perl v5.6.1" "User Contributed Perl Documentation"
 .UC
 .SH "NAME"
 perltidy \- a perl script indenter and reformatter
@@ -527,7 +527,8 @@ starting level, use \fB\-sil=n\fR, to force the starting level to be n.
 By default, perltidy indents lists with 4 spaces, or whatever value
 is specified with \fB\-i=n\fR.  Here is a small list formatted in this way:
 .Sp
-.Vb 4
+.Vb 5
+\&    # perltidy (default)
 \&    @month_of_year = (
 \&        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
 \&        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
@@ -536,9 +537,10 @@ is specified with \fB\-i=n\fR.  Here is a small list formatted in this way:
 Use the \fB\-lp\fR flag to add extra indentation to cause the data to begin
 past the opening parentheses of a sub call or list, or opening square
 bracket of an anonymous array, or opening curly brace of an anonymous
-hash.  With this option set, the above list would become:
+hash.  With this option, the above list would become:
 .Sp
-.Vb 4
+.Vb 5
+\&    # perltidy -lp
 \&    @month_of_year = (
 \&                       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
 \&                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
@@ -556,10 +558,12 @@ method.
 Note: The \fB\-lp\fR option may not be used together with the \fB\-t\fR tabs option.
 It may, however, be used with the \fB\-et=n\fR tab method.
 .Sp
-In addition, any parameter which restricts the ability of perltidy to
-choose newlines will all conflict with \fB\-lp\fR and will cause \fB\-lp\fR to
-be deactivated.  These include 
-\&\fB\-io\fR, \fB\-fnl\fR, \fB\-nanl\fR, and \fB\-ndnl\fR.
+In addition, any parameter which significantly restricts the ability of
+perltidy to choose newlines will conflict with \fB\-lp\fR and will cause
+\&\fB\-lp\fR to be deactivated.  These include \fB\-io\fR, \fB\-fnl\fR, \fB\-nanl\fR, and
+\&\fB\-ndnl\fR.  The reason is that the \fB\-lp\fR indenation style can require
+the careful coordination of an arbitrary number of break points in
+hierarchical lists, and these flags may prevent that.
 .IP "\fB\-icp\fR, \fB\-\-indent\-closing\-paren\fR" 4
 .IX Item "-icp, --indent-closing-paren"
 The \fB\-icp\fR option leaves a list-termination line of the form \f(CW\*(C`);\*(C'\fR, \f(CW\*(C`};\*(C'\fR,
@@ -570,7 +574,7 @@ previous example with \fB\-icp\fR would give,
 \&    # perltidy -icp:
 \&    @month_of_year = (
 \&        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-\&        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+\&        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
 \&        );
 .Ve
 .IP "\fB\-icb\fR, \fB\-\-indent\-closing\-brace\fR" 4
@@ -724,10 +728,10 @@ Opening tokens (except for block braces) are controlled by \fB\-vt=n\fR, or
 \&\fB\-\-vertical\-tightness=n\fR, where
 .Sp
 .Vb 4
-\& -vt=0 always open (default), 
-\& -vt=1 close unless closing produces more than one 
-\&    step in indentation in a line.
-\& -vt=2 always close.
+\& -vt=0 break line after opening token (default). 
+\& -vt=1 do not break unless this would produce more than one 
+\&         step in indentation in a line.
+\& -vt=2 do not break after opening token
 .Ve
 .IP "\(bu" 4
 You must also use the \fB\-lp\fR flag when you use the \fB\-vt\fR flag; the
@@ -736,12 +740,15 @@ reason is explained below.
 Closing tokens (except for block braces) are controlled by \fB\-vtc=n\fR, or
 \&\fB\-\-vertical\-tightness\-closing=n\fR, where
 .Sp
-.Vb 4
-\& -vtc=0 always open (default), 
-\& -vtc=1 close if followed by a semicolon, another closing token, 
-\&        and not in a list environment.
-\& -vtc=2 always close.
+.Vb 5
+\& -vtc=0 always line break before closing token (default), 
+\& -vtc=1 do not break before a closing token which is followed 
+\&        by a semicolon or another closing token, and is not in 
+\&        a list environment.
+\& -vtc=2 never break before a closing token.
 .Ve
+The rules for \fB\-vtc=1\fR are designed to maintain a reasonable balance
+between tightness and readability in complex lists.
 .IP "\(bu" 4
 Different controls may be applied to to different token types,
 and it is also possible to control block braces; see below.
@@ -750,33 +757,41 @@ Finally, please note that these vertical tightness flags are merely
 hints to the formatter, and it cannot always follow them.  Things which
 make it difficult or impossible include comments, blank lines, blocks of
 code within a list, and possibly the lack of the \fB\-lp\fR parameter.
-Also, these flags will often be ignored for very small lists.
+Also, these flags may be ignored for very small lists (2 or 3 lines in
+length).
 .RE
 .RS 4
 .Sp
 Here are some examples: 
 .Sp
-.Vb 4
-\&    # perltidy -lp -vt=1 -vtc=0
-\&    @month_of_year = ( 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-\&                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+.Vb 7
+\&    # perltidy -lp -vt=0 -vtc=0
+\&    %romanNumerals = (
+\&                       one   => 'I',
+\&                       two   => 'II',
+\&                       three => 'III',
+\&                       four  => 'IV',
 \&    );
 .Ve
-.Vb 4
-\&    # perltidy -lp -vt=0 -vtc=1
-\&    @month_of_year = (
-\&                       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-\&                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' );
+.Vb 6
+\&    # perltidy -lp -vt=1 -vtc=0
+\&    %romanNumerals = ( one   => 'I',
+\&                       two   => 'II',
+\&                       three => 'III',
+\&                       four  => 'IV',
+\&    );
 .Ve
-.Vb 3
+.Vb 5
 \&    # perltidy -lp -vt=1 -vtc=1
-\&    @month_of_year = ( 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-\&                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' );
+\&    %romanNumerals = ( one   => 'I',
+\&                       two   => 'II',
+\&                       three => 'III',
+\&                       four  => 'IV', );
 .Ve
 The difference between \fB\-vt=1\fR and \fB\-vt=2\fR is shown here:
 .Sp
 .Vb 7
-\&    # perltidy -lp -vt=0 -vtc=0  (default)
+\&    # perltidy -lp -vt=0 -vtc=0 
 \&    $init->add(
 \&                mysprintf(
 \&                           "(void)find_threadsv(%s);",
@@ -792,6 +807,10 @@ The difference between \fB\-vt=1\fR and \fB\-vt=2\fR is shown here:
 \&                )
 \&    );
 .Ve
+The line ending in \f(CW\*(C`add(\*(C'\fR does not combine with the next line because
+the next line is not balanced.  This helps with readability, but we can
+force the combination with \fB\-vt=2\fR:
+.Sp
 .Vb 5
 \&    # perltidy -lp -vt=2 -vtc=0
 \&    $init->add( mysprintf( "(void)find_threadsv(%s);",
@@ -835,36 +854,42 @@ In fact, the parameter \fB\-vt=n\fR is actually just an abbreviation for
 \&\fB\-pvt=n \-bvt=n sbvt=n\fR, and likewise \fB\-vtc=n\fR is an abbreviation
 for \fB\-pvtc=n \-bvtc=n sbvtc=n\fR.
 .RE
-.IP "\fB\-bbvt\fR or \fB\-\-block\-brace\-vertical\-tightness\fR" 4
-.IX Item "-bbvt or --block-brace-vertical-tightness"
-The \fB\-bbvt\fR flag means not to place a line break after an opening
-brace.  The default, \fB\-nbbvt\fR, is to break after an opening block
-brace.  It is necessary to also use \fB\-bl\fR or \fB\-bli\fR for this to work,
-because, like other vertical tightness controls, it is implemented by
-simply overwriting one line onto the next.  For example:
+.IP "\fB\-bbvt=n\fR or \fB\-\-block\-brace\-vertical\-tightness=n\fR" 4
+.IX Item "-bbvt=n or --block-brace-vertical-tightness=n"
+The \fB\-bbvt=n\fR flag is just like the \fB\-vt=n\fR flag but applies
+to opening code block braces.
+.Sp
+.Vb 4
+\& -bbvt=0 break after opening block brace (default). 
+\& -bbvt=1 do not break unless this would produce more than one 
+\&         step in indentation in a line.
+\& -bbvt=2 do not break after opening block brace.
+.Ve
+It is necessary to also use either \fB\-bl\fR or \fB\-bli\fR for this to work,
+because, as with other vertical tightness controls, it is implemented by
+simply overwriting a line ending with an opening block brace with the
+subsequent line.  For example:
 .Sp
 .Vb 10
-\&    # default:
-\&    if ( -s $File ) {
-\&        if ( open( FILE, "< $File" ) ) {
-\&            while ( $File = <FILE> ) {
-\&                $In .= $File;
-\&                $count++;
-\&            }
-\&            close(FILE);
-\&        }
-\&    }
-.Ve
-.Vb 10
-\&    # perltidy -bli -bbvt
-\&    if ( -s $File )
-\&      { if ( open( FILE, "< $File" ) )
-\&          { while ( $File = <FILE> )
-\&              { $In .= $File;
-\&                $count++;
-\&              }
-\&            close(FILE);
+\&    # perltidy -bli -bbvt=0
+\&    if ( open( FILE, "< $File" ) )
+\&      {
+\&        while ( $File = <FILE> )
+\&          {
+\&            $In .= $File;
+\&            $count++;
 \&          }
+\&        close(FILE);
+\&      }
+.Ve
+.Vb 8
+\&    # perltidy -bli -bbvt=1
+\&    if ( open( FILE, "< $File" ) )
+\&      { while ( $File = <FILE> )
+\&          { $In .= $File;
+\&            $count++;
+\&          }
+\&        close(FILE);
 \&      }
 .Ve
 By default this applies to blocks associated with keywords \fBif\fR,
@@ -1397,18 +1422,24 @@ flag.  In this case, the above example becomes
 A conflict occurs if both \fB\-bl\fR and \fB\-bar\fR are specified.
 .IP "\fB\-wocb=n\fR,  \fB\-\-want\-old\-comma\-breaks=n\fR" 4
 .IX Item "-wocb=n,  --want-old-comma-breaks=n"
-The parameter \fB\-wocb=n\fR can be used to encourage or force perltidy
-to use existing breaks at commas.  The value of \fBn\fR indicates the
-degree to which perltidy should follow the old commas:
+The value of \fBn\fR indicates the degree to which perltidy should follow
+line breaks at existing commas.
 .Sp
-.Vb 4
-\&   n=0 means always ignore old comma breakpoints
-\&   n=1 means give priority to old comma breakpoints in list
-\&       formatting,
+.Vb 8
+\&   n=0 do not consider old comma breakpoints at all in list 
+\&       formatting.
+\&   n=1 (default) means perltidy makes a best guess at list
+\&       formatting, and may use old comma breakpoints in some cases.
+\&       At present, old comma breakpoints are used
+\&       for lists interrupted by comments and line breaks,
+\&       and for lists with mixtures of '=>'s and commas.
 \&   n=2 means always use old comma breakpoints in list formatting.
 .Ve
-At present, n=1 and n=2 are really equivalent, but n=1 is included
-to allow future program development.
+The default, \fBn=1\fR, works reasonably well in most cases, but if your
+script has nicely formatted tables which get messed up by the default
+method, you can use \fBn=2\fR to preserve this formatting.  The value
+\&\fBn=0\fR would only be used if the input script is a complete mess and the
+default method does not work well because of this.
 .Sp
 Consider:
 .Sp
@@ -1419,12 +1450,13 @@ Consider:
 \&                1, 3, 3, 1,
 \&                1, 4, 6, 4, 1,);
 .Ve
-The default formatting will just be:
+The default formatting will flatten this down to one line:
 .Sp
-.Vb 1
+.Vb 2
+\&    # perltidy -wocb=1 (default)
 \&    my @list = ( 1, 1, 1, 1, 2, 1, 1, 3, 3, 1, 1, 4, 6, 4, 1, );
 .Ve
-which hides the structure. Using \fB\-wocb\fR, plus additional flags
+which hides the structure. Using \fB\-wocb=2\fR, plus additional flags
 to retain the original style, yields
 .Sp
 .Vb 6
@@ -2104,7 +2136,7 @@ confusing filenames such as \fIsomefile.tdy.tdy.tdy\fR.
 \&\fIperlstyle\fR\|(1), \fIPerl::Tidy\fR\|(3)
 .SH "VERSION"
 .IX Header "VERSION"
-This man page documents perltidy version 20020225.
+This man page documents perltidy version 20020327.
 .SH "CREDITS"
 .IX Header "CREDITS"
 Michael Cartmell supplied code for adaptation to \s-1VMS\s0 and helped with

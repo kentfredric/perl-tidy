@@ -1,5 +1,10 @@
 # some side comments to line up
 
+# At one time the middle line was not lined up because of $VERSION
+my $WinSize    = "\0" x 8;      # window size buffer
+my $VERSION    = '0.70';        # because we're V7-compatible :)
+my $WinSize    = "\0" x 8;      # window size buffer
+
 # simple vertical alignment of '=' and '#'
 my $lines  = 0; # checksum: #lines
 my $bytes  = 0; # checksum: #bytes
@@ -63,6 +68,7 @@ my %fields = ( tag => 1,    # old/new
     } # end level 1
 } # end level 0
 
+
 # should outdent '};' with following side comment
 $VERSION = do {
     my @r = (q$rEvIsIoN: 1.2 $ =~ /\d+/g);
@@ -106,3 +112,32 @@ $VERSION = do {
                 || $obj->can('name')
             ) && $obj->name =~ /$regex/i
         );
+
+{
+    {
+        # note side comments below
+        $a = [
+            Cascade    => $menu_cb,
+            -menuitems => [
+                [ Checkbutton => 'Oil checked',          -variable => \$OIL ],
+                [ Checkbutton => 'Transmission checked', -variable => \$TRANS ],
+                [ Checkbutton => 'Brakes checked', -variable => \$BRAKES ],
+                [ Checkbutton => 'Lights checked', -variable => \$LIGHTS ],
+                [ Separator   => '' ],
+                [
+                    Button   => 'See current values',
+                    -command => [
+                        \&see_vars,
+                        $TOP,
+                        [
+                            [ 'oil',    \$OIL ],
+                            [ 'trans',  \$TRANS ],
+                            [ 'brakes', \$BRAKES ],
+                            [ 'lights', \$LIGHTS ],
+                        ],
+                    ],    # end see_vars
+                ],        # end button
+            ],            # end checkbutton menuitems
+        ];                # end checkbuttons cascade
+    }
+}

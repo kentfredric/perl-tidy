@@ -377,6 +377,7 @@ FORMATTING OPTIONS
         By default, perltidy indents lists with 4 spaces, or whatever value
         is specified with -i=n. Here is a small list formatted in this way:
 
+            # perltidy (default)
             @month_of_year = (
                 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
@@ -385,8 +386,9 @@ FORMATTING OPTIONS
         Use the -lp flag to add extra indentation to cause the data to begin
         past the opening parentheses of a sub call or list, or opening
         square bracket of an anonymous array, or opening curly brace of an
-        anonymous hash. With this option set, the above list would become:
+        anonymous hash. With this option, the above list would become:
 
+            # perltidy -lp
             @month_of_year = (
                                'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                                'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
@@ -404,9 +406,12 @@ FORMATTING OPTIONS
         Note: The -lp option may not be used together with the -t tabs
         option. It may, however, be used with the -et=n tab method.
 
-        In addition, any parameter which restricts the ability of perltidy
-        to choose newlines will all conflict with -lp and will cause -lp to
-        be deactivated. These include -io, -fnl, -nanl, and -ndnl.
+        In addition, any parameter which significantly restricts the ability
+        of perltidy to choose newlines will conflict with -lp and will cause
+        -lp to be deactivated. These include -io, -fnl, -nanl, and -ndnl.
+        The reason is that the -lp indenation style can require the careful
+        coordination of an arbitrary number of break points in hierarchical
+        lists, and these flags may prevent that.
 
     -icp, --indent-closing-paren
         The -icp option leaves a list-termination line of the form ");",
@@ -416,7 +421,7 @@ FORMATTING OPTIONS
             # perltidy -icp:
             @month_of_year = (
                 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+                'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
                 );
 
     -icb, --indent-closing-brace
@@ -558,10 +563,10 @@ FORMATTING OPTIONS
         *   Opening tokens (except for block braces) are controlled by
             -vt=n, or --vertical-tightness=n, where
 
-             -vt=0 always open (default), 
-             -vt=1 close unless closing produces more than one 
-                step in indentation in a line.
-             -vt=2 always close.  
+             -vt=0 break line after opening token (default). 
+             -vt=1 do not break unless this would produce more than one 
+                     step in indentation in a line.
+             -vt=2 do not break after opening token
 
         *   You must also use the -lp flag when you use the -vt flag; the
             reason is explained below.
@@ -569,10 +574,14 @@ FORMATTING OPTIONS
         *   Closing tokens (except for block braces) are controlled by
             -vtc=n, or --vertical-tightness-closing=n, where
 
-             -vtc=0 always open (default), 
-             -vtc=1 close if followed by a semicolon, another closing token, 
-                    and not in a list environment.
-             -vtc=2 always close.  
+             -vtc=0 always line break before closing token (default), 
+             -vtc=1 do not break before a closing token which is followed 
+                    by a semicolon or another closing token, and is not in 
+                    a list environment.
+             -vtc=2 never break before a closing token.
+
+            The rules for -vtc=1 are designed to maintain a reasonable
+            balance between tightness and readability in complex lists.
 
         *   Different controls may be applied to to different token types,
             and it is also possible to control block braces; see below.
@@ -581,28 +590,35 @@ FORMATTING OPTIONS
             merely hints to the formatter, and it cannot always follow them.
             Things which make it difficult or impossible include comments,
             blank lines, blocks of code within a list, and possibly the lack
-            of the -lp parameter. Also, these flags will often be ignored
-            for very small lists.
+            of the -lp parameter. Also, these flags may be ignored for very
+            small lists (2 or 3 lines in length).
 
         Here are some examples:
 
-            # perltidy -lp -vt=1 -vtc=0
-            @month_of_year = ( 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                               'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+            # perltidy -lp -vt=0 -vtc=0
+            %romanNumerals = (
+                               one   => 'I',
+                               two   => 'II',
+                               three => 'III',
+                               four  => 'IV',
             );
 
-            # perltidy -lp -vt=0 -vtc=1
-            @month_of_year = (
-                               'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                               'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' );
+            # perltidy -lp -vt=1 -vtc=0
+            %romanNumerals = ( one   => 'I',
+                               two   => 'II',
+                               three => 'III',
+                               four  => 'IV',
+            );
 
             # perltidy -lp -vt=1 -vtc=1
-            @month_of_year = ( 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                               'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' );
+            %romanNumerals = ( one   => 'I',
+                               two   => 'II',
+                               three => 'III',
+                               four  => 'IV', );
 
         The difference between -vt=1 and -vt=2 is shown here:
 
-            # perltidy -lp -vt=0 -vtc=0  (default)
+            # perltidy -lp -vt=0 -vtc=0 
             $init->add(
                         mysprintf(
                                    "(void)find_threadsv(%s);",
@@ -616,6 +632,10 @@ FORMATTING OPTIONS
                                    cstring( $threadsv_names[ $op->targ ] )
                         )
             );
+
+        The line ending in "add(" does not combine with the next line
+        because the next line is not balanced. This helps with readability,
+        but we can force the combination with -vt=2:
 
             # perltidy -lp -vt=2 -vtc=0
             $init->add( mysprintf( "(void)find_threadsv(%s);",
@@ -658,33 +678,38 @@ FORMATTING OPTIONS
         -pvt=n -bvt=n sbvt=n, and likewise -vtc=n is an abbreviation for
         -pvtc=n -bvtc=n sbvtc=n.
 
-    -bbvt or --block-brace-vertical-tightness
-        The -bbvt flag means not to place a line break after an opening
-        brace. The default, -nbbvt, is to break after an opening block
-        brace. It is necessary to also use -bl or -bli for this to work,
-        because, like other vertical tightness controls, it is implemented
-        by simply overwriting one line onto the next. For example:
+    -bbvt=n or --block-brace-vertical-tightness=n
+        The -bbvt=n flag is just like the -vt=n flag but applies to opening
+        code block braces.
 
-            # default:
-            if ( -s $File ) {
-                if ( open( FILE, "< $File" ) ) {
-                    while ( $File = <FILE> ) {
-                        $In .= $File;
-                        $count++;
-                    }
-                    close(FILE);
-                }
-            }
+         -bbvt=0 break after opening block brace (default). 
+         -bbvt=1 do not break unless this would produce more than one 
+                 step in indentation in a line.
+         -bbvt=2 do not break after opening block brace.
 
-            # perltidy -bli -bbvt
-            if ( -s $File )
-              { if ( open( FILE, "< $File" ) )
-                  { while ( $File = <FILE> )
-                      { $In .= $File;
-                        $count++;
-                      }
-                    close(FILE);
+        It is necessary to also use either -bl or -bli for this to work,
+        because, as with other vertical tightness controls, it is
+        implemented by simply overwriting a line ending with an opening
+        block brace with the subsequent line. For example:
+
+            # perltidy -bli -bbvt=0
+            if ( open( FILE, "< $File" ) )
+              {
+                while ( $File = <FILE> )
+                  {
+                    $In .= $File;
+                    $count++;
                   }
+                close(FILE);
+              }
+
+            # perltidy -bli -bbvt=1
+            if ( open( FILE, "< $File" ) )
+              { while ( $File = <FILE> )
+                  { $In .= $File;
+                    $count++;
+                  }
+                close(FILE);
               }
 
         By default this applies to blocks associated with keywords if,
@@ -1179,17 +1204,23 @@ FORMATTING OPTIONS
         A conflict occurs if both -bl and -bar are specified.
 
     -wocb=n, --want-old-comma-breaks=n
-        The parameter -wocb=n can be used to encourage or force perltidy to
-        use existing breaks at commas. The value of n indicates the degree
-        to which perltidy should follow the old commas:
+        The value of n indicates the degree to which perltidy should follow
+        line breaks at existing commas.
 
-           n=0 means always ignore old comma breakpoints
-           n=1 means give priority to old comma breakpoints in list
-               formatting,
+           n=0 do not consider old comma breakpoints at all in list 
+               formatting.
+           n=1 (default) means perltidy makes a best guess at list
+               formatting, and may use old comma breakpoints in some cases.
+               At present, old comma breakpoints are used
+               for lists interrupted by comments and line breaks,
+               and for lists with mixtures of '=>'s and commas.
            n=2 means always use old comma breakpoints in list formatting.
 
-        At present, n=1 and n=2 are really equivalent, but n=1 is included
-        to allow future program development.
+        The default, n=1, works reasonably well in most cases, but if your
+        script has nicely formatted tables which get messed up by the
+        default method, you can use n=2 to preserve this formatting. The
+        value n=0 would only be used if the input script is a complete mess
+        and the default method does not work well because of this.
 
         Consider:
 
@@ -1199,11 +1230,12 @@ FORMATTING OPTIONS
                         1, 3, 3, 1,
                         1, 4, 6, 4, 1,);
 
-        The default formatting will just be:
+        The default formatting will flatten this down to one line:
 
+            # perltidy -wocb=1 (default)
             my @list = ( 1, 1, 1, 1, 2, 1, 1, 3, 3, 1, 1, 4, 6, 4, 1, );
 
-        which hides the structure. Using -wocb, plus additional flags to
+        which hides the structure. Using -wocb=2, plus additional flags to
         retain the original style, yields
 
             # perltidy -wocb=2 -lp -pt=2 -vt=1 -vtc=1
@@ -1856,7 +1888,7 @@ SEE ALSO
     perlstyle(1), Perl::Tidy(3)
 
 VERSION
-    This man page documents perltidy version 20020225.
+    This man page documents perltidy version 20020327.
 
 CREDITS
     Michael Cartmell supplied code for adaptation to VMS and helped with

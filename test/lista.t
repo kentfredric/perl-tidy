@@ -1,3 +1,20 @@
+# doesnt look good with -vtc=2:
+$main->Button( -text    => "Click Here For Registration Form",
+               -command => \&register )->pack( -side => "left" );
+
+# this will get squashed without -wocb=3
+my @binomial_coef = (1,
+                     1, 1,
+                     1, 2, 1,
+                     1, 3, 3, 1,
+                     1, 4, 6, 4, 1,);
+
+@bb = bounding_box_of_points(
+                              2, 1, 2, 5, 4, 3, 5, 2, 3, 1, 7, 2,
+                              5, 5, 7, 7, 4, 5, 5, 6, 1
+  ),
+  "\n";
+
 # example from koha:
 my @rowtitl = ("Card Number","Surname","First Name","Other Names","Initials",
      "Address","Area","Town","Telephone","Email","Fax Number","Alt Address",
@@ -60,6 +77,27 @@ map( $matchwords{ join "", sort split //, $_ } = $_, 'cig',
   = @_;
 
 {
+    # No container around this list, so indentation sucks:
+    $art_button = Button $frame2
+      -text             => "article",
+      -relief           => "raised",
+      -background       => yellow1,
+      -activebackground => DarkOrchid1,
+      -command          => [
+      sub {
+          get_article();
+          $hdr_color = ($hdr_color + 1) % @hdr_colors;
+          configure $hdrs
+            -text       => $hdrtext,
+            -background => $hdr_colors[$hdr_color];
+        }
+        ];
+
+    # no need to break after comma followed by a ')':
+    $search =
+      $top->Entry('-width' => 20,
+      )->pack('-side' => 'left');
+
     %enc_map = (
         'WinAnsiEncoding' => [
             0 .. 126, 128, 160, 128, 145, 134,

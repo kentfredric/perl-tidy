@@ -61,7 +61,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ($VERSION=q($Id: Tidy.pm,v 1.13 2002/03/27 20:49:09 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.14 2002/04/04 06:05:20 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 # Preloaded methods go here.
@@ -401,7 +401,8 @@ EOM
         unless ( exists $default_file_extension{ $rOpts->{'format'} } ) {
             my $formats = join ' ',
               sort map { "'" . $_ . "'" } keys %default_file_extension;
-            die "-format='$rOpts->{format}' but must be one of: $formats\n";
+            my $fmt = $rOpts->{'format'};
+            die "-format='$fmt' but must be one of: $formats\n";
         }
 
         my $output_extension = $default_file_extension{ $rOpts->{'format'} };
@@ -869,7 +870,7 @@ sub process_command_line {
     $add_option->( 'blanks-before-comments',                    'bbc',   '!' );
     $add_option->( 'blanks-before-subs',                        'bbs',   '!' );
     $add_option->( 'block-brace-tightness',                     'bbt',   '=i' );
-    $add_option->( 'block-brace-vertical-tightness',            'bbvt',  '!' );
+    $add_option->( 'block-brace-vertical-tightness',            'bbvt',  '=i' );
     $add_option->( 'block-brace-vertical-tightness-list',       'bbvtl', '=s' );
     $add_option->( 'brace-left-and-indent',                     'bli',   '!' );
     $add_option->( 'brace-tightness',                           'bt',    '=i' );
@@ -994,6 +995,7 @@ sub process_command_line {
       blanks-before-comments
       blanks-before-subs
       block-brace-tightness=0
+      block-brace-vertical-tightness=0
       brace-tightness=1
       brace-vertical-tightness-closing=0
       brace-vertical-tightness=0
@@ -1047,7 +1049,7 @@ sub process_command_line {
       static-block-comments
       trim-qw
       format=tidy
-      want-old-comma-breaks=0
+      want-old-comma-breaks=1
     );
     push @defaults, "perl-syntax-check-flags=-c -T";
 
@@ -1443,7 +1445,7 @@ EOM
     {
         $Opts{'indent-only'} = 1;
     }
-    
+
     # -isbc implies -ibc
     if ( $Opts{'indent-spaced-block-comments'} ) {
         $Opts{'indent-block-comments'} = 1;
@@ -4549,18 +4551,17 @@ sub set_leading_whitespace {
 
             $space_count = $gnu_position_predictor;
 
-            # If the opening paren is beyond the half-line length, then
-            # we will use the minimum (standard) indentation.  This will
-            # help avoid problems associated with running out of space
-            # near the end of a line.  As a result, in deeply nested
-            # lists, there will be some indentations which are limited
-            # to this minimum standard indentation. But the most deeply
-            # nested container will still probably be able to shift its
-            # parameters to the right for proper alignment, so in most
-            # cases this will not be noticable.
-            my $min_gnu_indentation = $standard_increment +
+            my $min_gnu_indentation =
               $gnu_stack[$max_gnu_stack_index]->get_SPACES();
+
+            if ( $last_nonblank_token =~ /^[\{\[]$/ ) {
+                $min_gnu_indentation += $tightness{$last_nonblank_token};
+            }
+            else {
+                $min_gnu_indentation += $standard_increment;
+            }
             $available_space = $space_count - $min_gnu_indentation;
+
             if (
                 $available_space < 0
                 ## moved below
@@ -4584,6 +4585,15 @@ sub set_leading_whitespace {
                 $available_space, $align_paren );
 
             ## moved from above
+            # If the opening paren is beyond the half-line length, then
+            # we will use the minimum (standard) indentation.  This will
+            # help avoid problems associated with running out of space
+            # near the end of a line.  As a result, in deeply nested
+            # lists, there will be some indentations which are limited
+            # to this minimum standard indentation. But the most deeply
+            # nested container will still probably be able to shift its
+            # parameters to the right for proper alignment, so in most
+            # cases this will not be noticable.
             if ( $available_space > 0
                 && $space_count > $half_maximum_line_length )
             {
@@ -5013,12 +5023,8 @@ sub check_options {
         }
     }
 
-    make_block_brace_vertical_tightness_pattern(); 
+    make_block_brace_vertical_tightness_pattern();
 
-    # The -lp indentation logic requires that perltidy examine large
-    # blocks of code between flushing.  When the user takes control
-    # of line breaks, perltidy never sees large enough buffers to
-    # use the -lp style.  There's no way around this.  
     if ( $rOpts->{'line-up-parentheses'} ) {
 
         if ( $rOpts->{'indent-only'}
@@ -5026,7 +5032,13 @@ sub check_options {
             || !$rOpts->{'delete-old-newlines'} )
         {
             print STDERR <<EOM;
+-----------------------------------------------------------------------
 Conflict: -lp  conflicts with -io, -fnl, -nanl, or -ndnl; ignoring -lp
+    
+The -lp indentation logic requires that perltidy be able to coordinate
+arbitrarily large numbers of line breakpoints.  This isn't possible
+with these flags. Sometimes an acceptable workaround is to use -wocb=3
+-----------------------------------------------------------------------
 EOM
             $rOpts->{'line-up-parentheses'} = 0;
         }
@@ -5228,9 +5240,9 @@ EOM
     );
 
     # frequently used parameters
-    $rOpts_add_newlines             = $rOpts->{'add-newlines'};
-    $rOpts_add_whitespace           = $rOpts->{'add-whitespace'};
-    $rOpts_block_brace_tightness    = $rOpts->{'block-brace-tightness'};
+    $rOpts_add_newlines                   = $rOpts->{'add-newlines'};
+    $rOpts_add_whitespace                 = $rOpts->{'add-whitespace'};
+    $rOpts_block_brace_tightness          = $rOpts->{'block-brace-tightness'};
     $rOpts_block_brace_vertical_tightness =
       $rOpts->{'block-brace-vertical-tightness'};
     $rOpts_brace_left_and_indent    = $rOpts->{'brace-left-and-indent'};
@@ -5251,8 +5263,8 @@ EOM
       $rOpts->{'short-concatenation-item-length'};
     $rOpts_swallow_optional_blank_lines =
       $rOpts->{'swallow-optional-blank-lines'};
-    $rOpts_want_old_comma_breaks = $rOpts->{'want-old-comma-breaks'}; 
-    $half_maximum_line_length = $rOpts_maximum_line_length / 2;
+    $rOpts_want_old_comma_breaks = $rOpts->{'want-old-comma-breaks'};
+    $half_maximum_line_length    = $rOpts_maximum_line_length / 2;
 
     # Note that both opening and closing tokens can access the opening
     # and closing flags of their container types.
@@ -5313,7 +5325,7 @@ sub make_closing_side_comment_list_pattern {
 sub make_block_brace_vertical_tightness_pattern {
 
     # turn any input list into a regex for recognizing selected block types
-    $block_brace_vertical_tightness_pattern = $bli_pattern; 
+    $block_brace_vertical_tightness_pattern = $bli_pattern;
     if (
         defined(
             $rOpts->{'block-brace-vertical-tightness-list'}
@@ -6416,21 +6428,10 @@ sub set_white_space_flag {
          /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
      Examples:
        *VERSION = \'1.01';
-       ( $VERSION ) = '$Revision: 1.13 $ ' =~ /\$Revision:\s+([^\s]+)/;
-     We will pass such a line straight through (by changing it
-     to a quoted string) unless -npvl is used
+       ( $VERSION ) = '$Revision: 1.14 $ ' =~ /\$Revision:\s+([^\s]+)/;
+     We will pass such a line straight through without breaking
+     it unless -npvl is used
     
-     But note: this means that the formatter will not see every token,
-     which complicates things.  For example, loops which look at
-     block sequence numbers may see a closing sequence number but not
-     the corresponding opening sequence number (sidecmt.t).  Example:
-
-    my $VERSION = do { my @r = (q$Revision: 1.13 $ =~ /\d+/g); sprintf
-    "%d."."%02d" x $#r, @r }; 
-
-    Here, the opening brace of 'do {' will not be seen, while the closing
-    '}' will be seen as an individual token.
-
 =cut
 
         my $is_VERSION_statement = 0;
@@ -6444,12 +6445,12 @@ sub set_white_space_flag {
             $saw_VERSION_in_this_file = 1;
             $is_VERSION_statement     = 1;
             write_logfile_entry("passing VERSION line; -npvl deactivates\n");
+            $no_internal_newlines = 1;
         }
 
         # take care of indentation-only
         # also write a line which is entirely a 'qw' list
-        if ( $is_VERSION_statement
-            || $rOpts->{'indent-only'}
+        if ( $rOpts->{'indent-only'}
             || ( ( $jmax == 0 ) && ( $$rtoken_type[0] eq 'q' ) ) )
         {
             flush();
@@ -6725,7 +6726,7 @@ sub set_white_space_flag {
 
                   # do not break for anonymous subs
                   : 0;
-                  
+
                 # Break before an opening '{' ...
                 if (
 
@@ -6810,10 +6811,10 @@ sub set_white_space_flag {
                         && ( $last_nonblank_type ne ';' )
 
                         # patch until some block type issues are fixed:
-                        # Do not add semi-colon for block types '{', '}', and ';'
-                        # because we cannot be sure yet that this
-                        # is a block and not an anonomyous hash 
-                        # (blktype.t, blktype1.t)
+                        # Do not add semi-colon for block types '{',
+                        # '}', and ';' because we cannot be sure yet
+                        # that this is a block and not an anonomyous
+                        # hash (blktype.t, blktype1.t)
                         && ( $block_type !~ /^[\{\};]$/ )
 
                         # it seems best not to add semicolons in these
@@ -6873,10 +6874,10 @@ sub set_white_space_flag {
 
                     # we have to actually make it by removing tentative
                     # breaks that were set within it
-                    undo_forced_breakpoint_stack(0); 
+                    undo_forced_breakpoint_stack(0);
                     set_nobreaks( $index_start_one_line_block,
                         $max_index_to_go - 1 );
-                    
+
                     # then re-initialize for the next one-line block
                     destroy_one_line_block();
 
@@ -6884,7 +6885,8 @@ sub set_white_space_flag {
                     # We will keep going to allow certain brace followers as in:
                     #   do { $ifclosed = 1; last } unless $losing;
                     #
-                    # But make a line break if the curly ends a significant block:
+                    # But make a line break if the curly ends a
+                    # significant block:
                     #    /^(until|while|for|if|elsif|else)$/
                     if ( $is_until_while_for_if_elsif_else{$block_type} ) {
                         output_line_to_go() unless ($no_internal_newlines);
@@ -6920,11 +6922,11 @@ sub set_white_space_flag {
                     }
                 }
 
-                # None of the above:
-                # include here everything you would allow to follow a short block
-                # which is not an if/elsif/else/do/sort/map/grep/eval
-                # Testfiles: 'Toolbar.pm', 'Menubar.pm', bless.t, '3rules.pl'
-                # break1.t
+                # None of the above: include here everything you would
+                # allow to follow a short block which is not an
+                # if/elsif/else/do/sort/map/grep/eval 
+                # Testfiles:
+                # 'Toolbar.pm', 'Menubar.pm', bless.t, '3rules.pl', 'break1.t
                 else {
                     $rbrace_follower = \%is_other_brace_follower;
                 }
@@ -7099,6 +7101,9 @@ sub set_white_space_flag {
             # if this line which ends in a quote
             || $in_quote
 
+            # if this is a VERSION statement
+            || $is_VERSION_statement
+
             # to keep a label on one line if that is how it is now
             || ( ( $type eq 'J' ) && ( $max_index_to_go == 0 ) )
 
@@ -7111,7 +7116,8 @@ sub set_white_space_flag {
         }
 
         # mark old line breakpoints in current output stream
-        if ( $max_index_to_go >= 0 && !$rOpts->{'ignore-old-line-breaks'} ) {
+        ##if ( $max_index_to_go >= 0 && !$rOpts->{'ignore-old-line-breaks'} ) {
+        if ( $max_index_to_go >= 0 && $rOpts_want_old_comma_breaks > 0 ) {
             $old_breakpoint_to_go[$max_index_to_go] = 1;
         }
     }
@@ -7959,10 +7965,8 @@ sub accumulate_block_text {
                     else {
 
                         # Error: block opening line undefined for this line..
-                        # This can happen in the unusual case where a
-                        # $VERSION line has been quoted to keep
-                        # MakeMaker happy.  It is not a significant
-                        # problem.  
+                        # This shouldn't be possible, but it is not a
+                        # significant problem.  
                     }
                 }
 
@@ -8009,8 +8013,8 @@ sub accumulate_block_text {
             }
             else {
 
-                # note: ignoring type 'q' because of tricks being played with 'q'
-                # for hanging side comments and $VERSION
+                # note: ignoring type 'q' because of tricks being played
+                # with 'q' for hanging side comments 
                 if ( $type ne 'b' && $type ne '#' && $type ne 'q' ) {
                     $csc_new_statement_ok =
                       ( $block_type || $type eq 'J' || $type eq ';' );
@@ -8415,104 +8419,12 @@ sub send_lines_to_vertical_aligner {
             )
         );
 
-        # Apply vertical tightness controls.  We create an array of
-        # parameters which tell the vertical aligner if we should
-        # combine this line with the next line to achieve the desired
-        # vertical tightness.  The array of parameters contains:
-        #
-        #   [0] type: 1=opening  2=closing
-        #   [1] flag: if opening: 1=no multiple steps, 2=multiple steps ok
-        #             if closing: spaces of padding to use
-        #   [2] sequence number of container if symmetric closing possible
-        #       (this feature is not used now)
-        my $rvertical_tightness_flags;
+        my $level_jump =
+          $nesting_depth_to_go[ $iend + 1 ] - $nesting_depth_to_go[$ibeg];
 
-        # This must NEVER be used with the last line of a batch, or we
-        # risk losing a line!  We must be sure that a line of code
-        # follows immediately to flush any cached line.
-        if ( $n < $n_last_line ) {
-
-            # see if last token is an opening token...not a BLOCK...
-            my $ibeg_next = $$ri_first[ $n + 1 ];
-            my $token_end = $tokens_to_go[$iend];
-            my $iend_next = $$ri_last[ $n + 1 ];
-            if ( $type_sequence_to_go[$iend]
-                && !$block_type_to_go[$iend]
-                && $is_opening_token{$token_end}
-                && $opening_vertical_tightness{$token_end} > 0 )
-            {
-
-                # avoid multiple jumps in nesting depth in one line if
-                # requested
-                my $ovt       = $opening_vertical_tightness{$token_end};
-                my $iend_next = $$ri_last[ $n + 1 ];
-                unless (
-                    $ovt == 1
-                    && ( $nesting_depth_to_go[ $iend_next + 1 ] !=
-                        $nesting_depth_to_go[$ibeg_next] )
-                  )
-                {
-                    $rvertical_tightness_flags->[0] = 1;
-                    $rvertical_tightness_flags->[1] = $ovt;
-                    $rvertical_tightness_flags->[2] = 0;
-                }
-            }
-
-            # see if first token of next line is a closing token...
-            # ..and be sure this line does not have a side comment
-            my $token_next = $tokens_to_go[$ibeg_next];
-            if ( $type_sequence_to_go[$ibeg_next]
-                && !$block_type_to_go[$ibeg_next]
-                && $is_closing_token{$token_next}
-                && $types_to_go[$iend] !~ '#' )  # for safety, shouldn't happen!
-            {
-                my $ovt = $opening_vertical_tightness{$token_next};
-                my $cvt = $closing_vertical_tightness{$token_next};
-                if (
-                    (
-                        $nesting_depth_to_go[$ibeg_next] ==
-                        $nesting_depth_to_go[ $iend_next + 1 ] + 1
-                    )
-                    && (
-                        $cvt == 2
-                        || (
-                            $container_environment_to_go[$ibeg_next] ne 'LIST'
-                            && $cvt == 1
-                        )
-                    )
-                  )
-                {
-
-                    # decide which trailing closing tokens to append..
-                    my $ok = 0;
-                    if ( $cvt == 2 || $iend_next == $ibeg_next ) { $ok = 1 }
-                    else {
-                        my $str = join ( '',
-                            @types_to_go[ $ibeg_next + 1 .. $ibeg_next + 2 ] );
-
-                        # append closing token if followed by comment or ';' 
-                        if ( $str =~ /^b?[#;]/ ) { $ok = 1 }
-                    }
-
-                    if ($ok) {
-                        $rvertical_tightness_flags->[0] = 2;
-                        $rvertical_tightness_flags->[1] =
-                          $tightness{$token_next} == 2 ? 0 : 1;
-                        $rvertical_tightness_flags->[2] = 0;
-                    }
-                }
-            }
-        }
-        elsif ( $rOpts_block_brace_vertical_tightness
-            && $ibeg eq $iend
-            && $types_to_go[$iend] eq '{'
-            && $block_type_to_go[$iend] =~
-            /$block_brace_vertical_tightness_pattern/o )
-        {
-            $rvertical_tightness_flags->[0] = 1;
-            $rvertical_tightness_flags->[1] = 1;
-            $rvertical_tightness_flags->[2] = 0;
-        }
+        my $rvertical_tightness_flags =
+          set_vertical_tightness_flags( $n, $n_last_line, $ibeg, $iend,
+            $ri_first, $ri_last );
 
         # flush an outdented line to avoid any unwanted vertical alignment
         Perl::Tidy::VerticalAligner::flush() if ($is_outdented_line);
@@ -8524,7 +8436,7 @@ sub send_lines_to_vertical_aligner {
             \@tokens,                        \@patterns,
             $forced_breakpoint_to_go[$iend], $outdent_long_lines,
             $is_semicolon_terminated,        $do_not_pad,
-            $rvertical_tightness_flags,
+            $rvertical_tightness_flags,      $level_jump,
         );
 
         # flush an outdented line to avoid any unwanted vertical alignment
@@ -8829,7 +8741,7 @@ sub set_adjusted_indentation {
                     $i_terminal == $ibeg    #  isolated terminal '}'
                     || $is_semicolon_terminated
                 )
-              )    #  } xxxx ;
+              )                             #  } xxxx ;
             {
                 $adjust_indentation = -1;
             }
@@ -8940,6 +8852,160 @@ sub set_adjusted_indentation {
 
     return ( $indentation, $lev, $level_end, $is_semicolon_terminated,
         $is_outdented_line );
+}
+
+sub set_vertical_tightness_flags {
+
+    my ( $n, $n_last_line, $ibeg, $iend, $ri_first, $ri_last ) = @_;
+
+    # Define vertical tightness controls for the nth line of a batch.
+    # We create an array of parameters which tell the vertical aligner
+    # if we should combine this line with the next line to achieve the
+    # desired vertical tightness.  The array of parameters contains:
+    #
+    #   [0] type: 1=is opening tok 2=is closing tok  3=is opening block brace
+    #   [1] flag: if opening: 1=no multiple steps, 2=multiple steps ok
+    #             if closing: spaces of padding to use
+    #   [2] sequence number of container 
+    #   [3] valid flag: do not append if this flag is false. Will be
+    #       true if appropriate -vt flag is set.  Otherwise, Will be
+    #       made true only for 2 line container in parens with -lp
+    #
+    # These flags are used by sub set_leading_whitespace in
+    # the vertical aligner
+
+    my $rvertical_tightness_flags;
+
+    # For non-BLOCK tokens, we will need to examine the next line
+    # too, so we won't consider the last line.
+    if ( $n < $n_last_line ) {
+
+        # see if last token is an opening token...not a BLOCK...
+        my $ibeg_next = $$ri_first[ $n + 1 ];
+        my $token_end = $tokens_to_go[$iend];
+        my $iend_next = $$ri_last[ $n + 1 ];
+        if (
+            $type_sequence_to_go[$iend]
+            && !$block_type_to_go[$iend]
+            && $is_opening_token{$token_end}
+            && (
+                $opening_vertical_tightness{$token_end} > 0
+
+                # allow 2-line method call to be closed up
+                || ( $rOpts_line_up_parentheses
+                    && $token_end eq '('
+                    && $iend > $ibeg
+                    && $types_to_go[ $iend - 1 ] ne 'b' )
+            )
+          )
+        {
+
+            # avoid multiple jumps in nesting depth in one line if
+            # requested
+            my $ovt       = $opening_vertical_tightness{$token_end};
+            my $iend_next = $$ri_last[ $n + 1 ];
+            unless (
+                $ovt < 2
+                && ( $nesting_depth_to_go[ $iend_next + 1 ] !=
+                    $nesting_depth_to_go[$ibeg_next] )
+              )
+            {
+
+## BUBBA:
+##                # for 2 line method call without -vt flag, set to valid
+##                # if closing paren is within next 2 lines; otherwise
+##                # aligner will do it if it sees the closing paren.
+                my $valid_flag = $ovt;
+##                unless ($valid_flag) {
+##                    my $i_mate = $mate_index_to_go[$iend];
+##                    if (
+##                        $i_mate >= 0
+##                        && (
+##                            $i_mate <= $iend_next
+##                            || ( $n + 2 <= $n_last_line
+##                                && $i_mate <= $$ri_last[ $n + 2 ] )
+##                        )
+##                      )
+##                    {
+##                        $valid_flag = 1;
+##                    }
+##                }
+
+                @{$rvertical_tightness_flags} =
+                  ( 1, $ovt, $type_sequence_to_go[$iend], $valid_flag );
+            }
+        }
+
+        # see if first token of next line is a closing token...
+        # ..and be sure this line does not have a side comment
+        my $token_next = $tokens_to_go[$ibeg_next];
+        if ( $type_sequence_to_go[$ibeg_next]
+            && !$block_type_to_go[$ibeg_next]
+            && $is_closing_token{$token_next}
+            && $types_to_go[$iend] !~ '#' )    # for safety, shouldn't happen!
+        {
+            my $ovt = $opening_vertical_tightness{$token_next};
+            my $cvt = $closing_vertical_tightness{$token_next};
+            if (
+
+                # never append a trailing line like   )->pack(
+                # because it will throw off later alignment
+                (
+                    $nesting_depth_to_go[$ibeg_next] ==
+                    $nesting_depth_to_go[ $iend_next + 1 ] + 1
+                )
+                && (
+                    $cvt == 2
+                    || (
+                        $container_environment_to_go[$ibeg_next] ne 'LIST'
+                        && (
+                            $cvt == 1
+
+                            # allow closing up 2-line method calls
+                            || ( $rOpts_line_up_parentheses
+                                && $token_next eq ')' )
+                        )
+                    )
+                )
+              )
+            {
+
+                # decide which trailing closing tokens to append..
+                my $ok = 0;
+                if ( $cvt == 2 || $iend_next == $ibeg_next ) { $ok = 1 }
+                else {
+                    my $str =
+                      join ( '',
+                        @types_to_go[ $ibeg_next + 1 .. $ibeg_next + 2 ] );
+
+                    # append closing token if followed by comment or ';' 
+                    if ( $str =~ /^b?[#;]/ ) { $ok = 1 }
+                }
+
+                if ($ok) {
+                    my $valid_flag = $cvt;
+                    @{$rvertical_tightness_flags} = (
+                        2,
+                        $tightness{$token_next} == 2 ? 0 : 1,
+                        $type_sequence_to_go[$ibeg_next], $valid_flag,
+                    );
+                }
+            }
+        }
+    }
+
+    # Check for a last line with isolated opening BLOCK curly
+    elsif ( $rOpts_block_brace_vertical_tightness
+        && $ibeg eq $iend
+        && $types_to_go[$iend] eq '{'
+        && $block_type_to_go[$iend] =~
+        /$block_brace_vertical_tightness_pattern/o )
+    {
+        @{$rvertical_tightness_flags} =
+          ( 3, $rOpts_block_brace_vertical_tightness, 0, 1 );
+    }
+
+    return $rvertical_tightness_flags;
 }
 
 {
@@ -10777,6 +10843,8 @@ sub find_token_starting_list {
         # Break at every comma for a list containing a broken sublist.
         # This has higher priority than the Interrupted List Rule.
         #---------------------------------------------------------------
+        # BUBBA: FIXME: add option to not break between small items
+        # say up to 8 characters, 3 tokens, no space
         if ( $has_broken_sublist[$depth] ) {
             foreach ( 0 .. $item_count - 1 ) {
                 set_forced_breakpoint( $rcomma_index->[$_] );
@@ -10797,7 +10865,7 @@ sub find_token_starting_list {
         # A list is is forced to use old breakpoints if it was interrupted
         # by side comments or blank lines, or requested by user.
         #---------------------------------------------------------------
-        if ( $rOpts_want_old_comma_breaks
+        if ( $rOpts_want_old_comma_breaks > 1
             || $interrupted
             || $i_opening_paren < 0 )
         {
@@ -12068,7 +12136,6 @@ sub undo_forced_breakpoint_stack {
                 elsif ( $types_to_go[$imidr] eq 'k' ) {
 
                     # handle leading "and" and "or" 
-                    #     /^(and|or)$/ 
                     if ( $is_and_or{ $tokens_to_go[$imidr] } ) {
 
                         # Decide if we will combine a single terminal 'and' and
@@ -12113,7 +12180,6 @@ sub undo_forced_breakpoint_stack {
                     }
 
                     # handle leading "if" and "unless" 
-                    #        /^(if|unless)$/
                     elsif ( $is_if_unless{ $tokens_to_go[$imidr] } ) {
 
                         # FIXME: This is still experimental..may not be too useful
@@ -13313,13 +13379,13 @@ use vars qw(
   $diagnostics_object
   $logger_object
   $file_writer_object
+  @side_comment_history
 
   $cached_line_text
   $cached_line_type
   $cached_line_flag
   $cached_seqno
-  $cached_pad
-  %last_prepend_successful
+  $cached_line_valid
 
   $rOpts
 
@@ -13363,12 +13429,17 @@ sub initialize {
     $last_side_comment_line_number = 0;
     $last_side_comment_level       = -1;
 
+    # most recent 3 side comments; [ line number, column ]
+    $side_comment_history[0] = [ -300, 0 ];
+    $side_comment_history[1] = [ -200, 0 ];
+    $side_comment_history[2] = [ -100, 0 ];
+
     # write_leader_and_string cache:
-    $cached_line_text        = "";
-    $cached_line_type        = 0;
-    $cached_line_flag        = 0;
-    $cached_seqno            = 0;
-    %last_prepend_successful = ();
+    $cached_line_text  = "";
+    $cached_line_type  = 0;
+    $cached_line_flag  = 0;
+    $cached_seqno      = 0;
+    $cached_line_valid = 0;
 
     # frequently used parameters
     $rOpts_indent_columns             = $rOpts->{'indent-columns'};
@@ -13551,12 +13622,12 @@ The log file warns the user if there are any such tabs.
 =cut
 
     my (
-        $level,                 $level_end,
-        $indentation,           $rfields,
-        $rtokens,               $rpatterns,
-        $is_forced_break,       $outdent_long_lines,
-        $is_terminal_statement, $do_not_pad,
-        $rvertical_tightness_flags,
+        $level,                     $level_end,
+        $indentation,               $rfields,
+        $rtokens,                   $rpatterns,
+        $is_forced_break,           $outdent_long_lines,
+        $is_terminal_statement,     $do_not_pad,
+        $rvertical_tightness_flags, $level_jump,
       )
       = @_;
 
@@ -13572,6 +13643,30 @@ The log file warns the user if there are any such tabs.
         print
 "APPEND0: entering lines=$maximum_line_index new #fields= $jmax, leading_count=$leading_space_count last_cmt=$last_comment_column force=$is_forced_break\n";
     };
+
+    # Validate cached line if necessary: If we can produce a container
+    # with just 2 lines total by combining an existing cached opening
+    # token with the closing token to follow, then we will mark both
+    # cached flags as valid.
+    if ($rvertical_tightness_flags) {
+        if ( $maximum_line_index <= 0
+            && $cached_line_type
+            && $rvertical_tightness_flags->[2] == $cached_seqno )
+        {
+            $rvertical_tightness_flags->[3] ||= 1;
+            $cached_line_valid ||= 1;
+        }
+    }
+
+    # do not join an opening block brace with an unbalanced line
+    # unless requested with a flag value of 2 
+    if ( $cached_line_type == 3
+        && $maximum_line_index < 0
+        && $cached_line_flag < 2
+        && $level_jump != 0 )
+    {
+        $cached_line_valid = 0;
+    }
 
     # patch until new aligner is finished
     if ($do_not_pad) { my_flush() }
@@ -13893,10 +13988,14 @@ sub make_side_comment {
     else {
 
         # don't remember old side comment location for very long
-        # and don't remember across level changes
         my $line_number = $vertical_aligner_self->get_output_line_number();
-        if ( $level_end < $last_side_comment_level
-            || $line_number - $last_side_comment_line_number > 12 )
+        my $rfields     = $new_line->get_rfields();
+        if (
+            $line_number - $last_side_comment_line_number > 12
+
+            # and don't remember comment location across block level changes
+            || ( $level_end < $last_side_comment_level && $$rfields[0] =~ /^}/ )
+          )
         {
             forget_side_comment();
         }
@@ -14226,7 +14325,7 @@ sub flush {
 # This is the internal flush, which leaves the cache intact
 sub my_flush {
 
-    return if ($maximum_line_index < 0); 
+    return if ( $maximum_line_index < 0 );
 
     VALIGN_DEBUG_FLAG_APPEND0 && do {
         my $group_list_type = $group_lines[0]->get_list_type();
@@ -14328,7 +14427,24 @@ sub adjust_side_comment {
         my $avail = $line->get_available_space_on_right();
 
         # try to use the previous comment column
-        my $move = $last_comment_column - $line->get_column( $kmax - 2 );
+        ##my $move = $last_comment_column - $line->get_column( $kmax - 2 );
+        my $side_comment_column = $line->get_column( $kmax - 2 );
+        my $move                = $last_comment_column - $side_comment_column;
+
+        my $sc_line0 = $side_comment_history[0]->[0];
+        my $sc_col0  = $side_comment_history[0]->[1];
+        my $sc_line1 = $side_comment_history[1]->[0];
+        my $sc_col1  = $side_comment_history[1]->[1];
+        my $sc_line2 = $side_comment_history[2]->[0];
+        my $sc_col2  = $side_comment_history[2]->[1];
+
+        # BUBBA: FUTURE LOGIC:
+        # Be sure to ignore 'do not align' and  '} # end comments'
+        # Find first $move > 0 and $move <= $avail as follows:
+        # 1. try sc_col1 if sc_col1 == sc_col0 && (line-sc_line0) < 12
+        # 2. try sc_col2 if (line-sc_line2) < 12
+        # 3. try min possible space, plus up to 8, 
+        # 4. try min possible space
 
         if ( $kmax > 0 && !$do_not_align ) {
 
@@ -14472,8 +14588,9 @@ sub write_vertically_aligned_line {
           );
 
         # compute spaces of padding before this field
-        $pad =
-          $line->get_column( $j - 1 ) - ( length($str) + $leading_space_count );
+        ##$line->get_column( $j - 1 ) - ( length($str) + $leading_space_count );
+        my $col = $line->get_column( $j - 1 );
+        $pad = $col - ( length($str) + $leading_space_count );
 
         if ($do_not_align) {
             $pad =
@@ -14496,6 +14613,13 @@ sub write_vertically_aligned_line {
             $str .= ' ' x $total_pad_count;
             $total_pad_count = 0;
             $str .= $$rfields[$j];
+        }
+
+        # update side comment history buffer
+        if ( $j == $maximum_field_index ) {
+            my $lineno = $file_writer_object->get_output_line_number();
+            shift @side_comment_history;
+            push @side_comment_history, [ $lineno, $col ];
         }
     }
 
@@ -14626,15 +14750,15 @@ sub write_leader_and_string {
     # Unpack any recombination data; it was packed by
     # sub send_lines_to_vertical_aligner. Contents:
     #
-    #   [0] type: 1=opening  2=closing
+    #   [0] type: 1=opening  2=closing  3=opening block brace
     #   [1] flag: if opening: 1=no multiple steps, 2=multiple steps ok
     #             if closing: spaces of padding to use
-    #   [2] sequence number of container if symmetric closing possible
-    #       (this feature is not used now)
+    #   [2] sequence number of container 
+    #   [3] valid flag: do not append if this flag is false
     #
-    my ( $open_or_close, $tightness_flag, $seqno );
+    my ( $open_or_close, $tightness_flag, $seqno, $valid );
     if ($rvertical_tightness_flags) {
-        ( $open_or_close, $tightness_flag, $seqno ) =
+        ( $open_or_close, $tightness_flag, $seqno, $valid ) =
           @{$rvertical_tightness_flags};
     }
 
@@ -14642,8 +14766,12 @@ sub write_leader_and_string {
     # either append this line to it or write it out
     if ($cached_line_text) {
 
+        if ( !$cached_line_valid ) {
+            $file_writer_object->write_code_line( $cached_line_text . "\n" );
+        }
+
         # handle cached line with opening container token
-        if ( $cached_line_type == 1 ) {
+        elsif ( $cached_line_type == 1 || $cached_line_type == 3 ) {
 
             my $gap = $leading_space_count - length($cached_line_text);
 
@@ -14656,18 +14784,17 @@ sub write_leader_and_string {
 
             if ( $gap >= 0 ) {
                 $leading_string = $cached_line_text . ' ' x $gap;
-                $last_prepend_successful{$cached_seqno} = 1 if $cached_seqno;
             }
             else {
                 $file_writer_object->write_code_line(
                     $cached_line_text . "\n" );
-                delete $last_prepend_successful{$cached_seqno} if $cached_seqno;
             }
         }
 
         # handle cached line to place before this closing container token
         else {
             my $test_line = $cached_line_text . ' ' x $cached_line_flag . $str;
+
             if ( length($test_line) <= $rOpts_maximum_line_length ) {
                 $str            = $test_line;
                 $leading_string = "";
@@ -14684,21 +14811,15 @@ sub write_leader_and_string {
     my $line = $leading_string . $str;
 
     # write or cache this line
-    my $want_symmetric_closing = ( $seqno && $open_or_close == 2 );
-    if ( !$rvertical_tightness_flags
-        || $side_comment_length > 0
-        || ( $want_symmetric_closing && !$last_prepend_successful{$seqno} ) )
-    {
+    if ( !$rvertical_tightness_flags || $side_comment_length > 0 ) {
         $file_writer_object->write_code_line( $line . "\n" );
     }
     else {
-        $cached_line_text = $line;
-        $cached_line_type = $open_or_close;
-        $cached_line_flag = $tightness_flag;
-        $cached_seqno     = $seqno;
-    }
-    if ($want_symmetric_closing) {
-        delete $last_prepend_successful{$seqno};
+        $cached_line_text  = $line;
+        $cached_line_type  = $open_or_close;
+        $cached_line_flag  = $tightness_flag;
+        $cached_seqno      = $seqno;
+        $cached_line_valid = $valid;
     }
 
     $last_group_level_written = $group_level;
@@ -17386,7 +17507,7 @@ current version.
 
         $max_token_index = scalar(@$rpretokens) - 1;
         push ( @$rpretokens, ' ', ' ', ' ' )
-          ;    # extra whitespace simplifies logic
+          ;                           # extra whitespace simplifies logic
         push ( @$rpretoken_map,  0,   0,   0 );     # shouldn't be referenced
         push ( @$rpretoken_type, 'b', 'b', 'b' );
 
@@ -20797,7 +20918,7 @@ next index after the identifier.
                 $identifier .= $tok;
             }
         }
-        else {    # can get here due to error in initialization
+        else {        # can get here due to error in initialization
             $id_scan_state = '';
             $i             = $i_save;
             last;

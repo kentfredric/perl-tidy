@@ -495,7 +495,7 @@ perltidy.  For example, to format an entire file, select it with C<C-x h>
 and then pipe it with C<M-1 M-|> and then C<perltidy>.  The numeric
 argument, C<M-1> causes the output from perltidy to replace the marked
 text.  See "GNU Emacs Manual" for more information,
-http://www.cs.utah.edu/dept/old/texinfo/emacs19/emacs_toc.html
+http://www.gnu.org/manual/emacs-20.3/html_node/emacs_toc.html
 
 If you have difficulty with an editor, try the B<-st> flag, which will
 force perltidy to send output to standard output.  This might be needed,
