@@ -97,6 +97,11 @@ default options.  The output will be in files with an appended <EM>.tdy</EM>
 extension.  For any file with an error, there will be a file with extension
 <EM>.ERR</EM>.</P>
 <PRE>
+  perltidy -b file1.pl file2.pl</PRE>
+<P>Modify file1.pl and file1.pl in place, and backup the originals to file1.pl.bak
+and file2.pl.bak.  If file1.pl.bak and/or file2.pl.bak already exist,
+they will be overwritten.</P>
+<PRE>
   perltidy -gnu somefile.pl</PRE>
 <P>Execute perltidy on file <EM>somefile.pl</EM> with a style which approximates the
 GNU Coding Standards for C programs.  The output will be <EM>somefile.pl.tdy</EM>.</P>
@@ -235,6 +240,18 @@ appear in whatever directory contains <EM>somefile.pl</EM>.</P>
 <P>If the path contains spaces, it should be placed in quotes.</P>
 <P>This parameter will be ignored if output is being directed to standard output,
 or if it is being specified explicitly with the <STRONG>-o=s</STRONG> parameter.</P>
+<P></P>
+<DT><STRONG><A NAME="item_%2Db%2C_%2D%2Dbackup%2Dand%2Dmodify%2Din%2Dplace"><STRONG>-b</STRONG>,    <STRONG>--backup-and-modify-in-place</STRONG></A></STRONG><BR>
+<DD>
+Modify the input file or files in-place and save the original with the
+extension <EM>.bak</EM>.  Any existing <EM>.bak</EM> file will be deleted.  See next item
+for changing the default backup extension.  This only works when input is from
+an actual file.  Also, it does not work (or make sense) in <STRONG>-html</STRONG> mode.
+<P></P>
+<DT><STRONG><A NAME="item_%2Dbext%3Dext%2C_%2D%2Dbackup%2Dfile%2Dextension%3"><STRONG>-bext</STRONG>=ext,    <STRONG>--backup-file-extension</STRONG>=ext</A></STRONG><BR>
+<DD>
+Change the extension of the backup file to be <EM>.ext</EM> instead of the
+the default <EM>.bak</EM>.
 <P></P>
 <DT><STRONG><A NAME="item_%2Dw%2C_%2D%2Dwarning%2Doutput"><STRONG>-w</STRONG>,    <STRONG>--warning-output</STRONG></A></STRONG><BR>
 <DD>
@@ -508,8 +525,9 @@ versions of perltidy.  The negation of this also works, <STRONG>-noll</STRONG> o
 <P></P>
 <DT><STRONG><A NAME="item_Outdenting_Labels%3A_%2Dola%2C_%2D%2Doutdent%2Dlab">Outdenting Labels: <STRONG>-ola</STRONG>,  <STRONG>--outdent-labels</STRONG></A></STRONG><BR>
 <DD>
-This command will cause labels to be outdented by 2 spaces (or whatever
-<STRONG>-ci</STRONG> has been set to), if possible.  For example, with <STRONG>perltidy -ola</STRONG>:
+This command will cause labels to be outdented by 2 spaces (or whatever <STRONG>-ci</STRONG>
+has been set to), if possible.  This is the default.  For example, with
+<STRONG>perltidy -ola</STRONG>:
 <PRE>
         my $i;
       LOOP: while ( $i = &lt;FOTOS&gt; ) {
@@ -518,8 +536,7 @@ This command will cause labels to be outdented by 2 spaces (or whatever
             fixit($i);
         }</PRE>
 <P>Labels which are already at the leftmost column will not be affected by
-this command.  Use <STRONG>-nola</STRONG> to not outdent labels.  The current
-default is not to outdent labels.</P>
+this command.  Use <STRONG>-nola</STRONG> to not outdent labels.</P>
 <P></P>
 <DT><STRONG><A NAME="item_Outdenting_Keywords">Outdenting Keywords</A></STRONG><BR>
 <DD>
@@ -535,7 +552,7 @@ the next section.
 <P>For example, using <CODE>perltidy -ock</CODE> on the previous example gives:</P>
 <PRE>
         my $i;
-        LOOP: while ( $i = &lt;FOTOS&gt; ) {
+      LOOP: while ( $i = &lt;FOTOS&gt; ) {
             chomp($i);
           next unless $i;
             fixit($i);
@@ -1384,7 +1401,7 @@ default it will break after each '=&gt;' because the container is now
 broken.  To reform a one-line container, the parameter <STRONG>-cab=2</STRONG> would
 be needed.</P>
 <P>The flag <STRONG>-cab=3</STRONG> can be used to prevent these commas from being
-treated specially.  In this case, an item such as <CODE>&quot;01&quot; =</CODE> 31&gt; is
+treated specially.  In this case, an item such as ``01'' =&gt; 31 is
 treated as a single item in a table.  The number of fields in this table
 will be determined by the same rules that are used for any other table.
 Here is an example.
@@ -1733,6 +1750,15 @@ Use <STRONG>--nolook-for-autoloader</STRONG>, or <STRONG>-nlal</STRONG>, to deac
 <P>Likewise, if the SelfLoader module is used, perltidy will continue formatting
 code after seeing a __DATA__ line.
 Use <STRONG>--nolook-for-selfloader</STRONG>, or <STRONG>-nlsl</STRONG>, to deactivate this feature.</P>
+<P></P>
+<DT><STRONG><A NAME="item_Working_around_problems_with_older_version_of_Perl">Working around problems with older version of Perl</A></STRONG><BR>
+<DD>
+Perltidy contains a number of rules which help avoid known subtleties
+and problems with older versions of perl, and these rules always
+take priority over whatever formatting flags have been set.  For example,
+perltidy will usually avoid starting a new line with a bareword, because
+this might cause problems if <CODE>use strict</CODE> is active.
+<P>There is no way to override these rules.</P>
 <P></P></DL>
 <P>
 <HR>
@@ -1949,7 +1975,7 @@ confusing filenames such as <EM>somefile.tdy.tdy.tdy</EM>.
 <P>
 <HR>
 <H1><A NAME="version">VERSION</A></H1>
-<P>This man page documents perltidy version 20020425.</P>
+<P>This man page documents perltidy version 20020826.</P>
 <P>
 <HR>
 <H1><A NAME="credits">CREDITS</A></H1>
@@ -1965,13 +1991,13 @@ see the CHANGES file.</P>
 <HR>
 <H1><A NAME="author">AUTHOR</A></H1>
 <PRE>
-  Steven L. Hancock
+  Steve Hancock
   email: perltidy at users.sourceforge.net
   <A HREF="http://perltidy.sourceforge.net">http://perltidy.sourceforge.net</A></PRE>
 <P>
 <HR>
 <H1><A NAME="copyright">COPYRIGHT</A></H1>
-<P>Copyright (c) 2000-2002 by Steven L. Hancock</P>
+<P>Copyright (c) 2000-2002 by Steve Hancock</P>
 <P>
 <HR>
 <H1><A NAME="license">LICENSE</A></H1>

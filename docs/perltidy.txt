@@ -41,6 +41,12 @@ EXAMPLES
     extension. For any file with an error, there will be a file with
     extension .ERR.
 
+      perltidy -b file1.pl file2.pl
+
+    Modify file1.pl and file1.pl in place, and backup the originals to
+    file1.pl.bak and file2.pl.bak. If file1.pl.bak and/or file2.pl.bak
+    already exist, they will be overwritten.
+
       perltidy -gnu somefile.pl
 
     Execute perltidy on file somefile.pl with a style which approximates the
@@ -194,6 +200,17 @@ OPTIONS - OVERVIEW
         This parameter will be ignored if output is being directed to
         standard output, or if it is being specified explicitly with the
         -o=s parameter.
+
+    -b, --backup-and-modify-in-place
+        Modify the input file or files in-place and save the original with
+        the extension .bak. Any existing .bak file will be deleted. See next
+        item for changing the default backup extension. This only works when
+        input is from an actual file. Also, it does not work (or make sense)
+        in -html mode.
+
+    -bext=ext, --backup-file-extension=ext
+        Change the extension of the backup file to be .ext instead of the
+        the default .bak.
 
     -w, --warning-output
         Setting -w causes perltidy to include any non-critical warning
@@ -471,8 +488,8 @@ FORMATTING OPTIONS
 
     Outdenting Labels: -ola, --outdent-labels
         This command will cause labels to be outdented by 2 spaces (or
-        whatever -ci has been set to), if possible. For example, with
-        perltidy -ola:
+        whatever -ci has been set to), if possible. This is the default. For
+        example, with perltidy -ola:
 
                 my $i;
               LOOP: while ( $i = <FOTOS> ) {
@@ -482,8 +499,7 @@ FORMATTING OPTIONS
                 }
 
         Labels which are already at the leftmost column will not be affected
-        by this command. Use -nola to not outdent labels. The current
-        default is not to outdent labels.
+        by this command. Use -nola to not outdent labels.
 
     Outdenting Keywords
 
@@ -499,7 +515,7 @@ FORMATTING OPTIONS
             gives:
 
                     my $i;
-                    LOOP: while ( $i = <FOTOS> ) {
+                  LOOP: while ( $i = <FOTOS> ) {
                         chomp($i);
                       next unless $i;
                         fixit($i);
@@ -1370,7 +1386,7 @@ FORMATTING OPTIONS
         be needed.
 
         The flag -cab=3 can be used to prevent these commas from being
-        treated specially. In this case, an item such as ""01" =" 31> is
+        treated specially. In this case, an item such as "01" => 31 is
         treated as a single item in a table. The number of fields in this
         table will be determined by the same rules that are used for any
         other table. Here is an example.
@@ -1729,6 +1745,16 @@ FORMATTING OPTIONS
         formatting code after seeing a __DATA__ line. Use
         --nolook-for-selfloader, or -nlsl, to deactivate this feature.
 
+    Working around problems with older version of Perl
+        Perltidy contains a number of rules which help avoid known
+        subtleties and problems with older versions of perl, and these rules
+        always take priority over whatever formatting flags have been set.
+        For example, perltidy will usually avoid starting a new line with a
+        bareword, because this might cause problems if "use strict" is
+        active.
+
+        There is no way to override these rules.
+
 HTML OPTIONS
     The -html master switch
         The flag -html causes perltidy to write an html file with extension
@@ -1949,7 +1975,7 @@ SEE ALSO
     perlstyle(1), Perl::Tidy(3)
 
 VERSION
-    This man page documents perltidy version 20020425.
+    This man page documents perltidy version 20020826.
 
 CREDITS
     Michael Cartmell supplied code for adaptation to VMS and helped with
@@ -1967,12 +1993,12 @@ CREDITS
     the CHANGES file.
 
 AUTHOR
-      Steven L. Hancock
+      Steve Hancock
       email: perltidy at users.sourceforge.net
       http://perltidy.sourceforge.net
 
 COPYRIGHT
-    Copyright (c) 2000-2002 by Steven L. Hancock
+    Copyright (c) 2000-2002 by Steve Hancock
 
 LICENSE
     This package is free software; you can redistribute it and/or modify it

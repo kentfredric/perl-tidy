@@ -78,6 +78,11 @@ names.  It needs to be implemented; I've patched around this in the html
 writer for now.  I'm considering new token types for prototypes and
 attributes, to simplify parsing and formatting.
 
+
+=head2 Eliminate the need for IO::Scalar and IO::ScalarArray
+
+These might become builtin.
+
 =head2 Option to reformat block comments
 
 I'm looking into an option to use Text::Autoformat to reformat comments.

@@ -5,7 +5,32 @@
  suggested improvement, please send a note to perltidy at
  users.sourceforge.net.  
 
-=head2 2002 08 25
+=head2 2002 xx xx
+ 
+ -New option '-b' or '--backup-and-modify-in-place' will cause perltidy to
+ overwrite the original file with the beautified output file.  The original
+ file will be saved with a '.bak' extension (which can be changed with
+ -bext=s).  Please see updated docs.  Thanks to Rudi Farkas for the suggestion
+ and example coding.
+
+ -The cuddled-else (-ce) flag now also makes cuddled continues, like
+ this:
+
+    while ( ( $pack, $file, $line ) = caller( $i++ ) ) {
+       # bla bla
+    } continue {
+        $prevpack = $pack;
+    }
+
+ A separate flag could be made for this, but since most cuddled-else
+ users will also want cuddled-continues, no new flag has been
+ introduced.  Suggested by Simon Perreault.  
+
+ -Fixed bug in which an extra blank line was added before an =head or 
+ similar pod line after an __END__ or __DATA__ line each time 
+ perltidy was run.  Thanks to Mike Birdsall for reporting this.
+
+=head2 2002 08 26
 
  -Fixed bug in which space was inserted in a hyphenated hash key:
     my $val = $myhash{USER-NAME};

@@ -1,50 +1,40 @@
-<DIV ALIGN=left>
-<A HREF=node001.html>Some code with side comments</A>
-</DIV>
-<BLOCKQUOTE><UL>
-</UL></BLOCKQUOTE>
-<DIV ALIGN=left>
-<A HREF=node002.html>A loop</A>
-</DIV>
-<BLOCKQUOTE><UL>
-</UL></BLOCKQUOTE>
-<DIV ALIGN=left>
-<A HREF=node003.html>A hash definition list</A>
-</DIV>
-<BLOCKQUOTE><UL>
-</UL></BLOCKQUOTE>
-<DIV ALIGN=left>
-<A HREF=node004.html>A matrix</A>
-</DIV>
-<BLOCKQUOTE><UL>
-</UL></BLOCKQUOTE>
-<DIV ALIGN=left>
-<A HREF=node005.html>A complex data structure</A>
-</DIV>
-<BLOCKQUOTE><UL>
-</UL></BLOCKQUOTE>
-<DIV ALIGN=left>
-<A HREF=node006.html>Cleaning up code from a code generator</A>
-</DIV>
-<BLOCKQUOTE><UL>
-</UL></BLOCKQUOTE>
-<DIV ALIGN=left>
-<A HREF=node007.html>An entry from the Fifth Annual Obfuscated Perl Contest</A>
-</DIV>
-<BLOCKQUOTE><UL>
-</UL></BLOCKQUOTE>
-<DIV ALIGN=left>
-<A HREF=node008.html>Html Output</A>
-</DIV>
-<BLOCKQUOTE><UL>
-</UL></BLOCKQUOTE>
-<DIV ALIGN=left>
-<A HREF=node009.html>An example of finding a nesting error</A>
-</DIV>
-<BLOCKQUOTE><UL>
-</UL></BLOCKQUOTE>
-<DIV ALIGN=left>
-<A HREF=node000.html>The Perltidy Home Page</A>
-</DIV>
-<BLOCKQUOTE><UL>
-</UL></BLOCKQUOTE>
+<div align="left">
+<a href="node000.html">The Perltidy Home Page</a>
+</div>
+<div align="left">
+<a href="node001.html">Some code with side comments</a>
+</div>
+<blockquote><ul>
+</ul></blockquote>
+<div align="left">
+<a href="node002.html">A loop</a>
+</div>
+<blockquote><ul>
+</ul></blockquote>
+<div align="left">
+<a href="node003.html">A hash definition list</a>
+</div>
+<blockquote><ul>
+</ul></blockquote>
+<div align="left">
+<a href="node004.html">A matrix</a>
+</div>
+<blockquote><ul>
+</ul></blockquote>
+<div align="left">
+<a href="node005.html">A complex data structure</a>
+</div>
+<blockquote><ul>
+</ul></blockquote>
+<div align="left">
+<a href="node006.html">Cleaning up code from a code generator</a>
+</div>
+<blockquote><ul>
+</ul></blockquote>
+<div align="left">
+<a href="node007.html">Html Output</a>
+</div>
+<blockquote><ul>
+</ul></blockquote>
+<blockquote><ul>
+</ul></blockquote>

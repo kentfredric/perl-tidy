@@ -2,7 +2,7 @@
 #
 #    perltidy - a perl script indenter and formatter
 #
-#    Copyright (c) 2000, 2001, 2002 by Steven L. Hancock
+#    Copyright (c) 2000, 2001, 2002 by Steve Hancock
 #    Distributed under the GPL license agreement; see file COPYING
 #
 #    This program is free software; you can redistribute it and/or modify
@@ -25,7 +25,7 @@
 #
 #    This script is an example of the default style.  It was formatted with: 
 #
-#      perltidy perltidy
+#      perltidy -isbc perltidy
 #
 #    Code Contributions:
 #      Michael Cartmell supplied code for adaptation to VMS and helped with
@@ -61,7 +61,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.25 2002/08/26 20:28:55 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.26 2002/09/17 03:09:39 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 # Preloaded methods go here.
@@ -398,9 +398,39 @@ EOM
             die "-format='$fmt' but must be one of: $formats\n";
         }
 
+
         my $output_extension = $default_file_extension{ $rOpts->{'format'} };
         if ( defined( $rOpts->{'output-file-extension'} ) ) {
             $output_extension = $rOpts->{'output-file-extension'};
+        }
+
+        # check for -b option and any associated conflicts
+        my $backup_extension = 'bak'; 
+        if ( defined( $rOpts->{'backup-file-extension'} ) ) {
+            $backup_extension = $rOpts->{'backup-file-extension'};
+        }
+        my $in_place_modify = $rOpts->{'backup-and-modify-in-place'}
+          && $rOpts->{'format'} eq 'tidy';
+        if ($in_place_modify) {
+
+            if ( $rOpts->{'standard-output'} ) {
+                die "You may not use -b and -st together\n";
+            }
+            unless ( @ARGV > 0 ) {
+                die "You may not use -b and standard input together\n";
+            }
+            if ($destination_stream) {
+                die "You may not specify a destination array and -b together\n";
+            }
+            if ($source_stream) {
+                die "You may not specify a source array and -b together\n";
+            }
+            if ( $rOpts->{'outfile'} ) {
+                die "You may not use -b and -o together\n";
+            }
+            if ( defined( $rOpts->{'output-path'} ) ) {
+                die "You may not use -b and -opath together\n";
+            }
         }
 
         Perl::Tidy::Formatter::check_options($rOpts);
@@ -442,6 +472,14 @@ EOM
         # out of robustness concerns.
         my $use_glob = $is_Windows;
 
+        # make the pattern of file extensions that we shouldn't touch
+        my $forbidden_file_extensions =
+          $dot_pattern . "($output_extension|LOG|DEBUG|ERR|TEE";
+        if ($in_place_modify) {
+            $forbidden_file_extensions .= "|$backup_extension";
+        }
+        $forbidden_file_extensions .= ')$';
+
         while ( $input_file = shift @ARGV ) {
             my $fileroot;
             my $input_file_permissions;
@@ -453,6 +491,9 @@ EOM
                 $fileroot = "perltidy";
             }
             elsif ( $input_file eq '-' ) {    # '-' indicates input from STDIN
+                if ($in_place_modify) {
+                    die "You may not use -b and standard input together\n";
+                }
                 $fileroot = "perltidy";   # root name to use for .ERR, .LOG, etc
             }
             else {
@@ -519,14 +560,13 @@ EOM
                 }
             }
 
-            # Skip files with same extension as the output files
-            # because this can lead to a messy situation
-            # with files like script.tdy.tdy.tdy ... when you rerun
-            # perltidy over and over with wildcard input
+            # Skip files with same extension as the output files because
+            # this can lead to a messy situation with files like
+            # script.tdy.tdy.tdy ... or worse problems ...  when you
+            # rerun perltidy over and over with wildcard input.
             if (
                 !$source_stream
-                && ( $input_file =~
-                    /($dot_pattern)($output_extension|LOG|DEBUG|ERR|TEE)$/
+                && ( $input_file =~ /$forbidden_file_extensions/
                     || $input_file eq 'DIAGNOSTICS' )
               )
             {
@@ -594,7 +634,13 @@ EOM
                 $output_file = '-';
             }
             else {
-                $output_file = $fileroot . $dot . $output_extension;
+                if ($in_place_modify) {
+                   $output_file = IO::File->new_tmpfile()
+                      or die "cannot open temp file for -b option: $!\n";
+                }
+                else {
+                    $output_file = $fileroot . $dot . $output_extension;
+                }
             }
 
             # the 'sink_object' knows how to write the output file
@@ -688,9 +734,55 @@ EOM
             process_this_file( $tokenizer, $formatter );
 
             #---------------------------------------------------------------
-            # clean up and report errors
+            # close the input source and report errors
             #---------------------------------------------------------------
             $source_object->close_input_file();
+
+            # get file names to use for syntax check
+            my $ifname = $source_object->get_input_file_copy_name();
+            my $ofname = $sink_object->get_output_file_copy();
+
+            #---------------------------------------------------------------
+            # handle the -b option (backup and modify in-place)
+            #---------------------------------------------------------------
+            if ($in_place_modify) {
+                unless ( -f $input_file ) {
+
+                    # oh, oh, no real file to backup .. 
+                    # shouldn't happen because of numerous preliminary checks
+                    die print
+"problem with -b backing up input file '$input_file': not a file\n";
+                }
+                my $backup_name =
+                  $input_file . $dot . $backup_extension; ##$rOpts->{'backup-file-extension'};
+                if ( -f $backup_name ) {
+                    unlink($backup_name)
+                       or die
+"unable to remove previous '$backup_name' for -b option; check permissions: $!\n";
+                }
+                rename( $input_file, $backup_name )
+                    or die
+"problem renaming $input_file to $backup_name for -b option: $!\n";
+                $ifname = $backup_name;
+
+                seek( $output_file, 0, 0 )
+                  or die "unable to rewind tmp file for -b option: $!\n";
+
+                my $fout = IO::File->new("> $input_file")
+                  or die
+                  "problem opening $input_file for write for -b option; check directory permissions: $!\n";
+                my $line;
+                while ( $line = $output_file->getline() ) {
+                    $fout->print($line);
+                }
+                $fout->close();
+                $output_file = $input_file;
+                $ofname      = $input_file;
+            }
+
+            #---------------------------------------------------------------
+            # clean up and report errors
+            #---------------------------------------------------------------
             $sink_object->close_output_file()    if $sink_object;
             $debugger_object->close_debug_file() if $debugger_object;
 
@@ -710,8 +802,6 @@ EOM
 
                 }
                 if ( $logger_object && $rOpts->{'check-syntax'} ) {
-                    my $ifname = $source_object->get_input_file_copy_name();
-                    my $ofname = $sink_object->get_output_file_copy();
                     $infile_syntax_ok =
                       check_syntax( $ifname, $ofname, $logger_object, $rOpts );
                 }
@@ -850,6 +940,8 @@ sub process_command_line {
     $add_option->( 'add-newlines',                              'anl',   '!' );
     $add_option->( 'add-semicolons',                            'asc',   '!' );
     $add_option->( 'add-whitespace',                            'aws',   '!' );
+    $add_option->( 'backup-and-modify-in-place',                'b',     '!' );
+    $add_option->( 'backup-file-extension',                     'bext',  '=s' );
     $add_option->( 'blanks-before-blocks',                      'bbb',   '!' );
     $add_option->( 'blanks-before-comments',                    'bbc',   '!' );
     $add_option->( 'blanks-before-subs',                        'bbs',   '!' );
@@ -1035,7 +1127,10 @@ sub process_command_line {
       static-block-comments
       trim-qw
       format=tidy
+      backup-file-extension=bak
     );
+    
+    ## FIXME: above should be _bak for VMS
     push @defaults, "perl-syntax-check-flags=-c -T";
 
     #---------------------------------------------------------------
@@ -1653,7 +1748,7 @@ sub Win_OS_Type {
 
     return "win32s" unless $id;           # If id==0 then its a win32s box.
     my $os = {                            # Magic numbers from MSDN
-                                          #documentation of GetOSVersion
+                                          # documentation of GetOSVersion
         1 => {
             0  => "95",
             10 => "98",
@@ -2077,7 +2172,7 @@ sub show_version {
     print <<"EOM";
 This is perltidy, v$VERSION 
 
-Copyright 2000-2002, Steven L. Hancock
+Copyright 2000-2002, Steve Hancock
 
 Perltidy is free software and may be copied under the terms of the GNU
 General Public License, which is included in the distribution files.
@@ -2105,8 +2200,10 @@ and '=n' indicates a required integer.
 I/O control
  -h      show this help
  -o=file name of the output file (only if single input file)
- -oext=ext    change output extension to be 'ext' instead of 'tdy'.
+ -oext=s change output extension from 'tdy' to s
  -opath=path  change path to be 'path' for output files
+ -b      backup original to .bak and modify file in-place
+ -bext=s change default backup extension from 'bak' to s
  -q      deactivate error messages (for running under editor)
  -w      include non-critical warning messages in the .ERR error output
  -syn    run perl -c to check syntax (default under unix systems)
@@ -2974,8 +3071,8 @@ sub warning {
 
 # programming bug codes:
 #   -1 = no bug
-#   0 = maybe, not sure.
-#   1 = definitely
+#    0 = maybe, not sure.
+#    1 = definitely
 sub report_possible_bug {
     my $self         = shift;
     my $saw_code_bug = $self->{_saw_code_bug};
@@ -3527,7 +3624,7 @@ HTML_END
 sub markup_tokens {
     my $self = shift;
     my ( $rtokens, $rtoken_type ) = @_;
-    my ( @colored_tokens, $j, $string, $type, $token );
+    my ( @colored_tokens, $j, $string, $type, $token, $subname );
 
     for ( $j = 0 ; $j < @$rtoken_type ; $j++ ) {
         $type  = $$rtoken_type[$j];
@@ -3541,6 +3638,7 @@ sub markup_tokens {
             push @colored_tokens, $token;
             $token = $2;
             $type  = 'M';
+            $subname = $token;
         }
 
         # Patch : intercept a package name here and split it
@@ -3557,7 +3655,7 @@ sub markup_tokens {
         $token = $self->markup_html_element( $token, $type );
         push @colored_tokens, $token;
     }
-    return \@colored_tokens;
+    return (\@colored_tokens, $subname);
 }
 
 sub markup_html_element {
@@ -3640,8 +3738,14 @@ sub write_line {
         else {
             $html_line = "";
         }
-        my $rcolored_tokens = $self->markup_tokens( $rtokens, $rtoken_type );
+        my ( $rcolored_tokens, $subname ) =
+          $self->markup_tokens( $rtokens, $rtoken_type );
         $html_line .= join '', @$rcolored_tokens;
+
+        # add anchor at a sub 
+        if ($subname) {
+            $html_fh->print("<a name=\"$subname\"><a>\n");
+        }
     }
 
     # markup line of non-code..
@@ -3792,6 +3896,7 @@ use vars qw{
   $tabbing_disagreement_count
   $input_line_tabbing
 
+  $last_line_type
   $last_line_leading_type
   $last_line_leading_level
   $last_last_line_leading_level
@@ -4108,6 +4213,7 @@ sub new {
     $in_tabbing_disagreement    = 0;
     $input_line_tabbing         = undef;
 
+    $last_line_type               = "";
     $last_last_line_leading_level = 0;
     $last_line_leading_level      = 0;
     $last_line_leading_type       = '#';
@@ -4208,6 +4314,22 @@ sub write_line {
     my $input_line           = $line_of_tokens->{_line_text};
     my $want_blank_line_next = 0;
 
+    # _line_type codes are: 
+    #   SYSTEM         - system-specific code before hash-bang line
+    #   CODE           - line of perl code (including comments)
+    #   POD_START      - line starting pod, such as '=head'
+    #   POD            - pod documentation text 
+    #   POD_END        - last line of pod section, '=cut'
+    #   HERE           - text of here-document 
+    #   HERE_END       - last line of here-doc (target word)
+    #   FORMAT         - format section
+    #   FORMAT_END     - last line of format section, '.'
+    #   DATA_START     - __DATA__ line
+    #   DATA           - unidentified text following __DATA__ 
+    #   END_START      - __END__ line
+    #   END            - unidentified text following __END__ 
+    #   ERROR          - we are in big trouble, probably not a perl script
+    #
     # handle line of code..
     if ( $line_type eq 'CODE' ) {
 
@@ -4228,10 +4350,20 @@ sub write_line {
         my $tee_line  = 0;
         if ( $line_type =~ /^POD/ ) {
 
-            # pod docs should have a preceding blank line
+            # Pod docs should have a preceding blank line.  But be
+            # very careful in __END__ and __DATA__ sections, because:
+            #   1. the user may be using this section for any purpose whatsoever
+            #   2. the blank counters are not active there
+            # It should be safe to request a blank line between an
+            # __END__ or __DATA__ and an immediately following '=head'
+            # type line, (types END_START and DATA_START), but not for
+            # any other lines of type END or DATA. 
             if ( $rOpts->{'delete-pod'} ) { $skip_line = 1; }
             if ( $rOpts->{'tee-pod'} )    { $tee_line  = 1; }
-            if ( !$skip_line && $line_type eq 'POD_START' ) {
+            if (   !$skip_line
+                && $line_type eq 'POD_START'
+                && $last_line_type !~ /^(END|DATA)$/ )
+            {
                 want_blank_line();
             }
 
@@ -4241,6 +4373,13 @@ sub write_line {
                 $file_writer_object->reset_consecutive_blank_lines();
                 $want_blank_line_next = 1;
             }
+
+        }
+
+        # leave the blank counters in a predictable state 
+        # after __END__ or __DATA__
+        elsif ( $line_type =~ /^(END_START|DATA_START)$/) {
+            $file_writer_object->reset_consecutive_blank_lines();
         }
 
         # write unindented non-code line
@@ -4251,6 +4390,7 @@ sub write_line {
             if ($want_blank_line_next) { want_blank_line(); }
         }
     }
+    $last_line_type = $line_type;
 }
 
 sub create_one_line_block {
@@ -5226,11 +5366,15 @@ EOM
     push @_, ',';
     @is_anon_sub_1_brace_follower{@_} = (1) x scalar(@_);
 
-    # What can follow a closing curly of a short block
+    # What can follow a closing curly of a block
     # which is not an if/elsif/else/do/sort/map/grep/eval/sub
     # Testfiles: 'Toolbar.pm', 'Menubar.pm', bless.t, '3rules.pl'
     @_ = qw#  ; : => or and  && || ) #;
     push @_, ',';
+
+    # allow cuddled continue if cuddled else is specified
+    if ( $rOpts->{'cuddled-else'} ) { push @_, 'continue'; }
+
     @is_other_brace_follower{@_} = (1) x scalar(@_);
 
     $right_bond_strength{'{'} = WEAK;
@@ -6496,7 +6640,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.25 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.26 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -6521,10 +6665,7 @@ sub set_white_space_flag {
         {
             flush();
             $input_line =~ s/^\s*//;    # trim left end
-
-            ##unless ( $rOpts->{'indent-only'} ) {
             $input_line =~ s/\s*$//;    # trim right end
-            ##}
 
             extract_token(0);
             $token                 = $input_line;
@@ -6981,8 +7122,8 @@ sub set_white_space_flag {
                     }
                 }
 
-                # None of the above: include here everything you would
-                # allow to follow a short block which is not an
+                # None of the above: specify what can follow a closing
+                # brace of a block which is not an
                 # if/elsif/else/do/sort/map/grep/eval 
                 # Testfiles:
                 # 'Toolbar.pm', 'Menubar.pm', bless.t, '3rules.pl', 'break1.t
@@ -7004,9 +7145,6 @@ sub set_white_space_flag {
                         }
                     }
                 }
-
-                # Note: continue blocks are always un-cuddled for now, but
-                # this is the place to allow cuddled continues
 
                 # keep going after these block types: map,sort,grep
                 # added eval for borris.t
@@ -8899,8 +9037,7 @@ sub lookup_opening_indentation {
     $nline = 0 if ( $i_opening < $ri_start->[$nline] );
 
     # find the correct line
-    my $nmax = $#{$ri_last};
-    unless ( $i_opening > $ri_last->[$nmax] ) {
+    unless ( $i_opening > $ri_last->[-1] ) {
         while ( $i_opening > $ri_last->[$nline] ) { $nline++; }
     }
 
@@ -8910,7 +9047,7 @@ sub lookup_opening_indentation {
 "non-fatal program bug in lookup_opening_indentation - index out of range\n"
         );
         report_definite_bug();
-        $nline = $nmax;
+        $nline = $#{$ri_last};
     }
 
     $rindentation_list->[0] =
@@ -9364,10 +9501,10 @@ sub set_vertical_tightness_flags {
                 # First see if we want to align BEFORE this token
                 #--------------------------------------------------------
 
-                # The first possible token that we can alignment_type before
+                # The first possible token that we can align before
                 # is index 2 because: 1) it doesn't normally make sense to
-                # alignment_type before the first token and 2) the second
-                # token must be a blank if we are to alignment_type before
+                # align before the first token and 2) the second
+                # token must be a blank if we are to align before
                 # the third
                 if ( $i < $ibeg + 2 ) {
                 }
@@ -9397,12 +9534,12 @@ sub set_vertical_tightness_flags {
                     }    ## Example of a static side comment
                 }
 
-                # otherwise, do not alignment_type two in a row to create a
+                # otherwise, do not align two in a row to create a
                 # blank field
                 elsif ( $last_vertical_alignment_before_index == $i - 2 ) {
                 }
 
-                # alignment_type before one of these keywords 
+                # align before one of these keywords 
                 # (within a line, since $i>1)
                 elsif ( $type eq 'k' ) {
 
@@ -9424,7 +9561,7 @@ sub set_vertical_tightness_flags {
                     }
                 }
 
-                # alignment_type before one of these types..
+                # align before one of these types..
                 # Note: add '.' after new vertical aligner is operational
                 elsif ( $is_vertical_alignment_type{$type} ) {
                     $alignment_type = $token;
@@ -14193,7 +14330,6 @@ sub append_line {
     if ( $jmax <= 0 ) {
         $zero_count++;
 
-        ## TESTING: if ( $maximum_line_index >= 0 ) {
         if ( $maximum_line_index >= 0
             && !get_RECOVERABLE_SPACES( $group_lines[0]->get_indentation() ) )
         {
@@ -18460,10 +18596,10 @@ EOM
                     elsif ( $tok eq 'continue' ) {
                         if (   $last_nonblank_token ne ';'
                             && $last_nonblank_block_type !~
-                            /^(;|while|until|for|foreach)$/ )
+                            /^(\{|\}|;|while|until|for|foreach)$/ )
                         {
-                            # note: ';' in list above because continues
-                            # can follow bare blocks
+                            # note: ';' '{' and '}' in list above
+                            # because continues can follow bare blocks
                             warning( "'$tok' should follow a block\n");
                         }
                     }
@@ -18714,7 +18850,7 @@ EOM
                 my $intervening_secondary_structure = 0;
                 if (@slevel_stack) {
                     $intervening_secondary_structure =
-                      $slevel_in_tokenizer - $slevel_stack[$#slevel_stack];
+                      $slevel_in_tokenizer - $slevel_stack[-1];
                 }
 
 # =head1 Continuation Indentation
@@ -20384,7 +20520,6 @@ sub guess_if_here_doc {
                   " -- guessing it's a here-doc ($next_token not a constant)\n";
             }
             else {
-                $msg .= " -- guessing it's a shift\n";
                 $msg .=
                   " -- guessing it's a shift ($next_token is a constant)\n";
             }
@@ -21572,9 +21707,9 @@ sub follow_quoted_string {
                 }
             }
         }
-
-        # loop for case of a non-alphanumeric quote delimiter..
     }
+
+    # loop for case of a non-alphanumeric quote delimiter..
     else {
 
         while ( $i < $max_token_index ) {
@@ -22222,7 +22357,7 @@ to perltidy.
 
 =head1 VERSION
 
-This man page documents Perl::Tidy version 20020425.
+This man page documents Perl::Tidy version 20020826.
 
 =head1 AUTHOR
 

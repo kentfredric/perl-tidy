@@ -6,7 +6,6 @@ Here are a few examples of reformatted code snippets:
 .include unit.alc
 .include matrix.alc
 .include hoh.alc
-.include weave.alc
-.include prs.alc
+.include advent.alc
 .include html.alc
 .}

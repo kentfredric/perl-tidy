@@ -130,7 +130,7 @@
 .\" ========================================================================
 .\"
 .IX Title "PERLTIDY 1"
-.TH PERLTIDY 1 "2002-05-13" "perl v5.6.1" "User Contributed Perl Documentation"
+.TH PERLTIDY 1 "2002-09-16" "perl v5.6.1" "User Contributed Perl Documentation"
 .UC
 .SH "NAME"
 perltidy \- a perl script indenter and reformatter
@@ -180,6 +180,13 @@ Execute perltidy on all \fI.pl\fR files in the current directory with the
 default options.  The output will be in files with an appended \fI.tdy\fR
 extension.  For any file with an error, there will be a file with extension
 \&\fI.ERR\fR.
+.PP
+.Vb 1
+\&  perltidy -b file1.pl file2.pl
+.Ve
+Modify file1.pl and file1.pl in place, and backup the originals to file1.pl.bak
+and file2.pl.bak.  If file1.pl.bak and/or file2.pl.bak already exist,
+they will be overwritten.
 .PP
 .Vb 1
 \&  perltidy -gnu somefile.pl
@@ -343,6 +350,16 @@ If the path contains spaces, it should be placed in quotes.
 .Sp
 This parameter will be ignored if output is being directed to standard output,
 or if it is being specified explicitly with the \fB\-o=s\fR parameter.
+.IP "\fB\-b\fR,    \fB\-\-backup\-and\-modify\-in\-place\fR" 4
+.IX Item "-b,    --backup-and-modify-in-place"
+Modify the input file or files in-place and save the original with the
+extension \fI.bak\fR.  Any existing \fI.bak\fR file will be deleted.  See next item
+for changing the default backup extension.  This only works when input is from
+an actual file.  Also, it does not work (or make sense) in \fB\-html\fR mode.
+.IP "\fB\-bext\fR=ext,    \fB\-\-backup\-file\-extension\fR=ext" 4
+.IX Item "-bext=ext,    --backup-file-extension=ext"
+Change the extension of the backup file to be \fI.ext\fR instead of the
+the default \fI.bak\fR.
 .IP "\fB\-w\fR,    \fB\-\-warning\-output\fR" 4
 .IX Item "-w,    --warning-output"
 Setting \fB\-w\fR causes perltidy to include any non-critical warning
@@ -626,8 +643,9 @@ versions of perltidy.  The negation of this also works, \fB\-noll\fR or
 \&\fB\-\-nooutdent\-long\-lines\fR, and is equivalent to setting \fB\-nolq\fR and \fB\-nolc\fR.
 .IP "Outdenting Labels: \fB\-ola\fR,  \fB\-\-outdent\-labels\fR" 4
 .IX Item "Outdenting Labels: -ola,  --outdent-labels"
-This command will cause labels to be outdented by 2 spaces (or whatever
-\&\fB\-ci\fR has been set to), if possible.  For example, with \fBperltidy \-ola\fR:
+This command will cause labels to be outdented by 2 spaces (or whatever \fB\-ci\fR
+has been set to), if possible.  This is the default.  For example, with
+\&\fBperltidy \-ola\fR:
 .Sp
 .Vb 6
 \&        my $i;
@@ -638,8 +656,7 @@ This command will cause labels to be outdented by 2 spaces (or whatever
 \&        }
 .Ve
 Labels which are already at the leftmost column will not be affected by
-this command.  Use \fB\-nola\fR to not outdent labels.  The current
-default is not to outdent labels.
+this command.  Use \fB\-nola\fR to not outdent labels. 
 .IP "Outdenting Keywords" 4
 .IX Item "Outdenting Keywords"
 .RS 4
@@ -658,7 +675,7 @@ For example, using \f(CW\*(C`perltidy \-ock\*(C'\fR on the previous example give
 .Sp
 .Vb 6
 \&        my $i;
-\&        LOOP: while ( $i = <FOTOS> ) {
+\&      LOOP: while ( $i = <FOTOS> ) {
 \&            chomp($i);
 \&          next unless $i;
 \&            fixit($i);
@@ -1599,7 +1616,7 @@ broken.  To reform a one-line container, the parameter \fB\-cab=2\fR would
 be needed.
 .Sp
 The flag \fB\-cab=3\fR can be used to prevent these commas from being
-treated specially.  In this case, an item such as \f(CW\*(C`"01" =\*(C'\fR 31> is
+treated specially.  In this case, an item such as \*(L"01\*(R" => 31 is
 treated as a single item in a table.  The number of fields in this table
 will be determined by the same rules that are used for any other table.
 Here is an example.
@@ -1973,6 +1990,15 @@ Use \fB\-\-nolook\-for\-autoloader\fR, or \fB\-nlal\fR, to deactivate this featu
 Likewise, if the SelfLoader module is used, perltidy will continue formatting
 code after seeing a _\|_DATA_\|_ line.
 Use \fB\-\-nolook\-for\-selfloader\fR, or \fB\-nlsl\fR, to deactivate this feature.
+.IP "Working around problems with older version of Perl" 4
+.IX Item "Working around problems with older version of Perl"
+Perltidy contains a number of rules which help avoid known subtleties
+and problems with older versions of perl, and these rules always
+take priority over whatever formatting flags have been set.  For example,
+perltidy will usually avoid starting a new line with a bareword, because
+this might cause problems if \f(CW\*(C`use strict\*(C'\fR is active.
+.Sp
+There is no way to override these rules.
 .SH "HTML OPTIONS"
 .IX Header "HTML OPTIONS"
 .IP "The \fB\-html\fR master switch" 4
@@ -2199,7 +2225,7 @@ confusing filenames such as \fIsomefile.tdy.tdy.tdy\fR.
 \&\fIperlstyle\fR\|(1), \fIPerl::Tidy\fR\|(3)
 .SH "VERSION"
 .IX Header "VERSION"
-This man page documents perltidy version 20020425.
+This man page documents perltidy version 20020826.
 .SH "CREDITS"
 .IX Header "CREDITS"
 Michael Cartmell supplied code for adaptation to \s-1VMS\s0 and helped with
@@ -2217,13 +2243,13 @@ see the \s-1CHANGES\s0 file.
 .SH "AUTHOR"
 .IX Header "AUTHOR"
 .Vb 3
-\&  Steven L. Hancock
+\&  Steve Hancock
 \&  email: perltidy at users.sourceforge.net
 \&  http://perltidy.sourceforge.net
 .Ve
 .SH "COPYRIGHT"
 .IX Header "COPYRIGHT"
-Copyright (c) 2000\-2002 by Steven L. Hancock
+Copyright (c) 2000\-2002 by Steve Hancock
 .SH "LICENSE"
 .IX Header "LICENSE"
 This package is free software; you can redistribute it and/or modify it

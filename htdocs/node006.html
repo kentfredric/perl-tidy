@@ -1,71 +1,144 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
-<HTML>
-<HEAD>
-  <TITLE>Cleaning up code from a code generator</TITLE>
-  <META NAME="GENERATOR" CONTENT="alconv $Revision: 1.15 $ by Galen and Steven Hancock">
+<html>
+<head>
+  <title>Cleaning up code from a code generator</title>
+  <META name="GENERATOR" CONTENT="alconv $Revision: 1.16 $">
   <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
-</HEAD>
-<BODY bgcolor="#A0E0E0">
-<DIV ALIGN=CENTER>
-<A HREF="node005.html"><IMG SRC="prev.gif" ALT="Previous" border=0></A>
-<A HREF="node007.html"><IMG SRC="next.gif" ALT="Next" border=0></A>
-<A HREF="node000.html#node006"><IMG SRC="up.gif" ALT="Up" border=0></A>
-</DIV>
-<DIV ALIGN=center>
+</head>
+<body bgcolor="#A0E0E0">
+<div align="center">
+<a href="node005.html"><img src="prev.gif" alt="Previous" border=0></a>
+<a href="node007.html"><img src="next.gif" alt="Next" border=0></a>
+<a href="node000.html#node006"><img src="up.gif" alt="Up" border=0></a>
+</div>
+<div align="center">
 <h1>Cleaning up code from a code generator</h1>
-</DIV>
+</div>
 A good application of perltidy is to clean up code which has been produced
-by a code generator.  Here is a snippet from <code>weave.pl</code>,
-which in turn was produced from <code>weave.web</code> with
-a literate programming tool
-(see <a href="http://users.ox.ac.uk/~pemb0468/webperl/">webperl</a>).
-Here is the input file <code>weave.t</code>.  (Note: the original
-code is one long line, but it has been wrapped at 80 columns here
-for display purposes only).
+by a code generator.  Here is a snippet <code> advent.t </code> 
+which was generated from Fortran source by a translation tool.
 <hr>
 <pre>
-# 31
-elsif (/\|/) {            if ($nextchar eq &quot;\|&quot;)  {
-$_=$formatter{&quot;or&quot;} ;            } else {
-$_=&quot;\$\\|\$&quot;; }        } elsif (/_/) {            $_=&quot;\\_{}&quot;;        }
-elsif (/\\\\/) {            $_=&quot;\\&quot;;        } elsif (/\$/) {
-$_=&quot;\\\$&quot;;        } elsif (/\^/) {           $_=&quot;\\\^{}&quot;;        } elsif
-(/&lt;|&gt;/) {           $_=&quot;\$$_\$&quot;;        } elsif (/%/) {
-$_=&quot;\\%&quot;;        } elsif ($_ eq $hash) {            $_=&quot;\\$hash&quot;;}	     
+{
+  L9140:
+ if ($msccom::obj==$msccom::food) {
+ goto L8142;
+ }
+ if ($msccom::obj==$msccom::bird||$msccom::obj==$msccom::snake||$msccom::obj==$msccom::clam||$msccom::obj==$msccom::oyster||$msccom::obj==$msccom::dwarf||$msccom::obj==$msccom::dragon||$msccom::obj==$msccom::troll||$msccom::obj==$msccom::bear) {
+ $msccom::spk=71;
+ }
+ goto L2011;
+ # 
+  #  DRINK.  IF NO OBJECT, ASSUME WATER AND LOOK FOR IT HERE.  IF WATER IS 
+  #  THE BOTTLE, DRINK THAT, ELSE MUST BE AT A WATER LOC, SO DRINK STREAM. 
+  # 
+  L9150:
+ if ($msccom::obj==0&&$liqloc->($placom::loc)!=$msccom::water&&($liq->(0)!=$msccom::water||!$here->($msccom::bottle))) {
+ goto L8000;
+ }
+ if ($msccom::obj!=0&&$msccom::obj!=$msccom::water) {
+ $msccom::spk=110;
+ }
+ if ($msccom::spk==110||$liq->(0)!=$msccom::water||!$here->($msccom::bottle)) {
+ goto L2011;
+ }
+ $placom::prop->($msccom::bottle)=1;
+ $placom::place->($msccom::water)=0;
+ $msccom::spk=74;
+ goto L2011;
+ # 
+  #  RUB.  YIELDS VARIOUS SNIDE REMARKS. 
+  # 
+  L9160:
+ if ($msccom::obj!=$placom::lamp) {
+ $msccom::spk=76;
+ }
+ goto L2011;
+ # 
+  #  THROW.  SAME AS DISCARD UNLESS AXE.  THEN SAME AS ATTACK EXCEPT IGNOR 
+  #  AND IF DWARF IS PRESENT THEN ONE MIGHT BE KILLED.  (ONLY WAY TO DO SO 
+  #  AXE ALSO SPECIAL FOR DRAGON, BEAR, AND TROLL.  TREASURES SPECIAL FOR 
+  # 
+  L9170:
+ if ($toting->($msccom::rod2)&&$msccom::obj==$msccom::rod&&!$toting->($msccom::rod)) {
+ $msccom::obj=$msccom::rod2;
+ }
+ }
 </pre>
 <hr>
-The command <code> perltidy weave.t </code> produces <code> weave.t.tdy</code>
+The command <code> perltidy advent.t </code> produces <code> advent.t.tdy</code>
 containing this result:
 <hr>
 <pre>
-# 31
-elsif (/\|/) {
-    if ( $nextchar eq &quot;\|&quot; ) {
-        $_ = $formatter{&quot;or&quot;};
+{
+  L9140:
+    if ( $msccom::obj == $msccom::food ) {
+        goto L8142;
     }
-    else {
-        $_ = &quot;\$\\|\$&quot;;
+    if (   $msccom::obj == $msccom::bird
+        || $msccom::obj == $msccom::snake
+        || $msccom::obj == $msccom::clam
+        || $msccom::obj == $msccom::oyster
+        || $msccom::obj == $msccom::dwarf
+        || $msccom::obj == $msccom::dragon
+        || $msccom::obj == $msccom::troll
+        || $msccom::obj == $msccom::bear )
+    {
+        $msccom::spk = 71;
+    }
+    goto L2011;
+    # 
+    #  DRINK.  IF NO OBJECT, ASSUME WATER AND LOOK FOR IT HERE.  IF WATER IS 
+    #  THE BOTTLE, DRINK THAT, ELSE MUST BE AT A WATER LOC, SO DRINK STREAM. 
+    # 
+  L9150:
+    if (   $msccom::obj == 0
+        && $liqloc->($placom::loc) != $msccom::water
+        && ( $liq->(0) != $msccom::water || !$here->($msccom::bottle) ) )
+    {
+        goto L8000;
+    }
+    if ( $msccom::obj != 0 && $msccom::obj != $msccom::water ) {
+        $msccom::spk = 110;
+    }
+    if (   $msccom::spk == 110
+        || $liq->(0) != $msccom::water
+        || !$here->($msccom::bottle) )
+    {
+        goto L2011;
+    }
+    $placom::prop->($msccom::bottle) = 1;
+    $placom::place->($msccom::water) = 0;
+    $msccom::spk = 74;
+    goto L2011;
+    # 
+    #  RUB.  YIELDS VARIOUS SNIDE REMARKS. 
+    # 
+  L9160:
+    if ( $msccom::obj != $placom::lamp ) {
+        $msccom::spk = 76;
+    }
+    goto L2011;
+    # 
+    #  THROW.  SAME AS DISCARD UNLESS AXE.  THEN SAME AS ATTACK EXCEPT IGNOR 
+    #  AND IF DWARF IS PRESENT THEN ONE MIGHT BE KILLED.  (ONLY WAY TO DO SO 
+    #  AXE ALSO SPECIAL FOR DRAGON, BEAR, AND TROLL.  TREASURES SPECIAL FOR 
+    # 
+  L9170:
+    if (   $toting->($msccom::rod2)
+        && $msccom::obj == $msccom::rod
+        && !$toting->($msccom::rod) )
+    {
+        $msccom::obj = $msccom::rod2;
     }
 }
-elsif (/_/)    { $_ = &quot;\\_{}&quot;; }
-elsif (/\\\\/) { $_ = &quot;\\&quot;; }
-elsif (/\$/)   {
-    $_ = &quot;\\\$&quot;;
-}
-elsif (/\^/)  { $_ = &quot;\\\^{}&quot;; }
-elsif (/&lt;|&gt;/) { $_ = &quot;\$$_\$&quot;; }
-elsif (/%/)   {
-    $_ = &quot;\\%&quot;;
-}
-elsif ( $_ eq $hash ) { $_ = &quot;\\$hash&quot;; }
 </pre>
 <hr>
-This ability to reformat code produced by a code generator can
-be invaluable if the code needs to be debugged.
-<DIV ALIGN=CENTER>
-<A HREF="node005.html"><IMG SRC="prev.gif" ALT="Previous" border=0></A>
-<A HREF="node007.html"><IMG SRC="next.gif" ALT="Next" border=0></A>
-<A HREF="node000.html#node006"><IMG SRC="up.gif" ALT="Up" border=0></A>
-</DIV>
-</BODY>
-</HTML>
+Well, it still looks a lot like fortran, but it's much more legible.
+<div align="center">
+<a href="node005.html"><img src="prev.gif" alt="Previous" border=0></a>
+<a href="node007.html"><img src="next.gif" alt="Next" border=0></a>
+<a href="node000.html#node006"><img src="up.gif" alt="Up" border=0></a>
+</div>
+</body>
+</html>

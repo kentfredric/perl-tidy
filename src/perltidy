@@ -71,6 +71,12 @@ default options.  The output will be in files with an appended F<.tdy>
 extension.  For any file with an error, there will be a file with extension
 F<.ERR>.
 
+  perltidy -b file1.pl file2.pl
+
+Modify file1.pl and file1.pl in place, and backup the originals to file1.pl.bak
+and file2.pl.bak.  If file1.pl.bak and/or file2.pl.bak already exist,
+they will be overwritten.
+
   perltidy -gnu somefile.pl
 
 Execute perltidy on file F<somefile.pl> with a style which approximates the
@@ -232,6 +238,18 @@ If the path contains spaces, it should be placed in quotes.
 
 This parameter will be ignored if output is being directed to standard output,
 or if it is being specified explicitly with the B<-o=s> parameter.
+
+=item	B<-b>,    B<--backup-and-modify-in-place>
+
+Modify the input file or files in-place and save the original with the
+extension F<.bak>.  Any existing F<.bak> file will be deleted.  See next item
+for changing the default backup extension.  This only works when input is from
+an actual file.  Also, it does not work (or make sense) in B<-html> mode.
+
+=item	B<-bext>=ext,    B<--backup-file-extension>=ext  
+
+Change the extension of the backup file to be F<.ext> instead of the
+the default F<.bak>.
 
 =item B<-w>,    B<--warning-output>             
 
@@ -1545,7 +1563,7 @@ broken.  To reform a one-line container, the parameter B<-cab=2> would
 be needed.
 
 The flag B<-cab=3> can be used to prevent these commas from being
-treated specially.  In this case, an item such as C<"01" => 31> is
+treated specially.  In this case, an item such as "01" => 31 is
 treated as a single item in a table.  The number of fields in this table
 will be determined by the same rules that are used for any other table.
 Here is an example.
@@ -2215,7 +2233,7 @@ perlstyle(1), Perl::Tidy(3)
 
 =head1 VERSION
 
-This man page documents perltidy version 20020825.
+This man page documents perltidy version 20020826.
 
 =head1 CREDITS
 
@@ -2234,13 +2252,13 @@ see the CHANGES file.
 
 =head1 AUTHOR
 
-  Steven L. Hancock
+  Steve Hancock
   email: perltidy at users.sourceforge.net
   http://perltidy.sourceforge.net
 
 =head1 COPYRIGHT
 
-Copyright (c) 2000-2002 by Steven L. Hancock
+Copyright (c) 2000-2002 by Steve Hancock
 
 =head1 LICENSE
 

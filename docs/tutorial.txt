@@ -17,7 +17,7 @@ A Brief Perltidy Tutorial
      } elsif ($editor =~ /vi/i) {
        print "Why aren't you using emacs?\n";
      } else {
-       print "I think that's the problem\n";
+       print "I'm not allowed to give help with that one\n";
      }
 
     It is included in the docs section of the distribution.
@@ -152,7 +152,25 @@ A Brief Perltidy Tutorial
      perltidy *.pl
 
     and in this case, each of the output files will be have a name equal to
-    the input file with the extension .tdy appended.
+    the input file with the extension .tdy appended. If you decide that the
+    formatting is acceptable, you will want to backup your originals and
+    then remove the .tdy extensions from the reformatted files.
+
+    If you find that the formatting done by perltidy is usually acceptable,
+    you may want to save some effort by letting perltidy do a simple backup
+    of the original files and then reformat them in place. You specify this
+    with a -b flag. For example, the command
+
+     perltidy -b *.pl
+
+    will rename the original files by appending a .bak extension, and then
+    create reformatted files with the same names as the originals. (If you
+    don't like the default backup extension choice .bak, the manual tells on
+    how to change it). Saving a backup copy of the original file in this way
+    is only temporary safety measure, because each time you run perltidy
+    with the -b option, the previous .bak files will be overwritten. So
+    please be sure to make regular additional backups with a tool such as
+    RCS or CVS.
 
     If there is no input filename specified on the command line, then input
     is assumed to come from standard input and output will go to standard
@@ -176,40 +194,6 @@ A Brief Perltidy Tutorial
     this:
 
      perltidy testfile.pl -o=testfile.new.pl
-
-    One thing that you cannot do with perltidy is to reformat a script and
-    overwrite the original version. This is a safety precaution.
-
-  Making Backups
-    In an actual project, you will need to make a backup copy of the
-    original script and then rename testfile.pl.tdy to be testfile.pl. While
-    perltidy is a very reliable program, it is very important to have a
-    standard procedure for backing up your script in case something goes
-    wrong. For a small project, a simple backup procedure using RCS could be
-    as follows (see the rcsintro(1) man page).
-
-            ci -l testfile.pl
-            perltidy testfile.pl
-
-    A good practice is to use a file comparison utility, such as diff, to
-    examine the differences between the original and reformatted files.
-    Then, if no problems are seen, update to the new version using
-
-            mv testfile.pl testfile.pl.bak
-            mv testfile.pl.tdy testfile.pl
-
-    This has the effect of keeping a historical record of the script in the
-    RCS directory, and a current separate backup as testfile.pl.bak. Of
-    course, you should make regular additional backups to other media as
-    well.
-
-    Please do not fall into this trap: Let's say you are working on a
-    complex script, and run it through perltidy. You open the reformatted
-    script with your editor, and are so pleased to see it cleaned up that
-    you immediately continue editing it. If you forget that you are editing
-    a .tdy file, your work will be lost if you inadvertently run perltidy
-    again on the original script. To avoid this, you need to rename your
-    files before starting to work again.
 
   Style Variations
     Perltidy has to make some kind of default selection of formatting
@@ -272,7 +256,7 @@ A Brief Perltidy Tutorial
                                    ten   => 'X'
                                    );
 
-        which is probably easier to read.
+        which is preferred by some.
 
     -bt,-pt,-sbt: Container tightness
         These are parameters for controlling the amount of space within
@@ -356,11 +340,11 @@ A Brief Perltidy Tutorial
      The most recent un-matched '{' is on line 6
      6: } elsif ($temperature < 68) {{
                                     ^
+
     This shows how perltidy will, by default, write error messages to a file
-    with the extension F<.ERR>, and it will write a note that it did so to
-    the standard error device.  If you would prefer to have the error
-    messages sent to standard output, instead of to a F<.ERR> file, use the
-    B<-se> flag.
+    with the extension .ERR, and it will write a note that it did so to the
+    standard error device. If you would prefer to have the error messages
+    sent to standard output, instead of to a .ERR file, use the -se flag.
 
     Almost every programmer would want to see error messages of this type,
     but there are a number of messages which, if reported, would be
@@ -466,7 +450,9 @@ A Brief Perltidy Tutorial
 
     It isn't necessary to format an entire file, however. Perltidy will
     probably work well as long as you select blocks of text whose braces,
-    parentheses, and square brackets are properly balanced.
+    parentheses, and square brackets are properly balanced. You can even
+    format an "elsif" block without the leading "if" block, as long as the
+    text you select has all braces balanced.
 
     For the emacs editor, first mark a region and then pipe it through
     perltidy. For example, to format an entire file, select it with "C-x h"
@@ -481,13 +467,18 @@ A Brief Perltidy Tutorial
     instead of through the standard input. If this works, you might put the
     -st flag in your .perltidyrc file.
 
+    If you have some tips for making perltidy work with your editor, and are
+    willing to share them, please email me (see below) and I'll try to
+    incorporate them in this document or put up a link to them.
+
     After you get your editor and perltidy successfully talking to each
     other, try formatting a snippet of code with a brace error to see what
     happens. (Do not use the quiet flag, -q, for this test). Perltidy will
     send one line starting with "##" to standard error output. Your editor
     may either display it at the top of the reformatted text or at the
-    bottom. You probably cannot control this, but you need to know where to
-    look when an actual error is detected.
+    bottom (or even midstream!). You probably cannot control this, and
+    perltidy can't, but you need to know where to look when an actual error
+    is detected.
 
   Writing an HTML File
     Perltidy can switch between two different output modes. We have been
@@ -528,4 +519,6 @@ A Brief Perltidy Tutorial
     We hope that perltidy makes perl programming a little more fun. Please
     check the perltidy web site http://perltidy.sourceforge.net occasionally
     for updates.
+
+    The auther may be contacted at perltidy at users.sourceforge.net.
 

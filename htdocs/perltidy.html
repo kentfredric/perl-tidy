@@ -508,8 +508,9 @@ versions of perltidy.  The negation of this also works, <STRONG>-noll</STRONG> o
 <P></P>
 <DT><STRONG><A NAME="item_Outdenting_Labels%3A_%2Dola%2C_%2D%2Doutdent%2Dlab">Outdenting Labels: <STRONG>-ola</STRONG>,  <STRONG>--outdent-labels</STRONG></A></STRONG><BR>
 <DD>
-This command will cause labels to be outdented by 2 spaces (or whatever
-<STRONG>-ci</STRONG> has been set to), if possible.  For example, with <STRONG>perltidy -ola</STRONG>:
+This command will cause labels to be outdented by 2 spaces (or whatever <STRONG>-ci</STRONG>
+has been set to), if possible.  This is the default.  For example, with
+<STRONG>perltidy -ola</STRONG>:
 <PRE>
         my $i;
       LOOP: while ( $i = &lt;FOTOS&gt; ) {
@@ -518,8 +519,7 @@ This command will cause labels to be outdented by 2 spaces (or whatever
             fixit($i);
         }</PRE>
 <P>Labels which are already at the leftmost column will not be affected by
-this command.  Use <STRONG>-nola</STRONG> to not outdent labels.  The current
-default is not to outdent labels.</P>
+this command.  Use <STRONG>-nola</STRONG> to not outdent labels.</P>
 <P></P>
 <DT><STRONG><A NAME="item_Outdenting_Keywords">Outdenting Keywords</A></STRONG><BR>
 <DD>
@@ -535,7 +535,7 @@ the next section.
 <P>For example, using <CODE>perltidy -ock</CODE> on the previous example gives:</P>
 <PRE>
         my $i;
-        LOOP: while ( $i = &lt;FOTOS&gt; ) {
+      LOOP: while ( $i = &lt;FOTOS&gt; ) {
             chomp($i);
           next unless $i;
             fixit($i);
@@ -953,6 +953,11 @@ block comments; it will not be used unless the switch <STRONG>-sbc</STRONG> is s
 please be aware that this string is used in a perl regular expression which
 identifies these comments, so it must enable a valid regular expression to be
 formed.</P>
+<P></P>
+<DT><STRONG><A NAME="item_%2Dosbc%2C_%2D%2Doutdent%2Dstatic%2Dblock%2Dcommen"><STRONG>-osbc</STRONG>, <STRONG>--outdent-static-block-comments</STRONG></A></STRONG><BR>
+<DD>
+The command <STRONG>-osbc</STRONG> will will cause static block comments to be outdented by 2
+spaces (or whatever <STRONG>-ci=n</STRONG> has been set to), if possible.
 <P></P></DL>
 <DT><STRONG><A NAME="item_Static_Side_Comments">Static Side Comments</A></STRONG><BR>
 <DD>
@@ -1728,6 +1733,15 @@ Use <STRONG>--nolook-for-autoloader</STRONG>, or <STRONG>-nlal</STRONG>, to deac
 <P>Likewise, if the SelfLoader module is used, perltidy will continue formatting
 code after seeing a __DATA__ line.
 Use <STRONG>--nolook-for-selfloader</STRONG>, or <STRONG>-nlsl</STRONG>, to deactivate this feature.</P>
+<P></P>
+<DT><STRONG><A NAME="item_Working_around_problems_with_older_version_of_Perl">Working around problems with older version of Perl</A></STRONG><BR>
+<DD>
+Perltidy contains a number of rules which help avoid known subtleties
+and problems with older versions of perl, and these rules always
+take priority over whatever formatting flags have been set.  For example,
+perltidy will usually avoid starting a new line with a bareword, because
+this might cause problems if <CODE>use strict</CODE> is active.
+<P>There is no way to override these rules.</P>
 <P></P></DL>
 <P>
 <HR>
@@ -1944,7 +1958,7 @@ confusing filenames such as <EM>somefile.tdy.tdy.tdy</EM>.
 <P>
 <HR>
 <H1><A NAME="version">VERSION</A></H1>
-<P>This man page documents perltidy version 20020425.</P>
+<P>This man page documents perltidy version 20020826.</P>
 <P>
 <HR>
 <H1><A NAME="credits">CREDITS</A></H1>
@@ -1960,13 +1974,13 @@ see the CHANGES file.</P>
 <HR>
 <H1><A NAME="author">AUTHOR</A></H1>
 <PRE>
-  Steven L. Hancock
+  Steve Hancock
   email: perltidy at users.sourceforge.net
   <A HREF="http://perltidy.sourceforge.net">http://perltidy.sourceforge.net</A></PRE>
 <P>
 <HR>
 <H1><A NAME="copyright">COPYRIGHT</A></H1>
-<P>Copyright (c) 2000-2002 by Steven L. Hancock</P>
+<P>Copyright (c) 2000-2002 by Steve Hancock</P>
 <P>
 <HR>
 <H1><A NAME="license">LICENSE</A></H1>

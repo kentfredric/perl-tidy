@@ -15,6 +15,7 @@
 	<UL>
 
 		<LI><A HREF="#2002 xx xx">2002 xx xx</A></LI>
+		<LI><A HREF="#2002 08 26">2002 08 26</A></LI>
 		<LI><A HREF="#2002 04 25">2002 04 25</A></LI>
 		<LI><A HREF="#2002 04 16">2002 04 16</A></LI>
 		<LI><A HREF="#2002 02 25">2002 02 25</A></LI>
@@ -49,6 +50,59 @@
  users.sourceforge.net.</PRE>
 <P>
 <H2><A NAME="2002 xx xx">2002 xx xx</A></H2>
+<PRE>
+
+ -New option '-b' or '--backup-and-modify-in-place' will cause perltidy to
+ overwrite the original file with the beautified output file.  The original
+ file will be saved with a '.bak' extension (which can be changed with
+ -bext=s).  Please see updated docs.  Thanks to Rudi Farkas for the suggestion
+ and example coding.</PRE>
+<PRE>
+ -The cuddled-else (-ce) flag now also makes cuddled continues, like
+ this:</PRE>
+<PRE>
+    while ( ( $pack, $file, $line ) = caller( $i++ ) ) {
+       # bla bla
+    } continue {
+        $prevpack = $pack;
+    }</PRE>
+<PRE>
+ A separate flag could be made for this, but since most cuddled-else
+ users will also want cuddled-continues, no new flag has been
+ introduced.  Suggested by Simon Perreault.</PRE>
+<PRE>
+ -Fixed bug in which an extra blank line was added before an =head or 
+ similar pod line after an __END__ or __DATA__ line each time 
+ perltidy was run.  Thanks to Mike Birdsall for reporting this.</PRE>
+<P>
+<H2><A NAME="2002 08 26">2002 08 26</A></H2>
+<PRE>
+ -Fixed bug in which space was inserted in a hyphenated hash key:
+    my $val = $myhash{USER-NAME};
+  was converted to:
+    my $val = $myhash{USER -NAME}; 
+  Thanks to an anonymous bug reporter at sourceforge.</PRE>
+<PRE>
+ -Fixed problem with the '-io' ('--indent-only') where all lines 
+  were double spaced.  Thanks to Nick Andrew for reporting this bug.</PRE>
+<PRE>
+ -Fixed tokenization error in which something like '-e1' was 
+  parsed as a number.</PRE>
+<PRE>
+ -Corrected a rare problem involving older perl versions, in which 
+  a line break before a bareword caused problems with 'use strict'.
+  Thanks to Wolfgang Weisselberg for noting this.</PRE>
+<PRE>
+ -More syntax error checking added.</PRE>
+<PRE>
+ -Outdenting labels (-ola) has been made the default, in order to follow the
+  perlstyle guidelines better.  It's probably a good idea in general, but
+  if you do not want this, use -nola in your .perltidyrc file.
+</PRE>
+<PRE>
+
+ -Updated rules for padding logical expressions to include more cases.
+  Thanks to Wolfgang Weisselberg for helpful discussions.</PRE>
 <PRE>
  -Added new flag -osbc (--outdent-static-block-comments) which will
   outdent static block comments by 2 spaces (or whatever -ci equals).
