@@ -18,6 +18,7 @@
 	<LI><A HREF="#options  overview">OPTIONS - OVERVIEW</A></LI>
 	<UL>
 
+		<LI><A HREF="#specifying block types">Specifying Block Types</A></LI>
 		<LI><A HREF="#i/o control">I/O control</A></LI>
 	</UL>
 
@@ -66,8 +67,12 @@
 <H1><A NAME="description">DESCRIPTION</A></H1>
 <P>Perltidy reads a perl script and writes an indented, reformatted script.</P>
 <P>Many users will find enough information in <A HREF="#examples">EXAMPLES</A> to get 
-started.  New users may benefit from the short tutorial which
-comes with the distribution.</P>
+started.  New users may benefit from the short tutorial 
+which can be found at
+<A HREF="http://perltidy.sourceforge.net/tutorial.html">http://perltidy.sourceforge.net/tutorial.html</A></P>
+<P>A convenient aid to systematically defining a set of style parameters
+can be found at
+<A HREF="http://perltidy.sourceforge.net/stylekey.html">http://perltidy.sourceforge.net/stylekey.html</A></P>
 <P>Perltidy can produce output on either of two modes, depending on the
 existance of an <STRONG>-html</STRONG> flag.  Without this flag, the output is passed
 through a formatter.  The default formatting tries to follow the
@@ -154,6 +159,22 @@ is <STRONG>-syn</STRONG> or <STRONG>--check-syntax</STRONG>.  The flag to skip t
 <P>Option names may be terminated early as long as they are uniquely identified.
 For example, instead of <STRONG>-dump-token-types</STRONG>, it would be sufficient to enter
 <STRONG>-dump-tok</STRONG>, or even <STRONG>-dump-t</STRONG>, to uniquely identify this command.</P>
+<P>
+<H2><A NAME="specifying block types">Specifying Block Types</A></H2>
+<P>Several parameters which refer to code block types may be customized by
+also specifying an associated list of block types.  The type of a block
+is the name of the keyword which introduces that block, such as <STRONG>if</STRONG>,
+<STRONG>else</STRONG>, or <STRONG>sub</STRONG>.  One exception is a labeled block, which should be
+specified with just a colon.</P>
+<P>An example is the <STRONG>-csc</STRONG> closing side comment parameter, which may
+be customized by specifying a list of block types with <STRONG>-cscl=s</STRONG>.  The
+parameter <STRONG>s</STRONG> here is a list of the block types.  It should be
+quoted if it contains any spaces.</P>
+<P>For example, the following command requests that only <CODE>sub</CODE>'s, labels,
+<CODE>BEGIN</CODE>, and <CODE>END</CODE> blocks be affected by any <STRONG>-csc</STRONG> or <STRONG>-dcsc</STRONG>
+operation:</P>
+<PRE>
+   -cscl=&quot;sub : BEGIN END&quot;</PRE>
 <P>
 <H2><A NAME="i/o control">I/O control</A></H2>
 <P>The following parameters concern the files which are read and written.</P>
@@ -653,29 +674,21 @@ length).
                        four  =&gt; 'IV', );</PRE>
 <P>The difference between <STRONG>-vt=1</STRONG> and <STRONG>-vt=2</STRONG> is shown here:</P>
 <PRE>
-    # perltidy -lp -vt=0 -vtc=0 
-    $init-&gt;add(
-                mysprintf(
-                           &quot;(void)find_threadsv(%s);&quot;,
-                           cstring( $threadsv_names[ $op-&gt;targ ] )
-                )
-    );</PRE>
-<PRE>
-    # perltidy -lp -vt=1 -vtc=0
+    # perltidy -lp -vt=1 
     $init-&gt;add(
                 mysprintf( &quot;(void)find_threadsv(%s);&quot;,
                            cstring( $threadsv_names[ $op-&gt;targ ] )
                 )
     );</PRE>
-<P>The line ending in <CODE>add(</CODE> does not combine with the next line because
-the next line is not balanced.  This helps with readability, but we can
-force the combination with <STRONG>-vt=2</STRONG>:</P>
 <PRE>
-    # perltidy -lp -vt=2 -vtc=0
+    # perltidy -lp -vt=2 
     $init-&gt;add( mysprintf( &quot;(void)find_threadsv(%s);&quot;,
                            cstring( $threadsv_names[ $op-&gt;targ ] )
                 )
     );</PRE>
+<P>With <STRONG>-vt=1</STRONG>, the line ending in <CODE>add(</CODE> does not combine with the next
+line because the next line is not balanced.  This can help with
+readability, but we use <STRONG>-vt=2</STRONG> to ignore this rule.</P>
 <P>The tightest, and least readable, code is produced with both <CODE>-vt=2</CODE> and
 <CODE>-vtc=2</CODE>:</P>
 <PRE>
@@ -683,15 +696,15 @@ force the combination with <STRONG>-vt=2</STRONG>:</P>
     $init-&gt;add( mysprintf( &quot;(void)find_threadsv(%s);&quot;,
                            cstring( $threadsv_names[ $op-&gt;targ ] ) ) );</PRE>
 <P>Notice how the code in all of these examples collapses vertically as
-<STRONG>-vt</STRONG> increases, but the indentation remains unchanged.  Perltidy
-implements the <STRONG>-vt</STRONG> parameter by first formatting as if <STRONG>-vt=0</STRONG>, and
-then simply overwriting one output line on top of the next, if possible,
-to achieve the desired vertical tightness.  The <STRONG>-lp</STRONG> indentation style
-has been designed to allow this vertical collapse to occur, which is why
-it is required for the <STRONG>-vt</STRONG> parameter.</P>
-<P>Similar controls can be applied independently to each of the closing
-container token types, although it usually looks best to use the same
-scheme for each.</P>
+<STRONG>-vt</STRONG> increases, but the indentation remains unchanged.  This is
+because perltidy implements the <STRONG>-vt</STRONG> parameter by first formatting as
+if <STRONG>-vt=0</STRONG>, and then simply overwriting one output line on top of the
+next, if possible, to achieve the desired vertical tightness.  The
+<STRONG>-lp</STRONG> indentation style has been designed to allow this vertical
+collapse to occur, which is why it is required for the <STRONG>-vt</STRONG> parameter.</P>
+<P>The <STRONG>-vt=n</STRONG> and <STRONG>-vtc=n</STRONG> parameters apply to each type of container
+token.  If desired, vertical tightness controls can be applied
+independently to each of the closing container token types.</P>
 <P>The parameters for controlling parentheses are <STRONG>-pvt=n</STRONG> or
 <STRONG>--paren-vertical-tightness=n</STRONG>, and <STRONG>-pcvt=n</STRONG> or
 <STRONG>--paren-vertical-tightness-closing=n</STRONG>.</P>
@@ -739,12 +752,12 @@ subsequent line.  For example:</P>
       }</PRE>
 <P>By default this applies to blocks associated with keywords <STRONG>if</STRONG>,
 <STRONG>elsif</STRONG>, <STRONG>else</STRONG>, <STRONG>unless</STRONG>, <STRONG>for</STRONG>, <STRONG>foreach</STRONG>, <STRONG>sub</STRONG>, <STRONG>while</STRONG>,
-<STRONG>until</STRONG>, and also with a preceding label.  This can be controlled with
+<STRONG>until</STRONG>, and also with a preceding label.  This can be changed with
 the parameter <STRONG>-bbvtl=string</STRONG>, or
 <STRONG>--block-brace-vertical-tightness-list=string</STRONG>, where <STRONG>string</STRONG> is a
 space-separated list of block types.  For more information on the
-possible values of this string, please see the discussion of the flag
-<STRONG>-cscl</STRONG>.  For example, if we want to just apply this style to <CODE>if</CODE>,
+possible values of this string, see <A HREF="#specifying block types">Specifying Block Types</A></P>
+<P>For example, if we want to just apply this style to <CODE>if</CODE>,
 <CODE>elsif</CODE>, and <CODE>else</CODE> blocks, we could use 
 <CODE>perltidy -bli -bbvt -bbvtl='if elsif else'</CODE>.</P>
 <P>There is no vertical tightness control for closing block braces; they
@@ -964,9 +977,9 @@ its closing brace.
 where <CODE>string</CODE> is a list of block types to be tagged with closing side
 comments.  By default, all code block types preceded by a keyword or
 label (such as <CODE>if</CODE>, <CODE>sub</CODE>, and so on) will be tagged.  The <STRONG>-cscl</STRONG>
-command changes the default list to be any selected block types.  To
-request that a block with a label be included, include a bare colon,
-<CODE>:</CODE>, in the list of block types.  For example, the following command
+command changes the default list to be any selected block types; see
+<A HREF="#specifying block types">Specifying Block Types</A>.
+For example, the following command
 requests that only <CODE>sub</CODE>'s, labels, <CODE>BEGIN</CODE>, and <CODE>END</CODE> blocks be
 affected by any <STRONG>-csc</STRONG> or <STRONG>-dcsc</STRONG> operation:
 <PRE>
@@ -1194,15 +1207,23 @@ the value of <STRONG>-bl</STRONG> is used.</P>
 <DD>
 The flag <STRONG>-bli</STRONG> is the same as <STRONG>-bl</STRONG> but in addition it causes one 
 unit of continuation indentation ( see <STRONG>-ci</STRONG> ) to be placed before 
-an opening and closing brace associated with the keywords 
-<STRONG>if</STRONG>, <STRONG>elsif</STRONG>, <STRONG>else</STRONG>, <STRONG>unless</STRONG>, <STRONG>for</STRONG>, <STRONG>foreach</STRONG>, <STRONG>sub</STRONG>, 
-<STRONG>while</STRONG>, <STRONG>until</STRONG>, and also with a preceding label.
+an opening and closing block braces.
 <P>For example,</P>
 <PRE>
         if ( $input_file eq '-' )    # -bli
           {
             important_function();
           }</PRE>
+<P>By default, this extra indentation occurs for blocks of type:
+<STRONG>if</STRONG>, <STRONG>elsif</STRONG>, <STRONG>else</STRONG>, <STRONG>unless</STRONG>, <STRONG>for</STRONG>, <STRONG>foreach</STRONG>, <STRONG>sub</STRONG>, 
+<STRONG>while</STRONG>, <STRONG>until</STRONG>, and also with a preceding label.  The next item
+shows how to change this.</P>
+<P></P>
+<DT><STRONG><A NAME="item_%2Dblil%3Ds%2C_%2D%2Dbrace%2Dleft%2Dand%2Dindent%2"><STRONG>-blil=s</STRONG>,    <STRONG>--brace-left-and-indent-list=s</STRONG></A></STRONG><BR>
+<DD>
+Use this parameter to change the types of block braces for which the
+<STRONG>-bli</STRONG> flag applies; see <A HREF="#specifying block types">Specifying Block Types</A>.  For example,
+<STRONG>-blil='if elsif else'</STRONG> would apply it to only <CODE>if/elsif/else</CODE> blocks.
 <P></P>
 <DT><STRONG><A NAME="item_%2Dbar%2C_%2D%2Dopening%2Dbrace%2Dalways%2Don%2Dri"><STRONG>-bar</STRONG>,    <STRONG>--opening-brace-always-on-right</STRONG></A></STRONG><BR>
 <DD>
@@ -1550,9 +1571,9 @@ formatting in future applications of perltidy, like this:</P>
 <P>Vertical alignment refers to lining up similar tokens vertically, like
 this:</P>
 <PRE>
- my $lines     = 0;    # checksum: #lines
- my $bytes     = 0;    # checksum: #bytes
- my $sum       = 0;    # checksum: system V sum</PRE>
+ my $lines = 0;    # checksum: #lines
+ my $bytes = 0;    # checksum: #bytes
+ my $sum   = 0;    # checksum: system V sum</PRE>
 <P>Once the perltidy vertical aligner ``locks on'' to a pattern, such as
 defined by the ``='' and ``#'' in the above example, it retains the pattern
 for as long as possible.  However, a blank line or full-line comment
@@ -1811,7 +1832,7 @@ it frequently.</P>
 <P>The following list shows all short parameter names which allow a prefix
 'n' to produce the negated form:</P>
 <PRE>
-    D anl asc aws bbb bbc bbs bbvt bli baa syn ce csc dac dbc dcsc dnl
+    D anl asc aws bbb bbc bbs bli baa syn ce csc dac dbc dcsc dnl
     dws dp dpro dsm dsc ddf dln dop dsn dtt dwls dwrs f fll
     hsc html ibc icb icp isbc lp log lal x lsl bl sbl okw ola oll
     pvl q opt sbc sfs ssc sts se st sob t tac tbc tp tsc tqw w</PRE>

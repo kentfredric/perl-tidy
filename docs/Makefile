@@ -9,6 +9,7 @@ perltidy.txt \
 perltidy.html \
 tutorial.html \
 tutorial.txt \
+stylekey.html \
 BUGS.html \
 BUGS.txt \
 FAQ.html \
@@ -40,6 +41,9 @@ perltidy.txt: perltidy.pod
 
 perltidy.html: perltidy.pod
 	pod2html perltidy.pod >perltidy.html
+
+stylekey.html: stylekey.pod
+	pod2html stylekey.pod >stylekey.html
 
 tutorial.html: tutorial.pod
 	pod2html tutorial.pod >tutorial.html

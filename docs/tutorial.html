@@ -230,8 +230,12 @@ files before starting to work again.</P>
 <P>Perltidy has to make some kind of default selection of formatting
 options, and its choice is to try to follow the suggestions in the
 perlstyle man pages.  Many programmers more or less follow these
-suggestions with a few exceptions.  The parameters most commonly
-used include these:</P>
+suggestions with a few exceptions.  In this section we will
+look at just a few of the most commonly used style parameters.  Later,
+you may want to systematically develop a set of style
+parameters with the help of
+the perltidy <STRONG>stylekey</STRONG> web page at
+<A HREF="http://perltidy.sourceforge.net/stylekey.html">http://perltidy.sourceforge.net/stylekey.html</A></P>
 <DL>
 <DT><STRONG><A NAME="item_%2Dce%2C_cuddled_elses"><STRONG>-ce</STRONG>, cuddled elses</A></STRONG><BR>
 <DD>
@@ -467,7 +471,7 @@ perltidy.  For example, to format an entire file, select it with <CODE>C-x h</CO
 and then pipe it with <CODE>M-1 M-|</CODE> and then <CODE>perltidy</CODE>.  The numeric
 argument, <CODE>M-1</CODE> causes the output from perltidy to replace the marked
 text.  See ``GNU Emacs Manual'' for more information,
-<A HREF="http://www.cs.utah.edu/dept/old/texinfo/emacs19/emacs_toc.html">http://www.cs.utah.edu/dept/old/texinfo/emacs19/emacs_toc.html</A></P>
+<A HREF="http://www.gnu.org/manual/emacs-20.3/html_node/emacs_toc.html">http://www.gnu.org/manual/emacs-20.3/html_node/emacs_toc.html</A></P>
 <P>If you have difficulty with an editor, try the <STRONG>-st</STRONG> flag, which will
 force perltidy to send output to standard output.  This might be needed,
 for example, if the editor passes text to perltidy as temporary filename
@@ -505,8 +509,14 @@ like to both beautify a script and write it to HTML, you need to do it
 in two steps.</P>
 <P>
 <H2><A NAME="summary">Summary</A></H2>
-<P>That's enough to get started using perltidy.  Many additional special
-features and capabilities can be found in the manual pages for perltidy.</P>
+<P>That's enough to get started using perltidy.  
+When you are ready to create a <EM>.perltidyrc</EM> file, you may find it
+helpful to use the <EM>stylekey</EM> page as a guide at
+<A HREF="http://perltidy.sourceforge.net/stylekey.html">http://perltidy.sourceforge.net/stylekey.html</A></P>
+<P>Many additional special
+features and capabilities can be found in the manual pages for perltidy
+at
+<A HREF="http://perltidy.sourceforge.net/perltidy.html">http://perltidy.sourceforge.net/perltidy.html</A></P>
 <P>We hope that perltidy makes perl programming a little more fun.
 Please check the perltidy
 web site <A HREF="http://perltidy.sourceforge.net">http://perltidy.sourceforge.net</A> occasionally

@@ -130,7 +130,7 @@
 .\" ========================================================================
 .\"
 .IX Title "PERLTIDY 1"
-.TH PERLTIDY 1 "2002-04-02" "perl v5.6.1" "User Contributed Perl Documentation"
+.TH PERLTIDY 1 "2002-04-07" "perl v5.6.1" "User Contributed Perl Documentation"
 .UC
 .SH "NAME"
 perltidy \- a perl script indenter and reformatter
@@ -148,8 +148,13 @@ perltidy \- a perl script indenter and reformatter
 Perltidy reads a perl script and writes an indented, reformatted script.
 .PP
 Many users will find enough information in \*(L"\s-1EXAMPLES\s0\*(R" to get 
-started.  New users may benefit from the short tutorial which
-comes with the distribution.
+started.  New users may benefit from the short tutorial 
+which can be found at
+http://perltidy.sourceforge.net/tutorial.html
+.PP
+A convenient aid to systematically defining a set of style parameters
+can be found at
+http://perltidy.sourceforge.net/stylekey.html
 .PP
 Perltidy can produce output on either of two modes, depending on the
 existance of an \fB\-html\fR flag.  Without this flag, the output is passed
@@ -261,6 +266,26 @@ Options may not be bundled together.  In other words, options \fB\-q\fR and
 Option names may be terminated early as long as they are uniquely identified.
 For example, instead of \fB\-dump\-token\-types\fR, it would be sufficient to enter
 \&\fB\-dump\-tok\fR, or even \fB\-dump\-t\fR, to uniquely identify this command.
+.Sh "Specifying Block Types"
+.IX Subsection "Specifying Block Types"
+Several parameters which refer to code block types may be customized by
+also specifying an associated list of block types.  The type of a block
+is the name of the keyword which introduces that block, such as \fBif\fR,
+\&\fBelse\fR, or \fBsub\fR.  One exception is a labeled block, which should be
+specified with just a colon.
+.PP
+An example is the \fB\-csc\fR closing side comment parameter, which may
+be customized by specifying a list of block types with \fB\-cscl=s\fR.  The
+parameter \fBs\fR here is a list of the block types.  It should be
+quoted if it contains any spaces.
+.PP
+For example, the following command requests that only \f(CW\*(C`sub\*(C'\fR's, labels,
+\&\f(CW\*(C`BEGIN\*(C'\fR, and \f(CW\*(C`END\*(C'\fR blocks be affected by any \fB\-csc\fR or \fB\-dcsc\fR
+operation:
+.PP
+.Vb 1
+\&   -cscl="sub : BEGIN END"
+.Ve
 .Sh "I/O control"
 .IX Subsection "I/O control"
 The following parameters concern the files which are read and written.
@@ -790,34 +815,25 @@ Here are some examples:
 .Ve
 The difference between \fB\-vt=1\fR and \fB\-vt=2\fR is shown here:
 .Sp
-.Vb 7
-\&    # perltidy -lp -vt=0 -vtc=0 
-\&    $init->add(
-\&                mysprintf(
-\&                           "(void)find_threadsv(%s);",
-\&                           cstring( $threadsv_names[ $op->targ ] )
-\&                )
-\&    );
-.Ve
 .Vb 6
-\&    # perltidy -lp -vt=1 -vtc=0
+\&    # perltidy -lp -vt=1 
 \&    $init->add(
 \&                mysprintf( "(void)find_threadsv(%s);",
 \&                           cstring( $threadsv_names[ $op->targ ] )
 \&                )
 \&    );
 .Ve
-The line ending in \f(CW\*(C`add(\*(C'\fR does not combine with the next line because
-the next line is not balanced.  This helps with readability, but we can
-force the combination with \fB\-vt=2\fR:
-.Sp
 .Vb 5
-\&    # perltidy -lp -vt=2 -vtc=0
+\&    # perltidy -lp -vt=2 
 \&    $init->add( mysprintf( "(void)find_threadsv(%s);",
 \&                           cstring( $threadsv_names[ $op->targ ] )
 \&                )
 \&    );
 .Ve
+With \fB\-vt=1\fR, the line ending in \f(CW\*(C`add(\*(C'\fR does not combine with the next
+line because the next line is not balanced.  This can help with
+readability, but we use \fB\-vt=2\fR to ignore this rule.
+.Sp
 The tightest, and least readable, code is produced with both \f(CW\*(C`\-vt=2\*(C'\fR and
 \&\f(CW\*(C`\-vtc=2\*(C'\fR:
 .Sp
@@ -827,16 +843,16 @@ The tightest, and least readable, code is produced with both \f(CW\*(C`\-vt=2\*(
 \&                           cstring( $threadsv_names[ $op->targ ] ) ) );
 .Ve
 Notice how the code in all of these examples collapses vertically as
-\&\fB\-vt\fR increases, but the indentation remains unchanged.  Perltidy
-implements the \fB\-vt\fR parameter by first formatting as if \fB\-vt=0\fR, and
-then simply overwriting one output line on top of the next, if possible,
-to achieve the desired vertical tightness.  The \fB\-lp\fR indentation style
-has been designed to allow this vertical collapse to occur, which is why
-it is required for the \fB\-vt\fR parameter.
+\&\fB\-vt\fR increases, but the indentation remains unchanged.  This is
+because perltidy implements the \fB\-vt\fR parameter by first formatting as
+if \fB\-vt=0\fR, and then simply overwriting one output line on top of the
+next, if possible, to achieve the desired vertical tightness.  The
+\&\fB\-lp\fR indentation style has been designed to allow this vertical
+collapse to occur, which is why it is required for the \fB\-vt\fR parameter.
 .Sp
-Similar controls can be applied independently to each of the closing
-container token types, although it usually looks best to use the same
-scheme for each.
+The \fB\-vt=n\fR and \fB\-vtc=n\fR parameters apply to each type of container
+token.  If desired, vertical tightness controls can be applied
+independently to each of the closing container token types.
 .Sp
 The parameters for controlling parentheses are \fB\-pvt=n\fR or
 \&\fB\-\-paren\-vertical\-tightness=n\fR, and \fB\-pcvt=n\fR or
@@ -894,12 +910,13 @@ subsequent line.  For example:
 .Ve
 By default this applies to blocks associated with keywords \fBif\fR,
 \&\fBelsif\fR, \fBelse\fR, \fBunless\fR, \fBfor\fR, \fBforeach\fR, \fBsub\fR, \fBwhile\fR,
-\&\fBuntil\fR, and also with a preceding label.  This can be controlled with
+\&\fBuntil\fR, and also with a preceding label.  This can be changed with
 the parameter \fB\-bbvtl=string\fR, or
 \&\fB\-\-block\-brace\-vertical\-tightness\-list=string\fR, where \fBstring\fR is a
 space-separated list of block types.  For more information on the
-possible values of this string, please see the discussion of the flag
-\&\fB\-cscl\fR.  For example, if we want to just apply this style to \f(CW\*(C`if\*(C'\fR,
+possible values of this string, see \*(L"Specifying Block Types\*(R"
+.Sp
+For example, if we want to just apply this style to \f(CW\*(C`if\*(C'\fR,
 \&\f(CW\*(C`elsif\*(C'\fR, and \f(CW\*(C`else\*(C'\fR blocks, we could use 
 \&\f(CW\*(C`perltidy \-bli \-bbvt \-bbvtl='if elsif else'\*(C'\fR.
 .Sp
@@ -1137,9 +1154,9 @@ its closing brace.
 where \f(CW\*(C`string\*(C'\fR is a list of block types to be tagged with closing side
 comments.  By default, all code block types preceded by a keyword or
 label (such as \f(CW\*(C`if\*(C'\fR, \f(CW\*(C`sub\*(C'\fR, and so on) will be tagged.  The \fB\-cscl\fR
-command changes the default list to be any selected block types.  To
-request that a block with a label be included, include a bare colon,
-\&\f(CW\*(C`:\*(C'\fR, in the list of block types.  For example, the following command
+command changes the default list to be any selected block types; see
+\&\*(L"Specifying Block Types\*(R".
+For example, the following command
 requests that only \f(CW\*(C`sub\*(C'\fR's, labels, \f(CW\*(C`BEGIN\*(C'\fR, and \f(CW\*(C`END\*(C'\fR blocks be
 affected by any \fB\-csc\fR or \fB\-dcsc\fR operation:
 .Sp
@@ -1385,9 +1402,7 @@ the value of \fB\-bl\fR is used.
 .IX Item "-bli,    --brace-left-and-indent"
 The flag \fB\-bli\fR is the same as \fB\-bl\fR but in addition it causes one 
 unit of continuation indentation ( see \fB\-ci\fR ) to be placed before 
-an opening and closing brace associated with the keywords 
-\&\fBif\fR, \fBelsif\fR, \fBelse\fR, \fBunless\fR, \fBfor\fR, \fBforeach\fR, \fBsub\fR, 
-\&\fBwhile\fR, \fBuntil\fR, and also with a preceding label.  
+an opening and closing block braces.
 .Sp
 For example,
 .Sp
@@ -1397,6 +1412,15 @@ For example,
 \&            important_function();
 \&          }
 .Ve
+By default, this extra indentation occurs for blocks of type:
+\&\fBif\fR, \fBelsif\fR, \fBelse\fR, \fBunless\fR, \fBfor\fR, \fBforeach\fR, \fBsub\fR, 
+\&\fBwhile\fR, \fBuntil\fR, and also with a preceding label.  The next item
+shows how to change this.
+.IP "\fB\-blil=s\fR,    \fB\-\-brace\-left\-and\-indent\-list=s\fR" 4
+.IX Item "-blil=s,    --brace-left-and-indent-list=s"
+Use this parameter to change the types of block braces for which the
+\&\fB\-bli\fR flag applies; see \*(L"Specifying Block Types\*(R".  For example,
+\&\fB\-blil='if elsif else'\fR would apply it to only \f(CW\*(C`if/elsif/else\*(C'\fR blocks.
 .IP "\fB\-bar\fR,    \fB\-\-opening\-brace\-always\-on\-right\fR" 4
 .IX Item "-bar,    --opening-brace-always-on-right"
 The default style, \fB\-nbl\fR places the opening brace on a new
@@ -1778,9 +1802,9 @@ Vertical alignment refers to lining up similar tokens vertically, like
 this:
 .Sp
 .Vb 3
-\& my $lines     = 0;    # checksum: #lines
-\& my $bytes     = 0;    # checksum: #bytes
-\& my $sum       = 0;    # checksum: system V sum
+\& my $lines = 0;    # checksum: #lines
+\& my $bytes = 0;    # checksum: #bytes
+\& my $sum   = 0;    # checksum: system V sum
 .Ve
 Once the perltidy vertical aligner \*(L"locks on\*(R" to a pattern, such as
 defined by the \*(L"=\*(R" and \*(L"#\*(R" in the above example, it retains the pattern
@@ -2079,7 +2103,7 @@ The following list shows all short parameter names which allow a prefix
 \&'n' to produce the negated form:
 .PP
 .Vb 4
-\&    D anl asc aws bbb bbc bbs bbvt bli baa syn ce csc dac dbc dcsc dnl
+\&    D anl asc aws bbb bbc bbs bli baa syn ce csc dac dbc dcsc dnl
 \&    dws dp dpro dsm dsc ddf dln dop dsn dtt dwls dwrs f fll
 \&    hsc html ibc icb icp isbc lp log lal x lsl bl sbl okw ola oll
 \&    pvl q opt sbc sfs ssc sts se st sob t tac tbc tp tsc tqw w

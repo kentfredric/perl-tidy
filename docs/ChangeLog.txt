@@ -4,17 +4,44 @@ Perltidy Change Log
      suggested improvement, please send a note to perltidy at
      users.sourceforge.net.  
 
+     -Corrected a mistokenization of variables for a package with a name
+      equal to a perl keyword.  For example: 
+
+         my::qx();
+         package my;
+         sub qx{print "Hello from my::qx\n";}
+
+      In this case, the leading 'my' was tokenized as a keyword, and a
+      space was being place between 'my' and '::'.  This has been
+      corrected.  Thanks to Martin Sluka for discovering this. 
+
+     -Code cleaned up by removing the following unused, undocumented flags.
+      They should not be in any .perltidyrc files because they were just
+      experimental flags which were never documented.  Most of them placed
+      artificial limits on spaces, and Wolfgang Weisselberg convinced me that
+      most of them they do more harm than good.
+
+      --maximum-continuation-indentation (-mci)
+      --maximum-whitespace-columns
+      --maximum-space-to-comment (-xsc)
+      --big-space-jump (-bsj)
+      --ignore-old-line-breaks (-iob)
+
      -A new flag -isbc has been added for more control on comments. This flag
       has the effect that if there is no leading space on the line, then the
       comment will not be indented, and otherwise it may be.  If both -ibc and
       -isbc are set, then -isbc takes priority.  Thanks to Frank Steinhauer
       for suggesting this.
 
+     -A new document stylekey.pod has been created to guide new users
+      through the maze of style parameters.  An html version is on the
+      perltidy web page.  It should be very helpful.
+
      -Parameters for controlling 'vertical tightness' have been added:
       -vt and -vtc are the main controls, but finer control is provided
       with -pvt, -pcvt, -bvt, -bcvt, -sbvt, -sbcvt.  Block brace vertical
       tightness controls have also been added.
-      See updated manual. Simple examples:
+      See updated manual and also see 'stylekey.pod'. Simple examples:
 
         # perltidy -lp -vt=1 -vtc=1
         @month_of_year = ( 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -68,10 +95,6 @@ Perltidy Change Log
 
      -A new flag -wocb=n has been added to allow existing list formatting
       to be retained.  (--want-old-comma-breaks).  See updated manual.
-
-     -Removed undocumented parameter --maximum-space-to-comment, which isn't
-      necessary and causes some unwanted limitations. Thanks to Wolfgang 
-      Weisselberg.
 
      -Most instances of extra semicolons are now deleted.  This is
       particularly important if the -csc option is used.  Thanks to Wolfgang

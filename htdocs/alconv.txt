@@ -47,6 +47,9 @@ because it is very good at localizing errors.
 
 <li><a href="tutorial.html">A Brief Perltidy Tutorial</a>.
 
+<li><a href="stylekey.html">Perltidy Style Key</a> will
+guide you in methodically selecting a set of style parameters.
+
 <li> The 
 <a href="perltidy.html">Perltidy man
 page</a> explains how

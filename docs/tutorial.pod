@@ -225,8 +225,12 @@ files before starting to work again.
 Perltidy has to make some kind of default selection of formatting
 options, and its choice is to try to follow the suggestions in the
 perlstyle man pages.  Many programmers more or less follow these
-suggestions with a few exceptions.  The parameters most commonly
-used include these:
+suggestions with a few exceptions.  In this section we will
+look at just a few of the most commonly used style parameters.  Later,
+you may want to systematically develop a set of style
+parameters with the help of
+the perltidy B<stylekey> web page at
+http://perltidy.sourceforge.net/stylekey.html
 
 =over 4
 
@@ -540,8 +544,15 @@ in two steps.
 
 =head2 Summary
 
-That's enough to get started using perltidy.  Many additional special
-features and capabilities can be found in the manual pages for perltidy.  
+That's enough to get started using perltidy.  
+When you are ready to create a F<.perltidyrc> file, you may find it
+helpful to use the F<stylekey> page as a guide at
+http://perltidy.sourceforge.net/stylekey.html
+
+Many additional special
+features and capabilities can be found in the manual pages for perltidy
+at
+http://perltidy.sourceforge.net/perltidy.html
 
 We hope that perltidy makes perl programming a little more fun.
 Please check the perltidy
