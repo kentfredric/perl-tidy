@@ -61,7 +61,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.33 2002/11/06 23:27:13 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.34 2002/11/27 06:15:27 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 sub streamhandle {
@@ -170,7 +170,7 @@ sub catfile {
     my $test_file = $path . $name;
     my ( $test_name, $test_path ) = fileparse($test_file);
     return $test_file if ( $test_name eq $name );
-    return undef if ( $^O eq 'VMS' );
+    return undef      if ( $^O        eq 'VMS' );
 
     # this should work at least for Windows and Unix:
     $test_file = $path . '/' . $name;
@@ -519,6 +519,11 @@ EOM
 
                     # file doesn't exist - check for a file glob
                     if ( $input_file =~ /([\?\*\[\{])/ ) {
+
+                        # Windows shell may not remove quotes, so do it
+                        my $input_file = $input_file;
+                        if ( $input_file =~ /^\'(.+)\'$/ ) { $input_file = $1 }
+                        if ( $input_file =~ /^\"(.+)\"$/ ) { $input_file = $1 }
                         my $pattern = fileglob_to_re($input_file);
                         eval "/$pattern/";
                         if ( !$@ && opendir( DIR, './' ) ) {
@@ -617,11 +622,25 @@ EOM
                         die
 "You may not specify a destination array and -o together\n";
                     }
+                    elsif ( defined( $rOpts->{'output-path'} ) ) {
+                        die "You may not specify -o and -opath together\n";
+                    }
+                    elsif ( defined( $rOpts->{'output-file-extension'} ) ) {
+                        die "You may not specify -o and -oext together\n";
+                    }
                     $output_file = $rOpts->{outfile};
 
                     # make sure user gives a file name after -o
                     if ( $output_file =~ /^-/ ) {
                         die "You must specify a valid filename after -o\n";
+                    }
+
+                    # do not overwrite input file with -o
+                    if ( defined($input_file_permissions)
+                        && ( $output_file eq $input_file ) )
+                    {
+                        die
+                          "Use 'perltidy -b $input_file' to modify in-place\n";
                     }
                 }
                 else {
@@ -835,10 +854,13 @@ EOM
 }
 
 sub fileglob_to_re {
+
+    # modified (corrected) from version in find2perl
     my $x = shift;
-    $x =~ s#([./^\$()])#\\$1#g;
-    $x =~ s#([?*])#.$1#g;
-    "^$x\\z";
+    $x =~ s#([./^\$()])#\\$1#g;    # escape special characters
+    $x =~ s#\*#.*#g;               # '*' -> '.*'
+    $x =~ s#\?#.#g;                # '?' -> '.'
+    "^$x\\z";                      # match whole word
 }
 
 sub make_extension {
@@ -1157,6 +1179,7 @@ sub process_command_line {
       nowarning-output
       outdent-labels
       outdent-long-quotes
+      outdent-long-comments
       paren-tightness=1
       paren-vertical-tightness-closing=0
       paren-vertical-tightness=0
@@ -3092,11 +3115,11 @@ sub make_line_information_string {
         # keep logfile columns aligned for scripts up to 999 lines;
         # for longer scripts it doesn't really matter
         my $extra_space = "";
-        $extra_space .= ( $input_line_number < 10 ) ? "  "
-          : ( $input_line_number < 100 ) ? " "
+        $extra_space .= ( $input_line_number < 10 )  ? "  "
+          :             ( $input_line_number < 100 ) ? " "
           : "";
-        $extra_space .= ( $output_line_number < 10 ) ? "  "
-          : ( $output_line_number < 100 ) ? " "
+        $extra_space .= ( $output_line_number < 10 )  ? "  "
+          :             ( $output_line_number < 100 ) ? " "
           : "";
 
         # there are 2 possible nesting strings:
@@ -3422,6 +3445,9 @@ sub new {
 
         # pre section goes directly to the output stream
         $html_pre_fh = $html_fh;
+        $html_pre_fh->print( <<"PRE_END");
+<pre>
+PRE_END
     }
     else {
 
@@ -3436,13 +3462,13 @@ sub new {
     my $pod_string;
     if ( $rOpts->{'pod2html'} ) {
         if ( $rOpts->{'html-pre-only'} ) {
-            warn "cannot use both -pre and -pod2html; ignoring pod2html\n";
             undef $rOpts->{'pod2html'};
         }
         else {
             eval "use Pod::Html";
             if ($@) {
-                warn "unable to find Pod::Html; cannot use pod2html\n";
+                warn
+"unable to find Pod::Html; cannot use pod2html\n-npod disables this message\n";
                 undef $rOpts->{'pod2html'};
             }
             else {
@@ -4679,7 +4705,7 @@ sub write_line {
                         # leave a marker in the pod stream so we know
                         # where to put the pre section we just
                         # finished.
-                        my $for_html='=for html'; # don't confuse pod utils
+                        my $for_html = '=for html';    # don't confuse pod utils
                         $html_pod_fh->print(<<EOM);
 
 $for_html
@@ -4709,9 +4735,9 @@ EOM
 
     # add the line number if requested
     if ( $rOpts->{'html-line-numbers'} ) {
-        my $extra_space .= ( $line_number < 10 ) ? "   "
-          : ( $line_number < 100 )  ? "  "
-          : ( $line_number < 1000 ) ? " "
+        my $extra_space .= ( $line_number < 10 )   ? "   "
+          :                ( $line_number < 100 )  ? "  "
+          :                ( $line_number < 1000 ) ? " "
           : "";
         $html_line = $extra_space . $line_number . " " . $html_line;
     }
@@ -5245,9 +5271,9 @@ sub prepare_for_new_input_lines {
     $forced_breakpoint_count        = 0;
     $forced_breakpoint_undo_count   = 0;
     $rbrace_follower                = undef;
-    $lengths_to_go[0] = 0;
-    $old_line_count_in_batch = 1;
-    $comma_count_in_batch    = 0;
+    $lengths_to_go[0]               = 0;
+    $old_line_count_in_batch        = 1;
+    $comma_count_in_batch           = 0;
 
     destroy_one_line_block();
 }
@@ -7305,7 +7331,7 @@ sub set_white_space_flag {
         my $flag = $no_internal_newlines;
         if ( $_[0] ) { $flag = 1 }
 
-        $tokens_to_go[ ++$max_index_to_go ] = $token;
+        $tokens_to_go[ ++$max_index_to_go ]            = $token;
         $types_to_go[$max_index_to_go]                 = $type;
         $nobreak_to_go[$max_index_to_go]               = $flag;
         $old_breakpoint_to_go[$max_index_to_go]        = 0;
@@ -7324,7 +7350,7 @@ sub set_white_space_flag {
         # If this becomes too much of a problem, we might give up and just clip
         # them at zero.
         ## $levels_to_go[$max_index_to_go] = ( $level > 0 ) ? $level : 0;
-        $levels_to_go[$max_index_to_go] = $level;
+        $levels_to_go[$max_index_to_go]        = $level;
         $nesting_depth_to_go[$max_index_to_go] = ( $slevel >= 0 ) ? $slevel : 0;
         $lengths_to_go[ $max_index_to_go + 1 ] =
           $lengths_to_go[$max_index_to_go] + length($token);
@@ -7606,7 +7632,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.33 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.34 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -7779,7 +7805,7 @@ sub set_white_space_flag {
                 # make note of something like '$var = s/xxx/yyy/;'
                 # in case it should have been '$var =~ s/xxx/yyy/;'
                 if (
-                       $token =~ /^(s|tr|y|m|\/)/
+                       $token               =~ /^(s|tr|y|m|\/)/
                     && $last_nonblank_token =~ /^(=|==|!=)$/
 
                     # precededed by simple scalar
@@ -8536,7 +8562,7 @@ sub undo_lp_ci {
         if ( $ibeg eq $closing_index ) { $n--; last }
         return if ( $lev_start != $levels_to_go[$ibeg] );
         return if ( $ci_start_plus != $ci_levels_to_go[$ibeg] );
-        last if ( $closing_index <= $iend );
+        last   if ( $closing_index <= $iend );
     }
 
     # we can reduce the indentation of all continuation lines
@@ -9700,6 +9726,22 @@ sub add_closing_side_comment {
     return $cscw_block_comment;
 }
 
+sub previous_nonblank_token {
+    my ($i) = @_;
+    if ($i <= 0) {
+        return "";
+    }
+    elsif ( $types_to_go[ $i - 1 ] ne 'b' ) {
+        return $tokens_to_go[ $i - 1 ];
+    }
+    elsif ( $i > 1 ) {
+        return $tokens_to_go[ $i - 2 ];
+    }
+    else {
+        return "";
+    }
+}
+
 sub send_lines_to_vertical_aligner {
 
     my ( $ri_first, $ri_last, $do_not_pad ) = @_;
@@ -9735,22 +9777,68 @@ sub send_lines_to_vertical_aligner {
         my $i_start  = $ibeg;
         my $i;
 
+        my $depth=0;
+        my @container_name=("");
+        my @multiple_comma_arrows=(undef);
+
         my $j = 0;    # field index
 
         $patterns[0] = "";
         for $i ( $ibeg .. $iend ) {
 
+            # Keep track of containers balanced on this line only.
+            # These are used below to prevent unwanted cross-line alignments.
+            # Unbalanced containers already avoid aligning across
+            # container boundaries. 
+            if ( $tokens_to_go[$i] eq '(' ) {
+                my $i_mate = $mate_index_to_go[$i];
+                if ( $i_mate > $i && $i_mate <= $iend ) {
+                    $depth++;
+                    my $seqno=$type_sequence_to_go[$i];
+                    my $count=comma_arrow_count($seqno);
+                    $multiple_comma_arrows[$depth]=$count && $count > 1;
+                    $container_name[$depth] =
+                      "+" . previous_nonblank_token($i);
+                }
+            }
+            elsif ($tokens_to_go[$i] eq ')') {
+                $depth-- if $depth > 0;
+            }
+
             # if we find a new synchronization token, we are done with
             # a field
-
             if ( $i > $i_start && $matching_token_to_go[$i] ne '' ) {
+
+                my $tok = my $raw_tok = $matching_token_to_go[$i];
 
                 # make separators in different nesting depths unique
                 # by appending the nesting depth digit.
-                my $tok = $matching_token_to_go[$i];
-
-                if ( $tok ne '#' ) {
+                if ( $raw_tok ne '#' ) {
                     $tok .= "$nesting_depth_to_go[$i]";
+                }
+
+                # do any special decorations for commas to avoid unwanted
+                # cross-line alignments.
+                if ( $raw_tok eq ',' ) {
+                    if ( $container_name[$depth] ) {
+                        $tok .= $container_name[$depth]; 
+                    }
+                }
+
+                # decorate '=>' with:
+                # - Nothing if this container is unbalanced on this line.
+                # - The previous token if it is balanced and multiple '=>'s
+                # - The container name if it is bananced and no other '=>'s
+                elsif ( $raw_tok eq '=>' ) {
+                    if ( $container_name[$depth] ) {
+                         if ($multiple_comma_arrows[$depth]) {
+                            my $tokm=previous_nonblank_token($i);
+                            $tok .= "+" . $tokm;
+                         }
+                         else {
+                            $tok .= "+" . $container_name[$depth];
+                         }
+                    }
                 }
 
                 # concatenate the text of the consecutive tokens to form
@@ -9868,10 +9956,16 @@ sub send_lines_to_vertical_aligner {
     # arrays shared by the routines in this block:
     my @unmatched_opening_indexes_in_this_batch;
     my @unmatched_closing_indexes_in_this_batch;
+    my %comma_arrow_count;
 
     sub is_unbalanced_batch {
         @unmatched_opening_indexes_in_this_batch +
           @unmatched_closing_indexes_in_this_batch;
+    }
+
+    sub comma_arrow_count {
+        my $seqno=$_[0];
+        return $comma_arrow_count{$seqno};
     }
 
     sub match_opening_and_closing_tokens {
@@ -9882,6 +9976,7 @@ sub send_lines_to_vertical_aligner {
 
         @unmatched_opening_indexes_in_this_batch = ();
         @unmatched_closing_indexes_in_this_batch = ();
+        %comma_arrow_count = ();
 
         my ( $i, $i_mate, $token );
         foreach $i ( 0 .. $max_index_to_go ) {
@@ -9909,6 +10004,13 @@ sub send_lines_to_vertical_aligner {
                     else {
                         push @unmatched_closing_indexes_in_this_batch, $i;
                     }
+                }
+            }
+            elsif ( $tokens_to_go[$i] eq '=>') {
+                if (@unmatched_opening_indexes_in_this_batch) {
+                    my $j=$unmatched_opening_indexes_in_this_batch[-1];
+                    my $seqno=$type_sequence_to_go[$j];
+                    $comma_arrow_count{$seqno}++;
                 }
             }
         }
@@ -10087,7 +10189,7 @@ sub set_adjusted_indentation {
 
             # and 'cuddled parens' of the form:   ")->pack("
             || (
-                   $terminal_type eq '('
+                   $terminal_type      eq '('
                 && $types_to_go[$ibeg] eq ')'
                 && ( $nesting_depth_to_go[$iend] + 1 ==
                     $nesting_depth_to_go[$ibeg] )
@@ -10409,7 +10511,7 @@ sub set_vertical_tightness_flags {
 
     # Check for a last line with isolated opening BLOCK curly
     elsif ($rOpts_block_brace_vertical_tightness
-        && $ibeg eq $iend
+        && $ibeg               eq $iend
         && $types_to_go[$iend] eq '{'
         && $block_type_to_go[$iend] =~
         /$block_brace_vertical_tightness_pattern/o )
@@ -10679,7 +10781,7 @@ sub set_bond_strengths {
         $right_bond_strength{'b'} = NO_BREAK;
 
         # try not to break on exponentation
-        @_ = qw" ** .. ... <=> ";
+        @_                       = qw" ** .. ... <=> ";
         @left_bond_strength{@_}  = (STRONG) x scalar(@_);
         @right_bond_strength{@_} = (STRONG) x scalar(@_);
 
@@ -10697,12 +10799,12 @@ sub set_bond_strengths {
         $right_bond_strength{'->'} = VERY_STRONG;
 
         # breaking AFTER these is just ok:
-        @_ = qw" % + - * / x  ";
+        @_                       = qw" % + - * / x  ";
         @left_bond_strength{@_}  = (STRONG) x scalar(@_);
         @right_bond_strength{@_} = (NOMINAL) x scalar(@_);
 
         # breaking BEFORE these is just ok:
-        @_ = qw" >> << ";
+        @_                       = qw" >> << ";
         @right_bond_strength{@_} = (STRONG) x scalar(@_);
         @left_bond_strength{@_}  = (NOMINAL) x scalar(@_);
 
@@ -10713,18 +10815,18 @@ sub set_bond_strengths {
         $right_bond_strength{'.'} = STRONG;
         $left_bond_strength{'.'}  = 0.9 * NOMINAL + 0.1 * WEAK;
 
-        @_ = qw"} ] ) ";
+        @_                       = qw"} ] ) ";
         @left_bond_strength{@_}  = (STRONG) x scalar(@_);
         @right_bond_strength{@_} = (NOMINAL) x scalar(@_);
 
         # make these a little weaker than nominal so that they get
         # favored for end-of-line characters
-        @_ = qw"!= == =~ !~";
+        @_                       = qw"!= == =~ !~";
         @left_bond_strength{@_}  = (STRONG) x scalar(@_);
         @right_bond_strength{@_} = ( 0.9 * NOMINAL + 0.1 * WEAK ) x scalar(@_);
 
         # break AFTER these
-        @_ = qw" < >  | & >= <=";
+        @_                       = qw" < >  | & >= <=";
         @left_bond_strength{@_}  = (VERY_STRONG) x scalar(@_);
         @right_bond_strength{@_} = ( 0.8 * NOMINAL + 0.2 * WEAK ) x scalar(@_);
 
@@ -11905,8 +12007,6 @@ sub pad_array_to_go {
                   || $is_long_term
                   || $has_comma_breakpoints;
 
-# =pod
-#
 # Having come to the closing ')', '}', or ']', now we have to decide if we
 # should 'open up' the structure by placing breaks at the opening and
 # closing containers.  This is a tricky decision.  Here are some of the
@@ -11986,8 +12086,6 @@ sub pad_array_to_go {
 # outer 'if' container, though, contains a broken sub-container, so it will be
 # broken open to avoid too much density.  Also, since it contains no 'or's, there
 # will be a forced break at its 'and'.
-#
-# =cut
 
                 # set some flags telling something about this container..
                 my $is_simple_logical_expression = 0;
@@ -12772,8 +12870,6 @@ sub find_token_starting_list {
 
         if ( $number_of_fields <= 0 ) {
 
-# =pod
-#
 #         #---------------------------------------------------------------
 #         # We're in trouble.  We can't find a single field width that works.
 #         # There is no simple answer here; we may have a single long list
@@ -12812,8 +12908,6 @@ sub find_token_starting_list {
 #             $r, $pu, $ps, $cu, $cs, $tt
 #           )
 #           if $style eq 'all';
-#
-# =cut
 
             my $i_last_comma    = $$rcomma_index[ $comma_count - 1 ];
             my $long_last_term  = excess_line_length( 0, $i_last_comma ) <= 0;
@@ -13668,9 +13762,9 @@ sub undo_forced_breakpoint_stack {
                     #     <-- this line
                     #  ff  - next line
                     #  fff - line after next
-                    my $iff = $n < $nmax ? $$ri_first[ $n + 1 ] : -1;
+                    my $iff  = $n < $nmax      ? $$ri_first[ $n + 1 ] : -1;
                     my $ifff = $n + 2 <= $nmax ? $$ri_first[ $n + 2 ] : -1;
-                    my $imm = $n > 1 ? $$ri_first[ $n - 2 ] : -1;
+                    my $imm  = $n > 1          ? $$ri_first[ $n - 2 ] : -1;
                     my $seqno = $type_sequence_to_go[$imidr];
                     my $f_ok  =
                       (      $tokens_to_go[$if] eq ':'
@@ -13748,8 +13842,6 @@ sub undo_forced_breakpoint_stack {
                        # 'or' after an 'if' or 'unless'.  We should consider the
                        # possible vertical alignment, and visual clutter.
 
-  # =pod
-  #
   #     This looks best with the 'and' on the same line as the 'if':
   #
   #         $a = 1
@@ -13765,8 +13857,6 @@ sub undo_forced_breakpoint_stack {
   #     'Parents'), but for now I'm using a simple rule that says that the
   #     resulting line length must not be more than half the maximum line length
   #     (making it 80/2 = 40 characters by default).
-  #
-  # =cut
 
                         next
                           unless (
@@ -14744,8 +14834,8 @@ package Perl::Tidy::VerticalAligner::Line;
         my $index;
         foreach ( keys %_index_map ) {
             $index = $_index_map{$_};
-            if ( exists $arg{$_} ) { $self->[$index] = $arg{$_} }
-            elsif ($caller_is_obj) { $self->[$index] = $caller->[$index] }
+            if    ( exists $arg{$_} ) { $self->[$index] = $arg{$_} }
+            elsif ($caller_is_obj)    { $self->[$index] = $caller->[$index] }
             else { $self->[$index] = $_default_data[$index] }
         }
 
@@ -14838,7 +14928,7 @@ package Perl::Tidy::VerticalAligner::Line;
     sub set_outdent_long_lines      { $_[0]->[OUTDENT_LONG_LINES]      = $_[1] }
     sub set_list_type               { $_[0]->[LIST_TYPE]               = $_[1] }
     sub set_is_hanging_side_comment { $_[0]->[IS_HANGING_SIDE_COMMENT] = $_[1] }
-    sub set_alignment { $_[0]->[RALIGNMENTS]->[ $_[1] ] = $_[2] }
+    sub set_alignment               { $_[0]->[RALIGNMENTS]->[ $_[1] ]  = $_[2] }
 
 }
 
@@ -14903,8 +14993,8 @@ package Perl::Tidy::VerticalAligner::Alignment;
 
         foreach ( keys %_index_map ) {
             my $index = $_index_map{$_};
-            if ( exists $arg{$_} ) { $self->[$index] = $arg{$_} }
-            elsif ($caller_is_obj) { $self->[$index] = $caller->[$index] }
+            if    ( exists $arg{$_} ) { $self->[$index] = $arg{$_} }
+            elsif ($caller_is_obj)    { $self->[$index] = $caller->[$index] }
             else { $self->[$index] = $_default_data[$index] }
         }
         $self->_increment_count();
@@ -14981,6 +15071,7 @@ use vars qw(
   $group_level
   $group_type
   $group_maximum_gap
+  $marginal_match
   $last_group_level_written
   $extra_indent_ok
   $zero_count
@@ -15025,9 +15116,8 @@ sub initialize {
 
     # variables describing the entire space group:
 
-    $ralignment_list            = [];
-    $group_level                = 0;
-    $group_type                 = "";
+    $ralignment_list = [];
+    $group_level     = 0;
     $last_group_level_written   = -1;
     $extra_indent_ok            = 0;    # can we move all lines to the right?
     $last_side_comment_length   = 0;
@@ -15037,8 +15127,7 @@ sub initialize {
     $previous_maximum_jmax_seen = 0;
 
     # variables describing each line of the group
-    @group_lines                 = ();    # list of all lines in group
-    $comment_leading_space_count = 0;
+    @group_lines = ();                  # list of all lines in group
 
     $outdented_line_count          = 0;
     $first_outdented_line_at       = 0;
@@ -15081,6 +15170,7 @@ sub initialize_for_new_group {
     $current_line            = undef;   # line being matched for alignment
     $group_maximum_gap       = 0;       # largest gap introduced
     $group_type              = "";
+    $marginal_match          = 0;
     $comment_leading_space_count = 0;
 }
 
@@ -15267,7 +15357,7 @@ sub append_line {
             && $rvertical_tightness_flags->[2] == $cached_seqno )
         {
             $rvertical_tightness_flags->[3] ||= 1;
-            $cached_line_valid ||= 1;
+            $cached_line_valid              ||= 1;
         }
     }
 
@@ -15368,8 +15458,8 @@ sub append_line {
             && $outdent_long_lines
             && $maximum_line_index < 0 )
         {
-            $group_type                  = 'COMMENT';
-            $comment_leading_space_count = $leading_space_count;
+            $group_type                           = 'COMMENT';
+            $comment_leading_space_count          = $leading_space_count;
             $group_lines[ ++$maximum_line_index ] = $rfields->[0];
             return;
         }
@@ -15516,11 +15606,11 @@ sub hanging_comment_check {
     $line->set_is_hanging_side_comment(1);
     $jmax = $maximum_field_index;
     $line->set_jmax($jmax);
-    $$rfields[$jmax] = $$rfields[1];
+    $$rfields[$jmax]         = $$rfields[1];
     $$rtokens[ $jmax - 1 ]   = $$rtokens[0];
     $$rpatterns[ $jmax - 1 ] = $$rpatterns[0];
     for ( my $j = 1 ; $j < $jmax ; $j++ ) {
-        $$rfields[$j] = " ";    # NOTE: caused glitch unless 1 blank, why?
+        $$rfields[$j]         = " ";  # NOTE: caused glitch unless 1 blank, why?
         $$rtokens[ $j - 1 ]   = "";
         $$rpatterns[ $j - 1 ] = "";
     }
@@ -15543,19 +15633,37 @@ sub eliminate_old_fields {
     # this line must have fewer fields
     return unless $maximum_field_index > $jmax;
 
-    # be reasonable, not too few
-    return unless ( $maximum_field_index - 2 <= $jmax );
+    # Identify specific cases where field elimination is allowed:
+    # case=1: both lines have comma-separated lists, and the first
+    #         line has an equals
+    # case=2: both lines have leading equals
 
-    # must have side comment
-    my $old_rfields = $old_line->get_rfields();
-    return unless ( length( $$old_rfields[$maximum_field_index] ) > 0 );
+    # case 1 is the default
+    my $case = 1;
 
-    my $rtokens   = $new_line->get_rtokens();
-    my $rfields   = $new_line->get_rfields();
-    my $rpatterns = $new_line->get_rpatterns();
-
+    # See if case 2: both lines have leading '='
+    # We'll require smiliar leading patterns in this case
     my $old_rtokens   = $old_line->get_rtokens();
+    my $rtokens       = $new_line->get_rtokens();
+    my $rpatterns     = $new_line->get_rpatterns();
     my $old_rpatterns = $old_line->get_rpatterns();
+    if (   $rtokens->[0] =~ /^=\d*$/
+        && $old_rtokens->[0]   eq $rtokens->[0]
+        && $old_rpatterns->[0] eq $rpatterns->[0] )
+    {
+        $case = 2;
+    }
+
+    # not too many fewer fields in new line for case 1
+    return unless ( $case != 1 || $maximum_field_index - 2 <= $jmax );
+
+    # case 1 must have side comment
+    my $old_rfields = $old_line->get_rfields();
+    return
+      if ( $case == 1
+        && length( $$old_rfields[$maximum_field_index] ) == 0 );
+
+    my $rfields = $new_line->get_rfields();
 
     my $hid_equals = 0;
 
@@ -15577,27 +15685,34 @@ sub eliminate_old_fields {
         last if ( $j > $jmax - 1 );
 
         if ( $$old_rtokens[$k] eq $$rtokens[$j] ) {
-            $in_match = 1;
+            $in_match                  = 1;
             $new_fields[$j]            = $current_field;
             $new_matching_patterns[$j] = $current_pattern;
-            $current_field   = '';
-            $current_pattern = '';
-            $new_matching_tokens[$j] = $$old_rtokens[$k];
-            $new_alignments[$j]      = $old_line->get_alignment($k);
+            $current_field             = '';
+            $current_pattern           = '';
+            $new_matching_tokens[$j]   = $$old_rtokens[$k];
+            $new_alignments[$j]        = $old_line->get_alignment($k);
             $j++;
         }
         else {
 
             if ( $$old_rtokens[$k] =~ /^\=\d*$/ ) {
+                last if ( $case == 2 );    # avoid problems with stuff
+                                           # like:   $a=$b=$c=$d;
                 $hid_equals = 1;
             }
-            last if $in_match;    # disallow gaps in matching field types
+            last
+              if ( $in_match && $case == 1 )
+              ;    # disallow gaps in matching field types in case 1
         }
     }
 
     # Modify the current state if we are successful.
     # We must exactly reach the ends of both lists for success.
-    if ( ( $j == $jmax ) && ( $current_field eq '' ) && $hid_equals ) {
+    if (   ( $j == $jmax )
+        && ( $current_field eq '' )
+        && ( $case != 1 || $hid_equals ) )
+    {
         $k = $maximum_field_index;
         $current_field .= $$old_rfields[$k];
         $current_pattern .= $$old_rpatterns[$k];
@@ -15626,9 +15741,9 @@ sub make_side_comment {
     if ( ( $jmax == 0 ) || ( $$rtokens[ $jmax - 1 ] ne '#' ) ) {
         my $rfields   = $new_line->get_rfields();
         my $rpatterns = $new_line->get_rpatterns();
-        $$rtokens[$jmax] = '#';
+        $$rtokens[$jmax]     = '#';
         $$rfields[ ++$jmax ] = '';
-        $$rpatterns[$jmax] = '#';
+        $$rpatterns[$jmax]   = '#';
         $new_line->set_jmax($jmax);
         $new_line->set_jmax_original_line($jmax);
     }
@@ -15684,30 +15799,35 @@ sub eliminate_new_fields {
 
     return unless ( $maximum_line_index >= 0 );
     my $new_line = shift;
+    my $old_line = shift;
     my $jmax     = $new_line->get_jmax();
 
+    my $old_rtokens   = $old_line->get_rtokens();
+    my $rtokens       = $new_line->get_rtokens();
+    my $is_assignment =
+      ( $rtokens->[0] =~ /^=\d*$/ && ( $old_rtokens->[0] eq $rtokens->[0] ) );
+
     # must be monotonic variation
-    return unless ( $previous_maximum_jmax_seen <= $jmax );
+    return unless ( $is_assignment || $previous_maximum_jmax_seen <= $jmax );
 
     # must be more fields in the new line
-    my $old_line            = shift;
     my $maximum_field_index = $old_line->get_jmax();
     return unless ( $maximum_field_index < $jmax );
 
-    return
-      unless ( $old_line->get_jmax_original_line() == $minimum_jmax_seen )
-      ;    # only if monotonic
+    unless ($is_assignment) {
+        return
+          unless ( $old_line->get_jmax_original_line() == $minimum_jmax_seen )
+          ;    # only if monotonic
 
-    # never combine fields of a comma list
-    return
-      unless ( $maximum_field_index > 1 )
-      && ( $new_line->get_list_type() !~ /^,/ );
+        # never combine fields of a comma list
+        return
+          unless ( $maximum_field_index > 1 )
+          &&     ( $new_line->get_list_type() !~ /^,/ );
+    }
 
-    my $rtokens       = $new_line->get_rtokens();
     my $rfields       = $new_line->get_rfields();
     my $rpatterns     = $new_line->get_rpatterns();
     my $old_rpatterns = $old_line->get_rpatterns();
-    my $old_rtokens   = $old_line->get_rtokens();
 
     # loop over all old tokens except comment
     my $match = 1;
@@ -15732,9 +15852,9 @@ sub eliminate_new_fields {
         }
 
         $$rtokens[ $maximum_field_index - 1 ] = '#';
-        $$rfields[$maximum_field_index]   = $$rfields[$jmax];
-        $$rpatterns[$maximum_field_index] = $$rpatterns[$jmax];
-        $jmax = $maximum_field_index;
+        $$rfields[$maximum_field_index]       = $$rfields[$jmax];
+        $$rpatterns[$maximum_field_index]     = $$rpatterns[$jmax];
+        $jmax                                 = $maximum_field_index;
     }
     $new_line->set_jmax($jmax);
 }
@@ -15789,15 +15909,100 @@ sub check_match {
     {
 
         my $leading_space_count = $new_line->get_leading_space_count();
+        my $saw_equals=0;
         for my $j ( 0 .. $jlimit ) {
             my $match = 1;
-            if (
-                ( $j < $jlimit )
-                && (   ( $$old_rtokens[$j] ne $$rtokens[$j] )
-                    || ( $$old_rpatterns[$j] ne $$rpatterns[$j] ) )
-              )
+
+            my $old_tok=$$old_rtokens[$j] ;
+            my $new_tok=$$rtokens[$j];
+
+            # dumb down the match after an equals
+            if ($saw_equals && $new_tok =~ /(.*)\+/) { 
+                 $new_tok=$1;
+                 $old_tok=~s/\+.*$//;
+            }
+            if ( $new_tok =~ /^=\d*$/ ) { $saw_equals=1 }
+
+            # we never match if the matching tokens differ
+            if (   $j < $jlimit
+                && $old_tok ne $new_tok
+                )
             {
                 $match = 0;
+            }
+
+            # otherwise, if patterns match, we always have a match.
+            # However, if patterns don't match, we have to be careful...
+            elsif ( $$old_rpatterns[$j] ne $$rpatterns[$j] ) {
+
+                # We have to be very careful about aligning commas when the
+                # pattern's don't match, because it can be worse to create an
+                # alignment where none is needed than to omit one.  The current
+                # rule: if we are within a matching sub call (indicated by '+'
+                # in the matching token), we'll allow a marginal match, but
+                # otherwise not.  
+                #
+                # Here's an example where we'd like to align the '='
+                #  my $cfile = File::Spec->catfile( 't',    'callext.c' );
+                #  my $inc   = File::Spec->catdir( 'Basic', 'Core' );
+                # because the function names differ.
+                # Future alignment logic should make this unnecessary.
+                #
+                # Here's an example where the ','s are not contained in a call.
+                # The first line below should probably not match the next two:
+                #   ( $a, $b ) = ( $b, $r );
+                #   ( $x1, $x2 ) = ( $x2 - $q * $x1, $x1 );
+                #   ( $y1, $y2 ) = ( $y2 - $q * $y1, $y1 );
+                if ( $new_tok =~ /^,/ ) {
+                    if ( $$rtokens[$j] =~ /[A-Za-z]/ ) {
+                        $marginal_match = 1;
+                    }
+                    else {
+                        $match=0;
+                    }
+                }
+
+                # parens don't align well unless patterns match
+                elsif ( $new_tok =~ /^\(/ ) {
+                    $match = 0;
+                }
+
+                # Handle an '=' alignment with different patterns to
+                # the left.
+                elsif ( $new_tok =~ /^=\d*$/ ) {
+
+                    $saw_equals=1;
+
+                    # It is best to be a little restrictive when
+                    # aligning '=' tokens.  Here is an example of
+                    # two lines that we will not align:
+                    #       my $variable=6;
+                    #       $bb=4;
+                    # The problem is that one is a 'my' declaration,
+                    # and the other isn't, so they're not very similar.
+                    # We will filter these out by comparing the first
+                    # letter of the pattern.  This is crude, but works
+                    # well enough.
+                    if (
+                        substr( $$old_rpatterns[$j], 0, 1 ) ne
+                        substr( $$rpatterns[$j], 0, 1 ) )
+                    {
+                        $match = 0;
+                    }
+
+                    # If we pass that test, we'll call it a marginal match.
+                    # Here is an example of a marginal match:
+                    #       $done{$$op} = 1;
+                    #       $op         = compile_bblock($op);
+                    # The left tokens are both identifiers, but
+                    # one accesses a hash and the other doesn't.
+                    # We'll let this be a tentative match and undo
+                    # it later if we don't find more than 2 lines
+                    # in the group.
+                    elsif ($maximum_line_index==0) {
+                        $marginal_match = 1;
+                    }
+                }
             }
 
             # Don't let line with fewer fields increase column widths
@@ -15827,9 +16032,9 @@ sub check_match {
 
             my $comment = $$rfields[$jmax];
             for $jmax ( $jlimit .. $maximum_field_index ) {
-                $$rtokens[$jmax] = $$old_rtokens[$jmax];
+                $$rtokens[$jmax]     = $$old_rtokens[$jmax];
                 $$rfields[ ++$jmax ] = '';
-                $$rpatterns[$jmax] = $$old_rpatterns[$jmax];
+                $$rpatterns[$jmax]   = $$old_rpatterns[$jmax];
             }
             $$rfields[$jmax] = $comment;
             $new_line->set_jmax($jmax);
@@ -16063,8 +16268,11 @@ sub decide_if_aligned {
 
           && (
 
+            # don't align if it was just a marginal match
+            $marginal_match
+
             # don't align two lines with big gap
-            $group_maximum_gap > 12
+            || $group_maximum_gap > 12
 
             # or lines with differing number of alignment tokens
             || $previous_maximum_jmax_seen != $previous_minimum_jmax_seen
@@ -16211,6 +16419,13 @@ sub improve_continuation_indentation {
     #          ...
     #          'tan'   => \&tan,
     #          'atan2' => \&atan2,
+
+    ## BUBBA: Deactivated####################
+    # The trouble with this patch is that it may, for example,
+    # move in some 'or's  or ':'s, and leave some out, so that the
+    # left edge alignment suffers.
+    return 0;
+    ###########################################
 
     my $maximum_field_index = $group_lines[0]->get_jmax();
 
@@ -17991,7 +18206,7 @@ sub find_indentation_level {
             }
             $input_tabstr = " " x $columns;
         }
-        $know_input_tabstr = 1;
+        $know_input_tabstr                    = 1;
         $tokenizer_self->{_know_input_tabstr} = $know_input_tabstr;
         $tokenizer_self->{_input_tabstr}      = $input_tabstr;
 
@@ -18138,11 +18353,11 @@ sub prepare_for_a_new_file {
     $quote_character = "";    # character we seek if chasing a quote
     $quote_pos   = 0;  # next character index to check for case of alphanum char
     $quote_depth = 0;
-    $allowed_quote_modifiers = "";
-    $paren_depth             = 0;
-    $brace_depth             = 0;
-    $square_bracket_depth    = 0;
-    $current_package         = "main";
+    $allowed_quote_modifiers                     = "";
+    $paren_depth                                 = 0;
+    $brace_depth                                 = 0;
+    $square_bracket_depth                        = 0;
+    $current_package                             = "main";
     @current_depth[ 0 .. $#closing_brace_names ] =
       (0) x scalar @closing_brace_names;
     @nesting_sequence_number[ 0 .. $#closing_brace_names ] =
@@ -19079,8 +19294,6 @@ sub reset_indentation_level {
 
     sub tokenize_this_line {
 
-  # =pod
-  #
   # This routine breaks a line of perl code into tokens which are of use in
   # indentation and reformatting.  One of my goals has been to define tokens
   # such that a newline may be inserted between any pair of tokens without
@@ -19170,8 +19383,6 @@ sub reset_indentation_level {
   # current version.
   #
   # -----------------------------------------------------------------------
-  #
-  # =cut
 
         my $line_of_tokens = shift;
         my ($untrimmed_input_line) = $line_of_tokens->{_line_text};
@@ -19776,7 +19987,7 @@ EOM
                         # not treated as keywords:
                         if (
                             (
-                                   $tok eq 'case'
+                                   $tok                      eq 'case'
                                 && $brace_type[$brace_depth] eq 'switch'
                             )
                             || (   $tok eq 'when'
@@ -19949,8 +20160,6 @@ EOM
 #       the nesting depth that would occur if every nesting token -- '{', '[',
 #       and '(' -- , regardless of context, is used to compute a nesting
 #       depth.
-#
-# =cut
 
         #my $nesting_block_flag = ($nesting_block_string =~ /1$/);
         #my $nesting_list_flag = ($nesting_list_string =~ /1$/);
@@ -20001,7 +20210,7 @@ EOM
 
                 # use environment before updating
                 $container_environment =
-                  $nesting_block_flag ? 'BLOCK'
+                  $nesting_block_flag  ? 'BLOCK'
                   : $nesting_list_flag ? 'LIST'
                   : "";
 
@@ -20059,8 +20268,6 @@ EOM
      # information for the current token, and the string
      # "$ci_string_in_tokenizer" is a stack of previous values of this
      # variable.
-     #
-     # =cut
 
                 # save the current states
                 push ( @slevel_stack, 1 + $slevel_in_tokenizer );
@@ -20102,8 +20309,6 @@ EOM
                 $continuation_string_in_tokenizer .=
                   ( $in_statement_continuation > 0 ) ? '1' : '0';
 
-   # =pod
-   #
    #  Sometimes we want to give an opening brace continuation indentation,
    #  and sometimes not.  For code blocks, we don't do it, so that the leading
    #  '{' gets outdented, like this:
@@ -20120,8 +20325,6 @@ EOM
    #         [ "homer", "marge", "bart" ], );
    #
    #  This looks best when 'ci' is one-half of the indentation  (i.e., 2 and 4)
-   #
-   # =cut
 
                 my $total_ci = $ci_string_sum;
                 if (
@@ -20221,7 +20424,7 @@ EOM
 
                 # use environment after updating
                 $container_environment =
-                  $nesting_block_flag ? 'BLOCK'
+                  $nesting_block_flag  ? 'BLOCK'
                   : $nesting_list_flag ? 'LIST'
                   : "";
                 $ci_string_i = $ci_string_sum + $in_statement_continuation;
@@ -20233,7 +20436,7 @@ EOM
             else {
 
                 $container_environment =
-                  $nesting_block_flag ? 'BLOCK'
+                  $nesting_block_flag  ? 'BLOCK'
                   : $nesting_list_flag ? 'LIST'
                   : "";
 
@@ -22329,7 +22532,7 @@ sub do_scan_package {
         $package =~ s/::$//;
         my $pos  = pos($input_line);
         my $numc = $pos - $pos_beg;
-        $tok = 'package ' . substr( $input_line, $pos_beg, $numc );
+        $tok  = 'package ' . substr( $input_line, $pos_beg, $numc );
         $type = 'i';
 
         # Now we must convert back from character position
@@ -22439,7 +22642,7 @@ sub scan_identifier_do {
 
     while ( $i < $max_token_index ) {
         $i_save = $i unless ( $tok =~ /^\s*$/ );
-        $tok = $$rtokens[ ++$i ];
+        $tok    = $$rtokens[ ++$i ];
 
         if ( ( $tok eq ':' ) && ( $$rtokens[ $i + 1 ] eq ':' ) ) {
             $tok = '::';
@@ -23569,7 +23772,7 @@ to perltidy.
 
 =head1 VERSION
 
-This man page documents Perl::Tidy version 20021105.
+This man page documents Perl::Tidy version 20021106.
 
 =head1 AUTHOR
 

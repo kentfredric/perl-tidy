@@ -14,7 +14,8 @@
 	<LI><A HREF="#perltidy change log">Perltidy Change Log</A></LI>
 	<UL>
 
-		<LI><A HREF="#2002 11 05">2002 11 05</A></LI>
+		<LI><A HREF="#2002 xx xx">2002 xx xx</A></LI>
+		<LI><A HREF="#2002 11 06">2002 11 06</A></LI>
 		<LI><A HREF="#2002 09 22">2002 09 22</A></LI>
 		<LI><A HREF="#2002 08 26">2002 08 26</A></LI>
 		<LI><A HREF="#2002 04 25">2002 04 25</A></LI>
@@ -50,7 +51,37 @@
  suggested improvement, please send a note to perltidy at
  users.sourceforge.net.</PRE>
 <P>
-<H2><A NAME="2002 11 05">2002 11 05</A></H2>
+<H2><A NAME="2002 xx xx">2002 xx xx</A></H2>
+<PRE>
+ -Numerous minor improvements in vertical alignment.</PRE>
+<PRE>
+ -outdent-long-comments (-olc) has been re-instated as a default, since
+  it works much better now.  Use -nolc to prevent it.</PRE>
+<PRE>
+ -Improved alignment of opening braces.  Needed for improved switch/case
+  formatting, and also suggested by Mark Olesen for sort/map/grep
+  formatting.  For example:</PRE>
+<PRE>
+  OLD:
+    @modified =
+      map { $_-&gt;[0] }
+      sort { $a-&gt;[1] &lt;=&gt; $b-&gt;[1] }
+      map { [ $_, -M ] } @filenames;</PRE>
+<PRE>
+  NEW:
+    @modified =
+      map  { $_-&gt;[0] }
+      sort { $a-&gt;[1] &lt;=&gt; $b-&gt;[1] }
+      map  { [ $_, -M ] } @filenames;</PRE>
+<PRE>
+ -Fixed glitch introduced in previous release where -pre option
+ was not outputting a leading html &lt;pre&gt; tag.</PRE>
+<PRE>
+ -Added check for 'perltidy file.pl -o file.pl', which causes file.pl
+ to be lost. (The -b option should be used instead). Thanks to mreister
+ for reporting this problem.</PRE>
+<P>
+<H2><A NAME="2002 11 06">2002 11 06</A></H2>
 <PRE>
  -Switch/case or given/when syntax is now recognized.  Its vertical alignment
  is not great yet, but it parses ok.  The words 'switch', 'case', 'given', and

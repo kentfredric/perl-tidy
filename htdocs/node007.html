@@ -1,65 +1,44 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 <html>
 <head>
-  <title>Html Output</title>
-  <META name="GENERATOR" CONTENT="alconv $Revision: 1.17 $">
+  <title>Logical Structure</title>
+  <META name="GENERATOR" CONTENT="alconv $Revision: 1.18 $">
   <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
 </head>
-<body bgcolor="FFFFFF">
+<body bgcolor="#A0E0E0">
 <div align="center">
 <a href="node006.html"><img src="prev.gif" alt="Previous" border=0></a>
 <a href="node000.html#node007"><img src="up.gif" alt="Up" border=0></a>
 </div>
 <div align="center">
-<h1>Html Output</h1>
+<h1>Logical Structure</h1>
 </div>
-Perltidy can write syntax-colored html. 
-Not only is it useful for publishing code snippets on the web, it is a useful
-debugging tool.  Take a look at the following file, <code>print3.t</code>; 
-it has a bug:
+Here is a snippet named <code>logic.t</code> which was originally
+written as a single line:
 <hr>
 <pre>
-# demonstrate perl's weird parsing rules
-$a=4;
-print $a/ 2, "/hi";    # division
-print $a / 2, "/hi";    # division
-print $a/ 2, "/hi";     # division
-print $a /2,"/ hi ";  # pattern (and error)!
-</pre>
-<hr>
-Here is what a syntax check with perl produces <code> perl -c print3.t</code>:
 <pre>
-Bareword found where operator expected at print3.t line 6, near "/2,"/ hi"
-	(Missing operator before hi?)
-syntax error at print3.t line 6, near "/2,"/ hi "
-String found where operator expected at print3.t line 6, at end of line
-	(Missing semicolon on previous line?)
-Can't find string terminator '"' anywhere before EOF at print3.t line 6.
+<span class="k">if</span> <span class="s">(</span><span class="s">(</span>!<span class="s">(</span><span class="i">$from</span> || <span class="i">$to</span> || <span class="i">$subject</span> || <span class="i">$size</span> || <span class="s">(</span><span class="i">$fieldname</span>&amp;&amp;<span class="i">$fieldval</span><span class="s">)</span><span class="s">)</span> || !<span class="i">$ruletype</span><span class="s">)</span> &amp;&amp; !<span class="i">$dest</span><span class="s">)</span> <span class="s">{</span>
+        <span class="k">next</span><span class="sc">;</span>
+<span class="s">}</span>
 </pre>
 <hr>
-Perltidy also finds the error.  To really see the error, though,
-we can issue the command <code>perltidy -html print3.t</code>
-which produces the following file, <code>print3.t.html</code>:
+The command <code>perltidy logic.t</code> produces a file
+named <code>logic.t.tdy</code> with this result:
 <hr>
-<PRE>
-<FONT COLOR="#228B22"># demonstrate perl's weird parsing rules</FONT>
-<FONT COLOR="#00688B">$a</FONT><FONT COLOR="#000000">=</FONT><FONT COLOR="#B452CD">4</FONT><FONT COLOR="#000000">;</FONT>
-<STRONG><FONT COLOR="#8B4513">print</FONT></STRONG> <FONT COLOR="#00688B">$a</FONT><FONT COLOR="#000000">/</FONT> <FONT COLOR="#B452CD">2</FONT><FONT COLOR="#000000">,</FONT> <FONT COLOR="#CD5555">&quot;/hi&quot;</FONT><FONT COLOR="#000000">;</FONT>    <FONT COLOR="#228B22"># division</FONT>
-<STRONG><FONT COLOR="#8B4513">print</FONT></STRONG> <FONT COLOR="#00688B">$a</FONT> <FONT COLOR="#000000">/</FONT> <FONT COLOR="#B452CD">2</FONT><FONT COLOR="#000000">,</FONT> <FONT COLOR="#CD5555">&quot;/hi&quot;</FONT><FONT COLOR="#000000">;</FONT>    <FONT COLOR="#228B22"># division</FONT>
-<STRONG><FONT COLOR="#8B4513">print</FONT></STRONG> <FONT COLOR="#00688B">$a</FONT><FONT COLOR="#000000">/</FONT> <FONT COLOR="#B452CD">2</FONT><FONT COLOR="#000000">,</FONT> <FONT COLOR="#CD5555">&quot;/hi&quot;</FONT><FONT COLOR="#000000">;</FONT>     <FONT COLOR="#228B22"># division</FONT>
-<STRONG><FONT COLOR="#8B4513">print</FONT></STRONG> <FONT COLOR="#00688B">$a</FONT> <FONT COLOR="#CD5555">/2,&quot;/</FONT> <FONT COLOR="#000000">hi</FONT> <FONT COLOR="#CD5555">&quot;;  # pattern (and error)!</FONT>
-</PRE>
+<pre>
+<span class="k">if</span> <span class="s">(</span>
+    <span class="s">(</span>
+           !<span class="s">(</span> <span class="i">$from</span> || <span class="i">$to</span> || <span class="i">$subject</span> || <span class="i">$size</span> || <span class="s">(</span> <span class="i">$fieldname</span> &amp;&amp; <span class="i">$fieldval</span> <span class="s">)</span> <span class="s">)</span>
+        || !<span class="i">$ruletype</span>
+    <span class="s">)</span>
+    &amp;&amp; !<span class="i">$dest</span>
+  <span class="s">)</span>
+<span class="s">{</span>
+    <span class="k">next</span><span class="sc">;</span>
+<span class="s">}</span>
+</pre>
 <hr>
-Now the problem is evident.  The first three <code>/</code> symbols are black, and
-hence divisions.  The fourth, however, starts a pattern which contains
-the text <code>2,"</code>, and then follows the bare word <code>hi</code>,
-and then we start a quotation which has no terminating <code>"</code>.
-Perl took <code>$a</code> to be a file handle in
-the fourth line (even though we set it equal to <code>4</code>!).  This problem is briefly described in the perlfunc(1) man
-pages.
-<p>
-Not many syntax-coloring tools would have caught this problem.  Perltidy did
-because it does a very careful tokenization of the file.
 <div align="center">
 <a href="node006.html"><img src="prev.gif" alt="Previous" border=0></a>
 <a href="node000.html#node007"><img src="up.gif" alt="Up" border=0></a>

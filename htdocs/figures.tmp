@@ -1,33 +1,33 @@
 <div align="left">
-<a href="node000.html">The Perltidy Home Page</a>
+<a href="node000.htm">The Perltidy Home Page</a>
 </div>
 <div align="left">
-<a href="node001.html">Some code with side comments</a>
-</div>
-<blockquote><ul>
-</ul></blockquote>
-<div align="left">
-<a href="node002.html">A loop</a>
+<a href="node001.htm">Some code with side comments</a>
 </div>
 <blockquote><ul>
 </ul></blockquote>
 <div align="left">
-<a href="node003.html">A hash definition list</a>
+<a href="node002.htm">A loop</a>
 </div>
 <blockquote><ul>
 </ul></blockquote>
 <div align="left">
-<a href="node004.html">A matrix</a>
+<a href="node003.htm">A hash definition list</a>
 </div>
 <blockquote><ul>
 </ul></blockquote>
 <div align="left">
-<a href="node005.html">A complex data structure</a>
+<a href="node004.htm">A matrix</a>
 </div>
 <blockquote><ul>
 </ul></blockquote>
 <div align="left">
-<a href="node006.html">Cleaning up code from a code generator</a>
+<a href="node005.htm">A complex data structure</a>
+</div>
+<blockquote><ul>
+</ul></blockquote>
+<div align="left">
+<a href="node006.htm">Cleaning up code from a code generator</a>
 </div>
 <blockquote><ul>
 </ul></blockquote>
