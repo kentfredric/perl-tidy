@@ -38,30 +38,29 @@
 ############################################################
 
 package PerlTidy;
-require 5.004;
+use 5.004;
 BEGIN { $^W = 1; }    # turn on warnings
 use strict;
 use Exporter;
+use Carp;
 
 use vars qw{
   $VERSION
   @ISA
   @EXPORT
+  $missing_io_scalar
+  $missing_io_scalararray
 };
 
 @EXPORT = qw( &perltidy );
 
 use diagnostics;
-use IO::Scalar;
-use IO::ScalarArray;
+eval "use IO::Scalar"; $missing_io_scalar=$@;
+eval "use IO::ScalarArray"; $missing_io_scalararray=$@;
 use IO::File;
 
 BEGIN {
-    $VERSION = <<'CVS';
-    $Id: perltidy,v 1.70 2001/12/12 23:25:26 perltidy Exp $
-CVS
-    chomp $VERSION;
-    $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
+    ($VERSION=q($Id: perltidy,v 1.71 2001/12/14 18:41:20 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # one line for MakeMaker
 }
 
 # Preloaded methods go here.
@@ -72,9 +71,11 @@ sub streamhandle {
     my $fh;
 
     if ( $ref eq 'ARRAY' ) {
+        die $missing_io_scalararray if $missing_io_scalararray;
         $New = sub { IO::ScalarArray->new(@_) };
     }
     elsif ( $ref eq 'SCALAR' ) {
+        die $missing_io_scalar if $missing_io_scalar;
         $New = sub { IO::Scalar->new(@_) };
     }
     elsif ( $filename eq '-' ) {
@@ -136,7 +137,20 @@ basic perltidy distribution.
 
 sub perltidy {
 
-    my %input_hash=@_;
+    my %defaults = (
+        source=> undef,
+        destination => undef,
+
+        # .. more to be added
+    );
+
+    my %input_hash = @_;
+    if ( my @bad_keys = grep { !exists $defaults{$_} } keys %input_hash ) {
+        local $" = ')(';
+        confess "unknown parameters in call to PerlTidy::perltidy: (@bad_keys)\n";
+    }
+
+    %input_hash = ( %defaults, %input_hash );
     my $source_array=$input_hash{'source'};
     my $destination_array=$input_hash{'destination'};
 
@@ -5180,7 +5194,7 @@ sub print_line_of_tokens {
          /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
      Examples:
        *VERSION = \'1.01';
-       ( $VERSION ) = '$Revision: 1.70 $ ' =~ /\$Revision:\s+([^\s]+)/;
+       ( $VERSION ) = '$Revision: 1.71 $ ' =~ /\$Revision:\s+([^\s]+)/;
      We will pass such a line straight through (by changing it
      to a quoted string) unless -npvl is used
     
@@ -5189,7 +5203,7 @@ sub print_line_of_tokens {
      block sequence numbers may see a closing sequence number but not
      the corresponding opening sequence number (sidecmt.t).  Example:
 
-    my $VERSION = do { my @r = (q$Revision: 1.70 $ =~ /\d+/g); sprintf
+    my $VERSION = do { my @r = (q$Revision: 1.71 $ =~ /\d+/g); sprintf
     "%d."."%02d" x $#r, @r }; 
 
     Here, the opening brace of 'do {' will not be seen, while the closing
@@ -8200,10 +8214,8 @@ sub scan_list {
         my $bp_count           = 0;
         my $do_not_break_apart = 0;
         if ( $item_count_stack[$dd] && !$dont_align[$dd] ) {
-            my $fbc       = $forced_breakpoint_count;
-            my $list_type = $container_type[$dd];
-            if ( $next_nonblank_type eq '=' ) { $list_type = '=' }
 
+            my $fbc       = $forced_breakpoint_count;
             set_comma_breakpoints(
                 $dd,
                 $opening_structure_index_stack[$dd],
@@ -8213,7 +8225,8 @@ sub scan_list {
                 $comma_index[$dd],
                 $max_length[$dd],
                 $next_nonblank_type,
-                $list_type,
+                $container_type[$dd],
+                $interrupted_list[$dd],
                 \$do_not_break_apart,
             );
             $bp_count = $forced_breakpoint_count - $fbc;
@@ -8227,6 +8240,21 @@ sub scan_list {
             }
         }
         return ( $bp_count, $do_not_break_apart );
+    };
+
+    my $set_logical_breakpoints = sub {
+        my $dd = shift;
+        my $i_opening = $opening_structure_index_stack[$dd];
+        ##print "BUBBA: hi! items=$item_count_stack[$dd] fbp=$forced_breakpoint_count bp=$breakpoint_stack[$dd] i_opening=$i_opening tok=$tokens_to_go[$i_opening]\n";
+        if ( defined( $rand_or_list[$dd]) 
+            && $item_count_stack[$dd] == 0
+            && $container_type[$dd] =~ /$logical_pattern/o 
+        )
+        {
+            while ( my $j = pop ( @{ $rand_or_list[$dd] } ) ) {
+                set_forced_breakpoint($j);
+            }
+        }
     };
 
     my $update_longest_term = sub {
@@ -8519,8 +8547,7 @@ sub scan_list {
 
             #print "LISTY sees: i=$i type=$type  tok=$token  block=$block_type depth=$depth next=$next_nonblank_type next_block=$next_nonblank_block_type inter=$interrupted_list[$current_depth]\n";
 
-            my $list_type = $container_type[$current_depth];
-            if ( $next_nonblank_type eq '=' ) { $list_type = '=' }
+            ##my $list_type = $container_type[$current_depth];
 
             # set breaks at commas if necessary
             my $bp_count           = 0;
@@ -8533,7 +8560,9 @@ sub scan_list {
 
             my $i_opening = $opening_structure_index_stack[$current_depth];
             my $saw_opening_structure =
-              ( defined($i_opening) && $i_opening >= 0 );
+              ( 
+                  ## defined($i_opening) && 
+              $i_opening >= 0 );
 
             # this term is long if we had to break at interior commas..
             my $is_long_term = $bp_count > 0;
@@ -8669,35 +8698,28 @@ will be a forced break at its 'and'.
 =cut
 
             # set some flags telling something about this container..
-
             my $is_simple_logical_expression = 0;
-            if ( $item_count == 0
+            if (
+                $item_count == 0
                 && $saw_opening_structure
                 && $tokens_to_go[$i_opening] eq '('
-                && defined($list_type)
-                && ( $list_type =~ /$logical_pattern/o ) )
+                && $container_type[$current_depth] =~ /$logical_pattern/o
+
+              )
             {
 
-                # set flag to mark a logical expression that does not need
-                # to be opened up
+                # This seems to be a simple logical expression with no existing
+                # breakpoints.  Set a flag to prevent opening it up.
                 if ( !$has_comma_breakpoints ) {
                     $is_simple_logical_expression = 1;
                 }
 
-                # break at all 'or's and '||'s in a long logical expression
+                # This seems to be a simple logical expression with breakpoints
+                # (broken sublists, for example).  Break at all 'or's and '||'s.
                 else {
-                    if ( defined( $rand_or_list[$current_depth] ) ) {
-                        while ( my $j =
-                            pop ( @{ $rand_or_list[$current_depth] } ) )
-                        {
-                            set_forced_breakpoint($j);
-                        }
-                    }
+                    $set_logical_breakpoints->($current_depth);
                 }
             }
-
-            ## TESTING: patch to keep leading '.'s aligned
-            ##if ($list_type eq '.' && $item_count==0) {$is_simple_logical_expression=1}
 
             if (
 
@@ -8812,6 +8834,7 @@ will be a forced break at its 'and'.
                 # work well and will catch the comma in something like
                 #  push @list, myfunc( $param, $param, ..
 
+                ## BUBBA: always defined
                 if ( defined($i_opening) ) {
                     my $icomma = $last_comma_index[$depth];
                     if ( defined($icomma) && ( $i_opening - $icomma ) < 5 ) {
@@ -9108,18 +9131,21 @@ will be a forced break at its 'and'.
             # this will force a break at all commas
             $has_broken_sublist[$dd] = 1;
             $set_comma_breakpoints->($dd);
+            $set_logical_breakpoints->($dd);
         }
     }
 
     # break at the commas of this list
     $item_count_stack[$current_depth] = $item_count;
     $set_comma_breakpoints->($current_depth);
+    $set_logical_breakpoints->($current_depth);
 
     # make any needed breaks at opening braces
     for ( my $dd = $depth ; $dd >= $minimum_depth ; $dd-- ) {
         my $i_opening = $opening_structure_index_stack[$dd];
         if (
-            defined($i_opening) && !$is_unbreakable_container->($dd) && !(
+            ## defined($i_opening) && 
+            !$is_unbreakable_container->($dd) && !(
 
                 # Avoid a break which would place an isolated ' or " on a line
                 $type eq 'Q'
@@ -9210,6 +9236,7 @@ sub set_comma_breakpoints {
         $depth,              $i_opening_paren,    $i_closing_paren,
         $item_count,         $identifier_count,   $rcomma_index,
         $rmax_length,        $next_nonblank_type, $list_type,
+        $interrupted,
         $rdo_not_break_apart,
       )
       = @_;
@@ -9245,7 +9272,7 @@ sub set_comma_breakpoints {
     # A list is is forced to use old breakpoints if it was interrupted
     # by side comments or blank lines.
     #---------------------------------------------------------------
-    if ( $interrupted_list[$depth] || $i_opening_paren < 0 ) {
+    if ( $interrupted || $i_opening_paren < 0 ) {
         write_logfile_entry("list broken: using old breakpoints\n")
           unless ( $item_count < 6 );
         copy_old_breakpoints( $i_first_comma, $i_last_comma );
@@ -9330,7 +9357,7 @@ sub set_comma_breakpoints {
     # list items might be a hash list.  But if we can be sure that it is
     # not a hash, then we can allow an odd number for more flexibility.
     my $odd_or_even = 2;    # 1 = odd field count ok, 2 = want even count
-    if ( defined($list_type) && $list_type =~ /^(my|local|our|=)$/ ) {
+    if ( $list_type =~ /^(my|local|our)$/ || $next_nonblank_type eq '=') {
         $odd_or_even = 1;
     }
     if ( $identifier_count == $comma_count ) { $odd_or_even = 1 }   # seems safe

@@ -17,6 +17,17 @@ foreach ( $i = 0 ; $i <= 10 ; $i += 2 ) {
 }
 
 {{
+        # broken 'for'
+        for (
+            $j = 0, $match_j = -1 ;
+            $j < $sub_len
+            &&
+
+            # changed from naive_string_matcher
+            $sub->[$j] eq $big->[ $i + $j ] ; $j++
+          )
+          {}
+
 	# a foreach loop with large list, from dh_debstd
 	# We'd like the opening '{' to be outdented inline with 'foreach':
 	# and it would look best to leave the closing ')' at the end of

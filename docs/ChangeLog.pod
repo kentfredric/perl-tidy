@@ -6,6 +6,13 @@
 
 =head2 2001 xx xx
 
+ -Merged modifications created by Hugh Myers into perltidy.  These
+  include a 'streamhandle' routine which allows perltidy as a module to
+  operate on input and output arrays and strings, as well as files.
+  Documentation and new packaging as a module should be ready after the
+  holidays.  This is an elegant, powerful update; many thanks to Hugh for
+  contributing it.
+
  -Added flag -cscw to issue warnings if a closing side comment would replace
  an existing, different side comments.  See the man page for details.
  Thanks to Peter Masiar for helpful discussions.

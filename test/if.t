@@ -67,3 +67,20 @@ push @allowed, $_
         &Error_OutOfRange;
     }
 
+{
+
+    # retain '&&' breaks even with comment
+    if (
+        defined($i_opening)
+        && !$is_unbreakable_container->($dd)
+        && !(
+
+            # Avoid a break which would place an isolated or on a line
+            $type eq 'Q'
+            && $i_opening >= $max_index_to_go - 2
+            && $token =~ /^['"]$/
+        )
+      )
+    {
+    }
+}
