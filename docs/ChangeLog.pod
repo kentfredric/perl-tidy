@@ -5,6 +5,44 @@
  suggested improvement, please send a note to perltidy at
  users.sourceforge.net.  
 
+=head2 2002 xx xx
+
+ -a new flag -frm or --html-frames will cause html output to be in a
+ frame, with table of contents in the left panel and actual content
+ in the right panel.  See updated docs.
+
+ -a new flag -pod or --pod2html controls formatting of pod text.  The
+ new default is to pass the pod through Pod::Html.  The result is syntax
+ colored code within your pod documents. This can be deactivated with
+ -npod.  Thanks to all who have written to discuss this and give
+ examples, particularly Mark Olesen and Hugh Myers.
+
+ -if a directory specified with -opath does not exist, it will be created.
+
+ -a new option -toc (--html-table-of-contents) controls the index
+ to packages and subs at the start of html output.  Use -ntoc to
+ prevent this index.
+
+ -fixed an unusual bug in which a 'for' statement following a 'format'
+ statement was not correctly tokenized.  Thanks to Boris Zentner for
+ catching this.
+
+ -Tidy.pm is no longer dependent on modules IO::Scalar and IO::ScalarArray.  
+ There were some speed issues.  Suggested by Joerg Walter.
+
+ -The treatment of quoted wildcards (file globs) is now independent of system.
+ For example
+
+    perltidy 'b*x.p[lm]'
+
+ would match box.pl, box.pm, boinx.pm under any system.  Of course, anything
+ unquoted will be subject to expansion by any shell.
+
+ -fixed a glitch in which something like:
+   perltidy quick-help
+ would trigger the help message and exit, rather than operate on the
+ file 'quick-help'.
+
 =head2 2002 09 22
  
  -New option '-b' or '--backup-and-modify-in-place' will cause perltidy to

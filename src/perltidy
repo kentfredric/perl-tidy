@@ -129,6 +129,12 @@ larger web page.  No style sheet will be written in this case.
 
 Write a style sheet to F<mystyle.css> and exit.
 
+  perltidy -html -frm mymodule.pm
+
+Write html with a frame holding a table of contents and the actual content.  The
+output files will be F<mymodule.pm.html> (the frame), F<mymodule.pm.left.html>
+(the table of contents), and F<mymodule.pm.right.html> (the perl script).
+
 =head1 OPTIONS - OVERVIEW
 
 The entire command line is scanned for options, and they are processed
@@ -154,22 +160,6 @@ B<-g> may NOT be entered as B<-qg>.
 Option names may be terminated early as long as they are uniquely identified.
 For example, instead of B<-dump-token-types>, it would be sufficient to enter
 B<-dump-tok>, or even B<-dump-t>, to uniquely identify this command.
-
-=head2 Specifying Block Types
-
-Several parameters which refer to code block types may be customized by
-also specifying an associated list of block types.  The type of a block
-is the name of the keyword which introduces that block, such as B<if>,
-B<else>, or B<sub>.  An exception is a labeled block, which should be
-specified with just a colon.
-
-For example, the following parameter specifies C<sub>, labels, C<BEGIN>, and
-C<END> blocks:
-
-   -cscl="sub : BEGIN END"
-
-(the meaning of the -cscl parameter is described below.)  Note that
-quotes are required around the list of block types.
 
 =head2 I/O control
 
@@ -214,15 +204,9 @@ when desired with B<-nse> on the command line.
 
 =item	B<-oext>=ext,    B<--output-file-extension>=ext  
 
-Change the extension of the output file to be F<.ext> instead of the
-default F<.tdy>.  If the B<-html> option is used, this will change
-the extension to be F<.ext> instead of the default F<.html>.
-
-If the extension C<ext> begins with C<A-Z>, C<a-z>, or C<0-9>, then it
-will be appended to the filename with an intermediate '.' (or '_' on
-some systems).  Otherwise, it will be appended directly.  Thus, for
-example, using C<-oext=htm> and C<-oext=.htm>  on F<somefile.pl> with
-both produce F<somefile.pl.htm>
+Change the extension of the output file to be F<ext> instead of the
+default F<tdy> (or F<html> in case the -B<-html> option is used).
+See L<Specifying File Extensions>.
 
 =item	B<-opath>=path,    B<--output-path>=path  
 
@@ -257,14 +241,7 @@ if the B<-html> flag is set.
 =item	B<-bext>=ext,    B<--backup-file-extension>=ext  
 
 Change the extension of the backup file to be something other than the
-default F<.bak>.  
-
-If the extension C<ext> begins with C<A-Z>, C<a-z>, or C<0-9>, then it
-will be appended to the filename with an intermediate '.' (or '_' on
-some systems).  Otherwise, it will be appended directly.  For example,
-suppose the file is F<somefile.pl>.  If C<ext=old>, the backup file will
-be F<somefile.pl.old>.  If C<ext=~>, then the backup file will be
-F<somefile.pl~>  .  
+default F<.bak>.  See L<Specifying File Extensions>.
 
 =item B<-w>,    B<--warning-output>             
 
@@ -570,8 +547,7 @@ B<--nooutdent-long-lines>, and is equivalent to setting B<-nolq> and B<-nolc>.
 =item Outdenting Labels: B<-ola>,  B<--outdent-labels>
 
 This command will cause labels to be outdented by 2 spaces (or whatever B<-ci>
-has been set to), if possible.  This is the default.  For example, with
-B<perltidy -ola>:
+has been set to), if possible.  This is the default.  For example:
 
         my $i;
       LOOP: while ( $i = <FOTOS> ) {
@@ -580,8 +556,7 @@ B<perltidy -ola>:
             fixit($i);
         }
 
-Labels which are already at the leftmost column will not be affected by
-this command.  Use B<-nola> to not outdent labels. 
+Use B<-nola> to not outdent labels. 
 
 =item Outdenting Keywords
 
@@ -2039,6 +2014,70 @@ web page.
 
 When the B<-nnn> flag is given, the output lines will be numbered.
 
+=item  The B<-toc>, or B<--html-table-of-contents> flag
+
+By default, a table of contents to packages and subroutines will be
+written at the start of html output.  Use B<-ntoc> to prevent this.
+This might be useful, for example, for a pod document which contains a
+number of unrelated code snippets.  This flag only influences the code
+table of contents; it has no effect on any table of contents produced by
+pod2html (see next item).
+
+=item  The B<-pod>, or B<--pod2html> flag
+
+There are two options for formatting pod documentation.  The default is
+to pass the pod through the Pod::Html module (which forms the basis of
+the pod2html utility).  Any code sections are formatted by perltidy, and
+the results then merged.  Note: a temporary file will be created 
+when Pod::Html is used; see L<FILES>.
+
+All of the flags accepted by pod2html may be included in the perltidy
+command line, and they will be passed to pod2html.  These include
+
+   --backlink=s --cachedir=s --htmlroot=s --libpods=s --title=s --css=s
+   --podpath=s --podroot=s --[no]header --[no]index --[no]recurse
+   --flush
+
+where 's' is an appropriate character string. See Pod::Html for more
+information.
+
+The alternative, indicated with B<-npod>, is not to use Pod::Html, but
+rather to format pod text in italics (or whatever the stylesheet
+indicates), without special html markup.  This might be useful if pod is
+merely being used as an alternative way to write comments.
+
+=item  The B<-frm>, or B<--html-frames> flag
+
+By default, a single html output file is produced.  This can be changed with
+the B<-frm> option, which creates a frame holding a table of contents in the
+left panel and the actual content in the right side, which simplifies code
+browsing.  Assume, for example, that the input file is F<MyModule.pm>.  Then,
+for default file extension choices, these three files will be created:
+
+ MyModule.pm.html        - the frame
+ MyModule.pm.left.html   - the table of contents
+ MyModule.pm.right.html  - the formatted script
+
+Obviously this file naming scheme requires that output be directed to a real
+file (as opposed to, say, standard output).  If this is not the
+case, or if the file extension is unknown, the B<-frm> option will be
+ignored.
+
+See the next items for how to modify the extra extensions "left" and
+"right".
+
+=item  The B<-lext=s>, or B<--html-toc-extension> flag
+
+Use this flag to specify the extra file extension of the table of contents file
+when html frames are used.  The default is "left".
+See L<Specifying File Extensions>.
+
+=item  The B<-rext=s>, or B<--html-content-extension> flag
+
+Use this flag to specify the extra file extension of the content file when html
+frames are used.  The default is "right".
+See L<Specifying File Extensions>.
+
 =item  Style Sheets
 
 Style sheets make it very convenient to control and adjust the
@@ -2069,6 +2108,10 @@ must to be sure that older browsers (roughly speaking, versions prior to
 syntax-coloring of the html files.
 
 =item  Controlling HTML properties
+
+Note: It is usually more convenient to accept the default properties
+and then edit the stylesheet which is produced.  However, this section
+shows how to control the properties with flags to perltidy.
 
 Syntax colors may be changed from their default values by flags of the either
 the long form, B<-html-color-xxxxxx=n>, or more conveniently the short form,
@@ -2159,19 +2202,49 @@ Here are some notes and hints:
 to create a F<.perltidyrc> file containing them.  See the perltidy man
 page for an explanation.
 
-2. Rather than specifying values for these parameters, it may be easier
-to accept the defaults and then edit a style sheet.  The style sheet
-contains helpful comments which should make this easy.
+2. Rather than specifying values for these parameters, it is probably
+easier to accept the defaults and then edit a style sheet.  The style
+sheet contains comments which should make this easy.
 
 3. The syntax-colored html files can be very large, so it may be best to
 split large files into smaller pieces to improve download times.
 
-4. The list of token types is expected to evolve over time as further
-tokenizer improvements allow a refinement in the available token types,
-so you should occasionally check for updates to this program if you use
-it frequently.
-
 =back
+
+=head1 SOME COMMON INPUT CONVENTIONS
+
+=head2 Specifying Block Types
+
+Several parameters which refer to code block types may be customized by also
+specifying an associated list of block types.  The type of a block is the name
+of the keyword which introduces that block, such as B<if>, B<else>, or B<sub>.
+An exception is a labeled block, which has no keyword, and should be specified
+with just a colon.
+
+For example, the following parameter specifies C<sub>, labels, C<BEGIN>, and
+C<END> blocks:
+
+   -cscl="sub : BEGIN END"
+
+(the meaning of the -cscl parameter is described above.)  Note that
+quotes are required around the list of block types because of the
+spaces.
+
+=head2 Specifying File Extensions
+
+Several parameters allow default file extensions to be overridden.  For
+example, a backup file extension may be specified with B<-bext=ext>,
+where B<ext> is some new extension.  In order to provides the user some
+flexibility, the following convention is used in all cases to decide if
+a leading '.' should be used.  If the extension C<ext> begins with
+C<A-Z>, C<a-z>, or C<0-9>, then it will be appended to the filename with
+an intermediate '.' (or perhaps an '_' on VMS systems).  Otherwise, it
+will be appended directly.  
+
+For example, suppose the file is F<somefile.pl>.  For C<-bext=old>, a '.' is
+added to give F<somefile.pl.old>.  For C<-bext=.old>, no additional '.' is
+added, so again the backup file is F<somefile.pl.old>.  For C<-bext=~>, then no
+dot is added, and the backup file will be F<somefile.pl~>  .  
 
 =head1 SWITCHES WHICH MAY BE NEGATED
 
@@ -2180,9 +2253,9 @@ The following list shows all short parameter names which allow a prefix
 
     D anl asc aws b bbb bbc bbs bli boc bok bol bot syn ce csc 
     dac dbc dcsc dnl dws dp dpro dsm dsc ddf dln dop dsn dtt dwls dwrs 
-    f fll hsc html ibc icb icp iob isbc lp log lal x lsl bl 
+    f fll frm hsc html ibc icb icp iob isbc lp log lal x lsl pod bl 
     sbl okw ola oll pvl q opt sbc sfs ssc sts se st sob 
-    t tac tbc tp tsc tqw w
+    t tac tbc toc tp tsc tqw w
 
 Equivalently, the prefix 'no' on the corresponding long names may be
 used.
@@ -2219,6 +2292,13 @@ in any way.  And, of course, it does not modify pod documents.
 =head1 FILES
 
 =over 4
+
+=item Temporary files
+
+Under the -html option with the default --pod2html flag, a temporary file is
+required to pass text to Pod::Html.  Unix systems will try to use the POSIX
+tmpnam() function.  Otherwise the file F<perltidy.TMP> will be temporarily
+created in the current working directory.
 
 =item Special files when standard input is used
 

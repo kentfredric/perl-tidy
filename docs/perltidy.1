@@ -130,7 +130,7 @@
 .\" ========================================================================
 .\"
 .IX Title "PERLTIDY 1"
-.TH PERLTIDY 1 "2002-09-22" "perl v5.6.1" "User Contributed Perl Documentation"
+.TH PERLTIDY 1 "2002-10-06" "perl v5.6.1" "User Contributed Perl Documentation"
 .UC
 .SH "NAME"
 perltidy \- a perl script indenter and reformatter
@@ -248,6 +248,13 @@ larger web page.  No style sheet will be written in this case.
 \&  perltidy -html -ss >mystyle.css
 .Ve
 Write a style sheet to \fImystyle.css\fR and exit.
+.PP
+.Vb 1
+\&  perltidy -html -frm mymodule.pm
+.Ve
+Write html with a frame holding a table of contents and the actual content.  The
+output files will be \fImymodule.pm.html\fR (the frame), \fImymodule.pm.left.html\fR
+(the table of contents), and \fImymodule.pm.right.html\fR (the perl script).
 .SH "OPTIONS \- OVERVIEW"
 .IX Header "OPTIONS - OVERVIEW"
 The entire command line is scanned for options, and they are processed
@@ -273,22 +280,6 @@ Options may not be bundled together.  In other words, options \fB\-q\fR and
 Option names may be terminated early as long as they are uniquely identified.
 For example, instead of \fB\-dump\-token\-types\fR, it would be sufficient to enter
 \&\fB\-dump\-tok\fR, or even \fB\-dump\-t\fR, to uniquely identify this command.
-.Sh "Specifying Block Types"
-.IX Subsection "Specifying Block Types"
-Several parameters which refer to code block types may be customized by
-also specifying an associated list of block types.  The type of a block
-is the name of the keyword which introduces that block, such as \fBif\fR,
-\&\fBelse\fR, or \fBsub\fR.  An exception is a labeled block, which should be
-specified with just a colon.
-.PP
-For example, the following parameter specifies \f(CW\*(C`sub\*(C'\fR, labels, \f(CW\*(C`BEGIN\*(C'\fR, and
-\&\f(CW\*(C`END\*(C'\fR blocks:
-.PP
-.Vb 1
-\&   -cscl="sub : BEGIN END"
-.Ve
-(the meaning of the \-cscl parameter is described below.)  Note that
-quotes are required around the list of block types.
 .Sh "I/O control"
 .IX Subsection "I/O control"
 The following parameters concern the files which are read and written.
@@ -326,15 +317,9 @@ Thus, you may place \fB\-se\fR in a \fI.perltidyrc\fR and override it
 when desired with \fB\-nse\fR on the command line.
 .IP "\fB\-oext\fR=ext,    \fB\-\-output\-file\-extension\fR=ext" 4
 .IX Item "-oext=ext,    --output-file-extension=ext"
-Change the extension of the output file to be \fI.ext\fR instead of the
-default \fI.tdy\fR.  If the \fB\-html\fR option is used, this will change
-the extension to be \fI.ext\fR instead of the default \fI.html\fR.
-.Sp
-If the extension \f(CW\*(C`ext\*(C'\fR begins with \f(CW\*(C`A\-Z\*(C'\fR, \f(CW\*(C`a\-z\*(C'\fR, or \f(CW\*(C`0\-9\*(C'\fR, then it
-will be appended to the filename with an intermediate '.' (or '_' on
-some systems).  Otherwise, it will be appended directly.  Thus, for
-example, using \f(CW\*(C`\-oext=htm\*(C'\fR and \f(CW\*(C`\-oext=.htm\*(C'\fR  on \fIsomefile.pl\fR with
-both produce \fIsomefile.pl.htm\fR
+Change the extension of the output file to be \fIext\fR instead of the
+default \fItdy\fR (or \fIhtml\fR in case the \-\fB\-html\fR option is used).
+See \*(L"Specifying File Extensions\*(R".
 .IP "\fB\-opath\fR=path,    \fB\-\-output\-path\fR=path" 4
 .IX Item "-opath=path,    --output-path=path"
 When perltidy creates a filename for an output file, by default it merely
@@ -367,14 +352,7 @@ if the \fB\-html\fR flag is set.
 .IP "\fB\-bext\fR=ext,    \fB\-\-backup\-file\-extension\fR=ext" 4
 .IX Item "-bext=ext,    --backup-file-extension=ext"
 Change the extension of the backup file to be something other than the
-default \fI.bak\fR.  
-.Sp
-If the extension \f(CW\*(C`ext\*(C'\fR begins with \f(CW\*(C`A\-Z\*(C'\fR, \f(CW\*(C`a\-z\*(C'\fR, or \f(CW\*(C`0\-9\*(C'\fR, then it
-will be appended to the filename with an intermediate '.' (or '_' on
-some systems).  Otherwise, it will be appended directly.  For example,
-suppose the file is \fIsomefile.pl\fR.  If \f(CW\*(C`ext=old\*(C'\fR, the backup file will
-be \fIsomefile.pl.old\fR.  If \f(CW\*(C`ext=~\*(C'\fR, then the backup file will be
-\&\fIsomefile.pl~\fR  .  
+default \fI.bak\fR.  See \*(L"Specifying File Extensions\*(R".
 .IP "\fB\-w\fR,    \fB\-\-warning\-output\fR" 4
 .IX Item "-w,    --warning-output"
 Setting \fB\-w\fR causes perltidy to include any non-critical warning
@@ -657,8 +635,7 @@ versions of perltidy.  The negation of this also works, \fB\-noll\fR or
 .IP "Outdenting Labels: \fB\-ola\fR,  \fB\-\-outdent\-labels\fR" 4
 .IX Item "Outdenting Labels: -ola,  --outdent-labels"
 This command will cause labels to be outdented by 2 spaces (or whatever \fB\-ci\fR
-has been set to), if possible.  This is the default.  For example, with
-\&\fBperltidy \-ola\fR:
+has been set to), if possible.  This is the default.  For example:
 .Sp
 .Vb 6
 \&        my $i;
@@ -668,8 +645,7 @@ has been set to), if possible.  This is the default.  For example, with
 \&            fixit($i);
 \&        }
 .Ve
-Labels which are already at the leftmost column will not be affected by
-this command.  Use \fB\-nola\fR to not outdent labels. 
+Use \fB\-nola\fR to not outdent labels. 
 .IP "Outdenting Keywords" 4
 .IX Item "Outdenting Keywords"
 .RS 4
@@ -2042,6 +2018,67 @@ web page.
 .IP "The \fB\-nnn\fR flag for line numbering" 4
 .IX Item "The -nnn flag for line numbering"
 When the \fB\-nnn\fR flag is given, the output lines will be numbered.
+.IP "The \fB\-toc\fR, or \fB\-\-html\-table\-of\-contents\fR flag" 4
+.IX Item "The -toc, or --html-table-of-contents flag"
+By default, a table of contents to packages and subroutines will be
+written at the start of html output.  Use \fB\-ntoc\fR to prevent this.
+This might be useful, for example, for a pod document which contains a
+number of unrelated code snippets.  This flag only influences the code
+table of contents; it has no effect on any table of contents produced by
+pod2html (see next item).
+.IP "The \fB\-pod\fR, or \fB\-\-pod2html\fR flag" 4
+.IX Item "The -pod, or --pod2html flag"
+There are two options for formatting pod documentation.  The default is
+to pass the pod through the Pod::Html module (which forms the basis of
+the pod2html utility).  Any code sections are formatted by perltidy, and
+the results then merged.  Note: a temporary file will be created 
+when Pod::Html is used; see \s-1FILES\s0.
+.Sp
+All of the flags accepted by pod2html may be included in the perltidy
+command line, and they will be passed to pod2html.  These include
+.Sp
+.Vb 3
+\&   --backlink=s --cachedir=s --htmlroot=s --libpods=s --title=s --css=s
+\&   --podpath=s --podroot=s --[no]header --[no]index --[no]recurse
+\&   --flush
+.Ve
+where 's' is an appropriate character string. See Pod::Html for more
+information.
+.Sp
+The alternative, indicated with \fB\-npod\fR, is not to use Pod::Html, but
+rather to format pod text in italics (or whatever the stylesheet
+indicates), without special html markup.  This might be useful if pod is
+merely being used as an alternative way to write comments.
+.IP "The \fB\-frm\fR, or \fB\-\-html\-frames\fR flag" 4
+.IX Item "The -frm, or --html-frames flag"
+By default, a single html output file is produced.  This can be changed with
+the \fB\-frm\fR option, which creates a frame holding a table of contents in the
+left panel and the actual content in the right side, which simplifies code
+browsing.  Assume, for example, that the input file is \fIMyModule.pm\fR.  Then,
+for default file extension choices, these three files will be created:
+.Sp
+.Vb 3
+\& MyModule.pm.html        - the frame
+\& MyModule.pm.left.html   - the table of contents
+\& MyModule.pm.right.html  - the formatted script
+.Ve
+Obviously this file naming scheme requires that output be directed to a real
+file (as opposed to, say, standard output).  If this is not the
+case, or if the file extension is unknown, the \fB\-frm\fR option will be
+ignored.
+.Sp
+See the next items for how to modify the extra extensions \*(L"left\*(R" and
+\&\*(L"right\*(R".
+.IP "The \fB\-lext=s\fR, or \fB\-\-html\-toc\-extension\fR flag" 4
+.IX Item "The -lext=s, or --html-toc-extension flag"
+Use this flag to specify the extra file extension of the table of contents file
+when html frames are used.  The default is \*(L"left\*(R".
+See \*(L"Specifying File Extensions\*(R".
+.IP "The \fB\-rext=s\fR, or \fB\-\-html\-content\-extension\fR flag" 4
+.IX Item "The -rext=s, or --html-content-extension flag"
+Use this flag to specify the extra file extension of the content file when html
+frames are used.  The default is \*(L"right\*(R".
+See \*(L"Specifying File Extensions\*(R".
 .IP "Style Sheets" 4
 .IX Item "Style Sheets"
 Style sheets make it very convenient to control and adjust the
@@ -2073,6 +2110,10 @@ must to be sure that older browsers (roughly speaking, versions prior to
 syntax-coloring of the html files.
 .IP "Controlling \s-1HTML\s0 properties" 4
 .IX Item "Controlling HTML properties"
+Note: It is usually more convenient to accept the default properties
+and then edit the stylesheet which is produced.  However, this section
+shows how to control the properties with flags to perltidy.
+.Sp
 Syntax colors may be changed from their default values by flags of the either
 the long form, \fB\-html\-color\-xxxxxx=n\fR, or more conveniently the short form,
 \&\fB\-hcx=n\fR, where \fBxxxxxx\fR is one of the following words, and \fBx\fR is the
@@ -2167,17 +2208,46 @@ Here are some notes and hints:
 to create a \fI.perltidyrc\fR file containing them.  See the perltidy man
 page for an explanation.
 .Sp
-2. Rather than specifying values for these parameters, it may be easier
-to accept the defaults and then edit a style sheet.  The style sheet
-contains helpful comments which should make this easy.
+2. Rather than specifying values for these parameters, it is probably
+easier to accept the defaults and then edit a style sheet.  The style
+sheet contains comments which should make this easy.
 .Sp
 3. The syntax-colored html files can be very large, so it may be best to
 split large files into smaller pieces to improve download times.
-.Sp
-4. The list of token types is expected to evolve over time as further
-tokenizer improvements allow a refinement in the available token types,
-so you should occasionally check for updates to this program if you use
-it frequently.
+.SH "SOME COMMON INPUT CONVENTIONS"
+.IX Header "SOME COMMON INPUT CONVENTIONS"
+.Sh "Specifying Block Types"
+.IX Subsection "Specifying Block Types"
+Several parameters which refer to code block types may be customized by also
+specifying an associated list of block types.  The type of a block is the name
+of the keyword which introduces that block, such as \fBif\fR, \fBelse\fR, or \fBsub\fR.
+An exception is a labeled block, which has no keyword, and should be specified
+with just a colon.
+.PP
+For example, the following parameter specifies \f(CW\*(C`sub\*(C'\fR, labels, \f(CW\*(C`BEGIN\*(C'\fR, and
+\&\f(CW\*(C`END\*(C'\fR blocks:
+.PP
+.Vb 1
+\&   -cscl="sub : BEGIN END"
+.Ve
+(the meaning of the \-cscl parameter is described above.)  Note that
+quotes are required around the list of block types because of the
+spaces.
+.Sh "Specifying File Extensions"
+.IX Subsection "Specifying File Extensions"
+Several parameters allow default file extensions to be overridden.  For
+example, a backup file extension may be specified with \fB\-bext=ext\fR,
+where \fBext\fR is some new extension.  In order to provides the user some
+flexibility, the following convention is used in all cases to decide if
+a leading '.' should be used.  If the extension \f(CW\*(C`ext\*(C'\fR begins with
+\&\f(CW\*(C`A\-Z\*(C'\fR, \f(CW\*(C`a\-z\*(C'\fR, or \f(CW\*(C`0\-9\*(C'\fR, then it will be appended to the filename with
+an intermediate '.' (or perhaps an '_' on \s-1VMS\s0 systems).  Otherwise, it
+will be appended directly.  
+.PP
+For example, suppose the file is \fIsomefile.pl\fR.  For \f(CW\*(C`\-bext=old\*(C'\fR, a '.' is
+added to give \fIsomefile.pl.old\fR.  For \f(CW\*(C`\-bext=.old\*(C'\fR, no additional '.' is
+added, so again the backup file is \fIsomefile.pl.old\fR.  For \f(CW\*(C`\-bext=~\*(C'\fR, then no
+dot is added, and the backup file will be \fIsomefile.pl~\fR  .  
 .SH "SWITCHES WHICH MAY BE NEGATED"
 .IX Header "SWITCHES WHICH MAY BE NEGATED"
 The following list shows all short parameter names which allow a prefix
@@ -2186,9 +2256,9 @@ The following list shows all short parameter names which allow a prefix
 .Vb 5
 \&    D anl asc aws b bbb bbc bbs bli boc bok bol bot syn ce csc 
 \&    dac dbc dcsc dnl dws dp dpro dsm dsc ddf dln dop dsn dtt dwls dwrs 
-\&    f fll hsc html ibc icb icp iob isbc lp log lal x lsl bl 
+\&    f fll frm hsc html ibc icb icp iob isbc lp log lal x lsl pod bl 
 \&    sbl okw ola oll pvl q opt sbc sfs ssc sts se st sob 
-\&    t tac tbc tp tsc tqw w
+\&    t tac tbc toc tp tsc tqw w
 .Ve
 Equivalently, the prefix 'no' on the corresponding long names may be
 used.
@@ -2217,6 +2287,12 @@ reformat them separately).  Perltidy does not format 'format' sections
 in any way.  And, of course, it does not modify pod documents.
 .SH "FILES"
 .IX Header "FILES"
+.IP "Temporary files" 4
+.IX Item "Temporary files"
+Under the \-html option with the default \-\-pod2html flag, a temporary file is
+required to pass text to Pod::Html.  Unix systems will try to use the \s-1POSIX\s0
+\&\fItmpnam()\fR function.  Otherwise the file \fIperltidy.TMP\fR will be temporarily
+created in the current working directory.
 .IP "Special files when standard input is used" 4
 .IX Item "Special files when standard input is used"
 When standard input is used, the log file, if saved, is \fIperltidy.LOG\fR,

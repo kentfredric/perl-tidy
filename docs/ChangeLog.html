@@ -14,6 +14,7 @@
 	<LI><A HREF="#perltidy change log">Perltidy Change Log</A></LI>
 	<UL>
 
+		<LI><A HREF="#2002 xx xx">2002 xx xx</A></LI>
 		<LI><A HREF="#2002 09 22">2002 09 22</A></LI>
 		<LI><A HREF="#2002 08 26">2002 08 26</A></LI>
 		<LI><A HREF="#2002 04 25">2002 04 25</A></LI>
@@ -48,6 +49,44 @@
  have hit a bug, unusual behavior, annoyance, or have a
  suggested improvement, please send a note to perltidy at
  users.sourceforge.net.</PRE>
+<P>
+<H2><A NAME="2002 xx xx">2002 xx xx</A></H2>
+<PRE>
+ -a new flag -frm or --html-frames will cause html output to be in a
+ frame, with table of contents in the left panel and actual content
+ in the right panel.  See updated docs.</PRE>
+<PRE>
+ -a new flag -pod or --pod2html controls formatting of pod text.  The
+ new default is to pass the pod through Pod::Html.  The result is syntax
+ colored code within your pod documents. This can be deactivated with
+ -npod.  Thanks to all who have written to discuss this and give
+ examples, particularly Mark Olesen and Hugh Myers.</PRE>
+<PRE>
+ -if a directory specified with -opath does not exist, it will be created.</PRE>
+<PRE>
+ -a new option -toc (--html-table-of-contents) controls the index
+ to packages and subs at the start of html output.  Use -ntoc to
+ prevent this index.</PRE>
+<PRE>
+ -fixed an unusual bug in which a 'for' statement following a 'format'
+ statement was not correctly tokenized.  Thanks to Boris Zentner for
+ catching this.</PRE>
+<PRE>
+ -Tidy.pm is no longer dependent on modules IO::Scalar and IO::ScalarArray.  
+ There were some speed issues.  Suggested by Joerg Walter.</PRE>
+<PRE>
+ -The treatment of quoted wildcards (file globs) is now independent of system.
+ For example</PRE>
+<PRE>
+    perltidy 'b*x.p[lm]'</PRE>
+<PRE>
+ would match box.pl, box.pm, boinx.pm under any system.  Of course, anything
+ unquoted will be subject to expansion by any shell.</PRE>
+<PRE>
+ -fixed a glitch in which something like:
+   perltidy quick-help
+ would trigger the help message and exit, rather than operate on the
+ file 'quick-help'.</PRE>
 <P>
 <H2><A NAME="2002 09 22">2002 09 22</A></H2>
 <PRE>

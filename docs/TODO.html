@@ -14,7 +14,6 @@
 	<LI><A HREF="#perltidy todo list">Perltidy TODO List</A></LI>
 	<UL>
 
-		<LI><A HREF="#improved html formatting of pod sections">Improved HTML formatting of pod sections</A></LI>
 		<LI><A HREF="#improved vertical alignment">Improved Vertical Alignment</A></LI>
 		<LI><A HREF="#fix numerous little formatting issues">Fix numerous little formatting issues</A></LI>
 		<LI><A HREF="#bugs">BUGS</A></LI>
@@ -24,7 +23,6 @@
 		<LI><A HREF="#documentation">Documentation</A></LI>
 		<LI><A HREF="#html writer">HTML writer</A></LI>
 		<LI><A HREF="#tokenization issues">Tokenization issues</A></LI>
-		<LI><A HREF="#eliminate the need for io::scalar and io::scalararray">Eliminate the need for IO::Scalar and IO::ScalarArray</A></LI>
 		<LI><A HREF="#option to reformat block comments">Option to reformat block comments</A></LI>
 	</UL>
 
@@ -37,11 +35,6 @@
 <P>This is a ``wish-list'' of features to add and things to do.  All of these
 are of interest, but there is no particular schedule for implementing
 them.</P>
-<P>
-<H2><A NAME="improved html formatting of pod sections">Improved HTML formatting of pod sections</A></H2>
-<P>At present, pod text is merely formatted with italics.  It would be nice
-to properly format pod, just like pod2html.  This is a high priority
-item.</P>
 <P>
 <H2><A NAME="improved vertical alignment">Improved Vertical Alignment</A></H2>
 <P>Coding modifications are underway to improve the vertical alignment
@@ -106,9 +99,6 @@ However, this should be done eventually for correctness.</P>
 names.  It needs to be implemented; I've patched around this in the html
 writer for now.  I'm considering new token types for prototypes and
 attributes, to simplify parsing and formatting.</P>
-<P>
-<H2><A NAME="eliminate the need for io::scalar and io::scalararray">Eliminate the need for IO::Scalar and IO::ScalarArray</A></H2>
-<P>These might become builtin.</P>
 <P>
 <H2><A NAME="option to reformat block comments">Option to reformat block comments</A></H2>
 <P>I'm looking into an option to use Text::Autoformat to reformat comments.

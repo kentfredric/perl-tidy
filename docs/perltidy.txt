@@ -100,6 +100,13 @@ EXAMPLES
 
     Write a style sheet to mystyle.css and exit.
 
+      perltidy -html -frm mymodule.pm
+
+    Write html with a frame holding a table of contents and the actual
+    content. The output files will be mymodule.pm.html (the frame),
+    mymodule.pm.left.html (the table of contents), and
+    mymodule.pm.right.html (the perl script).
+
 OPTIONS - OVERVIEW
     The entire command line is scanned for options, and they are processed
     before any files are processed. As a result, it does not matter whether
@@ -124,21 +131,6 @@ OPTIONS - OVERVIEW
     identified. For example, instead of -dump-token-types, it would be
     sufficient to enter -dump-tok, or even -dump-t, to uniquely identify
     this command.
-
-  Specifying Block Types
-    Several parameters which refer to code block types may be customized by
-    also specifying an associated list of block types. The type of a block
-    is the name of the keyword which introduces that block, such as if,
-    else, or sub. An exception is a labeled block, which should be specified
-    with just a colon.
-
-    For example, the following parameter specifies "sub", labels, "BEGIN",
-    and "END" blocks:
-
-       -cscl="sub : BEGIN END"
-
-    (the meaning of the -cscl parameter is described below.) Note that
-    quotes are required around the list of block types.
 
   I/O control
     The following parameters concern the files which are read and written.
@@ -176,15 +168,9 @@ OPTIONS - OVERVIEW
         desired with -nse on the command line.
 
     -oext=ext, --output-file-extension=ext
-        Change the extension of the output file to be .ext instead of the
-        default .tdy. If the -html option is used, this will change the
-        extension to be .ext instead of the default .html.
-
-        If the extension "ext" begins with "A-Z", "a-z", or "0-9", then it
-        will be appended to the filename with an intermediate '.' (or '_' on
-        some systems). Otherwise, it will be appended directly. Thus, for
-        example, using "-oext=htm" and "-oext=.htm" on somefile.pl with both
-        produce somefile.pl.htm
+        Change the extension of the output file to be ext instead of the
+        default tdy (or html in case the --html option is used). See
+        "Specifying File Extensions".
 
     -opath=path, --output-path=path
         When perltidy creates a filename for an output file, by default it
@@ -217,14 +203,7 @@ OPTIONS - OVERVIEW
 
     -bext=ext, --backup-file-extension=ext
         Change the extension of the backup file to be something other than
-        the default .bak.
-
-        If the extension "ext" begins with "A-Z", "a-z", or "0-9", then it
-        will be appended to the filename with an intermediate '.' (or '_' on
-        some systems). Otherwise, it will be appended directly. For example,
-        suppose the file is somefile.pl. If "ext=old", the backup file will
-        be somefile.pl.old. If "ext=~", then the backup file will be
-        somefile.pl~ .
+        the default .bak. See "Specifying File Extensions".
 
     -w, --warning-output
         Setting -w causes perltidy to include any non-critical warning
@@ -501,7 +480,7 @@ FORMATTING OPTIONS
     Outdenting Labels: -ola, --outdent-labels
         This command will cause labels to be outdented by 2 spaces (or
         whatever -ci has been set to), if possible. This is the default. For
-        example, with perltidy -ola:
+        example:
 
                 my $i;
               LOOP: while ( $i = <FOTOS> ) {
@@ -510,8 +489,7 @@ FORMATTING OPTIONS
                     fixit($i);
                 }
 
-        Labels which are already at the leftmost column will not be affected
-        by this command. Use -nola to not outdent labels.
+        Use -nola to not outdent labels.
 
     Outdenting Keywords
 
@@ -1796,6 +1774,67 @@ HTML OPTIONS
     The -nnn flag for line numbering
         When the -nnn flag is given, the output lines will be numbered.
 
+    The -toc, or --html-table-of-contents flag
+        By default, a table of contents to packages and subroutines will be
+        written at the start of html output. Use -ntoc to prevent this. This
+        might be useful, for example, for a pod document which contains a
+        number of unrelated code snippets. This flag only influences the
+        code table of contents; it has no effect on any table of contents
+        produced by pod2html (see next item).
+
+    The -pod, or --pod2html flag
+        There are two options for formatting pod documentation. The default
+        is to pass the pod through the Pod::Html module (which forms the
+        basis of the pod2html utility). Any code sections are formatted by
+        perltidy, and the results then merged. Note: a temporary file will
+        be created when Pod::Html is used; see FILES.
+
+        All of the flags accepted by pod2html may be included in the
+        perltidy command line, and they will be passed to pod2html. These
+        include
+
+           --backlink=s --cachedir=s --htmlroot=s --libpods=s --title=s --css=s
+           --podpath=s --podroot=s --[no]header --[no]index --[no]recurse
+           --flush
+
+        where 's' is an appropriate character string. See Pod::Html for more
+        information.
+
+        The alternative, indicated with -npod, is not to use Pod::Html, but
+        rather to format pod text in italics (or whatever the stylesheet
+        indicates), without special html markup. This might be useful if pod
+        is merely being used as an alternative way to write comments.
+
+    The -frm, or --html-frames flag
+        By default, a single html output file is produced. This can be
+        changed with the -frm option, which creates a frame holding a table
+        of contents in the left panel and the actual content in the right
+        side, which simplifies code browsing. Assume, for example, that the
+        input file is MyModule.pm. Then, for default file extension choices,
+        these three files will be created:
+
+         MyModule.pm.html        - the frame
+         MyModule.pm.left.html   - the table of contents
+         MyModule.pm.right.html  - the formatted script
+
+        Obviously this file naming scheme requires that output be directed
+        to a real file (as opposed to, say, standard output). If this is not
+        the case, or if the file extension is unknown, the -frm option will
+        be ignored.
+
+        See the next items for how to modify the extra extensions "left" and
+        "right".
+
+    The -lext=s, or --html-toc-extension flag
+        Use this flag to specify the extra file extension of the table of
+        contents file when html frames are used. The default is "left". See
+        "Specifying File Extensions".
+
+    The -rext=s, or --html-content-extension flag
+        Use this flag to specify the extra file extension of the content
+        file when html frames are used. The default is "right". See
+        "Specifying File Extensions".
+
     Style Sheets
         Style sheets make it very convenient to control and adjust the
         appearance of html pages. The default behavior is to write a page of
@@ -1825,6 +1864,10 @@ HTML OPTIONS
         display the syntax-coloring of the html files.
 
     Controlling HTML properties
+        Note: It is usually more convenient to accept the default properties
+        and then edit the stylesheet which is produced. However, this
+        section shows how to control the properties with flags to perltidy.
+
         Syntax colors may be changed from their default values by flags of
         the either the long form, -html-color-xxxxxx=n, or more conveniently
         the short form, -hcx=n, where xxxxxx is one of the following words,
@@ -1916,18 +1959,45 @@ HTML OPTIONS
         create a .perltidyrc file containing them. See the perltidy man page
         for an explanation.
 
-        2. Rather than specifying values for these parameters, it may be
-        easier to accept the defaults and then edit a style sheet. The style
-        sheet contains helpful comments which should make this easy.
+        2. Rather than specifying values for these parameters, it is
+        probably easier to accept the defaults and then edit a style sheet.
+        The style sheet contains comments which should make this easy.
 
         3. The syntax-colored html files can be very large, so it may be
         best to split large files into smaller pieces to improve download
         times.
 
-        4. The list of token types is expected to evolve over time as
-        further tokenizer improvements allow a refinement in the available
-        token types, so you should occasionally check for updates to this
-        program if you use it frequently.
+SOME COMMON INPUT CONVENTIONS
+  Specifying Block Types
+    Several parameters which refer to code block types may be customized by
+    also specifying an associated list of block types. The type of a block
+    is the name of the keyword which introduces that block, such as if,
+    else, or sub. An exception is a labeled block, which has no keyword, and
+    should be specified with just a colon.
+
+    For example, the following parameter specifies "sub", labels, "BEGIN",
+    and "END" blocks:
+
+       -cscl="sub : BEGIN END"
+
+    (the meaning of the -cscl parameter is described above.) Note that
+    quotes are required around the list of block types because of the
+    spaces.
+
+  Specifying File Extensions
+    Several parameters allow default file extensions to be overridden. For
+    example, a backup file extension may be specified with -bext=ext, where
+    ext is some new extension. In order to provides the user some
+    flexibility, the following convention is used in all cases to decide if
+    a leading '.' should be used. If the extension "ext" begins with "A-Z",
+    "a-z", or "0-9", then it will be appended to the filename with an
+    intermediate '.' (or perhaps an '_' on VMS systems). Otherwise, it will
+    be appended directly.
+
+    For example, suppose the file is somefile.pl. For "-bext=old", a '.' is
+    added to give somefile.pl.old. For "-bext=.old", no additional '.' is
+    added, so again the backup file is somefile.pl.old. For "-bext=~", then
+    no dot is added, and the backup file will be somefile.pl~ .
 
 SWITCHES WHICH MAY BE NEGATED
     The following list shows all short parameter names which allow a prefix
@@ -1935,9 +2005,9 @@ SWITCHES WHICH MAY BE NEGATED
 
         D anl asc aws b bbb bbc bbs bli boc bok bol bot syn ce csc 
         dac dbc dcsc dnl dws dp dpro dsm dsc ddf dln dop dsn dtt dwls dwrs 
-        f fll hsc html ibc icb icp iob isbc lp log lal x lsl bl 
+        f fll frm hsc html ibc icb icp iob isbc lp log lal x lsl pod bl 
         sbl okw ola oll pvl q opt sbc sfs ssc sts se st sob 
-        t tac tbc tp tsc tqw w
+        t tac tbc toc tp tsc tqw w
 
     Equivalently, the prefix 'no' on the corresponding long names may be
     used.
@@ -1966,6 +2036,12 @@ LIMITATIONS
         documents.
 
 FILES
+    Temporary files
+        Under the -html option with the default --pod2html flag, a temporary
+        file is required to pass text to Pod::Html. Unix systems will try to
+        use the POSIX tmpnam() function. Otherwise the file perltidy.TMP
+        will be temporarily created in the current working directory.
+
     Special files when standard input is used
         When standard input is used, the log file, if saved, is
         perltidy.LOG, and any errors are written to perltidy.ERR unless the

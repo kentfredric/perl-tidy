@@ -61,7 +61,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.30 2002/09/24 13:46:50 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.31 2002/10/21 13:17:28 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 sub streamhandle {
@@ -90,29 +90,9 @@ sub streamhandle {
     # handle a reference
     if ($ref) {
         if ( $ref eq 'ARRAY' ) {
-##            eval "use IO::ScalarArray";
-##            confess <<EOM if $@;
-##------------------------------------------------------------------------
-##Your call to Perl::Tidy::perltidy has an ARRAY reference, which requires
-##IO::ScalarArray.  Please install it and try again.  Trace follows:
-##------------------------------------------------------------------------
-##
-##$@
-##EOM
-##.            $New = sub { IO::ScalarArray->new(@_) };
             $New = sub { Perl::Tidy::IOScalarArray->new(@_) };
         }
         elsif ( $ref eq 'SCALAR' ) {
-##            eval "use IO::Scalar";
-##            confess <<EOM if $@;
-##------------------------------------------------------------------------
-##Your call to Perl::Tidy::perltidy has an SCALAR reference, which requires
-##IO::Scalar.  Please install it and try again.  Trace follows:
-##------------------------------------------------------------------------
-##
-##$@
-##EOM
-##            $New = sub { IO::Scalar->new(@_) };
             $New = sub { Perl::Tidy::IOScalar->new(@_) };
         }
         else {
@@ -197,6 +177,39 @@ sub catfile {
     ( $test_name, $test_path ) = fileparse($test_file);
     return $test_file if ( $test_name eq $name );
     return undef;
+}
+
+sub make_temporary_filename {
+
+    # Make a temporary filename.  
+    #
+    # The POSIX tmpnam() function tends to be unreliable for non-unix
+    # systems (at least for the win32 systems that I've tested), so use
+    # a pre-defined name.  A slight disadvantage of this is that two
+    # perltidy runs in the same working directory may conflict.
+    # However, the chance of that is small and managable by the user.
+    # An alternative would be to check for the file's existance and use,
+    # say .TMP0, .TMP1, etc, but that scheme has its own problems.  So,
+    # keep it simple.
+    my $name = "perltidy.TMP";
+    if ( $^O =~ /win32|dos/i || $^O eq 'VMS' || $^O eq 'MacOs' ) {
+        return $name;
+    }
+    eval "use POSIX qw(tmpnam)";
+    if ($@) { return $name }
+    use IO::File;
+
+    # just make a couple of tries before giving up and using the default
+    for ( 0 .. 1 ) {
+        my $tmpname = tmpnam();
+        my $fh = IO::File->new( $tmpname, O_RDWR | O_CREAT | O_EXCL );
+        if ($fh) {
+            $fh->close();
+            return ($tmpname);
+            last;
+        }
+    }
+    return ($name);
 }
 
 # Here is a map of the flow of data from the input source to the output
@@ -399,21 +412,18 @@ EOM
             die "-format='$fmt' but must be one of: $formats\n";
         }
 
-        my $output_extension = $default_file_extension{ $rOpts->{'format'} };
-        if ( defined( $rOpts->{'output-file-extension'} ) ) {
-            $output_extension = $rOpts->{'output-file-extension'};
-        }
-        if ( $output_extension =~ /^[a-zA-Z0-9]/ ) {
-            $output_extension = $dot . $output_extension;
-        }
+        my $output_extension =
+          make_extension( $rOpts->{'output-file-extension'},
+            $default_file_extension{ $rOpts->{'format'} }, $dot );
 
-        my $backup_extension = 'bak';
-        if ( defined( $rOpts->{'backup-file-extension'} ) ) {
-            $backup_extension = $rOpts->{'backup-file-extension'};
-        }
-        if ( $backup_extension =~ /^[a-zA-Z0-9]/ ) {
-            $backup_extension = $dot . $backup_extension;
-        }
+        my $backup_extension =
+          make_extension( $rOpts->{'backup-file-extension'}, 'bak', $dot);
+
+        my $html_toc_extension =
+          make_extension( $rOpts->{'html-toc-extension'}, 'left', $dot);
+
+        my $html_content_extension =
+          make_extension( $rOpts->{'html-content-extension'}, 'right', $dot);
 
         # check for -b option; 
         my $in_place_modify = $rOpts->{'backup-and-modify-in-place'}
@@ -425,28 +435,25 @@ EOM
         # turn off -b with warnings in case of conflicts with other options
         if ($in_place_modify) {
             if ( $rOpts->{'standard-output'} ) {
-                print STDERR
-                  "Ignoring -b; you may not use -b and -st together\n";
+                warn "Ignoring -b; you may not use -b and -st together\n";
                 $in_place_modify = 0;
             }
             if ($destination_stream) {
-                print STDERR
+                warn
 "Ignoring -b; you may not specify a destination array and -b together\n";
                 $in_place_modify = 0;
             }
             if ($source_stream) {
-                print STDERR
+                warn
 "Ignoring -b; you may not specify a source array and -b together\n";
                 $in_place_modify = 0;
             }
             if ( $rOpts->{'outfile'} ) {
-                print STDERR
-                  "Ignoring -b; you may not use -b and -o together\n";
+                warn "Ignoring -b; you may not use -b and -o together\n";
                 $in_place_modify = 0;
             }
             if ( defined( $rOpts->{'output-path'} ) ) {
-                print STDERR
-                  "Ignoring -b; you may not use -b and -opath together\n";
+                warn "Ignoring -b; you may not use -b and -opath together\n";
                 $in_place_modify = 0;
             }
         }
@@ -488,12 +495,6 @@ EOM
             unshift ( @ARGV, '-' ) unless @ARGV;
         }
 
-        # Set a flag here for any system which does not have a shell to
-        # expand wildcard filenames like '*.pl'.  In theory it should also
-        # be ok to set the flag for any system, but I prefer not to do so
-        # out of robustness concerns.
-        my $use_glob = $is_Windows;
-
         # loop to process all files in argument list
         my $number_of_files = @ARGV;
         my $formatter       = undef;
@@ -514,22 +515,23 @@ EOM
             }
             else {
                 $fileroot = $input_file;
-
                 unless ( -e $input_file ) {
 
-                    # file doesn't exist, maybe we have a wildcard
-                    if ($use_glob) {
-
-                        # be sure files exist, because glob('p.q') always
-                        # returns 'p.q' even if 'p.q' doesn't exist.
-                        my @files = grep { -e $_ } glob($input_file);
-                        if (@files) {
-                            unshift @ARGV, @files;
-                            next;
+                    # file doesn't exist - check for a file glob 
+                    if ( $input_file =~ /([\?\*\[\{])/ ) {
+                        my $pattern = fileglob_to_re($input_file);
+                        eval "/$pattern/";
+                        if ( !$@ && opendir( DIR, './' ) ) {
+                            my @files =
+                              grep { /$pattern/ && !-d $_ } readdir(DIR);
+                            closedir(DIR);
+                            if (@files) {
+                                unshift @ARGV, @files;
+                                next;
+                            }
                         }
                     }
-
-                    print "skipping file: $input_file: does not exist\n";
+                    print "skipping: '$input_file': no matches found\n";
                     next;
                 }
 
@@ -558,11 +560,10 @@ EOM
                     my ( $base, $old_path ) = fileparse($fileroot);
                     my $new_path = $rOpts->{'output-path'};
                     unless ( -d $new_path ) {
-                        die <<EOM;
-------------------------------------------------------------------------
-The path $new_path does not exist; please check value of -opath 
-------------------------------------------------------------------------
-EOM
+                        unless ( mkdir $new_path ) {
+                            die
+"unable to create directory $new_path: $!\n";
+                        }
                     }
                     my $path = $new_path;
                     $fileroot = catfile( $path, $base );
@@ -604,6 +605,7 @@ EOM
             # determine the output file name
             #---------------------------------------------------------------
             my $output_file = undef;
+            my $actual_output_extension; 
 
             if ( $rOpts->{'outfile'} ) {
 
@@ -655,6 +657,7 @@ EOM
                       or die "cannot open temp file for -b option: $!\n";
                 }
                 else {
+                    $actual_output_extension = $output_extension; 
                     $output_file = $fileroot . $output_extension;
                 }
             }
@@ -709,7 +712,9 @@ EOM
             }
             elsif ( $rOpts->{'format'} eq 'html' ) {
                 $formatter =
-                  Perl::Tidy::HtmlWriter->new( $fileroot, $output_file );
+                  Perl::Tidy::HtmlWriter->new( $fileroot, $output_file,
+                    $actual_output_extension, $html_toc_extension,
+                    $html_content_extension );
             }
             elsif ( $rOpts->{'format'} eq 'tidy' ) {
                 $formatter = Perl::Tidy::Formatter->new(
@@ -828,6 +833,30 @@ EOM
         }    # end of loop to process all files
 
     }    # end of main program
+}
+
+sub fileglob_to_re {
+    my $x = shift;
+    $x =~ s#([./^\$()])#\\$1#g;
+    $x =~ s#([?*])#.$1#g;
+    "^$x\\z";
+}
+
+sub make_extension {
+
+    # Make a file extension, including any leading '.' if necessary
+    # The '.' may actually be an '_' under VMS
+    my ($extension, $default, $dot) = @_;
+
+    # Use the default if none specified
+    $extension = $default unless ($extension);
+
+    # Only extensions with these leading characters get a '.'
+    # This rule gives the user some freedom
+    if ( $extension =~ /^[a-zA-Z0-9]/ ) {
+        $extension = $dot . $extension;
+    }
+    return $extension;
 }
 
 sub write_logfile_header {
@@ -1143,6 +1172,9 @@ sub process_command_line {
       trim-qw
       format=tidy
       backup-file-extension=bak
+
+      pod2html
+      html-table-of-contents
     );
 
     push @defaults, "perl-syntax-check-flags=-c -T";
@@ -1303,17 +1335,18 @@ sub process_command_line {
     #---------------------------------------------------------------
     foreach $i (@ARGV) {
 
-        if ( $i =~ /-(npro|noprofile)$/ ) {
+        $i=~ s/^--/-/;
+        if ( $i =~ /^-(npro|noprofile)$/ ) {
             $saw_ignore_profile = 1;
         }
 
         # note: this must come before -pro and -profile, below:
-        elsif ( $i =~ /-(dump-profile|dpro)$/ ) {
+        elsif ( $i =~ /^-(dump-profile|dpro)$/ ) {
             $saw_dump_profile = 1;
         }
-        elsif ( $i =~ /-(pro|profile)=(.+)/ ) {
+        elsif ( $i =~ /^-(pro|profile)=(.+)/ ) {
             if ($config_file) {
-                print STDERR
+                warn
 "Only one -pro=filename allowed, using '$2' instead of '$config_file'\n";
             }
             $config_file = $2;
@@ -1322,42 +1355,40 @@ sub process_command_line {
                 $config_file = "";
             }
         }
-        elsif ( $i =~ /-(pro|profile)=?$/ ) {
-            print STDERR
-              "usage: -pro=filename or --profile=filename, no spaces\n";
-            exit 1;
+        elsif ( $i =~ /^-(pro|profile)=?$/ ) {
+            die "usage: -pro=filename or --profile=filename, no spaces\n";
         }
-        elsif ( $i =~ /-extrude$/ ) {
+        elsif ( $i =~ /^-extrude$/ ) {
             $saw_extrude = 1;
         }
-        elsif ( $i =~ /-(help|h|HELP|H)$/ ) {
+        elsif ( $i =~ /^-(help|h|HELP|H)$/ ) {
             usage();
             exit 1;
         }
-        elsif ( $i =~ /-(version|v)$/ ) {
+        elsif ( $i =~ /^-(version|v)$/ ) {
             show_version();
             exit 1;
         }
-        elsif ( $i =~ /-(dump-defaults|ddf)$/ ) {
+        elsif ( $i =~ /^-(dump-defaults|ddf)$/ ) {
             dump_defaults(@defaults);
             exit 1;
         }
-        elsif ( $i =~ /-(dump-long-names|dln)$/ ) {
+        elsif ( $i =~ /^-(dump-long-names|dln)$/ ) {
             dump_long_names(@option_string);
             exit 1;
         }
-        elsif ( $i =~ /-(dump-short-names|dsn)$/ ) {
+        elsif ( $i =~ /^-(dump-short-names|dsn)$/ ) {
             dump_short_names( \%expansion );
             exit 1;
         }
-        elsif ( $i =~ /-(dump-token-types|dtt)$/ ) {
+        elsif ( $i =~ /^-(dump-token-types|dtt)$/ ) {
             Perl::Tidy::Tokenizer->dump_token_types(*STDOUT);
             exit 1;
         }
     }
 
     if ( $saw_dump_profile && $saw_ignore_profile ) {
-        print STDERR "No profile to dump because of -npro\n";
+        warn "No profile to dump because of -npro\n";
         exit 1;
     }
 
@@ -1371,7 +1402,7 @@ sub process_command_line {
         # line.
         if ($perltidyrc_stream) {
             if ($config_file) {
-                print STDERR <<EOM;
+                warn <<EOM;
  Conflict: a perltidyrc configuration file was specified both as this
  perltidy call parameter: $perltidyrc_stream 
  and with this -profile=$config_file.
@@ -1449,8 +1480,7 @@ EOM
                 {
                     if ( defined( $Opts{$_} ) ) {
                         delete $Opts{$_};
-                        print STDERR
-                          "ignoring --$_ in config file: $config_file\n";
+                        warn "ignoring --$_ in config file: $config_file\n";
                     }
                 }
             }
@@ -1558,7 +1588,7 @@ EOM
     if (   $Opts{'opening-brace-always-on-right'}
         && $Opts{'opening-brace-on-new-line'} )
     {
-        print STDERR <<EOM;
+        warn <<EOM;
  Conflict: you specified both 'opening-brace-always-on-right' (-bar) and 
   'opening-brace-on-new-line' (-bl).  Ignoring -bl. 
 EOM
@@ -1583,7 +1613,7 @@ EOM
 
     if ( $Opts{'entab-leading-whitespace'} ) {
         if ( $Opts{'entab-leading-whitespace'} < 0 ) {
-            print STDERR "-et=n must use a positive integer; ignoring -et\n";
+            warn "-et=n must use a positive integer; ignoring -et\n";
             $Opts{'entab-leading-whitespace'} = undef;
         }
 
@@ -2359,12 +2389,17 @@ Dump and die, debugging
  -dtt    dump all token types to standard output and quit
 
 HTML
- -html   write an html file (see 'man perl2web' for many options)
-         Note: when -html is used, no indentation or formatting are done.
-         Hint: try perltidy -html -css=mystyle.css filename.pl
-         and edit mystyle.css to change the appearance of filename.html.
-         -nnn gives line numbers
-         -pre only writes out <pre>..</pre> code section
+ -html write an html file (see 'man perl2web' for many options)
+       Note: when -html is used, no indentation or formatting are done.
+       Hint: try perltidy -html -css=mystyle.css filename.pl
+       and edit mystyle.css to change the appearance of filename.html.
+       -nnn gives line numbers
+       -pre only writes out <pre>..</pre> code section
+       -toc places a table of contents to subs at the top (default)
+       -pod passes pod text through pod2html (default)
+       -frm write html as a frame (3 files)
+       -lext=s extra extension for table of contents if -frm, default='left'
+       -rext=s extra extension for file content if -frm, default='right'
 
 A prefix of "n" negates short form toggle switches, and a prefix of "no"
 negates the long forms.  For example, -nasc means don't add missing
@@ -2504,7 +2539,7 @@ sub do_syntax_check {
 
 #####################################################################
 #
-# This is a stripped down version of IO::Scalar
+# This is a stripped down version of IO::Scalar 
 # Given a reference to a scalar, it supplies either:
 # a getline method which reads lines (mode='r'), or
 # a print method which reads lines (mode='w')
@@ -2512,10 +2547,11 @@ sub do_syntax_check {
 #####################################################################
 package Perl::Tidy::IOScalar;
 use Carp;
+
 sub new {
     my ( $package, $rscalar, $mode ) = @_;
-    my $ref=ref $rscalar;
-    if ($ref ne 'SCALAR') {
+    my $ref = ref $rscalar;
+    if ( $ref ne 'SCALAR' ) {
         confess <<EOM;
 ------------------------------------------------------------------------
 expecting ref to SCALAR but got ref to ($ref); trace follows:
@@ -2523,17 +2559,17 @@ expecting ref to SCALAR but got ref to ($ref); trace follows:
 EOM
 
     }
-    if ($mode eq 'w') {
-       $$rscalar = "";
-       return bless [$rscalar,$mode], $package;
+    if ( $mode eq 'w' ) {
+        $$rscalar = "";
+        return bless [ $rscalar, $mode ], $package;
     }
-    elsif ($mode eq 'r') {
+    elsif ( $mode eq 'r' ) {
 
-       # Convert a scalar to an array.
-       # This avoids looking for "\n" on each call to getline
-       my @array = map {$_ .= "\n"} split /\n/, ${$rscalar};
-       my $i_next=0;
-       return bless [\@array,$mode,$i_next], $package;
+        # Convert a scalar to an array.
+        # This avoids looking for "\n" on each call to getline
+        my @array = map { $_ .= "\n" } split /\n/, ${$rscalar};
+        my $i_next = 0;
+        return bless [ \@array, $mode, $i_next ], $package;
     }
     else {
         confess <<EOM;
@@ -2542,33 +2578,34 @@ expecting mode = 'r' or 'w' but got mode ($mode); trace follows:
 ------------------------------------------------------------------------
 EOM
     }
-
 }
+
 sub getline {
-    my $self   = shift;
-    my $mode   = $self->[1];
-    if ($mode ne 'r') {
+    my $self = shift;
+    my $mode = $self->[1];
+    if ( $mode ne 'r' ) {
         confess <<EOM;
 ------------------------------------------------------------------------
 getline call requires mode = 'r' but mode = ($mode); trace follows:
 ------------------------------------------------------------------------
 EOM
     }
-    my $i = $self->[2]++;
+    my $i    = $self->[2]++;
     my $line = $self->[0]->[$i];
     return $self->[0]->[$i];
 }
+
 sub print {
-    my $self   = shift;
-    my $mode   = $self->[1];
-    if ($mode ne 'w') {
+    my $self = shift;
+    my $mode = $self->[1];
+    if ( $mode ne 'w' ) {
         confess <<EOM;
 ------------------------------------------------------------------------
 print call requires mode = 'w' but mode = ($mode); trace follows:
 ------------------------------------------------------------------------
 EOM
     }
-    ${$self->[0]} .= $_[0];
+    ${ $self->[0] } .= $_[0];
 }
 sub close { return }
 
@@ -2582,10 +2619,11 @@ sub close { return }
 #####################################################################
 package Perl::Tidy::IOScalarArray;
 use Carp;
+
 sub new {
     my ( $package, $rarray, $mode ) = @_;
-    my $ref=ref $rarray;
-    if ($ref ne 'ARRAY') {
+    my $ref = ref $rarray;
+    if ( $ref ne 'ARRAY' ) {
         confess <<EOM;
 ------------------------------------------------------------------------
 expecting ref to ARRAY but got ref to ($ref); trace follows:
@@ -2593,13 +2631,13 @@ expecting ref to ARRAY but got ref to ($ref); trace follows:
 EOM
 
     }
-    if ($mode eq 'w') {
-       @$rarray = ();
-       return bless [$rarray,$mode], $package;
+    if ( $mode eq 'w' ) {
+        @$rarray = ();
+        return bless [ $rarray, $mode ], $package;
     }
-    elsif ($mode eq 'r') {
-       my $i_next=0;
-       return bless [$rarray,$mode,$i_next], $package;
+    elsif ( $mode eq 'r' ) {
+        my $i_next = 0;
+        return bless [ $rarray, $mode, $i_next ], $package;
     }
     else {
         confess <<EOM;
@@ -2609,31 +2647,33 @@ expecting mode = 'r' or 'w' but got mode ($mode); trace follows:
 EOM
     }
 }
+
 sub getline {
-    my $self   = shift;
-    my $mode   = $self->[1];
-    if ($mode ne 'r') {
+    my $self = shift;
+    my $mode = $self->[1];
+    if ( $mode ne 'r' ) {
         confess <<EOM;
 ------------------------------------------------------------------------
 getline requires mode = 'r' but mode = ($mode); trace follows:
 ------------------------------------------------------------------------
 EOM
     }
-    my $i = $self->[2]++;
+    my $i    = $self->[2]++;
     my $line = $self->[0]->[$i];
     return $self->[0]->[$i];
 }
+
 sub print {
-    my $self   = shift;
-    my $mode   = $self->[1];
-    if ($mode ne 'w') {
+    my $self = shift;
+    my $mode = $self->[1];
+    if ( $mode ne 'w' ) {
         confess <<EOM;
 ------------------------------------------------------------------------
 print requires mode = 'w' but mode = ($mode); trace follows:
 ------------------------------------------------------------------------
 EOM
     }
-    push @{$self->[0]}, $_[0];
+    push @{ $self->[0] }, $_[0];
 }
 sub close { return }
 
@@ -3170,7 +3210,7 @@ sub warning {
                 ( $fh_warnings, my $filename ) =
                   Perl::Tidy::streamhandle( $warning_file, 'w' );
                 $fh_warnings or die ("couldn't open $filename $!\n");
-                print STDERR "## Please see file $filename\n";
+                warn "## Please see file $filename\n";
             }
             $self->{_fh_warnings} = $fh_warnings;
         }
@@ -3334,6 +3374,8 @@ sub close { return }
 
 package Perl::Tidy::HtmlWriter;
 
+use File::Basename;
+
 # class variables
 use vars qw{
   %html_color
@@ -3353,7 +3395,9 @@ use vars qw{
 
 sub new {
 
-    my ( $class, $input_file, $html_file ) = @_;
+    my ( $class, $input_file, $html_file, $extension, $html_toc_extension,
+        $html_content_extension )
+      = @_;
 
     my $html_file_opened = 0;
     my $html_fh;
@@ -3369,107 +3413,95 @@ sub new {
         $input_file = "NONAME";
     }
 
+    # write the table of contents to a string
+    my $toc_string;
+    my $html_toc_fh = Perl::Tidy::IOScalar->new( \$toc_string, 'w' );
+
     my $html_pre_fh;
-    my $html_toc_fh;
+    my @pre_string_stack;
     if ( $rOpts->{'html-pre-only'} ) {
 
-        # the table of contents goes to /dev/null
-        $html_toc_fh = Perl::Tidy::DevNull->new();
-
-        # pre section goes to output stream
+        # pre section goes directly to the output stream
         $html_pre_fh = $html_fh;
     }
     else {
 
-        # the table of contents goes to output stream
-        $html_toc_fh = $html_fh;
+        # pre section go out to a temporary string
+        my $pre_string;
+        $html_pre_fh = Perl::Tidy::IOScalar->new( \$pre_string, 'w' );
+        push @pre_string_stack, \$pre_string;
+    }
 
-        # The <pre> section go out to a temporary file.  
-        # sub close() will copy it to the output stream.
-        $html_pre_fh = IO::File->new_tmpfile()
-          or die "cannot open temp file for -html: $!\n";
-
-        # Start sending the the full html page to the output stream
-        my $title = escape_html($input_file);
-        $html_fh->print( <<"HTML_START");
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
-   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head>
-<title>$title</title>
-HTML_START
-
-        # use css linked to another file
-        if ( $rOpts->{'html-linked-style-sheet'} ) {
-            $html_fh->print(
-qq(<link rel="stylesheet" href="$css_linkname" type="text/css" />)
-            );
-            $html_fh->print( <<"ENDCSS");
-</head>
-<body>
-ENDCSS
+    # pod text gets diverted if the 'pod2html' is used
+    my $html_pod_fh;
+    my $pod_string;
+    if ( $rOpts->{'pod2html'} ) {
+        if ( $rOpts->{'html-pre-only'} ) {
+            warn "cannot use both -pre and -pod2html; ignoring pod2html\n";
+            undef $rOpts->{'pod2html'};
         }
-
-        # use css embedded in this file
-        elsif ( !$rOpts->{'nohtml-style-sheets'} ) {
-            $html_fh->print( <<'ENDCSS');
-<style type="text/css">
-<!--
-ENDCSS
-            write_style_sheet_data($html_fh);
-            $html_fh->print( <<"ENDCSS");
--->
-</style>
-</head>
-<body>
-ENDCSS
-        }
-
-        # no css used
         else {
-
-            $html_fh->print( <<"HTML_START");
-</head>
-<body bgcolor=\"$rOpts->{'html-color-background'}\" text=\"$rOpts->{'html-color-punctuation'}\">
-HTML_START
+            eval "use Pod::Html";
+            if ($@) {
+                warn "unable to find Pod::Html; cannot use pod2html\n";
+                undef $rOpts->{'pod2html'};
+            }
+            else {
+                $html_pod_fh = Perl::Tidy::IOScalar->new( \$pod_string, 'w' );
+            }
         }
+    }
 
-        $html_fh->print( <<"EOM");
-<h1>$title</h1>
-EOM
-
+    my $toc_filename; 
+    my $content_filename;
+    if ( $rOpts->{'html-frames'} ) {
+        unless ($extension) {
+            warn
+"cannot use frames without a specified output extension; ignoring -frm\n";
+            undef $rOpts->{'html-frames'};
+        }
+        else {
+            $toc_filename     = $input_file . $html_toc_extension . $extension;
+            $content_filename =
+              $input_file . $html_content_extension . $extension;
+        }
     }
 
     # ----------------------------------------------------------
     # Output is now directed as follows:
     # html_toc_fh <-- table of contents items
-    # html_pre_fh <-- the <pre> section of formatted code
+    # html_pre_fh <-- the <pre> section of formatted code, except:
+    # html_pod_fh <-- pod goes here with the pod2html option
     # ----------------------------------------------------------
 
-    my $fname_comment = $input_file;
-    $fname_comment =~ s/--+/-/g;    # protect HTML comment tags
-
-    $html_pre_fh->print( <<"END_PRE");
-<hr />
-<!-- contents of filename: $fname_comment -->
-<pre>
-END_PRE
-
+    my $title = $rOpts->{'title'};
+    unless ($title) {
+        ($title, my $path) = fileparse($input_file); 
+    }
     my $toc_item_count = 0;
     my $in_toc_package = "";
     my $last_level     = 0;
     bless {
-        _html_file        => $html_file,           # name of file
-        _html_file_opened => $html_file_opened,    # a flag
-        _html_fh          => $html_fh,             # the output stream
-        _html_pre_fh      => $html_pre_fh,         # pre section goes here
-        _html_toc_fh      => $html_toc_fh,         # table of contents goes here
-        _rtoc_item_count  => \$toc_item_count,     # how many toc items
-        _rin_toc_package  => \$in_toc_package,     # package name
-        _rtoc_name_count  => {},                   # hash to track unique names
-        _rpackage_stack   => [],                   # stack to check for package
-                                                   # name changes
-        _rlast_level      => \$last_level,         # brace indentation level
+        _input_file        => $input_file,          # name of input file
+        _title             => $title,               # title, unescaped
+        _html_file         => $html_file,           # name of .html output file
+        _toc_filename      => $toc_filename,        # for frames option
+        _content_filename  => $content_filename,    # for frames option
+        _html_file_opened  => $html_file_opened,    # a flag
+        _html_fh           => $html_fh,             # the output stream
+        _html_pre_fh       => $html_pre_fh,         # pre section goes here
+        _rpre_string_stack => \@pre_string_stack,   # stack of pre sections
+        _html_pod_fh       => $html_pod_fh,         # pod goes here if pod2html
+        _rpod_string       => \$pod_string,         # string holding pod
+        _pod_cut_count     => 0,                    # how many =cut's?
+        _html_toc_fh       => $html_toc_fh,         # fh for table of contents
+        _rtoc_string       => \$toc_string,         # string holding toc
+        _rtoc_item_count   => \$toc_item_count,     # how many toc items
+        _rin_toc_package   => \$in_toc_package,     # package name
+        _rtoc_name_count   => {},                   # hash to track unique names
+        _rpackage_stack    => [],                   # stack to check for package
+                                                    # name changes
+        _rlast_level       => \$last_level,         # brace indentation level
     }, $class;
 }
 
@@ -3478,8 +3510,7 @@ sub add_toc_item {
     # Add an item to the html table of contents.
     # This is called even if no table of contents is written,
     # because we still want to put the anchors in the <pre> text.
-    # We are given an anchor name and its type;
-    # possible types are:
+    # We are given an anchor name and its type; types are:
     #      'package', 'sub', '__END__', '__DATA__', 'EOF'
     # There must be an 'EOF' call at the end to wrap things up.
     my $self = shift;
@@ -3518,7 +3549,7 @@ EOM
         # in this case, there will be no toc
         return if ( $type eq 'EOF' );
         $html_toc_fh->print( <<"TOC_END");
-<!-- BEGIN INDEX --><a name="-index-"></a>
+<!-- BEGIN CODE INDEX --><a name="code-index"></a>
 <ul>
 TOC_END
     }
@@ -3535,6 +3566,10 @@ TOC_END
     if ( my $count = $rtoc_name_count->{ lc $unique_name }++ ) {
         $unique_name .= "-$count";
     }
+
+    #   - all names get terminal '-' if pod2html is used, to avoid
+    #     conflicts with anchor names created by pod2html
+    if ($rOpts->{'pod2html'}) {$unique_name .= '-'}
 
     # start/stop lists of subs
     if ( $type eq 'sub' ) {
@@ -3572,7 +3607,7 @@ TOC_END
     if ( $type eq 'EOF' ) {
         $html_toc_fh->print( <<"TOC_END");
 </ul>
-<!-- END INDEX -->
+<!-- END CODE INDEX -->
 TOC_END
     }
 }
@@ -3697,6 +3732,24 @@ sub make_getopt_long_names {
     push @$rgetopt_names, "html-pre-only";
     push @$rgetopt_names, "html-line-numbers";
     push @$rgetopt_names, "stylesheet";
+    push @$rgetopt_names, "html-table-of-contents!";
+    push @$rgetopt_names, "pod2html!";
+    push @$rgetopt_names, "html-frames!";
+    push @$rgetopt_names, "html-toc-extension=s";
+    push @$rgetopt_names, "html-content-extension=s";
+
+    # Pod::Html parameters:
+    push @$rgetopt_names, "backlink=s";
+    push @$rgetopt_names, "cachedir=s";
+    push @$rgetopt_names, "flush";
+    push @$rgetopt_names, "header!";
+    push @$rgetopt_names, "htmlroot=s";
+    push @$rgetopt_names, "index!";
+    push @$rgetopt_names, "libpods=s";
+    push @$rgetopt_names, "podpath=s";
+    push @$rgetopt_names, "podroot=s";
+    push @$rgetopt_names, "recurse!";
+    push @$rgetopt_names, "title=s";
 }
 
 sub make_abbreviated_names {
@@ -3720,10 +3773,18 @@ sub make_abbreviated_names {
     # abbreviations for all other html options
     ${$rexpansion}{"hcbg"} = ["html-color-background"];
     ${$rexpansion}{"pre"}  = ["html-pre-only"];
+    ${$rexpansion}{"toc"}  = ["html-table-of-contents"];
+    ${$rexpansion}{"ntoc"} = ["nohtml-table-of-contents"];
     ${$rexpansion}{"nnn"}  = ["html-line-numbers"];
     ${$rexpansion}{"css"}  = ["html-linked-style-sheet"];
     ${$rexpansion}{"nss"}  = ["nohtml-style-sheets"];
     ${$rexpansion}{"ss"}   = ["stylesheet"];
+    ${$rexpansion}{"pod"}  = ["pod2html"];
+    ${$rexpansion}{"npod"} = ["nopod2html"];
+    ${$rexpansion}{"frm"}  = ["html-frames"];
+    ${$rexpansion}{"nfrm"} = ["nohtml-frames"];
+    ${$rexpansion}{"lext"} = ["html-toc-extension"];   
+    ${$rexpansion}{"rext"} = ["html-content-extension"];
 }
 
 sub check_options {
@@ -3737,6 +3798,7 @@ sub check_options {
     # numbers are actually written)
     use constant ForestGreen   => "#228B22";
     use constant SaddleBrown   => "#8B4513";
+    use constant magenta4      => "#8B008B";
     use constant IndianRed3    => "#CD5555";
     use constant DeepSkyBlue4  => "#00688B";
     use constant MediumOrchid3 => "#B452CD";
@@ -3752,7 +3814,7 @@ sub check_options {
     # set_default_properties( $short_name, default_color, bold?, italic? );
     set_default_properties( 'c',  ForestGreen,   0, 0 );
     set_default_properties( 'pd', ForestGreen,   0, 1 );
-    set_default_properties( 'k',  SaddleBrown,   1, 0 );
+    set_default_properties( 'k',  magenta4,      1, 0 );  # was SaddleBrown
     set_default_properties( 'q',  IndianRed3,    0, 0 );
     set_default_properties( 'hh', IndianRed3,    0, 1 );
     set_default_properties( 'h',  IndianRed3,    1, 0 );
@@ -3760,7 +3822,7 @@ sub check_options {
     set_default_properties( 'w',  black,         0, 0 );
     set_default_properties( 'n',  MediumOrchid3, 0, 0 );
     set_default_properties( 'v',  MediumOrchid3, 0, 0 );
-    set_default_properties( 'j',  black,         1, 0 );
+    set_default_properties( 'j',  IndianRed3,    1, 0 );
     set_default_properties( 'm',  red,           1, 0 );
 
     set_default_color( 'html-color-background',  white );
@@ -3778,7 +3840,7 @@ sub check_options {
     # write style sheet to STDOUT and die if requested
     if ( defined( $rOpts->{'stylesheet'} ) ) {
         write_style_sheet_file('-');
-        exit;
+        exit 1;
     }
 
     # make sure user gives a file name after -css
@@ -3804,12 +3866,8 @@ sub check_options {
         # forgets to specify the style sheet, like this:
         #    perltidy -html -css myfile1.pl myfile2.pl
         # This would cause myfile1.pl to parsed as the style sheet by GetOpts
-
         my $css_filename = $css_linkname;
-        if ( -e $css_filename ) {
-        }
-        else {
-
+        unless ( -e $css_filename ) {
             write_style_sheet_file($css_filename);
         }
     }
@@ -3834,11 +3892,15 @@ sub write_style_sheet_data {
     my $bg_color   = $rOpts->{'html-color-background'};
     my $text_color = $rOpts->{'html-color-punctuation'};
 
+    # pre-bgcolor is new, and may not be defined
+    my $pre_bg_color = $rOpts->{'html-pre-color-background'}; 
+    $pre_bg_color=$bg_color unless $pre_bg_color; 
+
     $fh->print(<<"EOM");
 /* default style sheet generated by perltidy */
 body {background: $bg_color; color: $text_color}
 pre { color: $text_color; 
-      background: $bg_color;
+      background: $pre_bg_color;
       font-family: courier;
     } 
 
@@ -3892,37 +3954,512 @@ sub set_default_properties {
     $rOpts->{$key} = ( defined $rOpts->{$key} ) ? $rOpts->{$key} : $italic;
 }
 
+sub pod_to_html {
+
+    # Use Pod::Html to process the pod and make the page
+    # then merge the perltidy code sections into it.
+    # return 1 if success, 0 otherwise
+    my $self = shift;
+    my ( $pod_string, $css_string, $toc_string, $rpre_string_stack ) = @_;
+    my $input_file   = $self->{_input_file};
+    my $title        = $self->{_title};
+    my $success_flag = 0;
+
+    # don't try to use pod2html if no pod
+    unless ($pod_string) {
+        return $success_flag;
+    }
+
+    # Pod::Html requires a real temporary filename
+    # If we are making a frame, we have a name available
+    # Otherwise, we have to fine one
+    my $tmpfile; 
+    if ( $rOpts->{'html-frames'} ) {
+       $tmpfile = $self->{_toc_filename};
+    }
+    else {
+       $tmpfile = Perl::Tidy::make_temporary_filename();
+    }
+    my $fh_tmp = IO::File->new( $tmpfile, 'w' );
+    unless ($fh_tmp) {
+        warn "unable to open temporary file $tmpfile; cannot use pod2html\n";
+        return $success_flag;
+    }
+
+    #------------------------------------------------------------------
+    # Warning: a temporary file is open; we have to clean up if
+    # things go bad.  From here on all returns should be by going to
+    # RETURN so that the temporary file gets unlinked.
+    #------------------------------------------------------------------
+
+    # write the pod text to the temporary file
+    $fh_tmp->print($pod_string);
+    $fh_tmp->close();
+
+    # hand off the pod to pod2html
+    # note that we can use the same temporary filename for input and output
+    {
+
+        my @args;
+        push @args, "--infile=$tmpfile", "--outfile=$tmpfile",
+            "--title=$title" ;
+        my $kw;
+
+        # "backlink=s", "cachedir=s", "htmlroot=s", "libpods=s",
+        # "podpath=s", "podroot=s"
+        # Note: -css=s is handled by perltidy itself
+        foreach $kw(qw(backlink cachedir htmlroot libpods podpath podroot)) {
+           if ($rOpts->{$kw}) {push @args, "--$kw=$rOpts->{$kw}"}
+        }
+
+        # "header!", "index!", "recurse!",
+        foreach $kw(qw(header index recurse)) {
+           if ($rOpts->{$kw}) {push @args, "--$kw"}
+           elsif (defined($rOpts->{$kw})) {push @args, "--no$kw"}
+        }
+
+        # "flush",
+        $kw = 'flush';
+        if ($rOpts->{$kw}) {push @args, "--$kw"}
+
+        local $SIG{__DIE__} = sub {
+            print $_[0];
+            unlink $tmpfile if -e $tmpfile;
+            exit 1;
+        };
+
+        pod2html( @args);
+    }
+    $fh_tmp = IO::File->new( $tmpfile, 'r' );
+    unless ($fh_tmp) {
+        # this error shouldn't happen ... we just used this filename
+        warn "unable to open temporary file $tmpfile; cannot use pod2html\n";
+        goto RETURN;
+    }
+
+    my $html_fh = $self->{_html_fh};
+    my @toc;
+    my $in_toc;
+    my $no_print;
+
+    # This routine will write the html selectively and store the toc
+    my $html_print = sub {
+         foreach (@_) {
+             $html_fh->print($_) unless ($no_print);
+             if ($in_toc) {push @toc, $_} 
+         }
+    };
+
+    # loop over lines of html output from pod2html and merge in
+    # the necessary perltidy html sections
+    my ( $saw_body, $saw_index, $saw_body_end );
+    while ( my $line = $fh_tmp->getline() ) {
+
+        if ( $line =~ /^\s*<html>\s*$/i ) {
+            my $date=localtime;
+            $html_print->("<!-- Generated by perltidy on $date -->\n");
+            $html_print->($line);
+        }
+
+        # Copy the perltidy css, if any, after <body> tag
+        elsif ( $line =~ /^\s*<body>\s*$/i ) {
+            $saw_body = 1;
+            $html_print->($css_string) if $css_string;
+            $html_print->($line);
+
+            # add a top anchor and heading
+            $html_print->("<a name=\"-top-\"></a>\n");
+            $title = escape_html($title);
+            $html_print->("<h1>$title</h1>\n");
+        }
+        elsif ( $line =~ /^\s*<!-- INDEX BEGIN -->\s*$/i ) {
+            $in_toc = 1;
+
+            # when frames are used, an extra table of contents in the
+            # contents panel is confusing, so don't print it
+            $no_print = $rOpts->{'html-frames'}
+              || !$rOpts->{'html-table-of-contents'};
+            $html_print->("<h2>Doc Index:</h2>\n") if $rOpts->{'html-frames'};
+            $html_print->($line);
+        }
+
+        # Copy the perltidy toc, if any, after the Pod::Html toc
+        elsif ( $line =~ /^\s*<!-- INDEX END -->\s*$/i ) {
+            $saw_index = 1;
+            $html_print->($line);
+            if ($toc_string) {
+                $html_print->("<hr />\n") if $rOpts->{'html-frames'};
+                $html_print->("<h2>Code Index:</h2>\n");
+                my @toc=map{$_ .= "\n"} split /\n/,$toc_string;
+                $html_print->(@toc); 
+            }
+            $in_toc = 0;
+            $no_print = 0;
+        }
+
+        # Copy one perltidy section after each marker
+        elsif ( $line =~ /<!-- pERLTIDY sECTION -->(.*)$/ ) {
+            $line = $1;
+
+            # Only mix code and pod sections if we saw multiple =cut's.
+            # Otherwise, we'll put the pod out first and then
+            # the code, because it's less confusing.
+            if ( $self->{_pod_cut_count} > 1 ) {
+                my $rpre_string = shift (@$rpre_string_stack);
+                if ($$rpre_string) {
+                    $html_print->('<pre>');
+                    $html_print->($$rpre_string);
+                    $html_print->('</pre>');
+                }
+                else {
+
+                    # shouldn't happen: we stored a string before writing
+                    # each marker.
+                    warn
+"Problem merging html stream with pod2html; order may be wrong\n";
+                }
+
+                # The rest of the comment has an <hr>; we
+                # only want it if we are printing some code.
+                $html_print->($line);
+            }
+        }
+
+        # Copy any remaining code section before the </body> tag
+        elsif ( $line =~ /^\s*<\/body>\s*$/i ) {
+            $saw_body_end = 1;
+            if (@$rpre_string_stack) {
+                unless ( $self->{_pod_cut_count} > 1 ) {
+                    $html_print->('<hr />');
+                }
+                while ( my $rpre_string = shift (@$rpre_string_stack) ) {
+                    $html_print->('<pre>');
+                    $html_print->($$rpre_string);
+                    $html_print->('</pre>');
+                }
+            }
+            $html_print->($line);
+        }
+        else {
+            $html_print->($line);
+        }
+    }
+
+    $success_flag = 1;
+    unless ($saw_body) {
+        warn "Did not see <body> in pod2html output\n";
+        $success_flag = 0;
+    }
+    unless ($saw_body_end) {
+        warn "Did not see </body> in pod2html output\n";
+        $success_flag = 0;
+    }
+    unless ($saw_index) {
+        warn "Did not find INDEX END in pod2html output\n";
+        $success_flag = 0;
+    }
+    
+  RETURN:
+    eval { $html_fh->close() };
+
+    # note that we have to unlink tmpfile before making frames
+    # because the tmpfile may be one of the names used for frames
+    unlink $tmpfile if -e $tmpfile;
+    if ( $success_flag && $rOpts->{'html-frames'} ) {
+        $self->make_frame( \@toc );
+    }
+    return $success_flag;
+}
+
+sub make_frame {
+
+    # Make a frame with table of contents in the left panel
+    # and the text in the right panel.
+    # On entry: 
+    #  $html_filename contains the no-frames html output
+    #  $rtoc is a reference to an array with the table of contents
+    my $self=shift;
+    my ($rtoc) = @_;
+    my $input_file       = $self->{_input_file};
+    my $html_filename    = $self->{_html_file};
+    my $toc_filename     = $self->{_toc_filename};
+    my $content_filename = $self->{_content_filename};
+    my $title            = $self->{_title};
+    $title               = escape_html($title);
+
+    # FUTURE input parameter:
+    my $top_basename     = "";
+
+    # We need to produce 3 html files:
+    # 1. - the table of contents
+    # 2. - the contents itself
+    # 3. - the frame which contains them
+
+    # get basenames for relative links
+    my ( $toc_basename,     $toc_path )     = fileparse($toc_filename);
+    my ( $content_basename, $content_path ) = fileparse($content_filename);
+
+    # 1. Make the table of contents panel, with appropriate changes
+    # to the anchor names
+    my $first_anchor =
+      write_toc_html( $title, $toc_filename, $content_basename, $rtoc); 
+
+    # 2. The current .html filename is renamed to be the contents panel
+    rename( $html_filename, $content_filename )
+      or die "Cannot rename $html_filename to $content_filename:$!\n";
+
+    # 3. Then use the original html filename for the frame
+    write_frame_html( $title, $html_filename, $top_basename, $toc_basename,
+        $content_basename );
+}
+
+sub write_toc_html {
+
+    # write a separate html table of contents file for frames
+    my ( $title, $toc_filename, $content_basename, $rtoc) = @_;
+    my $fh = IO::File->new( $toc_filename, 'w' )
+      or die "Cannot open $toc_filename:$!\n";
+    $fh->print(<<EOM);
+<html>
+<head>
+<title>$title</title>
+</head>
+<body>
+<h1><a href=\"$content_basename\"#-top-" target="RIGHT">$title</a></h1>
+EOM
+
+    my $first_anchor =
+      change_anchor_names( $rtoc, $content_basename, "RIGHT" );
+    $fh->print( join "", @$rtoc );
+
+    $fh->print(<<EOM);
+</body>
+</html>
+EOM
+
+}
+
+sub write_frame_html {
+
+    # write an html file to be the table of contents frame
+    my ( $title, $frame_filename, $top_basename, $toc_basename,
+        $content_basename )
+      = @_;
+
+    my $fh = IO::File->new( $frame_filename, 'w' )
+      or die "Cannot open $toc_basename:$!\n";
+
+    $fh->print(<<EOM);
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Frameset//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd">
+<?xml version="1.0" encoding="iso-8859-1" ?>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>$title</title>
+</head>
+EOM
+
+    # two left panels, one right, if master index file
+    if ($top_basename) {
+        $fh->print(<<EOM);
+<frameset cols="20%,80%">
+<frameset rows="30%,70%">
+<frame src = "$top_basename" name = "TOP" />
+<frame src = "$toc_basename" name = "LEFT" />
+</frameset>
+EOM
+    }
+
+    # one left panels, one right, if no master index file
+    else {
+        $fh->print(<<EOM);
+<frameset cols="20%,*">
+<frame src = "$toc_basename" name = "LEFT" />
+EOM
+    }
+    $fh->print(<<EOM);
+<frame src = "$content_basename" name = "RIGHT" />
+<noframes>
+<body>
+<p>If you see this message, you are using a non-frame-capable web client.</p>
+<p>This document contains:</p>
+<ul>
+<li><a href="$toc_basename">A table of contents</a></li>
+<li><a href="$content_basename">The source code</a></li>
+</ul>
+</body>
+</noframes>
+</frameset>
+</html>
+EOM
+}
+
+
+sub change_anchor_names {
+
+    # add a filename and target to anchors
+    # also return the first anchor
+    my ( $rlines, $filename, $target ) = @_;
+    my $first_anchor;
+    foreach my $line (@$rlines) {
+
+        #  We're looking for lines like this:
+        #  <LI><A HREF="#synopsis">SYNOPSIS</A></LI>
+        #  ----  -       --------  -----------------
+        #  $1              $4            $5
+        if ( $line =~ /^(.*)<a(.*)href\s*=\s*"([^#]*)#([^"]+)"[^>]*>(.*)$/i ) {
+            my $pre  = $1;
+            my $name = $4;
+            my $post = $5;
+            my $href = "$filename#$name";
+            $line = "$pre<a href=\"$href\" target=\"$target\">$post\n";
+            unless ($first_anchor) { $first_anchor = $href }
+        }
+    }
+    return $first_anchor;
+}
+
 sub close_html_file {
     my $self = shift;
     return unless $self->{_html_file_opened};
 
     my $html_fh     = $self->{_html_fh};
-    my $html_pre_fh = $self->{_html_pre_fh};
+    my $rtoc_string = $self->{_rtoc_string};
 
-    # If we are writing an index, finish it and append
-    # the <pre> section which is on a temp file
-    if ( $html_pre_fh != $html_fh ) {
-        $self->add_toc_item( 'EOF', 'EOF' );
-        seek( $html_pre_fh, 0, 0 )
-          or die "unable to rewind tmp file for -html option: $!\n";
-        my $line;
-        while ( $line = $html_pre_fh->getline() ) {
-            $html_fh->print($line);
-        }
-        $html_pre_fh->close();
-    }
+    # There are 3 basic paths to html output...
 
-    # finish the html page
-    $html_fh->print( <<"PRE_END");
+    # ---------------------------------
+    # Path 1: finish up if in -pre mode
+    # ---------------------------------
+    if ( $rOpts->{'html-pre-only'} ) {
+        $html_fh->print( <<"PRE_END");
 </pre>
 PRE_END
-    unless ( $rOpts->{'html-pre-only'} ) {
-        $html_fh->print( <<"HTML_END");
+        eval { $html_fh->close() };
+        return;
+    }
+
+    # Finish the index
+    $self->add_toc_item( 'EOF', 'EOF' );
+
+    my $rpre_string_stack = $self->{_rpre_string_stack};
+
+    # Patch to darken the <pre> background color in case of pod2html and
+    # interleaved code/documentation.  Otherwise, the distinction
+    # between code and documentation is blurred.  It would be more
+    # general to just darken whatever color has been defined by
+    # subtracting, say, 0F0F0F
+    if (   $rOpts->{pod2html}
+        && $self->{_pod_cut_count} >= 1
+        && $rOpts->{'html-color-background'} eq '#FFFFFF' )
+    {
+        $rOpts->{'html-pre-color-background'} = '#F0F0F0';
+    }
+
+    # put the css or its link into a string, if used
+    my $css_string;
+    my $fh_css = Perl::Tidy::IOScalar->new( \$css_string, 'w' );
+
+    # use css linked to another file
+    if ( $rOpts->{'html-linked-style-sheet'} ) {
+        $fh_css->print(
+            qq(<link rel="stylesheet" href="$css_linkname" type="text/css" />)
+        );
+    }
+
+    # use css embedded in this file
+    elsif ( !$rOpts->{'nohtml-style-sheets'} ) {
+        $fh_css->print( <<'ENDCSS');
+<style type="text/css">
+<!--
+ENDCSS
+        write_style_sheet_data($fh_css);
+        $fh_css->print( <<"ENDCSS");
+-->
+</style>
+ENDCSS
+    }
+
+    # -----------------------------------------------------------
+    # path 2: use pod2html if requested
+    #         If we fail for some reason, continue on to path 3
+    # -----------------------------------------------------------
+    if ( $rOpts->{'pod2html'} ) {
+        my $rpod_string = $self->{_rpod_string};
+        $self->pod_to_html( $$rpod_string, $css_string, $$rtoc_string,
+            $rpre_string_stack )
+          && return;
+    }
+
+    # --------------------------------------------------
+    # path 3: write code in html, with pod only in italics
+    # --------------------------------------------------
+    my $input_file = $self->{_input_file};
+    my $title      = escape_html($input_file);
+    my $date=localtime;
+    $html_fh->print( <<"HTML_START");
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!-- Generated by perltidy on $date -->
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>$title</title>
+HTML_START
+
+    # output the css, if used
+    if ($css_string) {
+        $html_fh->print($css_string);
+        $html_fh->print( <<"ENDCSS");
+</head>
+<body>
+ENDCSS
+    }
+    else {
+
+        $html_fh->print( <<"HTML_START");
+</head>
+<body bgcolor=\"$rOpts->{'html-color-background'}\" text=\"$rOpts->{'html-color-punctuation'}\">
+HTML_START
+    }
+
+    $html_fh->print("<a name=\"-top-\"></a>\n");
+    $html_fh->print( <<"EOM");
+<h1>$title</h1>
+EOM
+
+    # copy the table of contents
+    if (   $$rtoc_string
+        && !$rOpts->{'html-frames'}
+        && $rOpts->{'html-table-of-contents'} )
+    {
+        $html_fh->print($$rtoc_string);
+    }
+
+    # copy the pre section(s)
+    my $fname_comment = $input_file;
+    $fname_comment =~ s/--+/-/g;    # protect HTML comment tags
+    $html_fh->print( <<"END_PRE");
+<hr />
+<!-- contents of filename: $fname_comment -->
+<pre>
+END_PRE
+
+    foreach my $rpre_string (@$rpre_string_stack) {
+        $html_fh->print($$rpre_string);
+    }
+
+    # and finish the html page
+    $html_fh->print( <<"HTML_END");
+</pre>
 </body>
 </html>
 HTML_END
+    eval { $html_fh->close() };  # could be object without close method
+
+    if ( $rOpts->{'html-frames'} ) {
+        my @toc = map {$_ .= "\n"} split /\n/, $$rtoc_string;
+        $self->make_frame( \@toc );
     }
-    eval { $html_fh->close() };
 }
 
 sub markup_tokens {
@@ -3943,6 +4480,7 @@ sub markup_tokens {
         # Update the package stack.  The package stack is needed to keep
         # the toc correct because some packages may be declared within
         # blocks and go out of scope when we leave the block.  
+        #-------------------------------------------------------
         if ( $level > $$rlast_level ) {
             unless ( $rpackage_stack->[ $level - 1 ] ) {
                 $rpackage_stack->[ $level - 1 ] = 'main';
@@ -3965,19 +4503,28 @@ sub markup_tokens {
         # Intercept a sub name here; split it
         # into keyword 'sub' and sub name; and add an
         # entry in the toc
+        #-------------------------------------------------------
         if ( $type eq 'i' && $token =~ /^(sub\s+)(\w.*)$/ ) {
             $token = $self->markup_html_element( $1, 'k' );
             push @colored_tokens, $token;
             $token = $2;
             $type  = 'M';
-            my $subname = $token;
-            $subname =~ s/[\s\(].*$//;    # remove any attributes and prototype
-            $self->add_toc_item( $subname, 'sub' );
+
+            # but don't include sub declarations in the toc; 
+            # these wlll have leading token types 'i;'
+            my $signature = join "", @$rtoken_type;
+            unless ( $signature =~ /^i;/ ) {
+                my $subname = $token;
+                $subname =~ s/[\s\(].*$//; # remove any attributes and prototype
+                $self->add_toc_item( $subname, 'sub' );
+            }
         }
 
+        #-------------------------------------------------------
         # Intercept a package name here; split it
         # into keyword 'package' and name; add to the toc,
         # and update the package stack
+        #-------------------------------------------------------
         if ( $type eq 'i' && $token =~ /^(package\s+)(\w.*)$/ ) {
             $token = $self->markup_html_element( $1, 'k' );
             push @colored_tokens, $token;
@@ -3986,8 +4533,6 @@ sub markup_tokens {
             $self->add_toc_item( "$token", 'package' );
             $rpackage_stack->[$level] = $token;
         }
-
-        #-------------------------------------------------------
 
         $token = $self->markup_html_element( $token, $type );
         push @colored_tokens, $token;
@@ -4097,7 +4642,51 @@ sub write_line {
             $line_character = 'k';
             $self->add_toc_item( '__DATA__', '__DATA__' );
         }
-        elsif ( $line_type =~ /^POD/ ) { $line_character = 'P' }
+        elsif ( $line_type =~ /^POD/ ) {
+            $line_character = 'P';
+            if ( $rOpts->{'pod2html'} ) {
+                my $html_pod_fh = $self->{_html_pod_fh};
+                if ( $line_type eq 'POD_START' ) {
+
+                    my $rpre_string_stack = $self->{_rpre_string_stack};
+                    my $rpre_string       = $rpre_string_stack->[-1];
+
+                    # if we have written any non-blank lines to the
+                    # current pre section, start writing to a new output
+                    # string
+                    if ( $$rpre_string =~ /\S/ ) {
+                        my $pre_string;
+                        $html_pre_fh =
+                          Perl::Tidy::IOScalar->new( \$pre_string, 'w' );
+                        $self->{_html_pre_fh} = $html_pre_fh;
+                        push @$rpre_string_stack, \$pre_string;
+
+                        # leave a marker in the pod stream so we know
+                        # where to put the pre section we just
+                        # finished.
+                        $html_pod_fh->print(<<EOM);
+
+=for html
+<!-- pERLTIDY sECTION -->
+
+EOM
+                    }
+
+                    # otherwise, just clear the current string and start
+                    # over
+                    else {
+                        $$rpre_string = "";
+                        $html_pod_fh->print("\n");
+                    }
+                }
+                $html_pod_fh->print( $input_line . "\n" );
+                if ( $line_type eq 'POD_END' ) {
+                    $self->{_pod_cut_count}++;
+                    $html_pod_fh->print("\n");
+                }
+                return;
+            }
+        }
         else { $line_character = 'Q' }
         $html_line = $self->markup_html_element( $input_line, $line_character );
     }
@@ -5535,7 +6124,7 @@ sub check_options {
             || !$rOpts->{'add-newlines'}
             || !$rOpts->{'delete-old-newlines'} )
         {
-            print STDERR <<EOM;
+            warn <<EOM;
 -----------------------------------------------------------------------
 Conflict: -lp  conflicts with -io, -fnl, -nanl, or -ndnl; ignoring -lp
     
@@ -5552,7 +6141,7 @@ EOM
     # (it would be possible to entab the total leading whitespace
     # just prior to writing the line, if desired).
     if ( $rOpts->{'line-up-parentheses'} && $rOpts->{'tabs'} ) {
-        print STDERR <<EOM;
+        warn <<EOM;
 Conflict: -t (tabs) cannot be used with the -lp  option; ignoring -t; see -et.
 EOM
         $rOpts->{'tabs'} = 0;
@@ -5560,14 +6149,14 @@ EOM
 
     # Likewise, tabs are not compatable with outdenting..
     if ( $rOpts->{'outdent-keywords'} && $rOpts->{'tabs'} ) {
-        print STDERR <<EOM;
+        warn <<EOM;
 Conflict: -t (tabs) cannot be used with the -okw options; ignoring -t; see -et.
 EOM
         $rOpts->{'tabs'} = 0;
     }
 
     if ( $rOpts->{'outdent-labels'} && $rOpts->{'tabs'} ) {
-        print STDERR <<EOM;
+        warn <<EOM;
 Conflict: -t (tabs) cannot be used with the -ola  option; ignoring -t; see -et.
 EOM
         $rOpts->{'tabs'} = 0;
@@ -5600,7 +6189,7 @@ EOM
             $outdent_keyword{$_} = 1;
         }
         else {
-            print STDERR "ignoring '$_' in -okwl list; not a perl keyword";
+            warn "ignoring '$_' in -okwl list; not a perl keyword";
         }
     }
 
@@ -5902,7 +6491,7 @@ sub make_block_pattern {
             push @words, $i;
         }
         else {
-            print STDERR "unrecognized block type $i after $abbrev, ignoring\n";
+            warn "unrecognized block type $i after $abbrev, ignoring\n";
         }
     }
     my $pattern = '(' . join ( '|', @words ) . ')$';
@@ -5966,12 +6555,12 @@ sub make_closing_side_comment_prefix {
 
             # shouldn't happen..must have screwed up escaping, above
             report_definite_bug();
-            print STDERR
+            warn
 "Program Error: the -cscp prefix '$csc_prefix' caused the invalid regex '$csc_prefix_pattern'\n";
 
             # just warn and keep going with defaults
-            print STDERR "Please consider using a simpler -cscp prefix\n";
-            print STDERR "Using default -cscp instead; please check output\n";
+            warn "Please consider using a simpler -cscp prefix\n";
+            warn "Using default -cscp instead; please check output\n";
         }
         else {
             $csc_prefix         = $test_csc_prefix;
@@ -6987,7 +7576,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.30 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.31 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -7546,7 +8135,7 @@ sub set_white_space_flag {
                         $last_nonblank_token eq '}'
                         && (
                             $is_block_without_semicolon{
-                                $last_nonblank_block_type }
+                                $last_nonblank_block_type}
                             || $last_nonblank_block_type =~ /^sub\s+\w/
                             || $last_nonblank_block_type =~ /^\w+:$/ )
                     )
@@ -17847,6 +18436,14 @@ sub reset_indentation_level {
         },
         '{' => sub {
 
+            # ATTRS: for a '{' following an attribute list, reset
+            # things to look like we just saw the sub name
+            if ( $statement_type =~ /^sub/ ) {
+                $last_nonblank_token = $statement_type;
+                $last_nonblank_type = 'i';
+                $statement_type      = "";
+            }
+
             # if we just saw a ')', we will label this block with
             # its type.  We need to do this to allow sub
             # code_block_type to determine if this brace starts a
@@ -18031,6 +18628,12 @@ sub reset_indentation_level {
             # since perl seems to just swallow it
             if ( $input_line_number == 1 && $last_nonblank_i == -1 ) {
                 $type = 'J';
+            }
+
+            # ATTRS: check for a ':' which introduces an attribute list
+            # (this might eventually get its own token type)
+            elsif ( $statement_type =~ /^sub/ ) {
+                $type = ':';
             }
 
             # otherwise, it should be part of a ?/: operator
@@ -19591,7 +20194,8 @@ sub label_ok {
 
     # otherwise, it is a label if and only if it follows a ';' 
     else {
-        return ( $last_nonblank_token eq ';' );
+        ##return ( $last_nonblank_token eq ';' );
+        return ( $last_nonblank_type eq ';' );
     }
 }
 
@@ -21315,13 +21919,12 @@ sub do_scan_sub {
     pos($input_line) = $pos_beg;
 
     # sub NAME PROTO ATTRS BLOCK
-    #if ( $input_line =~ m/\G\s*((?:\w*(?:'|::))*)(\w+)(\s*\([^){]*\))?/gc ) {
     if (
         $input_line =~ m/\G\s*
         ((?:\w*(?:'|::))*)  # package - something that ends in :: or '
         (\w+)               # NAME    - required
         (\s*\([^){]*\))?    # PROTO   - something in parens
-        (\s*:(\s*(\w+))+)?  # ATTRS   - leading : followed by one or more words
+        (\s*:)?             # ATTRS   - leading : of attribute list
         /gcx
       )
     {
@@ -21329,16 +21932,18 @@ sub do_scan_sub {
         $proto   = $3;
         $attrs   = $4;
 
-        if ($attrs) {
-
-            # unused for now
-
-        }
         $package = ( defined($1) && $1 ) ? $1 : $current_package;
         $package =~ s/\'/::/g;
         if ( $package =~ /^\:/ ) { $package = 'main' . $package }
         $package =~ s/::$//;
         my $pos  = pos($input_line);
+
+        # ATTRS: if there are attributes, back up and let the ':' be found
+        # later by the scanner.
+        if ($attrs) {
+            $pos -= length($attrs);
+        }
+
         my $numc = $pos - $pos_beg;
         $tok = 'sub ' . substr( $input_line, $pos_beg, $numc );
         $type = 'i';
@@ -21379,11 +21984,21 @@ sub do_scan_sub {
         }
         elsif ( $next_nonblank_token eq '}' ) {
         }
+
+        # ATTRS - if an attribute list follows, remember the name
+        # of the sub so the next opening brace can be labeled
+        elsif ( $next_nonblank_token eq ':' ) {
+            $statement_type = $tok;
+        }
+
+        # PROTO - remember sub name to label next opening brace
+        elsif ( $next_nonblank_token eq '(' ) {
+            $statement_type = $tok;
+        }
         elsif ($next_nonblank_token) {    # EOF technically ok
             warning(
-"expecting ';' or '{' after definition or declaration of sub $subname but saw ($next_nonblank_token)\n"
+"expecting ':' or ';' or '{' after definition or declaration of sub $subname but saw ($next_nonblank_token)\n"
             );
-
         }
 
         if ( defined($proto) ) {
@@ -21421,11 +22036,10 @@ sub do_scan_sub {
 
     # look for prototype following an anonymous sub so they don't get
     # stranded.  ( sub.t )  
-    #elsif ( $input_line =~ m/\G\s*\([^){]*\)/gc ) 
     # sub PROTO ATTRS BLOCK
     elsif (
         $input_line =~ m/\G(\s*\([^){]*\))?  # PROTO
-      (\s*:(\s*(\w+))+)?    # ATTRS
+      (\s*:)?                                # ATTRS leading ':'
       /gcx
         && ( $1 || $2 )
       )
@@ -22623,8 +23237,8 @@ treat a parameter.
    ref($param)  $param is assumed to be:
    -----------  ---------------------
    undef        a filename
-   SCALAR       ref to string; IO::Scalar must be installed
-   ARRAY        ref to array; IO::ScalarArray must be installed
+   SCALAR       ref to string
+   ARRAY        ref to array
    (other)      object with getline (if source) or print method
 
 If the parameter is an object, and the object has a B<close> method, that
@@ -22666,8 +23280,7 @@ command line string.
 
 The following example passes perltidy a snippet as a reference
 to a string and receives the result back in a reference to
-an array.  It requires that both IO::Scalar and IO::ScalarArray 
-be installed to run.
+an array.  
 
  use Perl::Tidy;
  
