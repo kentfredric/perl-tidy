@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.14 2001/07/06 02:08:35 perltidy Exp $
+    $Id: perltidy,v 1.15 2001/07/08 18:51:03 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -5558,6 +5558,11 @@ sub set_vertical_alignment_markers {
             if ( $i < $ibeg + 2 ) {
             }
 
+            # TESTING : this causes too many bad side effects
+            #elsif ( $type =~ /^(\[|L)$/ ) {
+            #    $alignment_type = $type;
+            #}
+
             # must follow a blank token
             elsif ( $types_to_go[ $i - 1 ] ne 'b' ) {
             }
@@ -5591,6 +5596,11 @@ sub set_vertical_alignment_markers {
             elsif ( $type eq '(' && $i == 2
               && $tokens_to_go[0] =~ /^(if|elsif)/ )
             {
+                $alignment_type = $type;
+            }
+
+            # EXPERIMENTAL
+            elsif ( $type eq '}' && $token eq '}' && $block_type_to_go[$i]) {
                 $alignment_type = $type;
             }
 
@@ -7886,7 +7896,8 @@ The log file warns the user if there are any such tabs.
             # comments, and we saw one recently
             elsif ( ( $zero_count > 3 )
               || ( ( $leading_space_count + length( $$rfields[0] ) ) >
-              $columns[1] ) )
+              get_column(0) ))
+              #$columns[1] ) )
             {
                 flush();
             }
@@ -8149,8 +8160,7 @@ The log file warns the user if there are any such tabs.
                 # ( align3.t )
                 if ( $maximum_field_index > $jmax ) {
                     my $pad =
-                      length( $$rfields[$j] ) -
-                      ( $columns[ $j + 1 ] - $columns[$j] );
+                      length( $$rfields[$j] ) - current_field_width($j);
 
                     if ( $j == 0 ) {
                         $pad += $leading_space_count;
@@ -8189,14 +8199,13 @@ The log file warns the user if there are any such tabs.
         my $padding_so_far    = 0;
         my $padding_available =
           $rOpts->{'maximum-line-length'} -
-          $columns[ $maximum_field_index + 1 ];
+          get_column( $maximum_field_index );
 
         # save current columns in case this doesn't work
         my @old_columns = @columns;
 
         for my $j ( 0 .. $jmax ) {
-            my $pad =
-              length( $$rfields[$j] ) - ( $columns[ $j + 1 ] - $columns[$j] );
+            my $pad = length( $$rfields[$j] ) - current_field_width($j);
 
             if ( $j == 0 ) {
                 $pad += $leading_space_count;
@@ -8220,8 +8229,7 @@ The log file warns the user if there are any such tabs.
                 # a sudden decrease of over '8' spaces to a new low is too much
                 elsif ( $pad < 0 ) {
                     my $test_pad =
-                      length( $$rfields[$j] ) -
-                      ( $starting_columns[ $j + 1 ] - $starting_columns[$j] );
+                      length( $$rfields[$j] ) - starting_field_width($j);
 
                     if ( $j == 0 ) {
                         $test_pad += $leading_space_count;
@@ -8245,7 +8253,7 @@ The log file warns the user if there are any such tabs.
               || ( $j < $jmax - 1
 
               # causes too many consecutive columns of whitespace 
-              && ( ( $pad + $columns[ $j + 1 ] - $starting_columns[ $j + 1 ] >
+              && ( ( $pad + field_width_growth($j) >
               $rOpts->{'maximum-whitespace-columns'} )
 
               ) ) )
@@ -8258,12 +8266,8 @@ The log file warns the user if there are any such tabs.
             }
 
             # looks ok, squeeze this field in
+            increase_field_width($j, $pad);
             $padding_available -= $pad;
-            my $k;
-
-            for $k ( $j .. $maximum_field_index ) {
-                $columns[ $k + 1 ] += $pad;
-            }
         }
     }
 
@@ -8280,23 +8284,22 @@ The log file warns the user if there are any such tabs.
     if ( $maximum_line_index == 0 ) {
         $group_list_type     = $list_type;
         $maximum_field_index = $jmax;
-        $columns[0] = $leading_space_count;
         my $j;
-
+        my $col = $leading_space_count;
         for $j ( 0 .. $maximum_field_index ) {
-            $columns[ $j + 1 ] = $columns[$j] + length( $$rfields[$j] );
+            $col += length( $$rfields[$j] );
+            $columns[ $j + 1 ] = $col;
+        }
+        for $j ( 0 .. $jmax ) {
+            $matching_patterns[$j] = $$rpatterns[$j];
         }
         $columns[0] = 0;
         @starting_columns  = @columns;
         $starting_jmax     = $jmax;
         $maximum_jmax_seen = $jmax;
         $minimum_jmax_seen = $jmax;
-
         for $j ( 0 .. $jmax - 1 ) {
             $matching_tokens[$j] = $$rtokens[$j];
-        }
-        for $j ( 0 .. $jmax ) {
-            $matching_patterns[$j] = $$rpatterns[$j];
         }
     }
 
@@ -8313,6 +8316,33 @@ The log file warns the user if there are any such tabs.
         print "APPEND common columns:";
         dump_array(@columns);
     }
+}
+
+sub get_column {
+    my ($j) = @_;
+    return $columns[$j+1];
+}
+
+sub increase_field_width {
+    my ($j, $pad) = @_;
+    for my $k ( $j .. $maximum_field_index ) {
+        $columns[ $k + 1 ] += $pad;
+    }
+}
+
+sub field_width_growth {
+my ($j) = @_;
+return $columns[ $j + 1 ] - $starting_columns[$j + 1];
+}
+
+sub current_field_width {
+my ($j) = @_;
+return $columns[ $j + 1 ] - $columns[$j];
+}
+
+sub starting_field_width {
+my ($j) = @_;
+return $starting_columns[ $j + 1 ] - $starting_columns[$j];
 }
 
 sub dump_array {
@@ -8336,6 +8366,36 @@ sub flush {
 "APPEND0: Flush called from $a $b $c fields=$maximum_field_index list=$group_list_type lines=$maximum_line_index extra=$extra_indent_ok\n";
     }
 
+    # some small groups are best left unaligned
+    my $do_not_align = decide_if_aligned();
+
+    # optimize side comment location 
+    $do_not_align = adjust_side_comment($do_not_align);
+
+    # all lines of this group have the same basic leading spacing
+    my $group_leader_length = $leading_space_count[0];
+
+    # add extra leading spaces if helpful
+    my $min_ci_gap = improve_continuation_indentation($do_not_align,
+      $group_leader_length);
+
+    # recover spaces for -lp option if possible
+    my $extra_leading_spaces = get_extra_leading_spaces();
+
+    # loop to output all lines
+    for my $i ( 0 .. $maximum_line_index ) {
+        write_line ($i, $min_ci_gap, $do_not_align, $group_leader_length, 
+          $extra_leading_spaces);
+    }
+
+    # initialize for new group
+    $maximum_line_index  = -1;
+    $maximum_field_index = -1;
+    $zero_count          = 0;
+}
+
+sub decide_if_aligned {
+
     # Do not try to align two lines which are not really similar
     my $do_not_align =
       ( $maximum_line_index < 2 && !$group_list_type
@@ -8349,6 +8409,13 @@ sub flush {
         combine_fields();
         $do_not_align = 0;
     }
+    return $do_not_align;
+}
+
+
+sub adjust_side_comment {
+
+    my ($do_not_align) = @_;
 
     # let's see if we can move the side comment field out a little
     # to improve readability (the last field is always a side comment field)
@@ -8380,9 +8447,6 @@ sub flush {
             }
 
             # but we want some minimum space to the comment
-            #if ( $move < $rOpts->{'minimum-space-to-comment'} - 1 ) {
-            #    $move = $rOpts->{'minimum-space-to-comment'} - 1;
-            #}
             my $min_move = $rOpts->{'minimum-space-to-comment'} - 1;
             if ( $move >= 0 && $last_side_comment_length > 0
               && ( $first_side_comment_line == 0 )
@@ -8405,8 +8469,7 @@ sub flush {
 
             # we can only increase space, never decrease
             if ( $move > 0 ) {
-                $columns[ $kmax - 1 ] += $move;
-                $columns[$kmax] += $move;
+                increase_field_width($maximum_field_index-1, $move);
             }
 
             # remember this column for the next group
@@ -8417,8 +8480,7 @@ sub flush {
 
             # try to at least line up the existing side comment location
             if ( $kmax > 0 && $move > 0 && $move < $avail ) {
-                $columns[ $kmax - 1 ] += $move;
-                $columns[$kmax] += $move;
+                increase_field_width($maximum_field_index-1, $move);
                 $do_not_align = 0;
             }
 
@@ -8428,6 +8490,11 @@ sub flush {
             }
         }
     }
+    return $do_not_align;
+}
+
+sub improve_continuation_indentation {
+    my ($do_not_align, $group_leader_length) = @_;
 
 =pod 
 
@@ -8458,7 +8525,6 @@ use overload '+' => \&plus,
 =cut
 
     my $min_ci_gap          = $rOpts->{'maximum-line-length'};
-    my $group_leader_length = $leading_space_count[0];
     if ( $maximum_field_index > 1 && !$do_not_align ) {
 
         for my $i ( 0 .. $maximum_line_index ) {
@@ -8478,37 +8544,71 @@ use overload '+' => \&plus,
     else {
         $min_ci_gap = 0;
     }
+    return $min_ci_gap;
+}
 
-=pod
 
-This old coding is no longer necessary:
+sub write_line {
 
-    # Undo continuation indentation in special cases. We want to avoid
-    # this kind of situation, where the continuation indentation is not
-    # helpful (undoci.t).
-    #
-    #   $root{$vol} = {
-    #   	path       => $vol . $SEPARATOR,
-    #   	  prefix   => $vol . $SEPARATOR,
-    #   	  srcpath  => $vol . $SEPARATOR,
-    #   	  'exists' => 1
-    #   };
-    #
+    # output one vertically aligned line 
+    my ($i, $min_ci_gap, $do_not_align, $group_leader_length, 
+      $extra_leading_spaces) = @_;
+    my $leading_space_count = $leading_space_count[$i];
+    my $outdent_long_lines  = $outdent_long_lines[$i];
 
-    if ( $is_comma_list && !$min_ci_gap && $ci_length
-      && ( $min_non_ci_gap >= $ci_length ) && ( $non_ci_count == 1 ) )
-    {
+    # add any extra spaces
+    if ( $leading_space_count > $group_leader_length ) {
+        $leading_space_count += $min_ci_gap;
+    }
 
-        for my $i ( 0 .. $maximum_line_index ) {
-            $ci[$i] = '';
+    my $str = $fields[$i][0];
+
+    # loop to concatenate all fields of this line and needed padding
+    my $total_pad_count = 0;
+    for my $j ( 1 .. $maximum_field_index ) {
+
+        # skip zero-length side comments
+        last
+
+          if ( ( $j == $maximum_field_index )
+          && ( !defined( $fields[$i][$j] )
+          || ( length( $fields[$i][$j] ) == 0 ) ) );
+
+        # compute spaces of padding before this field
+        my $pad = $columns[$j] - ( length($str) + $leading_space_count );
+
+        if ($do_not_align) {
+            $pad =
+              ( $j < $maximum_field_index ) ? 0 :
+              $rOpts->{'minimum-space-to-comment'} - 1;
         }
 
-        for my $j ( 1 .. $maximum_field_index + 1 ) {
-            $columns[$j] -= $ci_length;
+        # accumulate the padding
+        if ( $pad > 0 ) { $total_pad_count += $pad; }
+
+        # add this field
+        if ( !defined $fields[$i][$j] ) {
+            write_diagnostics("UNDEFined field at i=$i j=$j\n");
+        }
+
+        # only add padding when we have a finite field;
+        # this avoids extra terminal spaces if we have empty fields
+        if ( length( $fields[$i][$j] ) > 0 ) {
+            $str .= ' ' x $total_pad_count;
+            $total_pad_count = 0;
+            $str .= $fields[$i][$j];
         }
     }
 
-=cut
+    my $side_comment_length =
+      ( length( $fields[$i][$maximum_field_index] ) );
+
+    # ship this line off
+    write_leader_and_string( $leading_space_count + $extra_leading_spaces,
+        $str, $side_comment_length, $outdent_long_lines );
+}
+
+sub get_extra_leading_spaces {
 
     #----------------------------------------------------------
     # Define any extra indentation space (for the -lp option).  
@@ -8520,8 +8620,8 @@ This old coding is no longer necessary:
     # to recover that space here in the event that that all of the
     # lines of a list are back together again.
     #----------------------------------------------------------
-    my $extra_leading_spaces = 0;
 
+    my $extra_leading_spaces = 0;
     if ($extra_indent_ok) {
         my $object = $indentation[0];
         if ( ref($object) ) {
@@ -8539,7 +8639,8 @@ This old coding is no longer necessary:
             if ($extra_indentation_spaces_wanted) {
 
                 # the maximum space without exceeding the line length:
-                my $avail = $rOpts->{'maximum-line-length'} - $columns[$kmax];
+                my $avail = $rOpts->{'maximum-line-length'} - 
+                  get_column($maximum_field_index);
                 $extra_leading_spaces =
                   ( $avail > $extra_indentation_spaces_wanted ) ?
                   $extra_indentation_spaces_wanted : $avail;
@@ -8551,67 +8652,7 @@ This old coding is no longer necessary:
             }
         }
     }
-
-    # loop over all lines
-    for my $i ( 0 .. $maximum_line_index ) {
-
-        my $leading_space_count = $leading_space_count[$i];
-        my $outdent_long_lines  = $outdent_long_lines[$i];
-
-        # add any extra spaces
-        if ( $leading_space_count > $group_leader_length ) {
-            $leading_space_count += $min_ci_gap;
-        }
-
-        my $str = $fields[$i][0];
-
-        # loop to concatenate all fields of this line and needed padding
-        my $total_pad_count = 0;
-        for my $j ( 1 .. $maximum_field_index ) {
-
-            # skip zero-length side comments
-            last
-
-              if ( ( $j == $maximum_field_index )
-              && ( !defined( $fields[$i][$j] )
-              || ( length( $fields[$i][$j] ) == 0 ) ) );
-
-            # compute spaces of padding before this field
-            my $pad = $columns[$j] - ( length($str) + $leading_space_count );
-
-            if ($do_not_align) {
-                $pad =
-                  ( $j < $maximum_field_index ) ? 0 :
-                  $rOpts->{'minimum-space-to-comment'} - 1;
-            }
-
-            # accumulate the padding
-            if ( $pad > 0 ) { $total_pad_count += $pad; }
-
-            # add this field
-            if ( !defined $fields[$i][$j] ) {
-                write_diagnostics("UNDEFined field at i=$i j=$j\n");
-            }
-
-            # only add padding when we have a finite field;
-            # this avoids extra terminal spaces if we have empty fields
-            if ( length( $fields[$i][$j] ) > 0 ) {
-                $str .= ' ' x $total_pad_count;
-                $total_pad_count = 0;
-                $str .= $fields[$i][$j];
-            }
-        }
-
-        my $side_comment_length =
-          ( length( $fields[$i][$maximum_field_index] ) );
-
-        # ship this line off
-        write_leader_and_string( $leading_space_count + $extra_leading_spaces,
-            $str, $side_comment_length, $outdent_long_lines );
-    }
-    $maximum_line_index  = -1;
-    $maximum_field_index = -1;
-    $zero_count          = 0;
+    return $extra_leading_spaces;
 }
 
 sub combine_fields {
@@ -8632,16 +8673,11 @@ sub combine_fields {
 
     for $j ( 0 .. $maximum_line_index ) {
         for $k ( 0 .. $maximum_field_index ) {
-            my $pad =
-              length( $fields[$j][$k] ) - ( $columns[ $k + 1 ] - $columns[$k] );
-            if ( $k == 0 ) {
-                $pad += $leading_space_count[$j];
-            }
+            my $pad = length( $fields[$j][$k] ) - current_field_width($k);
+            if ( $k == 0 ) { $pad += $leading_space_count[$k]; }
 
             if ( $pad > 0 ) {
-                for my $l ( $k .. $maximum_field_index ) {
-                    $columns[ $l + 1 ] += $pad;
-                }
+                increase_field_width($k, $pad);
             }
         }
     }
