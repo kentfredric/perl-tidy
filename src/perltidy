@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.52 2001/10/10 16:10:06 perltidy Exp $
+    $Id: perltidy,v 1.53 2001/10/16 14:49:34 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -267,7 +267,6 @@ sub main {
               Perltidy::Debugger->new( $fileroot . $dot . "DEBUG" );
         }
 
-        
         # we have to delete any old formatter because, for safety, 
         # formatter will check to see that there is only one.
         $formatter = undef;
@@ -375,6 +374,23 @@ sub process_command_line {
     # Note: a few options are not documented in the man page and usage
     # message. This is because these are experimental or debug options and
     # may or may not be retained in future versions.  
+    #
+    # Here are the undocumented flags as far as I know.  Any of them
+    # may disappear at any time.  They are mainly for fine-tuning
+    # and debugging. 
+    #
+    # xsc --> maximum-space-to-comment    # for spacing side comments
+    # fll --> fuzzy-line-length           # trivial parameter
+    # iob --> ignore-old-line-breaks      # do not follow breaks in old script
+    # tdy --> tidy-output                 # This is an internal flag
+    # chk --> check-multiline-quotes      # check for old bug; to be deleted
+    # mci --> maximum-continuation-indentation  # need for -lp
+    # scl --> short-concatenation-item-length   # helps break at '.'
+    # bob --> break-after-opening-brace   # this is the default
+    # bsj --> big-space-jump              # used by vertical aligner
+    # recombine                           # for debugging line breaks
+    # I   --> DIAGNOSTICS                 # for debugging 
+    #         maximum-whitespace-columns
     ######################################################################
 
     # here is a summary of the Getopt codes:
@@ -493,25 +509,6 @@ sub process_command_line {
     add_option( 'want-right-space',                 'wrs',  '=s', $rop, $rex );
     add_option( 'warning-output',                   'w',    '!',  $rop, $rex );
 
-    #---------------------------------------------------------------
-    # Here are the undocumented flags as far as I know.  Any of them
-    # may disappear at any time.  They are mainly for fine-tuning
-    # and debugging. 
-    #
-    # xsc --> maximum-space-to-comment    # for spacing side comments
-    # fll --> fuzzy-line-length           # trivial parameter
-    # iob --> ignore-old-line-breaks      # do not follow breaks in old script
-    # tdy --> tidy-output                 # This is an internal flag
-    # chk --> check-multiline-quotes      # check for old bug; to be deleted
-    # mci --> maximum-continuation-indentation  # need for -lp
-    # scl --> short-concatenation-item-length   # helps break at '.'
-    # bob --> break-after-opening-brace   # this is the default
-    # bsj --> big-space-jump              # used by vertical aligner
-    # recombine                           # for debugging line breaks
-    # I   --> DIAGNOSTICS                 # for debugging 
-    #         maximum-whitespace-columns
-    #---------------------------------------------------------------
-
     # The Perltidy::HtmlWriter will add its own options to the string
     Perltidy::HtmlWriter->make_getopt_long_names( \@option_string );
 
@@ -576,6 +573,7 @@ sub process_command_line {
     # PATCH: default will be no syntax check for Windows because of 
     # command.com inability to redirect standard error output.
     # Windows users can use -syn if their shell allows this.
+    # This may change in future versions.
     if ( $^O =~ /^(MSWin32|msdos|dos|win32)$/ ) {
         push @defaults, 'nocheck-syntax';
     }
@@ -876,9 +874,10 @@ EOM
 
     # these systems have problems with doing the syntax check
     unless ( $^O =~ /^(MSWin32|msdos|dos|win32)$/ ) {
-#        $Opts{'check-syntax'} = 0;
-#    }
-#    else {
+
+        #        $Opts{'check-syntax'} = 0;
+        #    }
+        #    else {
         if ( $< == 0 ) {
             $Opts{'check-syntax'} = 0;
             $pending_complaint =
@@ -1429,7 +1428,7 @@ sub check_syntax {
 sub do_syntax_check {
     my ( $fname, $flags, $error_redirection ) = @_;
 
-    # BUBBA
+    # TESTING..this does not always work yet..do not use...
     #    if ( $^O eq 'MSWin32' ) {
     #        my $msg=do_win95_syntax_check($fname, $flags, $error_redirection); 
     #        #print "Doing win95 syntax check: result is $msg\n";
@@ -1450,7 +1449,9 @@ sub do_unix_syntax_check {
 
 sub do_win95_syntax_check {
 
-    # This is an experimental routine..do not use yet
+    # Do not use except for testing..
+    # This is an experimental routine and does not always work!
+    # Based on a suggestion by James Freeman
     my ( $fname, $flags, $error_redirection ) = @_;
     local $/;
     unless ( open SCRIPT, "+<$fname" ) {
@@ -4642,7 +4643,7 @@ sub print_line_of_tokens {
     #     /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
     # Examples:
     #   *VERSION = \'1.01';
-    #   ( $VERSION ) = '$Revision: 1.52 $ ' =~ /\$Revision:\s+([^\s]+)/;
+    #   ( $VERSION ) = '$Revision: 1.53 $ ' =~ /\$Revision:\s+([^\s]+)/;
     # We will pass such a line straight through unless -npvl is used
     my $is_VERSION_statement = 0;
 
@@ -8540,7 +8541,7 @@ sub set_continuation_breaks {
                     $strength   = $lowest_strength / 2;
                     $must_break = 1;
                 }
-            }  
+            }
 
             # quit if a break here would put a good terminal token on
             # the next line and we already have a possible break
@@ -8798,7 +8799,8 @@ sub insert_additional_breaks {
             # shouldn't happen unless caller passes bad indexes
             if ( $line_number >= @$ri_last ) {
                 warning(
-"Non-fatal program bug: couldn't set break at $i_break_left\n");
+"Non-fatal program bug: couldn't set break at $i_break_left\n"
+                );
                 return;
             }
             $i_f = $$ri_first[$line_number];
@@ -10971,7 +10973,8 @@ sub really_open_debug_file {
     }
     $self->{_debug_file_opened} = 1;
     $self->{_fh}                = $fh;
-    print $fh "Use -dump-token-types (-dtt) to get a list of token type codes\n";
+    print $fh
+      "Use -dump-token-types (-dtt) to get a list of token type codes\n";
 }
 
 sub close_debug_file {
@@ -11294,43 +11297,43 @@ sub new {
     # _line_buffer_object   object with get_line() method to supply source code
     # _diagnostics_object   place to write debugging information
     $tokenizer_self = {
-        _rhere_target_list   => undef,
-        _in_here_doc         => 0,
-        _here_doc_target     => "",
-        _here_quote_character=> "",
-        _in_data             => 0,
-        _in_end              => 0,
-        _in_format           => 0,
-        _in_error            => 0,
-        _in_pod              => 0,
-        _in_quote            => 0,
-        _quote_target        => "",
-        _line_start_quote    => -1,
-        _starting_level      => $args{starting_level},
-        _know_starting_level => defined( $args{starting_level} ),
-        _tabs                => $args{tabs},
-        _indent_columns      => $args{indent_columns},
-        _look_for_hash_bang  => $args{look_for_hash_bang},
-        _trim_qw             => $args{trim_qw},
-        _input_tabstr        => "",
-        _know_input_tabstr   => -1,
-        _last_line_number    => 0,
-        _saw_perl_dash_P     => 0,
-        _saw_perl_dash_w     => 0,
-        _saw_use_strict      => 0,
-        _look_for_autoloader => $args{look_for_autoloader},
-        _look_for_selfloader => $args{look_for_selfloader},
-        _saw_autoloader      => 0,
-        _saw_selfloader      => 0,
-        _saw_hash_bang       => 0,
-        _saw_end             => 0,
-        _saw_data            => 0,
-        _saw_lc_filehandle   => 0,
-        _started_tokenizing  => 0,
-        _line_buffer_object  => $line_buffer_object,
-        _debugger_object     => $args{debugger_object},
-        _diagnostics_object  => $args{diagnostics_object},
-        _logger_object       => $args{logger_object},
+        _rhere_target_list    => undef,
+        _in_here_doc          => 0,
+        _here_doc_target      => "",
+        _here_quote_character => "",
+        _in_data              => 0,
+        _in_end               => 0,
+        _in_format            => 0,
+        _in_error             => 0,
+        _in_pod               => 0,
+        _in_quote             => 0,
+        _quote_target         => "",
+        _line_start_quote     => -1,
+        _starting_level       => $args{starting_level},
+        _know_starting_level  => defined( $args{starting_level} ),
+        _tabs                 => $args{tabs},
+        _indent_columns       => $args{indent_columns},
+        _look_for_hash_bang   => $args{look_for_hash_bang},
+        _trim_qw              => $args{trim_qw},
+        _input_tabstr         => "",
+        _know_input_tabstr    => -1,
+        _last_line_number     => 0,
+        _saw_perl_dash_P      => 0,
+        _saw_perl_dash_w      => 0,
+        _saw_use_strict       => 0,
+        _look_for_autoloader  => $args{look_for_autoloader},
+        _look_for_selfloader  => $args{look_for_selfloader},
+        _saw_autoloader       => 0,
+        _saw_selfloader       => 0,
+        _saw_hash_bang        => 0,
+        _saw_end              => 0,
+        _saw_data             => 0,
+        _saw_lc_filehandle    => 0,
+        _started_tokenizing   => 0,
+        _line_buffer_object   => $line_buffer_object,
+        _debugger_object      => $args{debugger_object},
+        _diagnostics_object   => $args{diagnostics_object},
+        _logger_object        => $args{logger_object},
     };
 
     prepare_for_a_new_file();
@@ -11651,9 +11654,9 @@ sub get_line {
     if ( $tokenizer_self->{_in_here_doc} ) {
 
         $line_of_tokens->{_line_type} = 'HERE';
-        my $here_doc_target = $tokenizer_self->{_here_doc_target};
+        my $here_doc_target      = $tokenizer_self->{_here_doc_target};
         my $here_quote_character = $tokenizer_self->{_here_quote_character};
-        my $candidate_target = $input_line;
+        my $candidate_target     = $input_line;
         chomp $candidate_target;
         if ( $candidate_target eq $here_doc_target ) {
             $nearly_matched_here_target_at = undef;
@@ -11662,18 +11665,19 @@ sub get_line {
 
             my $rhere_target_list = $tokenizer_self->{_rhere_target_list};
             if (@$rhere_target_list) {    # there can be multiple here targets
-                ($here_doc_target,$here_quote_character) = 
-                  @{shift @$rhere_target_list};
-                $tokenizer_self->{_here_doc_target} = $here_doc_target;
-                $tokenizer_self->{_here_quote_character} = $here_quote_character;
+                ( $here_doc_target, $here_quote_character ) =
+                  @{ shift @$rhere_target_list };
+                $tokenizer_self->{_here_doc_target}      = $here_doc_target;
+                $tokenizer_self->{_here_quote_character} =
+                  $here_quote_character;
                 write_logfile_entry(
                     "Entering HERE document $here_doc_target\n");
                 $nearly_matched_here_target_at      = undef;
                 $started_looking_for_here_target_at = $input_line_number;
             }
             else {
-                $tokenizer_self->{_in_here_doc}     = 0;
-                $tokenizer_self->{_here_doc_target} = "";
+                $tokenizer_self->{_in_here_doc}          = 0;
+                $tokenizer_self->{_here_doc_target}      = "";
                 $tokenizer_self->{_here_quote_character} = "";
             }
         }
@@ -11881,11 +11885,12 @@ sub get_line {
     # see if this line contains here doc targets
     my $rhere_target_list = $tokenizer_self->{_rhere_target_list};
     if (@$rhere_target_list) {
+
         #my $here_doc_target = shift @$rhere_target_list;
-        my ($here_doc_target,$here_quote_character) = 
-                  @{shift @$rhere_target_list};
-        $tokenizer_self->{_in_here_doc}     = 1;
-        $tokenizer_self->{_here_doc_target} = $here_doc_target;
+        my ( $here_doc_target, $here_quote_character ) =
+          @{ shift @$rhere_target_list };
+        $tokenizer_self->{_in_here_doc}          = 1;
+        $tokenizer_self->{_here_doc_target}      = $here_doc_target;
         $tokenizer_self->{_here_quote_character} = $here_quote_character;
         write_logfile_entry("Entering HERE document $here_doc_target\n");
         $started_looking_for_here_target_at = $input_line_number;
@@ -13520,13 +13525,13 @@ EOM
 
                 if ( $expecting != OPERATOR ) {
                     my ($found_target);
-                    ( $found_target, $here_doc_target, $here_quote_character, 
-                    $i ) =
-                      find_here_doc( $expecting, $i, $rtokens, $rtoken_map );
+                    ( $found_target,         $here_doc_target,
+                      $here_quote_character, $i )
+                      = find_here_doc( $expecting, $i, $rtokens, $rtoken_map );
 
                     if ($found_target) {
-                        push @here_target_list, 
-                          [$here_doc_target,$here_quote_character] ;
+                        push @here_target_list,
+                          [ $here_doc_target, $here_quote_character ];
                         $type = 'h';
                         if ( length($here_doc_target) > 80 ) {
                             my $truncated = substr( $here_doc_target, 0, 80 );
@@ -15127,9 +15132,9 @@ sub find_here_doc {
     #   $i - unchanged if not here doc, 
     #    or index of the last token of the here target
     my ( $expecting, $i, $rtokens, $rtoken_map ) = @_;
-    my $ibeg            = $i;
-    my $found_target    = 0;
-    my $here_doc_target = '';
+    my $ibeg                 = $i;
+    my $found_target         = 0;
+    my $here_doc_target      = '';
     my $here_quote_character = '';
     my ( $next_nonblank_token, $i_next_nonblank, $next_token );
     $next_token = $$rtokens[ $i + 1 ];
@@ -15146,13 +15151,13 @@ sub find_here_doc {
 
     if ( $next_nonblank_token =~ /[\'\"\`]/ ) {
 
-        my $in_quote        = 1;
-        my $quote_depth     = 0;
-        my $quote_pos       = 0;
+        my $in_quote    = 1;
+        my $quote_depth = 0;
+        my $quote_pos   = 0;
 
         ( $i, $in_quote, $here_quote_character, $quote_pos, $quote_depth ) =
           follow_quoted_string(
-            $i_next_nonblank, $in_quote,  $rtokens,
+            $i_next_nonblank,      $in_quote,  $rtokens,
             $here_quote_character, $quote_pos, $quote_depth
         );
 
@@ -15414,10 +15419,12 @@ sub scan_bare_identifier {
 
     # we have to back up one pretoken at a :: since each : is one pretoken
     if ( $tok eq '::' ) { $i_beg-- }
+    if ( $tok eq '->' ) { $i_beg-- }
     my $pos_beg = $$rtoken_map[$i_beg];
     pos($input_line) = $pos_beg;
 
-    if ( $input_line =~ m/\G\s*((?:\w*(?:'|::)))*(\w+)/gc ) {
+    #if ( $input_line =~ m/\G\s*((?:\w*(?:'|::|->)))*(\w+)/gc ) {
+    if ( $input_line =~ m/\G\s*((?:\w*(?:'|::)))*(?:->)?(\w+)/gc ) {
 
         my $pos  = pos($input_line);
         my $numc = $pos - $pos_beg;

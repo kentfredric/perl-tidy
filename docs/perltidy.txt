@@ -954,28 +954,28 @@ OPTIONS
     Debugging
         The following flags are available for debugging:
 
-        -dump-defaults will write the default option set to standard output
-        and quit
+        --dump-defaults or -ddf will write the default option set to
+        standard output and quit
 
-        -dump-options will write current option set to standard output and
-        quit.
-
-        -dump-long-names will write all command line long names (passed to
-        Get_options) to standard output and quit.
-
-        -dump-short-names will write all command line short names to
-        standard output and quit.
-
-        -dump-token-types will write a list of all token types to standard
+        --dump-options or -dop will write current option set to standard
         output and quit.
 
-        -dump-want-left-space will write the hash %want_left_space to
-        standard output and quit. See the section on controlling whitespace
-        around tokens.
+        --dump-long-names or -dln will write all command line long names
+        (passed to Get_options) to standard output and quit.
 
-        -dump-want-right-space will write the hash %want_right_space to
-        standard output and quit. See the section on controlling whitespace
-        around tokens.
+        --dump-short-names or -dsn will write all command line short names
+        to standard output and quit.
+
+        --dump-token-types or -dtt will write a list of all token types to
+        standard output and quit.
+
+        --dump-want-left-space or -dwls will write the hash %want_left_space
+        to standard output and quit. See the section on controlling
+        whitespace around tokens.
+
+        --dump-want-right-space or -dwrs will write the hash
+        %want_right_space to standard output and quit. See the section on
+        controlling whitespace around tokens.
 
         -DEBUG will write a file with extension .DEBUG for each input file
         showing the tokenization of all lines of code.
@@ -1004,6 +1004,18 @@ OPTIONS
 
         Documentation for this option has been moved to a separate man page,
         perl2web(1).
+
+SWITCHES WHICH MAY BE NEGATED
+    The following list shows all short parameter names which allow a prefix
+    'n' to produce the negated form:
+
+        D anl asc aws bbb bbc bbs bli baa syn ce dac dbc dnl
+        dws dp dsm dsc ddf dln dop dsn dtt dwls dwrs f fll
+        hsc html ibc icb icp lp log lal x lsl bl sbl oll pvl
+        q opt sfs sts se st sob t tac tbc tp tsc tqw w
+
+    Equivalently, the prefix 'no' on the corresponding long names may be
+    used.
 
 LIMITATIONS
     Parsing Limitations

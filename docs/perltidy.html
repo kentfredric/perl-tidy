@@ -26,6 +26,7 @@
 		<LI><A HREF="#other controls">Other Controls</A></LI>
 	</UL>
 
+	<LI><A HREF="#switches which may be negated">SWITCHES WHICH MAY BE NEGATED</A></LI>
 	<LI><A HREF="#limitations">LIMITATIONS</A></LI>
 	<LI><A HREF="#files">FILES</A></LI>
 	<LI><A HREF="#see also">SEE ALSO</A></LI>
@@ -966,18 +967,18 @@ the problem.</P>
 <DT><STRONG><A NAME="item_Debugging">Debugging</A></STRONG><BR>
 <DD>
 The following flags are available for debugging:
-<P><STRONG>-dump-defaults</STRONG>  will write the default option set to standard output and quit</P>
-<P><STRONG>-dump-options</STRONG>   will write current option set to standard output and quit.</P>
-<P><STRONG>-dump-long-names</STRONG>   will write all command line long names (passed 
+<P><STRONG>--dump-defaults</STRONG> or <STRONG>-ddf</STRONG> will write the default option set to standard output and quit</P>
+<P><STRONG>--dump-options</STRONG> or <STRONG>-dop</STRONG>  will write current option set to standard output and quit.</P>
+<P><STRONG>--dump-long-names</STRONG> or <STRONG>-dln</STRONG>  will write all command line long names (passed 
 to Get_options) to standard output and quit.</P>
-<P><STRONG>-dump-short-names</STRONG>   will write all command line short names 
+<P><STRONG>--dump-short-names</STRONG>  or <STRONG>-dsn</STRONG> will write all command line short names 
 to standard output and quit.</P>
-<P><STRONG>-dump-token-types</STRONG>   will write a list of all token types 
+<P><STRONG>--dump-token-types</STRONG> or <STRONG>-dtt</STRONG>  will write a list of all token types 
 to standard output and quit.</P>
-<P><STRONG>-dump-want-left-space</STRONG>   will write the hash %want_left_space
+<P><STRONG>--dump-want-left-space</STRONG> or <STRONG>-dwls</STRONG>  will write the hash %want_left_space
 to standard output and quit.  See the section on controlling whitespace
 around tokens.</P>
-<P><STRONG>-dump-want-right-space</STRONG>   will write the hash %want_right_space
+<P><STRONG>--dump-want-right-space</STRONG> or <STRONG>-dwrs</STRONG>  will write the hash %want_right_space
 to standard output and quit.  See the section on controlling whitespace
 around tokens.</P>
 <P><STRONG>-DEBUG</STRONG>  will write a file with extension <EM>.DEBUG</EM> for each input file 
@@ -1007,6 +1008,18 @@ which may be viewed with a browser.</P>
 <P>Documentation for this option has been moved to a separate man
 page, perl2web(1).</P>
 <P></P></DL>
+<P>
+<HR>
+<H1><A NAME="switches which may be negated">SWITCHES WHICH MAY BE NEGATED</A></H1>
+<P>The following list shows all short parameter names which allow a prefix
+'n' to produce the negated form:</P>
+<PRE>
+    D anl asc aws bbb bbc bbs bli baa syn ce dac dbc dnl
+    dws dp dsm dsc ddf dln dop dsn dtt dwls dwrs f fll
+    hsc html ibc icb icp lp log lal x lsl bl sbl oll pvl
+    q opt sfs sts se st sob t tac tbc tp tsc tqw w</PRE>
+<P>Equivalently, the prefix 'no' on the corresponding long names may be
+used.</P>
 <P>
 <HR>
 <H1><A NAME="limitations">LIMITATIONS</A></H1>

@@ -5,6 +5,16 @@
  improvement, please send a note to perltidy at users.sourceforge.net.  
 
 =head2 2001 xx xx
+
+ -Fixed tokenization error in which a method call of the form
+
+    Module::->new();
+ 
+  got a space before the '::' like this:
+
+    Module ::->new();
+
+  Thanks to David Holden for reporting this.
  
  -Added -html control over pod text, using a new abbreviation 'pd'.  See
  updated perl2web man page. The default is to use the color of a comment,
@@ -16,7 +26,7 @@
 
  -Fixed intrerpolation problem where html files had '$input_file' as title
  instead of actual input file name.  Thanks to Simon Perreault for finding
- this and sending a patch.
+ this and sending a patch, and also to Tobias Weber.
 
  -Breaks will now have the ':' placed at the start of a line, 
  one per line by default because this shows logical structure
@@ -197,6 +207,13 @@
 
  -Corrected and updated 'usage' help routine.  Thanks to Slaven Rezic for 
  noting an error.
+
+ -The default for Windows is, for now, not to do a 'perl -c' syntax
+ check (but -syn will activate it).  This is because of problems with
+ command.com.  James Freeman sent me a patch which tries to get around
+ the problems, and it works in many cases, but testing revealed some
+ issues that still need to be resolved.  So for now, the default is no
+ syntax check for Windows.
 
  -Paranoia struck.  I added a -T flag when doing perl -c syntax check.
  This is because I test it on a large number of scripts from sources
