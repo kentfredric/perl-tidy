@@ -6,6 +6,9 @@
 
 =head2 2001 xx xx
 
+ -This version is about 20 percent faster as a result of optimization work.
+
+
  -Merged modifications created by Hugh Myers into perltidy.  These
   include a 'streamhandle' routine which allows perltidy as a module to
   operate on input and output arrays and strings, as well as files.
@@ -21,6 +24,14 @@
  example, the first hex number below would have been parsed correctly
  but the second one was not:
     if ( ( $tmp >= 0x80_00_00 ) || ( $tmp < -0x80_00_00 ) ) { }
+
+ -Extensive testing with the '-extrude' option revealed these
+ problems which were corrected:
+
+     -'**=', which was incorrectly tokenized as '**' and '='.  This only
+     caused a problem with the -extrude opton.
+
+     -Corrected a divide by zero when -extrude option is used
 
  -I experimented with different ways of reporting syntax errors found
  when perl -c is run on the INPUT file.  I decided that the best thing

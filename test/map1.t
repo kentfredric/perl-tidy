@@ -11,3 +11,5 @@ BEGIN {
     );
 }
 
+# From Msg.pm - same problem with grep
+grep ( $routines{ $_ } ++ , @_ , @EXPORT) ;
