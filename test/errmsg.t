@@ -1,5 +1,6 @@
 
 	#!/usr/bin/perl
+#!/usr/bin/perl
 
 # Some code to generate various error messages
 # No use strict, no -w

@@ -1,6 +1,6 @@
 =head1 Welcome to perltidy!
 
-Perltidy is a tool to indent and reformat perl scripts. 
+Perltidy is a tool to indent and reformat perl scripts.
 
 Perltidy is free software released under the GNU General Public
 License -- please see the included file "COPYING" for details.
@@ -16,7 +16,9 @@ These are distributed separately because they will not be of interest to
 the average user.  If you do want the test files, you should untar or
 unzip them at the same directory that you untar or unzip the source files.
 
-Please see the ChangeLog for notices of any recent updates.
+Please see the ChangeLog file for notices of any recent updates.
+
+Please see the BUGS file for a list of all known open bugs.
 
 =head2 Installation - Unix
 
@@ -86,6 +88,7 @@ run perltidy with Active State Perl with Windows ME:
     628             5.6.1         ME      Windows freezes
     628             5.6.1         95      ok
     ???             5.6.1         2000    ok
+    629             5.6.1         2000    ok
 
 I've only tested one Windows ME system, so this may be specific to that
 machine (a new Dell with no known hardware problems).  The crash was
@@ -95,8 +98,8 @@ applications first to avoid losing any data.  I would like to hear of
 any successes or failures (is it just ME?) so that we can ask
 ActiveState to look into it if this is a general problem.
 
-As far as I know, perltidy runs ok under ActiveState Perl and Windows
-95 and Windows 2000.
+There are no known problems running perltidy under ActiveState Perl and
+Windows 95 and Windows 2000.
 
 =head2 Installation - Windows
 
@@ -120,10 +123,10 @@ to invoke perltidy with perl directly, like this:
 The documentation that comes with your perl distribution discusses other
 installation options.
 
-=head2 Windows problem with command.com
+=head2 Windows 95 problem with command.com
 
 There is a minor problem that you should be aware of if you are running
-perltidy (and perl) under Windows with the F<command.com>
+perltidy (and perl) under Windows 95 with the F<command.com>
 shell.  The problem is that F<command.com> always sends the standard
 error output to the screen.  This makes it impossible for perltidy to
 capture the message 'syntax OK' when it runs 'perl -c' with the
@@ -144,6 +147,8 @@ command
 The best way to solve this problem is probably to use a better shell,
 such as bash - see http://www.cygwin.com.  If anyone knows a way
 to code around this in perl please let me know.
+
+Windows 2000 does not have this problem.
 
 =head2 VMS Notes
 
@@ -172,48 +177,14 @@ Information on running perl under VMS can be found at:
 
  http://w4.lns.cornell.edu/~pvhp/perl/VMS.html
 
-=head2 Bug Notices for Current Users
-
-Please see the ChangeLog for details.  The most serious bugs that have
-been reported are as follows:
-
-Release 20010608 had a bug with the -t option in which a tab
-would be added before the last line of a multiline quote or pattern.
-Scripts formatted with -t on this version should be run once with
-the -chk option to see if this might have happened.
-
-Prior to release 20010608, there was a bug which perltidy removed trailing 
-white space from multiline quotes.  
-
-Prior to release 20010406, there was a bug which perltidy accidentally
-added continuation indentation to the last line of some multi-line
-quotes and patterns.  A special new flag, -chk, has been added to check
-for this error.  You should rerun previously formatted scripts once with
-the -chk flag to check for this.  It will warn of all possible occurances
-of this error.
-
-Prior to release 20010328, there was a bug which perltidy accidentally
-promoted a function name following a print or printf to a filehandle.
-For example,
-
-  print usage() and exit;
-
-became
-
-  print usage () and exit;
-
-The result is that perl then considers 'usage' to be a filehandle.
-To fix this, just rerun with the latest version of perltidy.  It will
-look for this situation and issue a warning.
-
 =head1 WHAT NEXT
 
 The documentation has been supplied as man pages, as 
 html files, and as text files.
 
-Reading the brief tutorial should help you use perltidy effectively.  
-
 These documents can also be found at http://perltidy.sourceforge.net
+
+Reading the brief tutorial should help you use perltidy effectively.  
 
 Perltidy is still being developed, so please check sourceforge occasionally
 for updates if you find that it is useful.  New releases are announced
@@ -222,12 +193,12 @@ on freshmeat.net.
 =head1 FEEDBACK / BUG REPORTS
 
 If you see ways to improve this document for the particular system on
-which you install perltidy, please let the author know so that it can be
+which you install perltidy, please let the me know so that it can be
 updated.
 
 Bug reports, comments and suggestions are welcome.  Attach the smallest
 piece of code which demonstrates the bug or issue, plus a .LOG file from
-a perltidy run, if appropriate.  Your efforts are greatly appreciated.
+a perltidy run, if appropriate.  Your efforts are greatly appreciated!
 
 Thank You
 

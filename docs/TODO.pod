@@ -2,18 +2,31 @@
 
 This is a "wish-list" of features to add and things to do.  
 
-=head2 Fix numerous little formatting issues
-
-There is (and always will be) a large backlog of little formatting
-issues in which the formatting could be better.  These are things like
-improving line break choices and improving vertical alignment.  I'm
-working on them as time permits.
-
 =head2 Improved Vertical Alignment
 
 Coding modifications are underway to significantly enhance the vertical
-alignment.  This is an extensive update and will take another month or so,
-since it is summer.
+alignment.  This is the highest priority and will probably be complete
+mid-October.
+
+=head2 Fix numerous little formatting issues
+
+One item is that at present, the -lp option breaks lists like this:
+
+     my $data = pack(
+                      "vvvvvvvvv", $xWn,     $yWn,     $dxWn,
+                      $dyWn,       $grbit,   $itabCur, $itabFirst,
+                      $ctabsel,    $wTabRatio
+                      );
+
+I would like to provide an option which does not break after the '(',
+and before the terminal ), like this:
+
+     my $data = pack( "vvvvvvvvv", $xWn,     $yWn,     $dxWn,
+                      $dyWn,       $grbit,   $itabCur, $itabFirst,
+                      $ctabsel,    $wTabRatio);
+
+This should be easy to implement after the new vertical aligner is
+completed.
 
 =head2 BUGS
 
@@ -29,24 +42,37 @@ that this might best be an interactive tool, something like a spelling checker,
 which would walk through a file looking for groups of comments, and present a
 proposed a reformatting to the user with a Y/N response request.
 
-=head2 Automated testing
-
-An automated method for testing many combinations of parameter options 
-on a variety of test files would be very helpful.
-
 =head2 Documentation
 
 A FAQ or maybe COOKBOOK needs to be written, to explain some of the
-more subtle formatting issues.
+more subtle formatting issues, and to give examples of different
+styles.
+
+The tokenizer needs extensive documentation before it can be released
+as a separate module.
 
 =head2 Tokenization issues
 
-It would be nice to introduce some more token types, such as procedure
-calls, so that they can easily be given separate colors in html files.  
+Token type 'M' (for Method) has been reserved for subroutine definition
+names.  It still needs to be implementd; I've patched around this in
+the html writer for now.  I'm considering new token types for
+prototypes and attributes, to simplify parsing and formatting.
 
 There are some subtle issues with distinguishing block types that should
-be addressed to make the tokenizer more correct, even though
-they do not interfere with code beautification.
+be addressed to make the tokenizer more correct, even though they do not
+interfere with code beautification.  For example, in most cases the type
+of a brace is known when it is encountered. But given this coding
+ 
+ sub something {
+     {
+        bla, bla
+     }
+     ..
+ }
+
+you have to examine the first few tokens of the interior set of to
+braces to see if it is a code block or anonymous hash reference.  This
+isn't done yet.
 
 =head2 Modularization
 

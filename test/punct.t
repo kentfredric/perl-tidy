@@ -9,16 +9,13 @@ $pid16
 @© = ( a .. z );
 print "@©\n"; 
 $¢ = 101;
-print "$¢\n" 
+print "$¢\n" ;
 
 @: = ("a", "b", "c", "d");
 foreach $i (0 .. $#: ) {
   print "$i\n";
 }
 
- # These are valid (but deprecated):
- $imax=$#:;
- $imax=$#-;
- $imax=$#+;
- $imax=$#;;
- $imax=$#,;
+#sum of punctuation array maximum indexes
+$sum=+$#:+ +$#-+$#++$#;+$#,;
+print "sum is: $sum\n";

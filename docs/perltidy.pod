@@ -35,8 +35,8 @@ perlstyle(1).  Perltidy never changes the input file.
 
 Execute perltidy on all .pl files in the current directory with the
 default options.  The output will be in files with an appended F<.tdy>
-extension.  For any file with an error, there will be files with extensions
-F<.ERR> and F<.LOG>.
+extension.  For any file with an error, there will be a file with extension
+F<.ERR>.
 
   perltidy -gnu somefile.pl
 
@@ -108,11 +108,27 @@ redirected to the standard output, the output will go to F<filename.tdy>.
 
 =item	B<-st>,    B<--standard-output>
 
-Sends the output script to the standard output.  For example,
+Perltidy must be able to operate on many files in a single run, with
+each output being directed to a different output file.  Obviously this
+is not consistent with outputting to the single standard output device,
+so a special flag, B<-st>, is required to request outputting to the
+standard output.  For example,
 
   perltidy somefile.pl -st >somefile.new.pl
 
-This option may only be used if there is a single input file.
+This option may only be used if there is a single input file.  When this
+option is used, perltidy will create a temporary copy of the output
+file, perltidy.TMPO, to feed to perl for syntax checking, unless allow
+syntax checking is disabled.  This file will be deleted when the job
+finishes.
+
+=item B<-w>,    B<--warning-output>             
+
+Setting B<-w> causes perltidy to include any non-critical warning
+messages to the error summary file, F<.ERR>.  These include messages
+about possible pod problems, possibly bad starting indentation level,
+and cautions about indirect object usage.  The default, B<-nw> or
+B<--nowarning-output>, is not to include these warnings.
 
 =item B<-q>,    B<--quiet>             
 
@@ -142,8 +158,8 @@ also deactivated by the B<--quiet> flag, discussed above.
 =item B<-log>,    B<--logfile>           
 
 Save the F<.LOG> file, which has many useful diagnostics.  Perltidy always
-creates a F<.LOG> file, but by default it is deleted if there are no
-errors.  Setting the B<-log> flag forces the log file to be saved.
+creates a F<.LOG> file, but by default it is deleted unless a program bug is
+suspected.  Setting the B<-log> flag forces the log file to be saved.
 
 =item B<-g=n>, B<--logfile-gap=n>
 

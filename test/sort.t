@@ -37,6 +37,7 @@ print sort sortsub @list;
 my $sortsubref = sub {return $a cmp $b;};
 print sort $sortsubref @list;
 
-    # numerically has not been seen
-    foreach $mon (reverse sort numerically (keys(%flippie))) {
-    }
+# numerically has not been seen yet
+  foreach $mon (reverse sort numerically (keys(%flippie))) {
+}
+sub numerically {$a <=> $b};
