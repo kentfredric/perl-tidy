@@ -61,7 +61,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.27 2002/09/18 22:18:02 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.28 2002/09/20 17:40:28 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 # Preloaded methods go here.
@@ -1144,7 +1144,6 @@ sub process_command_line {
       backup-file-extension=bak
     );
 
-    ## FIXME: above should be _bak for VMS
     push @defaults, "perl-syntax-check-flags=-c -T";
 
     #---------------------------------------------------------------
@@ -2535,16 +2534,6 @@ sub new {
 Note: --syntax check will be skipped because standard input is used
 EOM
 
-##       Save for possible future use:
-##        ( $fh_copy, $input_file_copy ) = Perl::Tidy::make_temporary_filename($rpending_logfile_message);
-##        unless ($fh_copy) {
-##            $rOpts->{'check-syntax'}=0;
-##            $$rpending_logfile_message .= <<EOM;
-##Problem creating temporary file, last attempt was $input_file_copy
-##   --syntax check will be skipped, use -nsyn to deactivate
-##EOM
-##            $input_file_copy = '-';
-##        }
     }
 
     return bless {
@@ -2619,17 +2608,6 @@ sub new {
 Note: --syntax check will be skipped because standard output is used
 EOM
 
-##       Save for possible future use:
-##            ( $fh_copy, $output_file_copy ) =
-##              Perl::Tidy::make_temporary_filename($rpending_logfile_message);
-##            unless ($fh_copy) {
-##                $rOpts->{'check-syntax'}=0;
-##            $$rpending_logfile_message .= <<EOM;
-##Problem creating temporary file, last attempt was $output_file_copy
-##   --syntax check will be skipped, use -nsyn to deactivate
-##EOM
-##                $output_file_copy = '-';
-##            }
         }
     }
 
@@ -3203,6 +3181,17 @@ sub finish {
 
 #####################################################################
 #
+# The Perl::Tidy::DevNull class supplies a dummy print method
+#
+#####################################################################
+
+package Perl::Tidy::DevNull;
+sub new { return bless {}, $_[0] }
+sub print { return }
+sub close { return }
+
+#####################################################################
+#
 # The Perl::Tidy::HtmlWriter class writes a copy of the input stream in html
 #
 #####################################################################
@@ -3232,7 +3221,6 @@ sub new {
 
     my $html_file_opened = 0;
     my $html_fh;
-    my $html_temp_fh;
     ( $html_fh, my $html_filename ) =
       Perl::Tidy::streamhandle( $html_file, 'w' );
     unless ($html_fh) {
@@ -3245,7 +3233,27 @@ sub new {
         $input_file = "NONAME";
     }
 
-    unless ( $rOpts->{'html-pre-only'} ) {
+    my $html_pre_fh;
+    my $html_toc_fh;
+    if ( $rOpts->{'html-pre-only'} ) {
+
+        # the table of contents goes to /dev/null
+        $html_toc_fh = Perl::Tidy::DevNull->new();
+
+        # pre section goes to output stream
+        $html_pre_fh = $html_fh;
+    }
+    else {
+
+        # the table of contents goes to output stream
+        $html_toc_fh = $html_fh;
+
+        # The <pre> section go out to a temporary file.  
+        # sub close() will copy it to the output stream.
+        $html_pre_fh = IO::File->new_tmpfile()
+          or die "cannot open temp file for -html: $!\n";
+
+        # Start sending the the full html page to the output stream
         my $title = escape_html($input_file);
         $html_fh->print( <<"HTML_START");
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
@@ -3290,30 +3298,145 @@ ENDCSS
 HTML_START
         }
 
-        # Start the index, which requires that the <pre> section
-        # go out to a temporary file.  The close() routine will
-        # copy the <pre> section to the output.
-        $html_temp_fh = IO::File->new_tmpfile()
-          or die "cannot open temp file for -html: $!\n";
-        $html_fh->print( <<"INDEX_END");
-<ul>
-INDEX_END
+        $html_fh->print( <<"EOM");
+<h1>$title</h1>
+EOM
+
     }
+
+    # ----------------------------------------------------------
+    # Output is now directed as follows:
+    # html_toc_fh <-- table of contents items
+    # html_pre_fh <-- the <pre> section of formatted code
+    # ----------------------------------------------------------
 
     my $fname_comment = $input_file;
     $fname_comment =~ s/--+/-/g;    # protect HTML comment tags
-    my $dest = $html_temp_fh ? $html_temp_fh : $html_fh;
-    $dest->print( <<"END_PRE");
-<!-- filename: $fname_comment -->
+
+    $html_pre_fh->print( <<"END_PRE");
+<hr />
+<!-- contents of filename: $fname_comment -->
 <pre>
 END_PRE
 
+    my $toc_item_count = 0;
+    my $in_toc_package = "";
+    my $last_level     = 0;
     bless {
-        _html_file        => $html_file,
-        _html_file_opened => $html_file_opened,
-        _html_fh          => $html_fh,
-        _html_temp_fh     => $html_temp_fh,
+        _html_file        => $html_file,           # name of file
+        _html_file_opened => $html_file_opened,    # a flag
+        _html_fh          => $html_fh,             # the output stream
+        _html_pre_fh      => $html_pre_fh,         # pre section goes here
+        _html_toc_fh      => $html_toc_fh,         # table of contents goes here
+        _rtoc_item_count  => \$toc_item_count,     # how many toc items
+        _rin_toc_package  => \$in_toc_package,     # package name
+        _rtoc_name_count  => {},                   # hash to track unique names
+        _rpackage_stack   => [],                   # stack to check for package
+                                                   # name changes
+        _rlast_level      => \$last_level,         # brace indentation level
     }, $class;
+}
+
+sub add_toc_item {
+
+    # Add an item to the html table of contents.
+    # This is called even if no table of contents is written,
+    # because we still want to put the anchors in the <pre> text.
+    # We are given an anchor name and its type;
+    # possible types are:
+    #      'package', 'sub', '__END__', '__DATA__', 'EOF'
+    # There must be an 'EOF' call at the end to wrap things up.
+    my $self = shift;
+    my ( $name, $type ) = @_;
+    my $html_toc_fh     = $self->{_html_toc_fh};
+    my $html_pre_fh     = $self->{_html_pre_fh};
+    my $rtoc_name_count = $self->{_rtoc_name_count};
+    my $rtoc_item_count = $self->{_rtoc_item_count};
+    my $rlast_level     = $self->{_rlast_level};
+    my $rin_toc_package = $self->{_rin_toc_package};
+    my $rpackage_stack  = $self->{_rpackage_stack};
+
+    # packages contain sublists of subs, so to avoid errors all package
+    # items are written and finished with the following routines
+    my $end_package_list = sub {
+        if ($$rin_toc_package) {
+            $html_toc_fh->print("</ul>\n</li>\n");
+            $$rin_toc_package = "";
+        }
+    };
+
+    my $start_package_list = sub {
+        my ( $unique_name, $package ) = @_;
+        if ($$rin_toc_package) { $end_package_list->() }
+        $html_toc_fh->print(<<EOM);
+<li><a href=\"#$unique_name\">package $package</a>
+<ul>
+EOM
+        $$rin_toc_package = $package;
+    };
+
+    # start the table of contents on the first item
+    unless ($$rtoc_item_count) {
+
+        # but just quit if we hit EOF without any other entries
+        # in this case, there will be no toc
+        return if ( $type eq 'EOF' );
+        $html_toc_fh->print( <<"TOC_END");
+<!-- BEGIN INDEX --><a name="-index-"></a>
+<ul>
+TOC_END
+    }
+    $$rtoc_item_count++;
+
+    # make a unique anchor name for this location
+    my $unique_name = $name;
+    if ( $type eq 'package' ) { $unique_name = "package-$name" }
+
+    # append '-1', '-2', etc if necessary to make unique; this will
+    # be unique because subs and packages cannot have a '-'
+    if ( my $count = $rtoc_name_count->{$unique_name}++ ) {
+        $unique_name .= "-$count";
+    }
+
+    # start/stop lists of subs
+    if ( $type eq 'sub' ) {
+        my $package = $rpackage_stack->[$$rlast_level];
+        unless ($package) { $package = 'main' }
+
+        # if we're already in a package/sub list, be sure its the right
+        # package or else close it
+        if ( $$rin_toc_package && $$rin_toc_package ne $package ) {
+            $end_package_list->();
+        }
+
+        # start a package/sub list if necessary
+        unless ($$rin_toc_package) {
+            $start_package_list->( $unique_name, $package );
+        }
+    }
+
+    # now write an entry in the toc for this item
+    if ( $type eq 'package' ) {
+        $start_package_list->( $unique_name, $name );
+    }
+    elsif ( $type eq 'sub' ) {
+        $html_toc_fh->print("<li><a href=\"#$unique_name\">$name</a></li>\n");
+    }
+    else {
+        $end_package_list->();
+        $html_toc_fh->print("<li><a href=\"#$unique_name\">$name</a></li>\n");
+    }
+
+    # write the anchor in the <pre> section
+    $html_pre_fh->print("<a name=\"$unique_name\"></a>");
+
+    # end the table of contents, if any, on the end of file
+    if ( $type eq 'EOF' ) {
+        $html_toc_fh->print( <<"TOC_END");
+</ul>
+<!-- END INDEX -->
+TOC_END
+    }
 }
 
 BEGIN {
@@ -3635,23 +3758,20 @@ sub close_html_file {
     my $self = shift;
     return unless $self->{_html_file_opened};
 
-    my $html_fh      = $self->{_html_fh};
-    my $html_temp_fh = $self->{_html_temp_fh};
+    my $html_fh     = $self->{_html_fh};
+    my $html_pre_fh = $self->{_html_pre_fh};
 
     # If we are writing an index, finish it and append
     # the <pre> section which is on a temp file
-    if ($html_temp_fh) {
-        $html_fh->print( <<"INDEX_END");
-</ul>
-INDEX_END
-
-        seek( $html_temp_fh, 0, 0 )
+    if ( $html_pre_fh != $html_fh ) {
+        $self->add_toc_item( 'EOF', 'EOF' );
+        seek( $html_pre_fh, 0, 0 )
           or die "unable to rewind tmp file for -html option: $!\n";
         my $line;
-        while ( $line = $html_temp_fh->getline() ) {
+        while ( $line = $html_pre_fh->getline() ) {
             $html_fh->print($line);
         }
-        $html_temp_fh->close();
+        $html_pre_fh->close();
     }
 
     # finish the html page
@@ -3669,31 +3789,64 @@ HTML_END
 
 sub markup_tokens {
     my $self = shift;
-    my ( $rtokens, $rtoken_type ) = @_;
-    my ( @colored_tokens, $j, $string, $type, $token, $subname );
+    my ( $rtokens, $rtoken_type, $rlevels ) = @_;
+    my ( @colored_tokens, $j, $string, $type, $token, $level );
+    my $rlast_level     = $self->{_rlast_level};
+    my $rin_toc_package = $self->{_rlast_level};
+    my $rpackage_stack  = $self->{_rpackage_stack};
 
     for ( $j = 0 ; $j < @$rtoken_type ; $j++ ) {
         $type  = $$rtoken_type[$j];
         $token = $$rtokens[$j];
+        $level = $$rlevels[$j];
+        $level = 0 if ( $level < 0 );
 
         #-------------------------------------------------------
-        # Patch : intercept a sub name here and split it
-        # into keyword 'sub' and sub name
+        # Update the package stack.  The package stack is needed to keep
+        # the toc correct because some packages may be declared within
+        # blocks and go out of scope when we leave the block.  
+        if ( $level > $$rlast_level ) {
+            unless ( $rpackage_stack->[ $level - 1 ] ) {
+                $rpackage_stack->[ $level - 1 ] = 'main';
+            }
+            $rpackage_stack->[$level] = $rpackage_stack->[ $level - 1 ];
+        }
+        elsif ( $level < $$rlast_level ) {
+            my $package = $rpackage_stack->[$level];
+            unless ($package) { $package = 'main' }
+
+            # if we change packages due to a nesting change, we
+            # have to make an entry in the toc
+            if ( $package ne $rpackage_stack->[ $level + 1 ] ) {
+                $self->add_toc_item( $package, 'package' );
+            }
+        }
+        $$rlast_level = $level;
+
+        #-------------------------------------------------------
+        # Intercept a sub name here; split it
+        # into keyword 'sub' and sub name; and add an
+        # entry in the toc
         if ( $type eq 'i' && $token =~ /^(sub\s+)(\w.*)$/ ) {
             $token = $self->markup_html_element( $1, 'k' );
             push @colored_tokens, $token;
-            $token   = $2;
-            $type    = 'M';
-            $subname = $token;
+            $token = $2;
+            $type  = 'M';
+            my $subname = $token;
+            $subname =~ s/\s.*$//;    # remove any attributes and prototype
+            $self->add_toc_item( $subname, 'sub' );
         }
 
-        # Patch : intercept a package name here and split it
-        # into keyword 'package' and name
+        # Intercept a package name here; split it
+        # into keyword 'package' and name; add to the toc,
+        # and update the package stack
         if ( $type eq 'i' && $token =~ /^(package\s+)(\w.*)$/ ) {
             $token = $self->markup_html_element( $1, 'k' );
             push @colored_tokens, $token;
             $token = $2;
             $type  = 'i';
+            $self->add_toc_item( "$token", 'package' );
+            $rpackage_stack->[$level] = $token;
         }
 
         #-------------------------------------------------------
@@ -3701,7 +3854,7 @@ sub markup_tokens {
         $token = $self->markup_html_element( $token, $type );
         push @colored_tokens, $token;
     }
-    return ( \@colored_tokens, $subname );
+    return ( \@colored_tokens );
 }
 
 sub markup_html_element {
@@ -3765,8 +3918,7 @@ sub write_line {
 
     my $self = shift;
     return unless $self->{_html_file_opened};
-    my $html_fh      = $self->{_html_fh};
-    my $html_temp_fh = $self->{_html_temp_fh};
+    my $html_pre_fh = $self->{_html_pre_fh};
     my ($line_of_tokens) = @_;
     my $line_type   = $line_of_tokens->{_line_type};
     my $input_line  = $line_of_tokens->{_line_text};
@@ -3778,6 +3930,7 @@ sub write_line {
     if ( $line_type eq 'CODE' ) {
         my $rtoken_type = $line_of_tokens->{_rtoken_type};
         my $rtokens     = $line_of_tokens->{_rtokens};
+        my $rlevels     = $line_of_tokens->{_rlevels};
 
         if ( $input_line =~ /(^\s*)/ ) {
             $html_line = $1;
@@ -3785,15 +3938,9 @@ sub write_line {
         else {
             $html_line = "";
         }
-        my ( $rcolored_tokens, $subname ) =
-          $self->markup_tokens( $rtokens, $rtoken_type );
+        my ($rcolored_tokens) =
+          $self->markup_tokens( $rtokens, $rtoken_type, $rlevels );
         $html_line .= join '', @$rcolored_tokens;
-
-        # add a sub to the index
-        if ($subname) {
-            $html_fh->print("<li><a href=\"#$subname\">$subname<a>\n");
-            $html_temp_fh->print("<a name=\"$subname\"><a>") if $html_temp_fh;
-        }
     }
 
     # markup line of non-code..
@@ -3804,8 +3951,14 @@ sub write_line {
         elsif ( $line_type eq 'FORMAT' )     { $line_character = 'H' }
         elsif ( $line_type eq 'FORMAT_END' ) { $line_character = 'h' }
         elsif ( $line_type eq 'SYSTEM' )     { $line_character = 'c' }
-        elsif ( $line_type eq 'END_START' )  { $line_character = 'k' }
-        elsif ( $line_type eq 'DATA_START' ) { $line_character = 'k' }
+        elsif ( $line_type eq 'END_START' )  {
+            $line_character = 'k';
+            $self->add_toc_item( '__END__', '__END__' );
+        }
+        elsif ( $line_type eq 'DATA_START' ) {
+            $line_character = 'k';
+            $self->add_toc_item( '__DATA__', '__DATA__' );
+        }
         elsif ( $line_type =~ /^POD/ ) { $line_character = 'P' }
         else { $line_character = 'Q' }
         $html_line = $self->markup_html_element( $input_line, $line_character );
@@ -3821,8 +3974,7 @@ sub write_line {
     }
 
     # write the line
-    my $dest = $html_temp_fh ? $html_temp_fh : $html_fh;
-    $dest->print("$html_line\n");
+    $html_pre_fh->print("$html_line\n");
 }
 
 #####################################################################
@@ -6689,7 +6841,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.27 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.28 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -7248,7 +7400,8 @@ sub set_white_space_flag {
                         $last_nonblank_token eq '}'
                         && (
                             $is_block_without_semicolon{
-                                $last_nonblank_block_type }
+                                $last_nonblank_block_type
+                            }
                             || $last_nonblank_block_type =~ /^sub\s+\w/
                             || $last_nonblank_block_type =~ /^\w+:$/ )
                     )
@@ -11319,7 +11472,6 @@ sub pad_array_to_go {
             next if ( $dont_align[$depth] );
 
             # break after all commas above starting depth
-            ## FIXME: re-check this
             if ( $depth < $starting_depth ) {
                 set_forced_breakpoint($i) unless ( $next_nonblank_type eq '#' );
                 next;
@@ -22419,6 +22571,7 @@ The perltidy(1) man page describes all of the features of perltidy.  It
 can be found at http://perltidy.sourceforge.net.
 
 =cut
+
 
 
 

@@ -8,9 +8,12 @@
 =head2 2002 xx xx
  
  -New option '-b' or '--backup-and-modify-in-place' will cause perltidy to
- overwrite the original file with the beautified output file.  The original
+ overwrite the original file with the tidied output file.  The original
  file will be saved with a '.bak' extension (which can be changed with
  -bext=s).  Please see updated docs.  Thanks to Rudi Farkas for the suggestion.
+
+ -An index to all subs is included at the top of -html output, unless
+ only the <pre> section is written.
 
  -Anchor lines of the form <a name="mysub"></a> are now inserted at key points
  in html output, such as before sub definitions, for the convenience of
@@ -25,9 +28,7 @@
         $prevpack = $pack;
     }
 
- A separate flag could be made for this, but since most cuddled-else
- users will also want cuddled-continues, no new flag has been
- introduced.  Suggested by Simon Perreault.  
+ Suggested by Simon Perreault.  
 
  -Fixed bug in which an extra blank line was added before an =head or 
  similar pod line after an __END__ or __DATA__ line each time 
