@@ -1,6 +1,6 @@
 <HTML>
 <HEAD>
-<TITLE>perltidy - a Perl script indenter and reformatter</TITLE>
+<TITLE>perltidy - a perl script indenter and reformatter</TITLE>
 <LINK REV="made" HREF="mailto:perl@packages.debian.org">
 </HEAD>
 
@@ -20,8 +20,11 @@
 
 		<LI><A HREF="#i/o control">I/O control</A></LI>
 		<LI><A HREF="#basic options">Basic Options</A></LI>
+		<LI><A HREF="#code indentation control">Code Indentation Control</A></LI>
 		<LI><A HREF="#whitespace control">Whitespace Control</A></LI>
+		<LI><A HREF="#comment controls">Comment Controls</A></LI>
 		<LI><A HREF="#line break control">Line Break Control</A></LI>
+		<LI><A HREF="#blank line control">Blank Line Control</A></LI>
 		<LI><A HREF="#styles">Styles</A></LI>
 		<LI><A HREF="#other controls">Other Controls</A></LI>
 	</UL>
@@ -41,7 +44,7 @@
 <HR>
 <P>
 <H1><A NAME="name">NAME</A></H1>
-<P>perltidy - a Perl script indenter and reformatter</P>
+<P>perltidy - a perl script indenter and reformatter</P>
 <P>
 <HR>
 <H1><A NAME="synopsis">SYNOPSIS</A></H1>
@@ -54,7 +57,7 @@
 <P>
 <HR>
 <H1><A NAME="description">DESCRIPTION</A></H1>
-<P>Perltidy reads a Perl script and writes an indented, reformatted script.
+<P>Perltidy reads a perl script and writes an indented, reformatted script.
 The default formatting tries to follow the recommendations in perlstyle(1).</P>
 <P>Many users will find enough information in <A HREF="#examples">EXAMPLES</A> to get 
 started.  New users may benefit from the short tutorial which
@@ -152,7 +155,7 @@ when the job finishes.  The default is <STRONG>-nst</STRONG> or <STRONG>-nostand
 <DD>
 If perltidy detects an error when processing file <EM>somefile.pl</EM>, its
 default behavior is to write error messages to file <EM>somefile.pl.ERR</EM>.
-Use <STRONG>-se</STRONG> to cause all error meassages to be sent to the standard error
+Use <STRONG>-se</STRONG> to cause all error messages to be sent to the standard error
 output stream instead.  This directive may be negated with <STRONG>-nse</STRONG>. 
 Thus, you may place <STRONG>-se</STRONG> in a <EM>.perltidyrc</EM> and override it
 when desired with <STRONG>-nse</STRONG> on the command line.
@@ -246,6 +249,13 @@ files to be processed.
 <P>
 <H2><A NAME="basic options">Basic Options</A></H2>
 <DL>
+<DT><STRONG><A NAME="item_%2Dl%3Dn%2C_%2D%2Dmaximum%2Dline%2Dlength%3Dn"><STRONG>-l=n</STRONG>, <STRONG>--maximum-line-length=n</STRONG></A></STRONG><BR>
+<DD>
+The default maximum line length is n=80 characters.  Perltidy will try
+to find line break points to keep lines below this length. However, long
+quotes and side comments may cause lines to exceed this length. 
+Setting <STRONG>-l=0</STRONG> is equivalent to setting <STRONG>-l=(a large number)</STRONG>.
+<P></P>
 <DT><STRONG><A NAME="item_%2Di%3Dn%2C_%2D%2Dindent%2Dcolumns%3Dn"><STRONG>-i=n</STRONG>,  <STRONG>--indent-columns=n</STRONG></A></STRONG><BR>
 <DD>
 Use n columns per indentation level (default n=4).
@@ -258,11 +268,10 @@ of each line of code to be tabs.  Perltidy allows two possible ways to
 represent the indentation at the beginning of each line of code.  You
 may either use one tab character per level of indentation (signified
 with the -t flag), or you may use n real space characters per level,
-(where n is defined by the -i flag).  The choice depends upon which is
-most convenient for your editor or viewer.  The default is to use ASCII
-space characters because they should be properly displayed on all
-editors or viewers, even though they are not always the most convenient
-for editing. Of course, you can always rerun perltidy to change the
+(where n is defined by the -i flag).  The default is to use ASCII space
+characters because they should be properly displayed on all editors or
+viewers, even though they are not always the most convenient for
+editing. Of course, you can always rerun perltidy to change the
 indentation characters.
 <P>If you choose tabs, you will want to give the appropriate setting to
 your editor to display tabs as 4 blanks (or whatever value has been set
@@ -271,15 +280,10 @@ with the <STRONG>-i</STRONG> command).</P>
 introduce any tab characters into your file, and it removes any tabs
 from the code (unless requested not to do so with <STRONG>-fws</STRONG>).  If you have
 any tabs in your comments, quotes, or here-documents, they will remain.</P>
-<P>Certain commands are incompatable with tabs, and if these are given,
+<P>Certain commands are incompatible with tabs, and if these are given,
 then a warning message will be given and tabs will be deactivated.  An
 example is the <STRONG>-lp</STRONG> option.</P>
-<P></P>
-<DT><STRONG><A NAME="item_%2Dnt%2C_%2D%2Dnotabs"><STRONG>-nt</STRONG>,   <STRONG>--notabs</STRONG></A></STRONG><BR>
-<DD>
-Use space (blank) characters instead of tabs for leading indentation.
-This is the default, following the recommendation in perlstyle(1),
-although some programmers will prefer tabs.
+<P>The default and recommendation is <STRONG>-nt</STRONG> (or <STRONG>--notabs</STRONG>).</P>
 <P></P>
 <DT><STRONG><A NAME="item_%2Dio%2C_%2D%2Dindent%2Donly"><STRONG>-io</STRONG>,   <STRONG>--indent-only</STRONG></A></STRONG><BR>
 <DD>
@@ -288,20 +292,165 @@ When it is in effect, the only change to the script will be indentation.
 And any flags controlling whitespace and newlines will be ignored.  You
 might want to use this if you are perfectly happy with your whitespace
 and line breaks, and merely want perltidy to handle the indentation.
-(This also speeds up perltidy by about a factor of two, so it might be
+(This also speeds up perltidy by well over a factor of two, so it might be
 useful when perltidy is merely being used to help find a brace error in
 a large script).
 <P>Setting this flag is equivalent to setting <STRONG>--freeze-newlines</STRONG> and
 <STRONG>--freeze-whitespace</STRONG>.</P>
 <P></P></DL>
 <P>
+<H2><A NAME="code indentation control">Code Indentation Control</A></H2>
+<DL>
+<DT><STRONG><A NAME="item_%2Dci%3Dn%2C_%2D%2Dcontinuation%2Dindentation%3Dn"><STRONG>-ci=n</STRONG>, <STRONG>--continuation-indentation=n</STRONG></A></STRONG><BR>
+<DD>
+Continuation indentation is extra indentation spaces applied when
+a long line is broken.  The default is n=2, illustrated here:
+<PRE>
+ my $level =   # -ci=2      
+   ( $max_index_to_go &gt;= 0 ) ? $levels_to_go[0] : $last_output_level;</PRE>
+<P>The same example, with n=0, is a little harder to read:</P>
+<PRE>
+ my $level =   # -ci=0    
+ ( $max_index_to_go &gt;= 0 ) ? $levels_to_go[0] : $last_output_level;</PRE>
+<P>The value given to <STRONG>-ci</STRONG> is also used by some commands when a small
+space is required.  Examples are commands for outdenting labels, <STRONG>-ola</STRONG>,
+and control keywords, <STRONG>-ock</STRONG>.</P>
+<P></P>
+<DT><STRONG><A NAME="item_%2Dsil%3Dn_%2D%2Dstarting%2Dindentation%2Dlevel%3D"><STRONG>-sil=n</STRONG> <STRONG>--starting-indentation-level=n</STRONG></A></STRONG><BR>
+<DD>
+By default, perltidy examines the input file and tries to determine the
+starting indentation level.  While it is often zero, it may not be
+zero for a code snippet being sent from an editing session.  If the
+default method does not work correctly, or you want to change the
+starting level, use <STRONG>-sil=n</STRONG>, to force the starting level to be n.
+<P></P>
+<DT><STRONG><A NAME="item_List_indentation_using_%2Dlp%2C_%2D%2Dline%2Dup%2D">List indentation using <STRONG>-lp</STRONG>, <STRONG>--line-up-parentheses</STRONG></A></STRONG><BR>
+<DD>
+By default, perltidy indents lists with 4 spaces, or whatever value
+is specified with <STRONG>-i=n</STRONG>.  Here is a small list formatted in this way:
+<PRE>
+    @month_of_year = (
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct',
+        'Nov', 'Dec'
+    );</PRE>
+<P>Use the <STRONG>-lp</STRONG> flag to add extra indentation to cause the data to begin
+past the opening parentheses of a sub call or list, or opening square
+bracket of an anonymous array, or opening curly brace of an anonymous
+hash.  With this option set, the above list would become:</P>
+<PRE>
+    @month_of_year = (
+                       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug',
+                       'Sep', 'Oct', 'Nov', 'Dec'
+    );</PRE>
+<P>If the available line length (see <STRONG>-l=n</STRONG> ) does not permit this much 
+space, perltidy will use less.</P>
+<P>This option has no effect on code BLOCKS, such as if/then/else blocks,
+which always use whatever is specified with <STRONG>-i=n</STRONG>.  Also, the
+existence of line breaks and/or block comments between the opening and
+closing parens may cause perltidy to temporarily revert to its default
+method.</P>
+<P>Note: The <STRONG>-lp</STRONG> option may not be used together with the <STRONG>-t</STRONG> tabs option.
+If <STRONG>-t</STRONG> is specified, it will be ignored.</P>
+<P>In addition, any parameter which restricts the ability of perltidy to
+choose newlines will all conflict with <STRONG>-lp</STRONG> and will cause <STRONG>-lp</STRONG> to
+be deactivated.  These include 
+<STRONG>-io</STRONG>, <STRONG>-fnl</STRONG>, <STRONG>-nanl</STRONG>, and <STRONG>-ndnl</STRONG>.</P>
+<P></P>
+<DT><STRONG><A NAME="item_%2Dicp%2C_%2D%2Dindent%2Dclosing%2Dparen"><STRONG>-icp</STRONG>, <STRONG>--indent-closing-paren</STRONG></A></STRONG><BR>
+<DD>
+The <STRONG>-icp</STRONG> option leaves a list-termination line of the form <CODE>);</CODE>, <CODE>};</CODE>,
+or <CODE>];</CODE> indented with the same indentation as the previous line.  The
+previous example with <STRONG>-icp</STRONG> would give,
+<PRE>
+    @month_of_year = (          # -icp
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct',
+        'Nov', 'Dec'
+        );</PRE>
+<P></P>
+<DT><STRONG><A NAME="item_%2Dicb%2C_%2D%2Dindent%2Dclosing%2Dbrace"><STRONG>-icb</STRONG>, <STRONG>--indent-closing-brace</STRONG></A></STRONG><BR>
+<DD>
+The <STRONG>-icb</STRONG> option leaves a brace which terminates a code block 
+indented with the same indentation as the previous line.  For example,
+<PRE>
+        if ($task) {
+            yyy();
+            }    # -icb
+        else {
+            zzz();
+            }</PRE>
+<P>The default is not to do this, indicated by <STRONG>-nicb</STRONG>.</P>
+<P></P>
+<DT><STRONG><A NAME="item_%2Dolq%2C_%2D%2Doutdent%2Dlong%2Dquotes"><STRONG>-olq</STRONG>, <STRONG>--outdent-long-quotes</STRONG></A></STRONG><BR>
+<DD>
+When <STRONG>-olq</STRONG> is set, lines which is a quoted string longer than the
+value <STRONG>maximum-line-length</STRONG> will have their indentation removed to make
+them more readable.  This is the default.  To prevent such out-denting,
+use <STRONG>-nolq</STRONG> or <STRONG>--nooutdent-long-lines</STRONG>.
+<P></P>
+<DT><STRONG><A NAME="item_%2Doll%2C_%2D%2Doutdent%2Dlong%2Dlines"><STRONG>-oll</STRONG>, <STRONG>--outdent-long-lines</STRONG></A></STRONG><BR>
+<DD>
+This command is equivalent to <STRONG>--outdent-long-quotes</STRONG> and
+<STRONG>--outdent-long-comments</STRONG>, and it is included for compatibility with previous
+versions of perltidy.  The negation of this also works, <STRONG>-noll</STRONG> or
+<STRONG>--nooutdent-long-lines</STRONG>, and is equivalent to setting <STRONG>-nolq</STRONG> and <STRONG>-nolc</STRONG>.
+<P></P>
+<DT><STRONG><A NAME="item_Outdenting_Labels%3A_%2Dola%2C_%2D%2Doutdent%2Dlab">Outdenting Labels: <STRONG>-ola</STRONG>,  <STRONG>--outdent-labels</STRONG></A></STRONG><BR>
+<DD>
+This command will cause labels to be outdented by 2 spaces (or whatever
+<STRONG>-ci</STRONG> has been set to), if possible.  For example, with <STRONG>perltidy -ola</STRONG>:
+<PRE>
+        my $i;
+      LOOP: while ( $i = &lt;FOTOS&gt; ) {
+            chomp($i);
+            next unless $i;
+            fixit($i);
+        }</PRE>
+<P>Labels which are already at the leftmost column will not be affected by
+this command.  Use <STRONG>-nola</STRONG> to not outdent labels.  The current
+default is not to outdent labels.</P>
+<P></P>
+<DT><STRONG><A NAME="item_Outdenting_Keywords">Outdenting Keywords</A></STRONG><BR>
+<DD>
+<DL>
+<DT><STRONG><A NAME="item_%2Dokw%2C_%2D%2Doutdent%2Dkeywords"><STRONG>-okw</STRONG>,  <STRONG>--outdent-keywords</STRONG></A></STRONG><BR>
+<DD>
+The command <STRONG>-okw</STRONG> will will cause certain leading control keywords to
+be outdented by 2 spaces (or whatever <STRONG>-ci</STRONG> has been set to), if
+possible.  By default, these keywords are <CODE>redo</CODE>, <CODE>next</CODE>, <CODE>last</CODE>,
+<CODE>goto</CODE>, and <CODE>return</CODE>.  The intention is to make these control keywords
+easier to see.  To change this list of keywords being outdented, see
+the next section.
+<P>For example, using <CODE>perltidy -ock</CODE> on the previous example gives:</P>
+<PRE>
+        my $i;
+        LOOP: while ( $i = &lt;FOTOS&gt; ) {
+            chomp($i);
+          next unless $i;
+            fixit($i);
+        }</PRE>
+<P>The default is not to do this.</P>
+<P></P>
+<DT><STRONG><A NAME="item_Specifying_Outdented_Keywords%3A_%2Dokwl%3Dstring%">Specifying Outdented Keywords: <STRONG>-okwl=string</STRONG>,  <STRONG>--outdent-keyword-list=string</STRONG></A></STRONG><BR>
+<DD>
+This command can be used to change the keywords which are outdented with
+the <STRONG>-okw</STRONG> command.  The parameter <STRONG>string</STRONG> is a required list of perl
+keywords, which should be placed in quotes if there are more than one.
+By itself, it does not cause any outdenting to occur, so the <STRONG>-okw</STRONG>
+command is still required.
+<P>For example, the commands <CODE>-okwl=&quot;next last redo goto&quot; -okw</CODE> will cause
+those four keywords to be outdented.  It is probably simplest to place
+any <STRONG>-okwl</STRONG> command in a <EM>.perltidyrc</EM> file.</P>
+<P></P></DL>
+</DL>
+<P>
 <H2><A NAME="whitespace control">Whitespace Control</A></H2>
 <DL>
 <DT><STRONG><A NAME="item_%2Dfws%2C_%2D%2Dfreeze%2Dwhitespace"><STRONG>-fws</STRONG>,  <STRONG>--freeze-whitespace</STRONG></A></STRONG><BR>
 <DD>
 This flag causes your original whitespace to remain unchanged, and
-causes the rest of the whitespace commands in this section to be
-ignored.
+causes the rest of the whitespace commands in this section, the
+Code Indentation section, and
+the Comment Control section to be ignored.
 <P></P>
 <DT><STRONG><A NAME="item_Tightness_of_curly_braces%2C_parentheses%2C_and_sq">Tightness of curly braces, parentheses, and square brackets.</A></STRONG><BR>
 <DD>
@@ -339,268 +488,6 @@ example below.</P>
  %bf = map { $_ =&gt; -M $_ } grep { /\.deb$/ } dirents '.'; # -bbt=0 (default)
  %bf = map { $_ =&gt; -M $_ } grep {/\.deb$/} dirents '.';   # -bbt=1
  %bf = map {$_ =&gt; -M $_} grep {/\.deb$/} dirents '.';     # -bbt=2</PRE>
-<P></P>
-<DT><STRONG><A NAME="item_%2Dci%3Dn%2C_%2D%2Dcontinuation%2Dindentation%3Dn"><STRONG>-ci=n</STRONG>, <STRONG>--continuation-indentation=n</STRONG></A></STRONG><BR>
-<DD>
-Continuation indentation is extra indentation spaces applied when
-a long line is broken.  The default is n=2, illustrated here:
-<PRE>
- my $level =   # -ci=2      
-   ( $max_index_to_go &gt;= 0 ) ? $levels_to_go[0] : $last_output_level;</PRE>
-<P>The same example, with n=0, is a little harder to read:</P>
-<PRE>
- my $level =   # -ci=0    
- ( $max_index_to_go &gt;= 0 ) ? $levels_to_go[0] : $last_output_level;</PRE>
-<P>The value given to <STRONG>-ci</STRONG> is also used by some commands when a small
-space is required.  Examples are commands for outdenting labels, <STRONG>-ola</STRONG>,
-and control keywords, <STRONG>-ock</STRONG>.</P>
-<P></P>
-<DT><STRONG><A NAME="item_List_indentation_using_%2Dlp%2C_%2D%2Dline%2Dup%2D">List indentation using <STRONG>-lp</STRONG>, <STRONG>--line-up-parentheses</STRONG></A></STRONG><BR>
-<DD>
-By default, perltidy indents lists with 4 spaces, or whatever value
-is specified with <STRONG>-i=n</STRONG>.  Here is a small list formatted in this way:
-<PRE>
-    @month_of_year = (
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct',
-        'Nov', 'Dec'
-    );</PRE>
-<P>Use the <STRONG>-lp</STRONG> flag to add extra indentation to cause the data to begin
-past the opening parentheses of a sub call or list, or opening square
-bracket of an anonymous array, or opening curly brace of an anonymous
-hash.  With this option set, the above list would become:</P>
-<PRE>
-    @month_of_year = (
-                       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug',
-                       'Sep', 'Oct', 'Nov', 'Dec'
-    );</PRE>
-<P>If the available line length (see <STRONG>-l=n</STRONG> ) does not permit this much 
-space, perltidy will use less.</P>
-<P>This option has no effect on code BLOCKS, such as if/then/else blocks,
-which always use whatever is specified with <STRONG>-i=n</STRONG>.  Also, the
-existance of line breaks and/or block comments between the opening and
-closing parens may cause perltidy to temporarily revert to its default
-method.</P>
-<P>Note: The <STRONG>-lp</STRONG> option may not be used together with the <STRONG>-t</STRONG> tabs option.
-If <STRONG>-t</STRONG> is specified, it will be ignored.</P>
-<P>In addition, any parameter which restricts the ability of perltidy to
-choose newlines will all conflict with <STRONG>-lp</STRONG> and will cause <STRONG>-lp</STRONG> to
-be deactivated.  These include 
-<STRONG>-io</STRONG>, <STRONG>-fnl</STRONG>, <STRONG>-nanl</STRONG>, and <STRONG>-ndnl</STRONG>.</P>
-<P></P>
-<DT><STRONG><A NAME="item_%2Dicp%2C_%2D%2Dindent%2Dclosing%2Dparen"><STRONG>-icp</STRONG>, <STRONG>--indent-closing-paren</STRONG></A></STRONG><BR>
-<DD>
-The <STRONG>-icp</STRONG> option leaves a list-termination line of the form <CODE>);</CODE>, <CODE>};</CODE>,
-or <CODE>];</CODE> indented with the same indentation as the previous line.  The
-previous example with <STRONG>-icp</STRONG> would give,
-<PRE>
-    @month_of_year = (          # -icp
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct',
-        'Nov', 'Dec'
-        );</PRE>
-<P></P>
-<DT><STRONG><A NAME="item_%2Dicb%2C_%2D%2Dindent%2Dclosing%2Dbrace"><STRONG>-icb</STRONG>, <STRONG>--indent-closing-brace</STRONG></A></STRONG><BR>
-<DD>
-The <STRONG>-icb</STRONG> option leaves a brace which terminates a code block 
-indented with the same indentation as the previous line.  For example,
-<PRE>
-        if ($task) {
-            yyy();
-            }    # -icb
-        else {
-            zzz();
-            }</PRE>
-<P>The default is not to do this, indicated by <STRONG>-nicb</STRONG>.</P>
-<P></P>
-<DT><STRONG><A NAME="item_%2Dibc%2C_%2D%2Dindent%2Dblock%2Dcomments"><STRONG>-ibc</STRONG>,  <STRONG>--indent-block-comments</STRONG></A></STRONG><BR>
-<DD>
-Block comments, meaning full-line comments, normally look best when they
-are indented to the same level as the code which follows them.  This is
-the default behavior, but you may use <STRONG>-nibc</STRONG> to keep block comments
-left-justified.  Here is an example:
-<PRE>
-             # this comment is indented      (-ibc, default)
-             if ($task) { yyy(); }</PRE>
-<P></P>
-<DT><STRONG><A NAME="item_%2Dnibc%2C_%2D%2Dnoindent%2Dblock%2Dcomments"><STRONG>-nibc</STRONG>,  <STRONG>--noindent-block-comments</STRONG></A></STRONG><BR>
-<DD>
-Do not indent block comments.  Here is an example:
-<PRE>
- # this comment is not indented              (-nibc)
-             if ($task) { yyy(); }</PRE>
-<P></P>
-<DT><STRONG><A NAME="item_%2Dhsc%2C_%2D%2Dhanging%2Dside%2Dcomments"><STRONG>-hsc</STRONG>, <STRONG>--hanging-side-comments</STRONG></A></STRONG><BR>
-<DD>
-By default, perltidy tries to identify and align ``hanging side
-comments'', which are something like this:
-<PRE>
-        my $IGNORE = 0;    # This is a side comment
-                           # This is a hanging side comment
-                           # And so is this</PRE>
-<P>A comment is considered to be a hanging side comment if (1) it immediately
-follows a line with a side comment, or another hanging side comment, and
-(2) there is some leading whitespace on the line.
-To deactivate this feature, use <STRONG>-nhsc</STRONG> or <STRONG>--nohanging-side-comments</STRONG>.  
-If block comments are preceded by a blank line, or have no leading
-whitespace, they will not be mistaken as hanging side comments.</P>
-<P></P>
-<DT><STRONG><A NAME="item_Sticky_Block_Comments%3A_%2Dsbc%2C_%2D%2Dsticky%2D">Sticky Block Comments: <STRONG>-sbc</STRONG>, <STRONG>--sticky-block-comments</STRONG></A></STRONG><BR>
-<DD>
-When <STRONG>-sbc</STRONG> is used, a block comment with a special leading pattern will
-be treated specially, and will effectively behave as if it had glue along
-its left and top edges.  This option is useful for controlling
-how commented code is displayed.
-<P>A sticky block comment is identified by a special leading pattern, which
-by default is two (or more) leading hash symbols, <CODE>##</CODE>.  See the next
-item, <STRONG>-sbcp</STRONG>, for a way to change this.</P>
-<P>Comments so identified  are treated as follows: 
-(1) If there is no leading space on the line, then the comment will not
-be indented, and otherwise it may be, (2) no new blank line will be
-inserted before such a comment, and (3) such a comment will never become
-a hanging side comment.  For example, assuming <CODE>@month_of_year</CODE> is
-left-adjusted:</P>
-<PRE>
-    @month_of_year = (    # -sbc (default)
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct',
-    ##  'Dec', 'Nov'
-        'Nov', 'Dec');</PRE>
-<P>Without this convention, the above code would become</P>
-<PRE>
-    @month_of_year = (   # -nsbc
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct',</PRE>
-<PRE>
-        ##  'Dec', 'Nov'
-        'Nov', 'Dec'
-    );</PRE>
-<P>which is not as clear.
-The default is to use <STRONG>-sbc</STRONG>.  This may be deactivated with <STRONG>-nsbc</STRONG>.</P>
-<P></P>
-<DT><STRONG><A NAME="item_%2Dsbcp%3Dstring%2C_%2D%2Dsticky%2Dblock%2Dcomment"><STRONG>-sbcp=string</STRONG>, <STRONG>--sticky-block-comment-prefix=string</STRONG></A></STRONG><BR>
-<DD>
-This parameter defines the prefix used to identify sticky block comments
-when the <STRONG>-sbc</STRONG> parameter is set.  The default prefix is <CODE>##</CODE>,
-corresponding to <CODE>-sbcp=##</CODE>.  The first character must be a <CODE>#</CODE>
-symbol, since this must only match comments.  As a simple example, to
-identify all comments as sticky block comments, one would use <CODE>-sbcp=#</CODE>.
-<P>Please note that <STRONG>-sbcp</STRONG> merely defines the pattern used to identify
-sticky block comments; it will not be used unless the switch <STRONG>-sbc</STRONG> is
-set.  Also, note that this string is used in a perl regular expression
-which identifies these comments, so it must enable a valid regular
-expression to be formed.</P>
-<P></P>
-<DT><STRONG><A NAME="item_Closing_Side_Comments">Closing Side Comments</A></STRONG><BR>
-<DD>
-A closing side comment is a special comment which can be placed after
-the closing brace of a code block.  They can be useful for code
-maintenance and debugging.  The command <STRONG>-acsc</STRONG> (or
-<STRONG>-add-closing-side-comments</STRONG>) adds closing side comments (if none
-exists).  Here is a small code snippet which has been processed with
-<STRONG>-acsc</STRONG>:
-<PRE>
-        sub foo {
-            if ( !defined( $_[0] ) ) {
-                print(&quot;Hello, World\n&quot;);
-            }  ##  end if
-            else {
-                print( $_[0], &quot;\n&quot; );
-            }  ##  end else
-        }  ##  end sub foo</PRE>
-<P>The result of this command is to add comments such as the last one, 
-<CODE>## end sub foo</CODE>, to closing block braces.</P>
-<P>The command <STRONG>-dcsc</STRONG>, (or <STRONG>--delete-closing-side-comments</STRONG>) reverses
-this process and removes these comments.</P>
-<P>Two other commands complete the set.  One is <STRONG>-cscp=string</STRONG>, or
-<STRONG>-closing-side-comment-prefix=string</STRONG>, where string is the prefix used
-before the name of the block type.  The default prefix, shown above, is
-<CODE>## end</CODE>.  It is best to stick to a single prefix to avoid mixing
-prefixes in a file.  Otherwise, deleting closing side comments can
-be difficult.</P>
-<P>The last command is <STRONG>-cscl=string</STRONG>, or
-<STRONG>--closing-side-comment-list=string</STRONG>, where <CODE>string</CODE> is a list of
-block types to be tagged with closing side comments.  By default, all
-block types preceded by a keyword or label (such as <CODE>if</CODE>, <CODE>sub</CODE>, and so on) will
-be tagged.  The <STRONG>-cscl</STRONG> command changes the default list to be
-any selected block types.  One block type which is not a keyword is
-a statement label.  To request that a block with a label be included,
-include a bare colon, <CODE>:</CODE>, in the list of block types.  For example,
-the following command requests that <CODE>sub</CODE>'s, labels, <CODE>BEGIN</CODE>, an
-<CODE>END</CODE> blocks be included in any addition or deletion operation:</P>
-<PRE>
-   -cscl=&quot;sub : BEGIN END&quot;</PRE>
-<P>Adding and deleting of closing side comments take place only through
-the commands <CODE>-acsc</CODE> and <STRONG>-dcsc</STRONG>.  The other two commands merely
-define the prefix and the list of block types that will be considered
-in any addition and deletion operations.</P>
-<P></P>
-<DT><STRONG><A NAME="item_%2Dolq%2C_%2D%2Doutdent%2Dlong%2Dquotes"><STRONG>-olq</STRONG>, <STRONG>--outdent-long-quotes</STRONG></A></STRONG><BR>
-<DD>
-When <STRONG>-olq</STRONG> is set, lines which is a quoted string longer than the
-value <STRONG>maximum-line-length</STRONG> will have their indentation removed to make
-them more readable.  This is the default.  To prevent such out-denting,
-use <STRONG>-nolq</STRONG> or <STRONG>--nooutdent-long-lines</STRONG>.
-<P></P>
-<DT><STRONG><A NAME="item_%2Dolc%2C_%2D%2Doutdent%2Dlong%2Dcomments"><STRONG>-olc</STRONG>, <STRONG>--outdent-long-comments</STRONG></A></STRONG><BR>
-<DD>
-When <STRONG>-olc</STRONG> is set, lines which are full-line (block) comments longer
-than the value <STRONG>maximum-line-length</STRONG> will have their indentation
-removed.  The default is not to do this.
-<P></P>
-<DT><STRONG><A NAME="item_%2Doll%2C_%2D%2Doutdent%2Dlong%2Dlines"><STRONG>-oll</STRONG>, <STRONG>--outdent-long-lines</STRONG></A></STRONG><BR>
-<DD>
-This command is equivalent to <STRONG>-olq</STRONG> and <STRONG>-olc</STRONG> and is included for
-compatability with previous versions of perltidy.  The negation of this
-also works, <STRONG>-noll</STRONG> or <STRONG>--nooutdent-long-lines</STRONG>, and is equivalent to
-setting <STRONG>-nolq</STRONG> and <STRONG>-nolc</STRONG>.
-<P></P>
-<DT><STRONG><A NAME="item_Outdenting_Labels%3A_%2Dola%2C_%2D%2Doutdent%2Dlab">Outdenting Labels: <STRONG>-ola</STRONG>,  <STRONG>--outdent-labels</STRONG></A></STRONG><BR>
-<DD>
-This command will cause labels to be outdented by 2 spaces (or whatever
-<STRONG>-ci</STRONG> has been set to), if possible.  For example, with <STRONG>perltidy -ola</STRONG>:
-<PRE>
-        my $i;
-      LOOP: while ( $i = &lt;FOTOS&gt; ) {
-            chomp($i);
-            next unless $i;
-            fixit($i);
-        }</PRE>
-<P>Labels which are already at the leftmost column will not be affected by
-this command.  Use <STRONG>-nola</STRONG> to not outdent labels.  The current
-default is not to outdent labels.</P>
-<P></P>
-<DT><STRONG><A NAME="item_Outdenting_Control_Keywords%3A_%2Dokw%2C_%2D%2Dout">Outdenting Control Keywords: <STRONG>-okw</STRONG>,  <STRONG>--outdent-keywords</STRONG></A></STRONG><BR>
-<DD>
-The command <STRONG>-okw</STRONG> will will cause certain leading control keywords to
-be outdented by 2 spaces (or whatever <STRONG>-ci</STRONG> has been set to), if
-possible.  By default, these keywords are <CODE>redo</CODE>, <CODE>next</CODE>, <CODE>last</CODE>,
-<CODE>goto</CODE>, and <CODE>return</CODE>.  The intention is to make these control keywords
-easier to see.  (To change this list of keywords being outdented, see
-the next section).
-<P>For example, using <CODE>perltidy -ock</CODE> on the previous example gives:</P>
-<PRE>
-        my $i;
-        LOOP: while ( $i = &lt;FOTOS&gt; ) {
-            chomp($i);
-          next unless $i;
-            fixit($i);
-        }</PRE>
-<P>Normally, <STRONG>-okw</STRONG> would be used with <STRONG>-ola</STRONG>.  The default is not to do
-this.</P>
-<P></P>
-<DT><STRONG><A NAME="item_Specifying_Outdented_Keywords%3A_%2Dokwl%3Dstring%">Specifying Outdented Keywords: <STRONG>-okwl=string</STRONG>,  <STRONG>--outdent-keyword-list=string</STRONG></A></STRONG><BR>
-<DD>
-This command can be used to change the keywords which are outdented with
-the <STRONG>-okw</STRONG> command.  The parameter <STRONG>string</STRONG> is a required list of perl
-keywords, which should be placed in quotes if there are more than one.
-By itself, it does not cause any outdenting to occur, so the <STRONG>-okw</STRONG>
-command is still required.
-<P>For example, the commands <CODE>-okwl=&quot;next last redo goto&quot; -okw</CODE> will cause
-those four keywords to be outdented.  It is probably simplest to place
-any <STRONG>-okwl</STRONG> command in a <EM>.perltidyrc</EM> file.</P>
-<P></P>
-<DT><STRONG><A NAME="item_%2Dmsc%3Dn%2C_%2D%2Dminimum%2Dspace%2Dto%2Dcomment"><STRONG>-msc=n</STRONG>,  <STRONG>--minimum-space-to-comment=n</STRONG></A></STRONG><BR>
-<DD>
-Side comments look best when lined up several spaces to the right of
-code.  Perltidy will try to keep comments at least n spaces to the
-right.  The default is n=4 spaces.
 <P></P>
 <DT><STRONG><A NAME="item_%2Dsts%2C_%2D%2Dspace%2Dterminal%2Dsemicolon"><STRONG>-sts</STRONG>,   <STRONG>--space-terminal-semicolon</STRONG></A></STRONG><BR>
 <DD>
@@ -694,80 +581,222 @@ normally be necessary, but was added for testing purposes, because in
 some versions of perl, trimming <CODE>qw</CODE> quotes changes the syntax tree.</P>
 <P></P></DL>
 <P>
+<H2><A NAME="comment controls">Comment Controls</A></H2>
+<DL>
+<DT><STRONG><A NAME="item_%2Dibc%2C_%2D%2Dindent%2Dblock%2Dcomments"><STRONG>-ibc</STRONG>,  <STRONG>--indent-block-comments</STRONG></A></STRONG><BR>
+<DD>
+Block comments, meaning full-line comments, normally look best when they
+are indented to the same level as the code which follows them.  This is
+the default behavior, but you may use <STRONG>-nibc</STRONG> to keep block comments
+left-justified.  Here is an example:
+<PRE>
+             # this comment is indented      (-ibc, default)
+             if ($task) { yyy(); }</PRE>
+<P>The alternative is <STRONG>-nibc</STRONG>:</P>
+<PRE>
+ # this comment is not indented              (-nibc)
+             if ($task) { yyy(); }</PRE>
+<P>See also <STRONG>-sbc</STRONG> for a way to have some indented and some outdented
+block comments.</P>
+<P></P>
+<DT><STRONG><A NAME="item_%2Dolc%2C_%2D%2Doutdent%2Dlong%2Dcomments"><STRONG>-olc</STRONG>, <STRONG>--outdent-long-comments</STRONG></A></STRONG><BR>
+<DD>
+When <STRONG>-olc</STRONG> is set, lines which are full-line (block) comments longer
+than the value <STRONG>maximum-line-length</STRONG> will have their indentation
+removed.  The default is not to do this.
+<P></P>
+<DT><STRONG><A NAME="item_%2Dmsc%3Dn%2C_%2D%2Dminimum%2Dspace%2Dto%2Dcomment"><STRONG>-msc=n</STRONG>,  <STRONG>--minimum-space-to-comment=n</STRONG></A></STRONG><BR>
+<DD>
+Side comments look best when lined up several spaces to the right of
+code.  Perltidy will try to keep comments at least n spaces to the
+right.  The default is n=4 spaces.
+<P></P>
+<DT><STRONG><A NAME="item_%2Dhsc%2C_%2D%2Dhanging%2Dside%2Dcomments"><STRONG>-hsc</STRONG>, <STRONG>--hanging-side-comments</STRONG></A></STRONG><BR>
+<DD>
+By default, perltidy tries to identify and align ``hanging side
+comments'', which are something like this:
+<PRE>
+        my $IGNORE = 0;    # This is a side comment
+                           # This is a hanging side comment
+                           # And so is this</PRE>
+<P>A comment is considered to be a hanging side comment if (1) it immediately
+follows a line with a side comment, or another hanging side comment, and
+(2) there is some leading whitespace on the line.
+To deactivate this feature, use <STRONG>-nhsc</STRONG> or <STRONG>--nohanging-side-comments</STRONG>.  
+If block comments are preceded by a blank line, or have no leading
+whitespace, they will not be mistaken as hanging side comments.</P>
+<P></P>
+<DT><STRONG><A NAME="item_Sticky_Block_Comments">Sticky Block Comments</A></STRONG><BR>
+<DD>
+<DL>
+<DT><STRONG><A NAME="item_%2Dsbc%2C_%2D%2Dsticky%2Dblock%2Dcomments"><STRONG>-sbc</STRONG>, <STRONG>--sticky-block-comments</STRONG></A></STRONG><BR>
+<DD>
+When <STRONG>-sbc</STRONG> is used, a block comment with a special leading pattern, <CODE>##</CODE> by
+default, will be treated specially, and will effectively behave as if it had
+glue along its left and top edges.  This option is useful for controlling how
+commented code is displayed.
+<P>Comments so identified  are treated as follows:</P>
+<UL>
+<LI>
+If there is no leading space on the line, then the comment will not
+be indented, and otherwise it may be,
+<P></P>
+<LI>
+no new blank line will be
+inserted before such a comment, and
+<P></P>
+<LI>
+such a comment will never become
+a hanging side comment.
+<P></P></UL>
+<P>For example, assuming <CODE>@month_of_year</CODE> is
+left-adjusted:</P>
+<PRE>
+    @month_of_year = (    # -sbc (default)
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct',
+    ##  'Dec', 'Nov'
+        'Nov', 'Dec');</PRE>
+<P>Without this convention, the above code would become</P>
+<PRE>
+    @month_of_year = (   # -nsbc
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct',
+</PRE>
+<PRE>
+
+        ##  'Dec', 'Nov'
+        'Nov', 'Dec'
+    );</PRE>
+<P>which is not as clear.
+The default is to use <STRONG>-sbc</STRONG>.  This may be deactivated with <STRONG>-nsbc</STRONG>.</P>
+<DT><STRONG><A NAME="item_%2Dsbcp%3Dstring%2C_%2D%2Dsticky%2Dblock%2Dcomment"><STRONG>-sbcp=string</STRONG>, <STRONG>--sticky-block-comment-prefix=string</STRONG></A></STRONG><BR>
+<DD>
+This parameter defines the prefix used to identify sticky block comments
+when the <STRONG>-sbc</STRONG> parameter is set.  The default prefix is <CODE>##</CODE>,
+corresponding to <CODE>-sbcp=##</CODE>.  The first character must be a <CODE>#</CODE>
+symbol, since this must only match comments.  As a simple example, to
+identify all comments as sticky block comments, one would use <CODE>-sbcp=#</CODE>.
+<P>Please note that <STRONG>-sbcp</STRONG> merely defines the pattern used to identify sticky
+block comments; it will not be used unless the switch <STRONG>-sbc</STRONG> is set.  Also,
+please be aware that this string is used in a perl regular expression which
+identifies these comments, so it must enable a valid regular expression to be
+formed.</P>
+<P></P></DL>
+<DT><STRONG><A NAME="item_Closing_Side_Comments">Closing Side Comments</A></STRONG><BR>
+<DD>
+A closing side comment is a special comment which can be placed after the
+closing brace of a code block.  They can be useful for code maintenance
+and debugging.  The command <STRONG>-csc</STRONG> (or <STRONG>-closing-side-comments</STRONG>)
+adds or refreshes closing side comments (but not if a different type
+of side comment exists).
+For example, here is a small code snippet
+<PRE>
+        sub foo {
+            if ( !defined( $_[0] ) ) {
+                print(&quot;Hello, World\n&quot;);
+            }
+            else {
+                print( $_[0], &quot;\n&quot; );
+            }
+        }</PRE>
+<P>And here is the result of processing with <CODE>perltidy -csc</CODE>:</P>
+<PRE>
+        sub foo {
+            if ( !defined( $_[0] ) ) {
+                print(&quot;Hello, World\n&quot;);
+            }
+            else {
+                print( $_[0], &quot;\n&quot; );
+            }
+        } ## end sub foo</PRE>
+<P>A closing side comment was added for <CODE>sub foo</CODE> in this case, but not
+for the <CODE>if</CODE> and <CODE>else</CODE> blocks, because they were below the 6 line
+cutoff limit for adding closing side comments.  This limit may be
+changed with the <STRONG>-csci</STRONG> command, described below.</P>
+<P>The command <STRONG>-ncsc</STRONG> reverses this process and removes these comments.
+If neither <STRONG>-csc</STRONG> or <STRONG>-ncsc</STRONG> are given, then perltidy will neither
+add nor delete any closing side comments.  This is the default.</P>
+<P>Three commands modify the behavior of <STRONG>-csc</STRONG> and <STRONG>-ncsc</STRONG>:</P>
+<P><STRONG>NOTE:</STRONG> If you edit the closing side comments generated by perltidy,
+your edits will probably be lost when you rerun perltidy with <STRONG>-csc</STRONG>.
+You could, however, change the leading pattern (say, to a single '#'
+instead of '##') to prevent perltidy from recognizing and changing the
+side comment.</P>
+<DL>
+<DT><STRONG><A NAME="item_%2Dcsci%3Dn%2C_or_%2Dclosing%2Dside%2Dcomment%2Din"><STRONG>-csci=n</STRONG>, or <STRONG>-closing-side-comment-interval=n</STRONG></A></STRONG><BR>
+<DD>
+where <CODE>n</CODE> is the minimum number of lines that a block must have in
+order for a closing side comment to be added.  The default value is
+<CODE>n=6</CODE>.  To illustrate, here is the above block processed with
+<CODE>-csci=2 -csc</CODE>:
+<PRE>
+        sub foo {
+            if ( !defined( $_[0] ) ) {
+                print(&quot;Hello, World\n&quot;);
+            } ## end if ( !defined( $_[0] )...
+            else {
+                print( $_[0], &quot;\n&quot; );
+            } ## end else
+        } ## end sub foo</PRE>
+<P>Now the <CODE>if</CODE> and <CODE>else</CODE> blocks are commented.  However, this was
+probably not very helpful.</P>
+<P></P>
+<DT><STRONG><A NAME="item_%2Dcscp%3Dstring%2C_or_%2Dclosing%2Dside%2Dcomment"><STRONG>-cscp=string</STRONG>, or <STRONG>-closing-side-comment-prefix=string</STRONG></A></STRONG><BR>
+<DD>
+where string is the prefix used before the name of the block type.  The
+default prefix, shown above, is <CODE>## end</CODE>.  This string will be added
+to closing side comments, and it will also be used to recognize them
+in order to update or delete them.
+<P></P>
+<DT><STRONG><A NAME="item_%2Dcscl%3Dstring%2C_or_%2Dclosing%2Dside%2Dcomment"><STRONG>-cscl=string</STRONG>, or <STRONG>-closing-side-comment-list-string</STRONG></A></STRONG><BR>
+<DD>
+where <CODE>string</CODE> is a list of block types to be tagged with closing side
+comments.  By default, all block types preceded by a keyword or label (such as
+<CODE>if</CODE>, <CODE>sub</CODE>, and so on) will be tagged.  The <STRONG>-cscl</STRONG> command changes the
+default list to be any selected block types.  One block type which is not a
+keyword is a statement label.  To request that a block with a label be
+included, include a bare colon, <CODE>:</CODE>, in the list of block types.  For
+example, the following command requests that <CODE>sub</CODE>'s, labels, <CODE>BEGIN</CODE>, and
+<CODE>END</CODE> blocks be included in any addition or deletion operation:
+<PRE>
+   -cscl=&quot;sub : BEGIN END&quot;</PRE>
+<P></P></DL>
+<P>Please note that the adding or deleting of closing side comments take
+place only through the commands <CODE>-csc</CODE> or <CODE>-ncsc</CODE>.  The other commands,
+if used, merely modify the behavior of these two commands.</P>
+<DT><STRONG><A NAME="item_Special_Side_Comments">Special Side Comments</A></STRONG><BR>
+<DD>
+<DL>
+<DT><STRONG><A NAME="item_%2Dssc%2C_%2D%2Dspecial%2Dside%2Dcomments"><STRONG>-ssc</STRONG>, <STRONG>--special-side-comments</STRONG></A></STRONG><BR>
+<DD>
+When <STRONG>-ssc</STRONG> is used, a side comment with a special leading pattern,
+which is <CODE>##</CODE> by default, will
+be be spaced only a single space from previous character, and it will
+not be vertically aligned with other side comments.  This option is 
+useful for (1) controlling how commented code is displayed and (2) for
+controlling how closing side comments are displayed (see previous section).
+<P>The default is to use <STRONG>-ssc</STRONG>.  This may be deactivated with <STRONG>-nssc</STRONG>.</P>
+<P></P>
+<DT><STRONG><A NAME="item_%2Dsscp%3Dstring%2C_%2D%2Dspecial%2Dside%2Dcomment"><STRONG>-sscp=string</STRONG>, <STRONG>--special-side-comment-prefix=string</STRONG></A></STRONG><BR>
+<DD>
+This parameter defines the prefix used to identify special side comments
+when the <STRONG>-ssc</STRONG> parameter is set.  The default prefix is <CODE>##</CODE>,
+corresponding to <CODE>-sscp=##</CODE>.
+<P>Please note that <STRONG>-sscp</STRONG> merely defines the pattern used to identify
+sticky block comments; it will not be used unless the switch <STRONG>-ssc</STRONG> is
+set.  Also, note that this string is used in a perl regular expression
+which identifies these comments, so it must enable a valid regular
+expression to be formed.</P>
+<P></P></DL>
+</DL>
+<P>
 <H2><A NAME="line break control">Line Break Control</A></H2>
 <DL>
 <DT><STRONG><A NAME="item_%2Dfnl%2C_%2D%2Dfreeze%2Dnewlines"><STRONG>-fnl</STRONG>,  <STRONG>--freeze-newlines</STRONG></A></STRONG><BR>
 <DD>
-If you do not want any changes to the line breaks in your script, set
-<STRONG>-fnl</STRONG>, and they will remain fixed, and the rest of the commands in
-this section will be ignored.  You may want to use <STRONG>-noll</STRONG>
+If you do not want any changes to the line breaks in your script, set <STRONG>-fnl</STRONG>,
+and they will remain fixed, and the rest of the commands in this section and
+the Blank Line Control section will be ignored.  You may want to use <STRONG>-noll</STRONG>
 with this.
-<P></P>
-<DT><STRONG><A NAME="item_%2Dl%3Dn%2C_%2D%2Dmaximum%2Dline%2Dlength%3Dn"><STRONG>-l=n</STRONG>, <STRONG>--maximum-line-length=n</STRONG></A></STRONG><BR>
-<DD>
-The default maximum line length is n=80 characters.  Perltidy will try
-to find line break points to keep lines below this length. However, long
-quotes and side comments may cause lines to exceed this length. 
-Setting <STRONG>-l=0</STRONG> is equivalent to setting <STRONG>-l=(a large number)</STRONG>.
-<P></P>
-<DT><STRONG><A NAME="item_%2Dbbc%2C_%2D%2Dblanks%2Dbefore%2Dcomments"><STRONG>-bbc</STRONG>,  <STRONG>--blanks-before-comments</STRONG></A></STRONG><BR>
-<DD>
-A blank line will be introduced before a full-line comment.  This is the
-default.  Use <STRONG>-nbbc</STRONG> or  <STRONG>--noblanks-before-comments</STRONG> to prevent
-such blank lines from being introduced.
-<P></P>
-<DT><STRONG><A NAME="item_%2Dbbs%2C_%2D%2Dblanks%2Dbefore%2Dsubs"><STRONG>-bbs</STRONG>,  <STRONG>--blanks-before-subs</STRONG></A></STRONG><BR>
-<DD>
-A blank line will be introduced before a <STRONG>sub</STRONG> definition, unless it is a
-one-liner or preceded by a comment.  A blank line will also be introduced
-before a <STRONG>package</STRONG> statement and a <STRONG>BEGIN</STRONG> and <STRONG>END</STRONG> block.  This is the
-default.  The intention is to help display the structure of a program by
-setting off certain key sections of code.  This is negated with <STRONG>-nbbs</STRONG> or
-<STRONG>--noblanks-before-subs</STRONG>.
-<P></P>
-<DT><STRONG><A NAME="item_%2Dbbb%2C_%2D%2Dblanks%2Dbefore%2Dblocks"><STRONG>-bbb</STRONG>,  <STRONG>--blanks-before-blocks</STRONG></A></STRONG><BR>
-<DD>
-A blank line will be introduced before blocks of coding delimited by
-<STRONG>for</STRONG>, <STRONG>foreach</STRONG>, <STRONG>while</STRONG>, <STRONG>until</STRONG>, and <STRONG>if</STRONG>, <STRONG>unless</STRONG>, in the following
-circumstances:
-<UL>
-<LI>
-The block is not preceded by a comment.
-<P></P>
-<LI>
-The block is not a one-line block.
-<P></P>
-<LI>
-The number of consecutive non-blank lines at the current indentation depth is at least <STRONG>-lbl</STRONG>
-(see next section).
-<P></P></UL>
-<P>This is the default.  The intention of this option is to introduce
-some space within dense coding.
-This is negated with <STRONG>-nbbb</STRONG> or  <STRONG>--noblanks-before-blocks</STRONG>.</P>
-<DT><STRONG><A NAME="item_%2Dlbl%3Dn_%2D%2Dlong%2Dblock%2Dline%2Dcount%3Dn"><STRONG>-lbl=n</STRONG> <STRONG>--long-block-line-count=n</STRONG></A></STRONG><BR>
-<DD>
-This controls how often perltidy is allowed to add blank lines before 
-certain block types (see previous section).  The default is 8.  Entering
-a value of <STRONG>0</STRONG> is equivalent to entering a very large number.
-<P></P>
-<DT><STRONG><A NAME="item_%2Dmbl%3Dn_%2D%2Dmaximum%2Dconsecutive%2Dblank%2Dl"><STRONG>-mbl=n</STRONG> <STRONG>--maximum-consecutive-blank-lines=n</STRONG></A></STRONG><BR>
-<DD>
-This parameter specifies the maximum number of consecutive blank lines
-in the output script.  The default is n=1.  If the input file has more
-than n consecutive blank lines, the number will be reduced to n.
-<P></P>
-<DT><STRONG><A NAME="item_%2Dsob%2C_%2D%2Dswallow%2Doptional%2Dblank%2Dlines"><STRONG>-sob</STRONG>,  <STRONG>--swallow-optional-blank-lines</STRONG></A></STRONG><BR>
-<DD>
-Blank lines governed by the above flags, <STRONG>-bbb</STRONG>, <STRONG>-bbs</STRONG>, and <STRONG>-bbc</STRONG>,
-will be deleted.  (But essential blank lines above pod documents will be
-retained).  This is NOT the default.
-<P></P>
-<DT><STRONG><A NAME="item_%2Dnsob%2C_%2D%2Dnoswallow%2Doptional%2Dblank%2Dli"><STRONG>-nsob</STRONG>,  <STRONG>--noswallow-optional-blank-lines</STRONG></A></STRONG><BR>
-<DD>
-Retain blank lines, including those which do not corresponding to flags
-<STRONG>-bbb</STRONG>, <STRONG>-bbs</STRONG>, and <STRONG>-bbc</STRONG>.  This is the default.  The number of
-blanks retained is subject to the limit imposed by
-<STRONG>--maximum-consecutive-blank-lines</STRONG>, however.
 <P></P>
 <DT><STRONG><A NAME="item_%2Dce%2C_%2D%2Dcuddled%2Delse"><STRONG>-ce</STRONG>,   <STRONG>--cuddled-else</STRONG></A></STRONG><BR>
 <DD>
@@ -909,6 +938,68 @@ example is curly braces, which should be controlled with the
 parameter <STRONG>bl</STRONG> provided for that purpose.</P>
 <P></P></DL>
 <P>
+<H2><A NAME="blank line control">Blank Line Control</A></H2>
+<DL>
+<DT><STRONG><A NAME="item_%2Dbbc%2C_%2D%2Dblanks%2Dbefore%2Dcomments"><STRONG>-bbc</STRONG>,  <STRONG>--blanks-before-comments</STRONG></A></STRONG><BR>
+<DD>
+A blank line will be introduced before a full-line comment.  This is the
+default.  Use <STRONG>-nbbc</STRONG> or  <STRONG>--noblanks-before-comments</STRONG> to prevent
+such blank lines from being introduced.
+<P></P>
+<DT><STRONG><A NAME="item_%2Dbbs%2C_%2D%2Dblanks%2Dbefore%2Dsubs"><STRONG>-bbs</STRONG>,  <STRONG>--blanks-before-subs</STRONG></A></STRONG><BR>
+<DD>
+A blank line will be introduced before a <STRONG>sub</STRONG> definition, unless it is a
+one-liner or preceded by a comment.  A blank line will also be introduced
+before a <STRONG>package</STRONG> statement and a <STRONG>BEGIN</STRONG> and <STRONG>END</STRONG> block.  This is the
+default.  The intention is to help display the structure of a program by
+setting off certain key sections of code.  This is negated with <STRONG>-nbbs</STRONG> or
+<STRONG>--noblanks-before-subs</STRONG>.
+<P></P>
+<DT><STRONG><A NAME="item_%2Dbbb%2C_%2D%2Dblanks%2Dbefore%2Dblocks"><STRONG>-bbb</STRONG>,  <STRONG>--blanks-before-blocks</STRONG></A></STRONG><BR>
+<DD>
+A blank line will be introduced before blocks of coding delimited by
+<STRONG>for</STRONG>, <STRONG>foreach</STRONG>, <STRONG>while</STRONG>, <STRONG>until</STRONG>, and <STRONG>if</STRONG>, <STRONG>unless</STRONG>, in the following
+circumstances:
+<UL>
+<LI>
+The block is not preceded by a comment.
+<P></P>
+<LI>
+The block is not a one-line block.
+<P></P>
+<LI>
+The number of consecutive non-blank lines at the current indentation depth is at least <STRONG>-lbl</STRONG>
+(see next section).
+<P></P></UL>
+<P>This is the default.  The intention of this option is to introduce
+some space within dense coding.
+This is negated with <STRONG>-nbbb</STRONG> or  <STRONG>--noblanks-before-blocks</STRONG>.</P>
+<DT><STRONG><A NAME="item_%2Dlbl%3Dn_%2D%2Dlong%2Dblock%2Dline%2Dcount%3Dn"><STRONG>-lbl=n</STRONG> <STRONG>--long-block-line-count=n</STRONG></A></STRONG><BR>
+<DD>
+This controls how often perltidy is allowed to add blank lines before 
+certain block types (see previous section).  The default is 8.  Entering
+a value of <STRONG>0</STRONG> is equivalent to entering a very large number.
+<P></P>
+<DT><STRONG><A NAME="item_%2Dmbl%3Dn_%2D%2Dmaximum%2Dconsecutive%2Dblank%2Dl"><STRONG>-mbl=n</STRONG> <STRONG>--maximum-consecutive-blank-lines=n</STRONG></A></STRONG><BR>
+<DD>
+This parameter specifies the maximum number of consecutive blank lines
+in the output script.  The default is n=1.  If the input file has more
+than n consecutive blank lines, the number will be reduced to n.
+<P></P>
+<DT><STRONG><A NAME="item_%2Dsob%2C_%2D%2Dswallow%2Doptional%2Dblank%2Dlines"><STRONG>-sob</STRONG>,  <STRONG>--swallow-optional-blank-lines</STRONG></A></STRONG><BR>
+<DD>
+Blank lines governed by the above flags, <STRONG>-bbb</STRONG>, <STRONG>-bbs</STRONG>, and <STRONG>-bbc</STRONG>,
+will be deleted.  (But essential blank lines above pod documents will be
+retained).  This is NOT the default.
+<P></P>
+<DT><STRONG><A NAME="item_%2Dnsob%2C_%2D%2Dnoswallow%2Doptional%2Dblank%2Dli"><STRONG>-nsob</STRONG>,  <STRONG>--noswallow-optional-blank-lines</STRONG></A></STRONG><BR>
+<DD>
+Retain blank lines, including those which do not corresponding to flags
+<STRONG>-bbb</STRONG>, <STRONG>-bbs</STRONG>, and <STRONG>-bbc</STRONG>.  This is the default.  The number of
+blanks retained is subject to the limit imposed by
+<STRONG>--maximum-consecutive-blank-lines</STRONG>, however.
+<P></P></DL>
+<P>
 <H2><A NAME="styles">Styles</A></H2>
 <DL>
 <DT><STRONG><A NAME="item_%2Dgnu%2C_%2D%2Dgnu%2Dstyle"><STRONG>-gnu</STRONG>, <STRONG>--gnu-style</STRONG></A></STRONG><BR>
@@ -1023,14 +1114,6 @@ specific example, the following line</P>
 <PRE>
         perltidy -airy somefile.pl</PRE>
 <P>(Either <CODE>-airy</CODE> or <CODE>--airy</CODE> may be used).</P>
-<P></P>
-<DT><STRONG><A NAME="item_%2Dsil%3Dn_%2D%2Dstarting%2Dindentation%2Dlevel%3D"><STRONG>-sil=n</STRONG> <STRONG>--starting-indentation-level=n</STRONG></A></STRONG><BR>
-<DD>
-By default, perltidy examines the input file and tries to determine the
-starting indentation level.  While it is often zero, it may not be
-zero for a code snippet being sent from an editing session.  If the
-default method does not work correctly, or you want to change the
-starting level, use <STRONG>-sil=n</STRONG>, to force the starting level to be n.
 <P></P>
 <DT><STRONG><A NAME="item_Skipping_leading_non%2Dperl_commands_with_%2Dx_or_">Skipping leading non-perl commands with <STRONG>-x</STRONG> or <STRONG>--look-for-hash-bang</STRONG></A></STRONG><BR>
 <DD>
@@ -1195,10 +1278,10 @@ page, perl2web(1).</P>
 <P>The following list shows all short parameter names which allow a prefix
 'n' to produce the negated form:</P>
 <PRE>
-    D anl asc aws bbb bbc bbs bli baa syn ce dac dbc dnl
+    D anl asc aws bbb bbc bbs bli baa syn ce csc dac dbc dnl
     dws dp dsm dsc ddf dln dop dsn dtt dwls dwrs f fll
     hsc html ibc icb icp lp log lal x lsl bl sbl okw ola oll pvl
-    q opt sbc sfs sts se st sob t tac tbc tp tsc tqw w</PRE>
+    q opt sbc sfs ssc sts se st sob t tac tbc tp tsc tqw w</PRE>
 <P>Equivalently, the prefix 'no' on the corresponding long names may be
 used.</P>
 <P>
@@ -1207,7 +1290,7 @@ used.</P>
 <DL>
 <DT><STRONG><A NAME="item_Parsing_Limitations">Parsing Limitations</A></STRONG><BR>
 <DD>
-Perltidy should work properly on most Perl scripts.  It does a lot of
+Perltidy should work properly on most perl scripts.  It does a lot of
 self-checking, but still, it is possible that an error could be
 introduced and go undetected.  Therefore, it is essential to make
 careful backups and to test reformatted scripts.
@@ -1262,7 +1345,7 @@ confusing filenames such as <EM>somefile.tdy.tdy.tdy</EM>.
 <P>
 <HR>
 <H1><A NAME="version">VERSION</A></H1>
-<P>This man page documents perltidy version 20011020.</P>
+<P>This man page documents perltidy version 20011112.</P>
 <P>
 <HR>
 <H1><A NAME="author">AUTHOR</A></H1>

@@ -44,14 +44,37 @@
 <P>
 <H2><A NAME="2001 xx xx">2001 xx xx</A></H2>
 <PRE>
+
+ -corrected minor glitch in which cuddled else (-ce) did not get applied
+ to an 'unless' block, which should look like this:</PRE>
+<PRE>
+        unless ($test) {</PRE>
+<PRE>
+        } else {</PRE>
+<PRE>
+        }</PRE>
+<PRE>
+  Thanks to Jeremy Mates for reporting this.</PRE>
+<PRE>
  -Added check for multiple definitions of same subroutine.  It is easy
  to introduce this problem when cutting and pasting, and perl does not
  complain about it.</PRE>
 <PRE>
- -New command -acsc (--add-closing-side-comment) and several related
- commands allow comments to be added to (and deleted from) selected
- closing block braces.  This can be useful to maintenance programmers;
- see updated man page.  Thanks to Peter Masiar for this suggestion.</PRE>
+ -The command -pro=filename  or -profile=filename may be used to specify a
+  configuration file which will override the default name of .perltidyrc.
+  There must not be a space on either side of the '=' sign.  I needed
+  this to be able to easily test perltidy with a variety of different
+  configuration files.</PRE>
+<PRE>
+ -New command -ssc (--special-side-comment) and related
+  command allows side comments to be spaced close to preceding character.
+  This is useful for displaying commented code and for closing side comments.</PRE>
+<PRE>
+ -New command -csc (--closing-side-comment) and several related
+  commands allow comments to be added to (and deleted from) selected
+  closing block braces.  This can be useful if you have to work with Other
+  People's Code, and maybe even your own code that you wrote long ago.
+  See updated man page.  Thanks to Peter Masiar for this suggestion.</PRE>
 <PRE>
  -New commands -ola, for outdenting labels, and -okw, for outdenting
   selected control keywords, were implemented.  See the perltidy man
@@ -185,12 +208,6 @@
   to a '.TEE' file.  Complete control over the treatment of pod and
   comments is still possible, as described in the updated help message 
   and man page.</PRE>
-<PRE>
-  -To simplify development and testing of .perltidyrc files, the command
-    -pro=filename  or -profile=filename may be used to specify a
-  configuration file which will override the default name of
-  .perltidyrc.  There must not be a space on either side of the '='
-  sign.</PRE>
 <PRE>
   -Corrected tokenization error for the following (non-recommended) construct:
     $user = @vars[1] / 100;

@@ -5,21 +5,51 @@
  improvement, please send a note to perltidy at users.sourceforge.net.  
 
 =head2 2001 xx xx
+ 
+ -corrected minor glitch in which cuddled else (-ce) did not get applied
+ to an 'unless' block, which should look like this:
+
+        unless ($test) {
+
+        } else {
+
+        }
+
+  Thanks to Jeremy Mates for reporting this.
 
  -Added check for multiple definitions of same subroutine.  It is easy
- to introduce this problem when cutting and pasting, and perl does not
- complain about it.  
+  to introduce this problem when cutting and pasting. Perl does not
+  complain about it, but it can lead to disaster.
 
- -To simplify development and testing of .perltidyrc files, the command
-    -pro=filename  or -profile=filename may be used to specify a
-  configuration file which will override the default name of
-  .perltidyrc.  There must not be a space on either side of the '='
-  sign.  
+ -The command -pro=filename  or -profile=filename may be used to specify a
+  configuration file which will override the default name of .perltidyrc.
+  There must not be a space on either side of the '=' sign.  I needed
+  this to be able to easily test perltidy with a variety of different
+  configuration files.
 
- -New command -acsc (--add-closing-side-comment) and several related
- commands allow comments to be added to (and deleted from) selected
- closing block braces.  This can be useful to maintenance programmers;
- see updated man page.  Thanks to Peter Masiar for this suggestion.
+ -New command -ssc (--static-side-comment) and related command allows
+  side comments to be spaced close to preceding character.  This is
+  useful for displaying commented code as side comments.
+
+ -New command -csc (--closing-side-comment) and several related
+  commands allow comments to be added to (and deleted from) any or all
+  closing block braces.  This can be useful if you have to maintain large
+  programs, especially those that you didn't write.  See updated man page.
+  Thanks to Peter Masiar for this suggestion.  For a simple example:
+
+        perltidy -csc
+
+        sub foo {
+            if ( !defined( $_[0] ) ) {
+                print("Hello, World\n");
+            }
+            else {
+                print( $_[0], "\n" );
+            }
+        } ## end sub foo
+
+  This added '## end sub foo' to the closing brace.  
+  To remove it, perltidy -ncsc.
 
  -New commands -ola, for outdenting labels, and -okw, for outdenting
   selected control keywords, were implemented.  See the perltidy man
@@ -94,9 +124,9 @@
           { type => 'road', adj => 'yes', font => 'Helvetica', 'index' => 2 },
     );
 
-    -The structure of nested logical expressions is now displayed
-    better, as illustrated by this snippet taken from Deparse.pm. 
-    Thanks to Wolfgang Weisselberg for helpful discussions.
+    -The structure of nested logical expressions is now displayed better.
+    Thanks to Wolfgang Weisselberg for helpful discussions.  For example,
+    note how the status of the final 'or' is displayed in the following:
 
     OLD:
     return ( !null($op)
@@ -120,11 +150,9 @@
                 $op->first->ppaddr =~ /^pp_(and|or)$/
                 and $op->first->first->sibling->ppaddr eq "pp_lineseq"
             )
-            or (
-                $op->first->ppaddr eq "pp_lineseq"
+            or ( $op->first->ppaddr eq "pp_lineseq"
                 and not null $op->first->first->sibling
-                and $op->first->first->sibling->ppaddr eq "pp_unstack"
-            )
+                and $op->first->first->sibling->ppaddr eq "pp_unstack" )
           )
     );
 
@@ -151,6 +179,16 @@
   to a '.TEE' file.  Complete control over the treatment of pod and
   comments is still possible, as described in the updated help message 
   and man page.
+
+  -Correspondence between Input and Output line numbers reported in a 
+   .LOG file should now be exact.  They were sometimes off due to the size
+   of intermediate buffers.
+
+  -Corrected a problem with reading config files, in which quote marks were not
+   stripped.  As a result, something like -wba="&& . || " would have the leading
+   quote attached to the && and not work correctly.  A workaround for older
+   versions is to place a space around all tokens within the quotes, like this:
+   -wba=" && . || "
 
   -Corrected tokenization error for the following (non-recommended) construct:
     $user = @vars[1] / 100;
