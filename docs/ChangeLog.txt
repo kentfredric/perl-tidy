@@ -3,6 +3,24 @@ Perltidy Change Log
      have hit a bug, unusual behavior, annoyance, or have a suggested
      improvement, please send a note to perltidy at users.sourceforge.net.  
 
+  2001 xx xx
+
+     -Corrected tokenization error of signed hex/octal/binary numbers. For
+     example, the first hex number below would have been parsed correctly
+     but the second one was not:
+        if ( ( $tmp >= 0x80_00_00 ) || ( $tmp < -0x80_00_00 ) ) { }
+
+     -I experimented with different ways of reporting syntax errors found
+     when perl -c is run on the INPUT file.  I decided that the best thing
+     to do for now is to output 'perl -c' error messages only if perltidy is
+     invoked with -w.  The reason is that perl will report lots of problems
+     and syntax errors which are not of interest when only a small snippet
+     is being formatted (such as missing modules, unknown bare words).  It
+     would be nice if there were a simple way to extract the really
+     low-level syntax errors, but I don't see one yet.  So, use -w to see
+     all possible error messages.  Perltidy will continue to report what
+     appear to be significant syntax errors that it finds.
+
   2001 11 28
 
      -added a tentative patch which tries to keep any existing breakpoints

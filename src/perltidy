@@ -28,7 +28,12 @@
 #      perltidy perltidy
 #
 #    Code Contributions:
-#      Thanks to Michael Cartmell for adaptation to VMS and for v-string help
+#      Michael Cartmell supplied code for adaptation to VMS and helped with
+#        v-strings.
+#      Hugh S. Myers supplied sub streamhandle and the supporting code to
+#        create a PerlTidy module which can operate on strings, arrays, etc.
+#      Many others have supplied key ideas, suggestions, and bug reports;
+#        see the ChangeLog file.
 #
 ############################################################
 
@@ -36,9 +41,15 @@ package PerlTidy;
 require 5.004;
 BEGIN { $^W = 1; }    # turn on warnings
 use strict;
+use Exporter;
+
 use vars qw{
   $VERSION
+  @ISA
+  @EXPORT
 };
+
+@EXPORT = qw( &perltidy );
 
 use diagnostics;
 use IO::Scalar;
@@ -47,7 +58,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.69 2001/12/11 15:32:57 perltidy Exp $
+    $Id: perltidy,v 1.70 2001/12/12 23:25:26 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -125,6 +136,10 @@ basic perltidy distribution.
 
 sub perltidy {
 
+    my %input_hash=@_;
+    my $source_array=$input_hash{'source'};
+    my $destination_array=$input_hash{'destination'};
+
     # VMS file names are restricted to a 40.40 format, so
     # we append _tdy instead of .tdy, etc.  
     my $dot;
@@ -141,19 +156,34 @@ sub perltidy {
     # handle command line options
     my ( $rOpts, $config_file, $rraw_options, $pending_complaint ) =
       process_command_line();
-    Perltidy::Formatter::check_options($rOpts);
+    PerlTidy::Formatter::check_options($rOpts);
     if ( $rOpts->{'html'} ) {
-        Perltidy::HtmlWriter->check_options($rOpts);
+        PerlTidy::HtmlWriter->check_options($rOpts);
     }
 
     # create a diagnostics object if requested
     my $diagnostics_object = undef;
     if ( $rOpts->{'DIAGNOSTICS'} ) {
-        $diagnostics_object = Perltidy::Diagnostics->new();
+        $diagnostics_object = PerlTidy::Diagnostics->new();
+    }
+    
+    # no filenames should be given if input is from an array
+    if ($source_array) {
+        if ( @ARGV > 0 ) {
+            die
+"You may not specify any filenames when a source array is given\n";
+        }
+        
+        # we'll stuff the source array into ARGV 
+        unshift ( @ARGV, $source_array ); 
+    }
+    
+    # use stdin by default if no source array and no args
+    else {
+        unshift ( @ARGV, '-' ) unless @ARGV;
     }
 
     # loop to process all files in argument list
-    unshift ( @ARGV, '-' ) unless @ARGV;
     my $number_of_files = @ARGV;
     my $input_file;
     my $formatter = undef;
@@ -173,6 +203,9 @@ sub perltidy {
         #---------------------------------------------------------------
         if ( $input_file eq '-' ) {    # '-' indicates input from STDIN
             $fileroot = "perltidy";    # root name to use for .ERR, .LOG, etc
+        }
+        elsif ($source_array ) {
+            $fileroot = "perltidy";
         }
         else {
             $fileroot = $input_file;
@@ -212,8 +245,8 @@ sub perltidy {
         # perltidy over and over with wildcard input
         my $output_extension = $rOpts->{'html'} ? "html" : "tdy";
 
-        if (
-            (
+        if ( !$source_array 
+            && (
                 $input_file =~
                 /($dot_pattern)($output_extension|LOG|DEBUG|ERR|TEE|TMPI|TMPO)$/
             )
@@ -225,7 +258,7 @@ sub perltidy {
         }
 
         # the 'source_object' supplies a method to read the input file
-        my $source_object = Perltidy::LineSource->new( $input_file, $rOpts );
+        my $source_object = PerlTidy::LineSource->new( $input_file, $rOpts );
         next unless ($source_object);
 
         # register this file name with the Diagnostics package
@@ -243,6 +276,9 @@ sub perltidy {
                 if ( $rOpts->{'standard-output'} ) {
                     die "You may not use -o and -st together\n";
                 }
+                elsif ($destination_array) {
+                    die "You may not specify a destination array and -o together\n";
+                }
                 $output_file = $rOpts->{outfile};
 
                 # make sure user gives a file name after -o
@@ -255,6 +291,9 @@ sub perltidy {
             }
         }
         elsif ( $rOpts->{'standard-output'} ) {
+            if ($destination_array) {
+                die "You may not specify a destination array and -st together\n";
+            }
             $output_file = '-';
 
             if ( $number_of_files <= 1 ) {
@@ -262,6 +301,12 @@ sub perltidy {
             else {
                 die "You may not use -st with more than one input file\n";
             }
+        }
+        elsif ($destination_array) {
+            $output_file = $destination_array;
+        }
+        elsif ($source_array) { # source but no destination goes to stdout
+            $output_file = '-';
         }
         elsif ( $input_file eq '-' ) {
             $output_file = $input_file;
@@ -273,7 +318,7 @@ sub perltidy {
         # the 'sink_object' knows how to write the output file
         my $tee_file    = $fileroot . $dot . "TEE";
         my $sink_object =
-          Perltidy::LineSink->new( $output_file, $tee_file, $rOpts );
+          PerlTidy::LineSink->new( $output_file, $tee_file, $rOpts );
 
         #---------------------------------------------------------------
         # initialize the error logger
@@ -282,7 +327,7 @@ sub perltidy {
         my $log_file     = $fileroot . $dot . "LOG";
 
         my $logger_object =
-          Perltidy::Logger->new( $rOpts, $log_file, $warning_file );
+          PerlTidy::Logger->new( $rOpts, $log_file, $warning_file );
         write_logfile_header( $rOpts, $logger_object, $config_file,
             $rraw_options );
         if ($pending_complaint) {
@@ -295,7 +340,7 @@ sub perltidy {
         my $debugger_object = undef;
         if ( $rOpts->{DEBUG} ) {
             $debugger_object =
-              Perltidy::Debugger->new( $fileroot . $dot . "DEBUG" );
+              PerlTidy::Debugger->new( $fileroot . $dot . "DEBUG" );
         }
 
         # we have to delete any old formatter because, for safety, 
@@ -306,11 +351,11 @@ sub perltidy {
         # create a formatter for this file : html writer or pretty printer
         #---------------------------------------------------------------
         if ( $rOpts->{'html'} ) {
-            $formatter = Perltidy::HtmlWriter->new( $fileroot, $output_file );
+            $formatter = PerlTidy::HtmlWriter->new( $fileroot, $output_file );
         }
 
         else {
-            $formatter = Perltidy::Formatter->new(
+            $formatter = PerlTidy::Formatter->new(
                 logger_object      => $logger_object,
                 diagnostics_object => $diagnostics_object,
                 sink_object        => $sink_object,
@@ -321,7 +366,7 @@ sub perltidy {
         # create the tokenizer for this file
         #---------------------------------------------------------------
         $tokenizer = undef;
-        $tokenizer = Perltidy::Tokenizer->new(
+        $tokenizer = PerlTidy::Tokenizer->new(
             source_object       => $source_object,
             logger_object       => $logger_object,
             debugger_object     => $debugger_object,
@@ -506,6 +551,7 @@ sub process_command_line {
     $add_option->( 'closing-side-comment-list',         'cscl', '=s' );
     $add_option->( 'closing-side-comment-interval',     'csci', '=i' );
     $add_option->( 'closing-side-comment-maximum-text', 'csct', '=i' );
+    $add_option->( 'closing-side-comment-warnings',     'cscw', '!' );
     $add_option->( 'cuddled-else',                      'ce',   '!' );
     $add_option->( 'delete-block-comments',             'dbc',  '!' );
     $add_option->( 'delete-closing-side-comments',      'dcsc', '!' );
@@ -584,8 +630,8 @@ sub process_command_line {
     $add_option->( 'want-right-space',                  'wrs',  '=s' );
     $add_option->( 'warning-output',                    'w',    '!' );
 
-    # The Perltidy::HtmlWriter will add its own options to the string
-    Perltidy::HtmlWriter->make_getopt_long_names( \@option_string );
+    # The PerlTidy::HtmlWriter will add its own options to the string
+    PerlTidy::HtmlWriter->make_getopt_long_names( \@option_string );
 
     #---------------------------------------------------------------
     # Assign default values to the above options here, except
@@ -762,7 +808,7 @@ sub process_command_line {
         # Additional styles can be added here
     );
 
-    Perltidy::HtmlWriter->make_abbreviated_names( \%expansion );
+    PerlTidy::HtmlWriter->make_abbreviated_names( \%expansion );
 
     # Uncomment next line to dump all expansions for debugging:
     # dump_short_names(\%expansion);
@@ -816,7 +862,7 @@ sub process_command_line {
             exit 1;
         }
         elsif ( $i =~ /-(dump-token-types|dtt)$/ ) {
-            Perltidy::Tokenizer->dump_token_types(*STDOUT);
+            PerlTidy::Tokenizer->dump_token_types(*STDOUT);
             exit 1;
         }
     }
@@ -1376,7 +1422,7 @@ This is perltidy, v$VERSION
 
 Copyright 2000-2001, Steven L. Hancock
 
-Perltidy is free software and may be copied under the terms of the GNU
+PerlTidy is free software and may be copied under the terms of the GNU
 General Public License, which is included in the distribution files.
 
 Complete documentation for perltidy can be found using 'man perltidy'
@@ -1630,12 +1676,12 @@ sub do_syntax_check {
 
 #####################################################################
 #
-# the Perltidy::LineSource class supplies an object with a 'get_line()' method
+# the PerlTidy::LineSource class supplies an object with a 'get_line()' method
 # which returns the next line to be parsed
 #
 #####################################################################
 
-package Perltidy::LineSource;
+package PerlTidy::LineSource;
 
 sub new {
 
@@ -1646,8 +1692,8 @@ sub new {
     my $input_file_copy = undef;
     my $fh_copy;
 
-    unless ( $fh = IO::File->new("< $input_file") ) {
-        warn("can't open $input_file: $!\n");
+    unless ( ( $fh, $input_file ) = PerlTidy::streamhandle( $input_file, 'r' ) )
+    {
         return undef;
     }
     else {
@@ -1698,19 +1744,19 @@ sub get_line {
     my $line    = undef;
     my $fh      = $self->{_fh};
     my $fh_copy = $self->{_fh_copy};
-    $line = <$fh>;
+    $line = $fh->getline();
     if ( $line && $fh_copy ) { $fh_copy->print($line); }
     return $line;
 }
 
 #####################################################################
 #
-# the Perltidy::LineSink class supplies a write_line method for 
+# the PerlTidy::LineSink class supplies a write_line method for 
 # actual file writing
 #
 #####################################################################
 
-package Perltidy::LineSink;
+package PerlTidy::LineSink;
 
 sub new {
 
@@ -1722,8 +1768,7 @@ sub new {
     my $output_file_open = 0;
 
     if ( $rOpts->{'tidy-output'} ) {
-        $fh = IO::File->new(">$output_file")
-          or die ("couldn't open output file $output_file: $!\n");
+        ( $fh, $output_file ) = PerlTidy::streamhandle( $output_file, 'w' );
         if ( $output_file eq '-' ) { $output_file_copy = "perltidy.TMPO"; }
         $output_file_open = 1;
     }
@@ -1826,7 +1871,7 @@ sub unlink_copy {
 
 #####################################################################
 #
-# The Perltidy::Diagnostics class writes the DIAGNOSTICS file, which is 
+# The PerlTidy::Diagnostics class writes the DIAGNOSTICS file, which is 
 # useful for program development.
 #
 # Only one such file is created regardless of the number of input
@@ -1835,7 +1880,7 @@ sub unlink_copy {
 #
 #####################################################################
 
-package Perltidy::Diagnostics;
+package PerlTidy::Diagnostics;
 
 sub new {
 
@@ -1871,18 +1916,18 @@ sub write_diagnostics {
         print DIAGNOSTICS "\nFILE:$input_file\n";
     }
     $self->{_last_diagnostic_file} = $input_file;
-    my $input_line_number = Perltidy::Tokenizer::get_input_line_number();
+    my $input_line_number = PerlTidy::Tokenizer::get_input_line_number();
     print DIAGNOSTICS "$input_line_number:\t@_";
     $self->{_write_diagnostics_count}++;
 }
 
 #####################################################################
 #
-# The Perltidy::Logger class writes the .LOG and .ERR files
+# The PerlTidy::Logger class writes the .LOG and .ERR files
 #
 #####################################################################
 
-package Perltidy::Logger;
+package PerlTidy::Logger;
 
 sub new {
     my $class = shift;
@@ -2168,7 +2213,7 @@ sub warning {
         if ( $warning_count < WARNING_LIMIT ) {
             if ( $self->get_use_prefix() > 0 ) {
                 my $input_line_number =
-                  Perltidy::Tokenizer::get_input_line_number();
+                  PerlTidy::Tokenizer::get_input_line_number();
                 print $fh_warnings "$input_line_number:\t@_";
                 $self->write_logfile_entry("WARNING: @_");
             }
@@ -2285,11 +2330,11 @@ sub finish {
 
 #####################################################################
 #
-# The Perltidy::HtmlWriter class writes a copy of the input stream in html
+# The PerlTidy::HtmlWriter class writes a copy of the input stream in html
 #
 #####################################################################
 
-package Perltidy::HtmlWriter;
+package PerlTidy::HtmlWriter;
 
 # class variables
 use vars qw{
@@ -2841,14 +2886,14 @@ sub write_line {
 
 #####################################################################
 #
-# The Perltidy::Formatter package adds indentation, whitespace, and line breaks
+# The PerlTidy::Formatter package adds indentation, whitespace, and line breaks
 # to the token stream
 #
 # WARNING: This is not a real class yet.  Only one Formatter my be used.
 #
 #####################################################################
 
-package Perltidy::Formatter;
+package PerlTidy::Formatter;
 use Carp;
 use vars qw{
 
@@ -2946,11 +2991,13 @@ use vars qw{
   %space_before_paren
   $brace_follower_pattern
   $looking_for_else
+
   @want_comma_break
   @maximum_nesting_depth
   @dont_align
   @interrupted_list
   @has_broken_sublist
+
   $index_start_one_line_block
   $semicolons_before_block_self_destruct
   $index_max_forced_break
@@ -3023,7 +3070,7 @@ use constant TYPE_SEQUENCE_INCREMENT => 4;
     sub _decrement_count { --$_count }
 }
 
-# interface to Perltidy::Logger routines
+# interface to PerlTidy::Logger routines
 sub warning {
     if ($logger_object) {
         $logger_object->warning(@_);
@@ -3066,7 +3113,7 @@ sub we_are_at_the_last_line {
     }
 }
 
-# interface to Perltidy::Diagnostics routine
+# interface to PerlTidy::Diagnostics routine
 sub write_diagnostics {
 
     if ($diagnostics_object) {
@@ -3101,7 +3148,7 @@ sub new {
     # FIXME: we create another object with a get_line() and peek_ahead() method
     my $sink_object = $args{sink_object};
     $file_writer_object =
-      Perltidy::FileWriter->new( $sink_object, $rOpts, $logger_object );
+      PerlTidy::FileWriter->new( $sink_object, $rOpts, $logger_object );
 
     # initialize the leading whitespace stack to negative levels
     # so that we can never run off the end of the stack
@@ -3185,7 +3232,7 @@ sub new {
     prepare_for_new_input_lines();
 
     $vertical_aligner_object =
-      Perltidy::VerticalAligner->initialize( $rOpts, $file_writer_object,
+      PerlTidy::VerticalAligner->initialize( $rOpts, $file_writer_object,
         $logger_object, $diagnostics_object );
 
     if ( $rOpts->{'tabs'} ) {
@@ -3336,7 +3383,7 @@ sub new_lp_indentation_item {
     my $index = 0;
     if ( $level >= 0 ) { $index = ++$max_gnu_item_index; }
 
-    my $item = Perltidy::IndentationItem->new(
+    my $item = PerlTidy::IndentationItem->new(
         $spaces,      $level,
         $ci_level,    $available_spaces,
         $index,       $gnu_sequence_number,
@@ -3785,7 +3832,7 @@ sub check_for_long_gnu_style_lines {
     # look at the current estimated maximum line length, and
     # remove some whitespace if it exceeds the desired maximum
 
-    # this is only for the 'gnu' style
+    # this is only for the '-lp' style
     return unless ( $rOpts->{'line-up-parentheses'} );
 
     # nothing can be done if no stack items defined for this line
@@ -4062,10 +4109,6 @@ sub check_options {
     my ( $tabbing_string, $tab_msg );
     my @list;    # working storage
 
-    # if we are making closing side comments, we have to delete old ones
-    if ( $rOpts->{'closing-side-comments'} ) {
-        $rOpts->{'delete-closing-side-comments'} = 1;
-    }
     make_static_block_comment_pattern();
     make_static_side_comment_pattern();
     make_closing_side_comment_prefix();
@@ -4143,7 +4186,7 @@ EOM
 
     # FUTURE: if not a keyword, assume that it is an identifier
     foreach my $i (@list) {
-        if ( $Perltidy::Tokenizer::is_keyword{$i} ) {
+        if ( $PerlTidy::Tokenizer::is_keyword{$i} ) {
             $outdent_keyword{$i} = 1;
         }
         else {
@@ -5137,7 +5180,7 @@ sub print_line_of_tokens {
          /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
      Examples:
        *VERSION = \'1.01';
-       ( $VERSION ) = '$Revision: 1.69 $ ' =~ /\$Revision:\s+([^\s]+)/;
+       ( $VERSION ) = '$Revision: 1.70 $ ' =~ /\$Revision:\s+([^\s]+)/;
      We will pass such a line straight through (by changing it
      to a quoted string) unless -npvl is used
     
@@ -5146,7 +5189,7 @@ sub print_line_of_tokens {
      block sequence numbers may see a closing sequence number but not
      the corresponding opening sequence number (sidecmt.t).  Example:
 
-    my $VERSION = do { my @r = (q$Revision: 1.69 $ =~ /\d+/g); sprintf
+    my $VERSION = do { my @r = (q$Revision: 1.70 $ =~ /\d+/g); sprintf
     "%d."."%02d" x $#r, @r }; 
 
     Here, the opening brace of 'do {' will not be seen, while the closing
@@ -6247,7 +6290,7 @@ sub correct_lp_indentation {
 sub flush {
     destroy_one_line_block();
     output_line_to_go();
-    Perltidy::VerticalAligner::flush();
+    PerlTidy::VerticalAligner::flush();
 }
 
 # output_line_to_go sends one logical line of tokens on down the
@@ -6273,7 +6316,8 @@ sub output_line_to_go {
         return;
     }
 
-    add_closing_side_comment()
+    my $cscw_block_comment;
+    $cscw_block_comment = add_closing_side_comment()
       if ( $rOpts->{'closing-side-comments'} && $max_index_to_go >= 0 );
 
     match_opening_and_closing_tokens();
@@ -6348,7 +6392,7 @@ sub output_line_to_go {
             if ($want_blank) {
 
                 # future: send blank line down normal path to VerticalAligner
-                Perltidy::VerticalAligner::flush();
+                PerlTidy::VerticalAligner::flush();
                 $file_writer_object->write_blank_code_line();
             }
         }
@@ -6439,9 +6483,14 @@ sub output_line_to_go {
             $do_not_pad = correct_lp_indentation( $ri_first, $ri_last );
         }
         send_lines_to_vertical_aligner( $ri_first, $ri_last, $do_not_pad );
-
     }
     prepare_for_new_input_lines();
+
+    # output any new -cscw block comment
+    if ($cscw_block_comment) {
+         flush();
+         $file_writer_object->write_code_line( $cscw_block_comment . "\n" );
+    }
 }
 
 sub reset_block_text_accumulator {
@@ -6614,12 +6663,14 @@ sub accumulate_csc_text {
 sub add_closing_side_comment {
 
     # add closing side comments after closing block braces if -csc used
+    my $cscw_block_comment;
 
     #---------------------------------------------------------------
     # Step 1: loop through all tokens of this line to accumulate 
     # the text needed to create the closing side comments. Also see
     # how the line ends.
     #---------------------------------------------------------------
+
     my ( $terminal_type, $i_terminal, $i_block_leading_text,
         $block_leading_text, $block_line_count )
       = accumulate_csc_text();
@@ -6644,8 +6695,16 @@ sub add_closing_side_comment {
         # should also be caught with a positive -csci value)
         && $mate_index_to_go[$i_terminal] < 0
 
-        # ..and this is the last token (line doesnt have a side comment now)
-        && ( $i_terminal eq $max_index_to_go )
+        # ..and either
+        && ( 
+            
+            # this is the last token (line doesnt have a side comment) 
+            $i_terminal eq $max_index_to_go 
+
+            # or the old side comment is a closing side comment
+            || $tokens_to_go[$max_index_to_go] =~ 
+              /$closing_side_comment_prefix_pattern/o
+        )
       )
     {
 
@@ -6657,27 +6716,70 @@ sub add_closing_side_comment {
         if ( $i_block_leading_text == $i_terminal ) {
             $token .= $block_leading_text;
         }
+        $token =~ s/\s*$//;  # trim any trailing whitespace
 
-        # then insert the new side comment into the output token stream
-        my $type                  = '#';
-        my $block_type            = '';
-        my $type_sequence         = '';
-        my $container_environment =
-          $container_environment_to_go[$max_index_to_go];
-        my $level                = $levels_to_go[$max_index_to_go];
-        my $slevel               = $nesting_depth_to_go[$max_index_to_go];
-        my $no_internal_newlines = 0;
+        # handle case of existing closing side comment
+        if ( $i_terminal != $max_index_to_go ) {
 
-        my $nesting_blocks     = $nesting_blocks_to_go[$max_index_to_go];
-        my $ci_level           = $ci_levels_to_go[$max_index_to_go];
-        my $in_continued_quote = 0;
+            # warn if requested and tokens differ significantly
+            if ( $rOpts->{'closing-side-comment-warnings'} ) {
+                my $old_csc = $tokens_to_go[$max_index_to_go];
+                my $new_csc = $token;
+                $new_csc =~ s/\.\.\.\s*$//;  # trim trailing '...'
+                $old_csc =~ s/\.\.\.\s*$//;
+                $new_csc =~ s/\s+//g;  # trim all whitespace
+                $old_csc =~ s/\s+//g;
+                
+                # no problem if old comment is contained in new comment
+                if ( length($new_csc) > length($old_csc) ) {
+                    $new_csc = substr( $new_csc, 0, length($old_csc) );
+                }
 
-        # first insert a blank token
-        insert_new_token_to_go( ' ', 'b', $slevel, $no_internal_newlines );
+                # any remaining difference?
+                if ( $new_csc ne $old_csc ) {
+                    warning(
+"perltidy -cscw replaced: $tokens_to_go[$max_index_to_go]\n"
+                    );
 
-        # then the side comment
-        insert_new_token_to_go( $token, $type, $slevel, $no_internal_newlines );
+                    # save the old side comment in a new trailing block comment
+                    my ( $day, $month, $year ) = (localtime)[ 3, 4, 5 ];
+                    $year  += 1900;
+                    $month += 1;
+                    $cscw_block_comment =
+"## perltidy -cscw $year-$month-$day: $tokens_to_go[$max_index_to_go]";
+                }
+            }
+
+            # switch to the new csc
+            $tokens_to_go[$max_index_to_go] = $token;
+        }
+
+        # handle case of NO existing closing side comment
+        else {
+
+            # insert the new side comment into the output token stream
+            my $type                  = '#';
+            my $block_type            = '';
+            my $type_sequence         = '';
+            my $container_environment =
+              $container_environment_to_go[$max_index_to_go];
+            my $level                = $levels_to_go[$max_index_to_go];
+            my $slevel               = $nesting_depth_to_go[$max_index_to_go];
+            my $no_internal_newlines = 0;
+
+            my $nesting_blocks     = $nesting_blocks_to_go[$max_index_to_go];
+            my $ci_level           = $ci_levels_to_go[$max_index_to_go];
+            my $in_continued_quote = 0;
+
+            # first insert a blank token
+            insert_new_token_to_go( ' ', 'b', $slevel, $no_internal_newlines );
+
+            # then the side comment
+            insert_new_token_to_go( $token, $type, $slevel,
+                $no_internal_newlines );
+        }
     }
+    return $cscw_block_comment;
 }
 
 sub send_lines_to_vertical_aligner {
@@ -6698,8 +6800,13 @@ sub send_lines_to_vertical_aligner {
         }
     }
     if ($must_flush) {
-        Perltidy::VerticalAligner::flush();
+        PerlTidy::VerticalAligner::flush();
     }
+
+##    TESTING
+##    my @levs = @levels_to_go[ @$ri_first[0..@$ri_first-1]];
+##    my @cilevs = @ci_levels_to_go[ @$ri_first[0..@$ri_first-1]];
+##    print "BUB: levs are:(@levs) ci=(@cilevs)\n";
 
     # loop to prepare each line for shipment
     for my $n ( 0 .. @$ri_first - 1 ) {
@@ -6808,10 +6915,10 @@ sub send_lines_to_vertical_aligner {
         );
 
         # flush an outdented line to avoid any unwanted vertical alignment
-        Perltidy::VerticalAligner::flush() if ($is_outdented_line);
+        PerlTidy::VerticalAligner::flush() if ($is_outdented_line);
 
         # send this new line down the pipe
-        Perltidy::VerticalAligner::append_line(
+        PerlTidy::VerticalAligner::append_line(
             $lev,                            $level_end,
             $indentation,                    \@fields,
             \@tokens,                        \@patterns,
@@ -6820,7 +6927,7 @@ sub send_lines_to_vertical_aligner {
         );
 
         # flush an outdented line to avoid any unwanted vertical alignment
-        Perltidy::VerticalAligner::flush() if ($is_outdented_line);
+        PerlTidy::VerticalAligner::flush() if ($is_outdented_line);
 
         $do_not_pad = 0;
 
@@ -8062,6 +8169,7 @@ sub scan_list {
             $opening_structure_index_stack[$depth] = -1;
             $breakpoint_stack[$depth]              = $starting_breakpoint_count;
             $container_type[$depth]                = "";
+            $last_nonblank_type[$depth]            = "";
 
             # global arrays..
             if ( !defined( $dont_align[$depth] ) ) {
@@ -8082,8 +8190,10 @@ sub scan_list {
     $check_for_new_minimum_depth->($current_depth);
 
     # routine to decide which commas to break at within a container;
-    # returns number of breakpoints set
-    # and flag indicating if container need not be broken open
+    # returns:
+    #   $bp_count = number of comma breakpoints set
+    #   $do_not_break_apart = a flag indicating if container need not
+    #     be broken open
     my $set_comma_breakpoints = sub {
 
         my $dd                 = shift;
@@ -8104,12 +8214,17 @@ sub scan_list {
                 $max_length[$dd],
                 $next_nonblank_type,
                 $list_type,
-                $last_nonblank_type[$dd],
                 \$do_not_break_apart,
             );
             $bp_count = $forced_breakpoint_count - $fbc;
-##            if ($do_not_break_apart) {
-##               $do_not_break_apart=0 if ( $last_nonblank_type[$dd] !~ /[kwiU]/ );
+
+            # always open comma lists not preceded by keywords,
+            # barewords, identifiers (that is, anything that doesn't
+            # look like a function call)
+            if ($do_not_break_apart) {
+                $do_not_break_apart = 0
+                  if ( $last_nonblank_type[$dd] !~ /[kwiU]/ );
+            }
         }
         return ( $bp_count, $do_not_break_apart );
     };
@@ -9095,7 +9210,7 @@ sub set_comma_breakpoints {
         $depth,              $i_opening_paren,    $i_closing_paren,
         $item_count,         $identifier_count,   $rcomma_index,
         $rmax_length,        $next_nonblank_type, $list_type,
-        $last_nonblank_type, $rdo_not_break_apart,
+        $rdo_not_break_apart,
       )
       = @_;
 
@@ -9167,10 +9282,6 @@ sub set_comma_breakpoints {
     # at least one breakpoint -- real or fake -- as a signal to break
     # open any outer containers.
     set_fake_breakpoint();
-
-    # always open lists not preceded by keywords, barewords, identifiers
-    # (that is, anything that doesn't look like a function call)
-    my $must_break_apart = ( $last_nonblank_type !~ /[kwiU]/ );
 
     # now we have to make a distinction between the comma count and item count,
     # because the item count will be one greater than the comma count if
@@ -9359,12 +9470,12 @@ sub set_comma_breakpoints {
         elsif ($long_last_term) {
 
             set_forced_breakpoint($i_last_comma);
-            $$rdo_not_break_apart = 1 unless $must_break_apart;
+            $$rdo_not_break_apart = 1 ; 
         }
         elsif ($long_first_term) {
 
             set_forced_breakpoint($i_first_comma);
-            $$rdo_not_break_apart = 1 unless $must_break_apart;
+            $$rdo_not_break_apart = 1 ; 
         }
         else {
 
@@ -9424,7 +9535,7 @@ sub set_comma_breakpoints {
     {
         my $i_break = $$rcomma_index[0];
         set_forced_breakpoint($i_break);
-        $$rdo_not_break_apart = 1 unless $must_break_apart;
+        $$rdo_not_break_apart = 1 ; 
         return;
     }
 
@@ -9446,7 +9557,7 @@ sub set_comma_breakpoints {
     {
 
         # let breaks be defined by bond strength logic
-        $$rdo_not_break_apart = 1 unless $must_break_apart;
+        $$rdo_not_break_apart = 1 ; 
         return;
     }
 
@@ -9543,7 +9654,7 @@ sub set_comma_breakpoints {
 
         # let the continuation logic handle it if 2 lines
         else {
-            $$rdo_not_break_apart = 1 unless $must_break_apart;
+            $$rdo_not_break_apart = 1 ; 
         }
         return;
     }
@@ -10603,7 +10714,7 @@ sub compare_indentation_levels {
 
     my ( $python_indentation_level, $structural_indentation_level ) = @_;
     if ( ( $python_indentation_level ne $structural_indentation_level )
-        && ( Perltidy::Tokenizer::know_input_tabstr() ) )
+        && ( PerlTidy::Tokenizer::know_input_tabstr() ) )
     {
         $last_tabbing_disagreement = $input_line_number;
 
@@ -10644,12 +10755,12 @@ sub compare_indentation_levels {
 
 #####################################################################
 #
-# the Perltidy::IndentationItem class supplies items which contain
+# the PerlTidy::IndentationItem class supplies items which contain
 # how much whitespace should be used at the start of a line
 #
 #####################################################################
 
-package Perltidy::IndentationItem;
+package PerlTidy::IndentationItem;
 
 # Indexes for indentation items
 use constant SPACES             => 0;     # total leading white spaces
@@ -10886,12 +10997,12 @@ sub get_CLOSED {
 
 #####################################################################
 #
-# the Perltidy::VerticalAligner::Line class supplies an object to
+# the PerlTidy::VerticalAligner::Line class supplies an object to
 # contain a single output line
 #
 #####################################################################
 
-package Perltidy::VerticalAligner::Line;
+package PerlTidy::VerticalAligner::Line;
 
 {
 
@@ -11059,11 +11170,11 @@ package Perltidy::VerticalAligner::Line;
 
 #####################################################################
 #
-# the Perltidy::VerticalAligner::Alignment class holds information
+# the PerlTidy::VerticalAligner::Alignment class holds information
 # on a single column being aligned
 #
 #####################################################################
-package Perltidy::VerticalAligner::Alignment;
+package PerlTidy::VerticalAligner::Alignment;
 
 {
 
@@ -11149,11 +11260,11 @@ package Perltidy::VerticalAligner::Alignment;
 
 }
 
-package Perltidy::VerticalAligner;
+package PerlTidy::VerticalAligner;
 
 =pod
 
-The Perltidy::VerticalAligner package collects output lines and attempts to line
+The PerlTidy::VerticalAligner package collects output lines and attempts to line
 up certain common tokens, such as => and #, which are identified
 by the calling routine.
 
@@ -11243,14 +11354,14 @@ sub initialize_for_new_group {
     $current_line            = undef;   # line being matched for alignment
 }
 
-# interface to Perltidy::Diagnostics routines
+# interface to PerlTidy::Diagnostics routines
 sub write_diagnostics {
     if ($diagnostics_object) {
         $diagnostics_object->write_diagnostics(@_);
     }
 }
 
-# interface to Perltidy::Logger routines
+# interface to PerlTidy::Logger routines
 sub warning {
     if ($logger_object) {
         $logger_object->warning(@_);
@@ -11298,7 +11409,7 @@ sub make_alignment {
 
     # make one new alignment at column $col which aligns token $token
     ++$maximum_alignment_index;
-    my $alignment = new Perltidy::VerticalAligner::Alignment(
+    my $alignment = new PerlTidy::VerticalAligner::Alignment(
         column          => $col,
         starting_column => $col,
         matching_token  => $token,
@@ -11492,7 +11603,7 @@ The log file warns the user if there are any such tabs.
     # an error here implies an incorrect call was made
     if ( $jmax > 0 && ( $#{$rtokens} != ( $jmax - 1 ) ) ) {
         warning(
-"Program bug in Perltidy::VerticalAligner - number of tokens = $#{$rtokens} should be one less than number of fields: $#{$rfields})\n"
+"Program bug in PerlTidy::VerticalAligner - number of tokens = $#{$rtokens} should be one less than number of fields: $#{$rfields})\n"
         );
         report_definite_bug();
     }
@@ -11501,7 +11612,7 @@ The log file warns the user if there are any such tabs.
     # create an object to hold this line
     # --------------------------------------------------------------------
     my $is_hanging_side_comment = 0;
-    my $new_line                = new Perltidy::VerticalAligner::Line(
+    my $new_line                = new PerlTidy::VerticalAligner::Line(
         jmax                    => $jmax,
         jmax_original_line      => $jmax,
         rtokens                 => $rtokens,
@@ -12082,7 +12193,7 @@ sub dump_array {
 
 =pod
 
-flush() sends the current Perltidy::VerticalAligner group down the pipeline to Perltidy::FileWriter.
+flush() sends the current PerlTidy::VerticalAligner group down the pipeline to PerlTidy::FileWriter.
 
 =cut
 
@@ -12552,11 +12663,11 @@ sub report_anything_unusual {
 
 #####################################################################
 #
-# the Perltidy::FileWriter class writes the output file
+# the PerlTidy::FileWriter class writes the output file
 #
 #####################################################################
 
-package Perltidy::FileWriter;
+package PerlTidy::FileWriter;
 
 # Maximum number of little messages; probably need not be changed.
 use constant MAX_NAG_MESSAGES => 6;
@@ -12749,11 +12860,11 @@ sub report_line_length_errors {
 
 #####################################################################
 #
-# The Perltidy::Debugger class shows line tokenization
+# The PerlTidy::Debugger class shows line tokenization
 #
 #####################################################################
 
-package Perltidy::Debugger;
+package PerlTidy::Debugger;
 
 sub new {
 
@@ -12862,7 +12973,7 @@ sub write_debug_entry {
 
 #####################################################################
 #
-# The Perltidy::LineBuffer class supplies a 'get_line()'
+# The PerlTidy::LineBuffer class supplies a 'get_line()'
 # method for returning the next line to be parsed, as well as a
 # 'peek_ahead()' method
 #
@@ -12871,7 +12982,7 @@ sub write_debug_entry {
 #
 #####################################################################
 
-package Perltidy::LineBuffer;
+package PerlTidy::LineBuffer;
 
 sub new {
 
@@ -12918,7 +13029,7 @@ sub get_line {
 
 ########################################################################
 #
-# the Perltidy::Tokenizer package is essentially a filter which
+# the PerlTidy::Tokenizer package is essentially a filter which
 # reads lines of perl source code from a source object and provides
 # corresponding tokenized lines through its get_line() method.  Lines
 # flow from the source_object to the caller like this:
@@ -12936,7 +13047,7 @@ sub get_line {
 #
 ########################################################################
 
-package Perltidy::Tokenizer;
+package PerlTidy::Tokenizer;
 use Carp;
 use vars qw{
   $tokenizer_self
@@ -13081,7 +13192,7 @@ sub new {
     my $source_object = $args{source_object};
 
     # we create another object with a get_line() and peek_ahead() method
-    my $line_buffer_object = Perltidy::LineBuffer->new($source_object);
+    my $line_buffer_object = PerlTidy::LineBuffer->new($source_object);
 
     # Tokenizer state data is as follows:
     # _rhere_target_list    reference to list of here-doc targets
@@ -13159,7 +13270,7 @@ sub new {
 
 }
 
-# interface to Perltidy::Logger routines
+# interface to PerlTidy::Logger routines
 sub warning {
     my $logger_object = $tokenizer_self->{_logger_object};
     if ($logger_object) {
@@ -13226,7 +13337,7 @@ sub get_saw_brace_error {
     }
 }
 
-# interface to Perltidy::Diagnostics routines
+# interface to PerlTidy::Diagnostics routines
 sub write_diagnostics {
     if ( $tokenizer_self->{_diagnostics_object} ) {
         $tokenizer_self->{_diagnostics_object}->write_diagnostics(@_);
@@ -13267,7 +13378,7 @@ such as print and printf statements of the form
 
     print bareword ( $etc
 
-Perltidy needs your help in deciding if 'bareword' is a filehandle or a
+PerlTidy needs your help in deciding if 'bareword' is a filehandle or a
 function call.  The problem is the space between 'bareword' and '('.  If
 'bareword' is a function call, you should remove the trailing space.  If
 'bareword' is a filehandle, you should avoid the opening paren or else
@@ -14197,7 +14308,7 @@ For v-strings, which should behave like numbers, I just added 'v' to the
 regex used to handle numbers and strings (types 'n' and 'Q').
 
 *. Implement a 'bond strength' rule in sub set_bond_strengths in
-Perltidy::Formatter for breaking lines around this token type.  You can
+PerlTidy::Formatter for breaking lines around this token type.  You can
 skip this step and take the default at first, then adjust later to get
 desired results.  For adding type 'v', I looked at sub bond_strength and
 saw that number type 'n' was using default strengths, so I didn't do
@@ -14205,7 +14316,7 @@ anything.  I may tune it up someday if I don't like the way line
 breaks with v-strings look.
 
 *. Implement a 'whitespace' rule in sub set_white_space_flag in
-Perltidy::Formatter.  For adding type 'v', I looked at this routine
+PerlTidy::Formatter.  For adding type 'v', I looked at this routine
 and saw that type 'n' used spaces on both sides, so I just added 'v'
 to the array @spaces_both_sides. 
 
@@ -14215,7 +14326,7 @@ that package.  For v-strings, I initially chose to use a default color
 equal to the default for numbers, but it might be nice to change that
 eventually.
 
-*. Update comments in Perltidy::Tokenizer::dump_token_types.  
+*. Update comments in PerlTidy::Tokenizer::dump_token_types.  
 
 *. Run lots and lots of debug tests.  Start with special files designed
 to test the new token type.  Run with the -D flag to create a .DEBUG
@@ -14263,7 +14374,7 @@ current version.
 
     # trim start of this line unless we are continuing a quoted line
     # do not trim end because we might end in a quote (test: deken4.pl)
-    # Perltidy::Formatter will delete needless trailing blanks
+    # PerlTidy::Formatter will delete needless trailing blanks
     unless ( $in_quote && ( $quote_type eq 'Q' ) ) {
         $input_line =~ s/^\s*//;    # trim left end
     }
@@ -15524,7 +15635,7 @@ EOM
     The final section of the tokenizer forms tokens and also computes
     parameters needed to find indentation.  It is much easier to do it
     in the tokenizer than elsewhere.  Here is a brief description of how
-    indentation is computed.  Perltidy computes indentation as the sum
+    indentation is computed.  PerlTidy computes indentation as the sum
     of 2 terms:
 
     (1) structural indentation, such as if/else/elsif blocks
@@ -19037,7 +19148,7 @@ BEGIN {
     }
 }
 
-package Perltidy::VerticalAligner;
+package PerlTidy::VerticalAligner;
 
 BEGIN {
 
@@ -19055,7 +19166,7 @@ BEGIN {
     }
 }
 
-package Perltidy::Formatter;
+package PerlTidy::Formatter;
 
 BEGIN {
 
@@ -19085,7 +19196,13 @@ BEGIN {
 }
 1;
 
-# Patch until breaking out module
-PerlTidy::perltidy();
+package main;
 
+PerlTidy::perltidy(
+    source      => undef,
+    destination => undef,
+
+    # Place for future parameters
+);
 # vi: set ts=4 sw=4 :
+

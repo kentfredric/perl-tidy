@@ -6,6 +6,10 @@
 
 =head2 2001 xx xx
 
+ -Added flag -cscw to issue warnings if a closing side comment would replace
+ an existing, different side comments.  See the man page for details.
+ Thanks to Peter Masiar for helpful discussions.
+
  -Corrected tokenization error of signed hex/octal/binary numbers. For
  example, the first hex number below would have been parsed correctly
  but the second one was not:
@@ -16,8 +20,8 @@
  to do for now is to output 'perl -c' error messages only if perltidy is
  invoked with -w.  The reason is that perl will report lots of problems
  and syntax errors which are not of interest when only a small snippet
- is being formatted (such as missing modules, unknown bare words).  It
- would be nice if there were a simple way to extract the really
+ is being formatted (such as missing modules and unknown bare words).  It
+ would be nice if there were a simple way to extract just the really
  low-level syntax errors, but I don't see one yet.  So, use -w to see
  all possible error messages.  Perltidy will continue to report what
  appear to be significant syntax errors that it finds.
