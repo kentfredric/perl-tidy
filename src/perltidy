@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.40 2001/09/03 23:05:33 perltidy Exp $
+    $Id: perltidy,v 1.41 2001/09/05 04:58:20 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -4475,7 +4475,7 @@ sub print_line_of_tokens {
     #     /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
     # Examples:
     #   *VERSION = \'1.01';
-    #   ( $VERSION ) = '$Revision: 1.40 $ ' =~ /\$Revision:\s+([^\s]+)/;
+    #   ( $VERSION ) = '$Revision: 1.41 $ ' =~ /\$Revision:\s+([^\s]+)/;
     # We will pass such a line straight through unless -npvl is used
     my $is_VERSION_statement = 0;
 
@@ -5729,10 +5729,12 @@ sub send_lines_to_vertical_aligner {
             # for keywords we have to use the actual text
             else {
 
-                # a little patch to keep one-line blocks lined up
-                # in long if/elsif sequences. my testfile: elsif.pl
+                # map certain keywords to the same 'if' class to align
+                # long if/elsif sequences. my testfile: elsif.pl
                 my $tok = $tokens_to_go[$i];
                 if ( $tok eq 'elsif' ) { $tok = 'if' }
+                if ( $tok eq 'else' ) { $tok = 'if' }
+                if ( $tok eq 'unless' ) { $tok = 'if' }
                 $patterns[$j] .= $tok;
             }
         }
@@ -5939,7 +5941,7 @@ sub set_vertical_alignment_markers {
             # alignment_type before one of these types..
             # Note: add '.' after new vertical aligner is operational
             elsif ( $type =~ /^(\{|\?|:|=>|=|\+=|\-=|=~|\*=|\/=|&&|\|\|)$/ ) {
-                $alignment_type = $type;
+                $alignment_type = $token; # OLD: $type;
             }
 
             # alignment_type before one of these keywords 
@@ -10934,6 +10936,16 @@ sub get_line {
     if ( !$tokenizer_self->{_saw_hash_bang} ) {
         if ( $input_line =~ /^\#\!.*perl\b/ ) {
             $tokenizer_self->{_saw_hash_bang} = $input_line_number;
+
+            # check for -w and -P flags
+            if ( $input_line =~ /^\#\!.*perl\s.*-.*P/ ) {
+                $tokenizer_self->{_saw_perl_dash_P} = 1;
+            }
+
+            if ( $input_line =~ /^\#\!.*perl\s.*-.*w/ ) {
+                $tokenizer_self->{_saw_perl_dash_w} = 1;
+            }
+
             if ( ( $input_line_number > 1 )
                 && ( !$tokenizer_self->{_look_for_hash_bang} ) )
             {
@@ -10950,13 +10962,11 @@ sub get_line {
                 }
             }
 
-            # check for -w and -P flags
-            if ( $input_line =~ /^\#\!.*perl\s.*-.*P/ ) {
-                $tokenizer_self->{_saw_perl_dash_P} = 1;
-            }
-
-            if ( $input_line =~ /^\#\!.*perl\s.*-.*w/ ) {
-                $tokenizer_self->{_saw_perl_dash_w} = 1;
+            # Report the leading hash-bang as a system line
+            # This will prevent -dac from deleting it
+            else {
+                $line_of_tokens->{_line_type} = 'SYSTEM';
+                return $line_of_tokens;
             }
         }
     }

@@ -14,6 +14,7 @@
 	<LI><A HREF="#perltidy change log">Perltidy Change Log</A></LI>
 	<UL>
 
+		<LI><A HREF="#2001 09 03">2001 09 03</A></LI>
 		<LI><A HREF="#2001 07 31">2001 07 31</A></LI>
 		<LI><A HREF="#2001 07 23">2001 07 23 </A></LI>
 		<LI><A HREF="#2001 07 02">2001 07 02</A></LI>
@@ -34,11 +35,207 @@
 <P>
 <H1><A NAME="perltidy change log">Perltidy Change Log</A></H1>
 <PRE>
- You can help perltidy evolve into a better program.  If you 
+ You can help Perltidy evolve into a better program.  If you 
  have hit a bug, unusual behavior, annoyance, or have a suggested
  improvement, please send a note to perltidy at users.sourceforge.net.</PRE>
+<P>
+<H2><A NAME="2001 09 03">2001 09 03</A></H2>
 <PRE>
- -Made modifications to parse subroutine attributes (A Perl 5.6 feature).  
+ -html updates:
+     - sub definition names are now specially colored, red by default.  
+       The letter 'm' is used to identify them.
+     - keyword 'sub' now has color of other keywords.
+     - restored html keyword color to __END__ and __DATA__, which was 
+       accidentally removed in the previous version.</PRE>
+<PRE>
+ -A new -se (--standard-error-output) flag has been implemented and
+ documented which causes all errors to be written to standard output
+ instead of a .ERR file.</PRE>
+<PRE>
+ -A new -w (--warning-output) flag has been implemented and documented
+  which causes perltidy to output certain non-critical messages to the
+  error output file, .ERR.  These include complaints about pod usage,
+  for example.  The default is to not include these.</PRE>
+<PRE>
+  NOTE: This replaces an undocumented -w=0 or --warning-level flag
+  which was tentatively introduced in the previous version to avoid some
+  unwanted messages.  The new default is the same as the old -w=0, so
+  that is no longer needed.</PRE>
+<PRE>
+  -Improved syntax checking and corrected tokenization of functions such
+  as rand, srand, sqrt, ...  These can accept either an operator or a term
+  to their right.  This has been corrected.
+</PRE>
+<PRE>
+
+ -Corrected tokenization of semicolon: testing of the previous update showed 
+ that the semicolon in the following statement was being mis-tokenized.  That
+ did no harm, other than adding an extra blank space, but has been corrected.</PRE>
+<PRE>
+          for (sort {strcoll($a,$b);} keys %investments) {
+             ...
+          }</PRE>
+<PRE>
+ -New syntax check: after wasting 5 minutes trying to resolve a syntax
+  error in which I had an extra terminal ';' in a complex for (;;) statement, 
+  I spent a few more minutes adding a check for this in perltidy so it won't
+  happen again.</PRE>
+<PRE>
+ -The behavior of --break-before-subs (-bbs) and --break-before-blocks
+ (-bbb) has been modified.  Also, a new control parameter,
+ --long-block-line-count=n (-lbl=n) has been introduced to give more
+ control on -bbb.  This was previously a hardwired value.  The reason
+ for the change is to reduce the number of unwanted blank lines that
+ perltidy introduces, and make it less erratic.  It's annoying to remove
+ an unwanted blank line and have perltidy put it back.  The goal is to
+ be able to sprinkle a few blank lines in that dense script you
+ inherited from Bubba.  I did a lot of experimenting with different
+ schemes for introducing blank lines before and after code blocks, and
+ decided that there is no really good way to do it.  But I think the new
+ scheme is an improvement.  You can always deactivate this with -nbbb.
+ I've been meaning to work on this; thanks to Erik Thaysen for bringing
+ it to my attention.</PRE>
+<PRE>
+ -The .LOG file is seldom needed, and I get tired of deleting them, so
+  they will now only be automatically saved if perltidy thinks that it
+  made an error, which is almost never.  You can still force the logfile
+  to be saved with -log or -g.</PRE>
+<PRE>
+ -Improved method for computing number of columns in a table.  The old
+ method always tried for an even number.  The new method allows odd
+ numbers when it is obvious that a list is not a hash initialization
+ list.</PRE>
+<PRE>
+   old: my (
+             $name,       $xsargs, $parobjs, $optypes,
+             $hasp2child, $pmcode, $hdrcode, $inplacecode,
+             $globalnew,  $callcopy
+          )
+          = @_;</PRE>
+<PRE>
+   new: my (
+             $name,   $xsargs,  $parobjs,     $optypes,   $hasp2child,
+             $pmcode, $hdrcode, $inplacecode, $globalnew, $callcopy
+          )
+          = @_;</PRE>
+<PRE>
+ -I fiddled with the list threshold adjustment, and some small lists
+ look better now.  Here is the change for one of the lists in test file
+ 'sparse.t':
+ old:
+   %units =
+     (&quot;in&quot;, &quot;in&quot;, &quot;pt&quot;, &quot;pt&quot;, &quot;pc&quot;, &quot;pi&quot;, &quot;mm&quot;, &quot;mm&quot;, &quot;cm&quot;, &quot;cm&quot;, &quot;\\hsize&quot;, &quot;%&quot;,
+       &quot;\\vsize&quot;, &quot;%&quot;, &quot;\\textwidth&quot;, &quot;%&quot;, &quot;\\textheight&quot;, &quot;%&quot;);</PRE>
+<PRE>
+ new:
+   %units = (
+              &quot;in&quot;,      &quot;in&quot;, &quot;pt&quot;,          &quot;pt&quot;, &quot;pc&quot;,           &quot;pi&quot;,
+              &quot;mm&quot;,      &quot;mm&quot;, &quot;cm&quot;,          &quot;cm&quot;, &quot;\\hsize&quot;,      &quot;%&quot;,
+              &quot;\\vsize&quot;, &quot;%&quot;,  &quot;\\textwidth&quot;, &quot;%&quot;,  &quot;\\textheight&quot;, &quot;%&quot;
+              );</PRE>
+<PRE>
+ -Improved -lp formatting at '=' sign.  A break was always being added after
+ the '=' sign in a statement such as this, (to be sure there was enough room
+ for the parameters):</PRE>
+<PRE>
+ old: my $fee =
+        CalcReserveFee(
+                        $env,          $borrnum,
+                        $biblionumber, $constraint,
+                        $bibitems
+                        );
+</PRE>
+<PRE>
+
+ The updated version doesn't do this unless the space is really needed:</PRE>
+<PRE>
+ new: my $fee = CalcReserveFee(
+                               $env,          $borrnum,
+                               $biblionumber, $constraint,
+                               $bibitems
+                               );</PRE>
+<PRE>
+ -I updated the tokenizer to allow $#+ and $#-, which seem to be new to
+ Perl 5.6.  Some experimenting with a recent version of Perl indicated
+ that it allows these non-alphanumeric '$#' array maximum index
+ varaibles: $#: $#- $#+ so I updated the parser accordingly.  Only $#:
+ seems to be valid in older versions of Perl.</PRE>
+<PRE>
+ -Fixed a rare formatting problem with -lp (and -gnu) which caused
+ excessive indentation.</PRE>
+<PRE>
+ -Many additional syntax checks have been added.</PRE>
+<PRE>
+ -Revised method for testing here-doc target strings; the following
+ was causing trouble with a regex test because of the '*' characters:
+  print &lt;&lt;&quot;*EOF*&quot;;
+  bla bla
+  *EOF*
+ Perl seems to allow almost anything to be a here doc target, so an
+ exact string comparison is now used.</PRE>
+<PRE>
+ -Made update to allow underscores in binary numbers, like '0b1100_0000'.</PRE>
+<PRE>
+ -Corrected problem with scanning certain module names; a blank space was 
+ being inserted after 'warnings' in the following:
+    use warnings::register;
+ The problem was that warnings (and a couple of other key modules) were 
+ being tokenized as keywords.  They should have just been identifiers.</PRE>
+<PRE>
+ -Corrected tokenization of indirect objects after sort, system, and exec,
+ after testing produced an incorrect error message for the following
+ line of code:
+    print sort $sortsubref @list;</PRE>
+<PRE>
+ -Corrected minor problem where a line after a format had unwanted
+ extra continuation indentation.</PRE>
+<PRE>
+ -Delete-block-comments (and -dac) now retain any leading hash-bang line</PRE>
+<PRE>
+ -Update for -lp (and -gnu) to not align the leading '=' of a list
+ with a previous '=', since this interferes with alignment of parameters.</PRE>
+<PRE>
+  old:  my $hireDay = new Date;
+        my $self    = {
+                     firstName =&gt; undef,
+                     lastName  =&gt; undef,
+                     hireDay   =&gt; $hireDay
+                     };
+</PRE>
+<PRE>
+
+  new:  my $hireDay = new Date;
+        my $self = {
+                     firstName =&gt; undef,
+                     lastName  =&gt; undef,
+                     hireDay   =&gt; $hireDay
+                     };</PRE>
+<PRE>
+ -Modifications made to display tables more compactly when possible,
+  without adding lines. For example,
+  old:
+                '1', &quot;I&quot;, '2', &quot;II&quot;, '3', &quot;III&quot;, '4', &quot;IV&quot;,
+                '5', &quot;V&quot;, '6', &quot;VI&quot;, '7', &quot;VII&quot;, '8', &quot;VIII&quot;,
+                '9', &quot;IX&quot;
+  new:
+                '1', &quot;I&quot;,   '2', &quot;II&quot;,   '3', &quot;III&quot;,
+                '4', &quot;IV&quot;,  '5', &quot;V&quot;,    '6', &quot;VI&quot;,
+                '7', &quot;VII&quot;, '8', &quot;VIII&quot;, '9', &quot;IX&quot;</PRE>
+<PRE>
+ -Corrected minor bug in which -pt=2 did not keep the right paren tight
+ around a '++' or '--' token, like this:</PRE>
+<PRE>
+            for ($i = 0 ; $i &lt; length $key ; $i++ )</PRE>
+<PRE>
+ The formatting for this should be, and now is:</PRE>
+<PRE>
+            for ($i = 0 ; $i &lt; length $key ; $i++)</PRE>
+<PRE>
+ Thanks to Erik Thaysen for noting this.</PRE>
+<PRE>
+ -Discovered a new bug involving here-docs during testing!  See BUGS.html.</PRE>
+<PRE>
+ -Finally fixed parsing of subroutine attributes (A Perl 5.6 feature).
  However, the attributes and prototypes must still be on the same line
  as the sub name.</PRE>
 <P>
@@ -232,7 +429,7 @@
 <H2><A NAME="2001 06 08">2001 06 08</A></H2>
 <PRE>
  -fixed problem with parsing command parameters containing quoted
- strings in .perltidyrc files. (Reported by Roger Esper Llima 2001-06-07).</PRE>
+ strings in .perltidyrc files. (Reported by Roger Espel Llima 2001-06-07).</PRE>
 <PRE>
  -added two command line flags, --want-break-after and 
  --want-break-before, which allow changing whether perltidy
@@ -243,10 +440,10 @@
  If perltidy does not find a .perltidyrc command line file in
  the current directory, nor in the home directory, it now looks
  for '/usr/local/etc/perltidyrc' and then for '/etc/perltidyrc'.
- (Suggested by Roger Esper Llima 2001-05-31).</PRE>
+ (Suggested by Roger Espel Llima 2001-05-31).</PRE>
 <PRE>
  -fixed problem in which spaces were trimmed from lines of a multi-line
- quote. (Reported by Roger Esper Llima 2001-05-30).  This is an 
+ quote. (Reported by Roger Espel Llima 2001-05-30).  This is an 
  uncommon situation, but serious, because it could conceivably change
  the proper function of a script.</PRE>
 <PRE>

@@ -3,13 +3,13 @@ Perltidy TODO List
 
   Improved Vertical Alignment
 
-    Coding modifications are underway to significantly enhance the vertical
-    alignment. This is the highest priority and will probably be complete
-    mid-October.
+    Coding modifications are underway to improve vertical alignment. This
+    should be complete by November.
 
   Fix numerous little formatting issues
 
-    There are a large number of little open formatting issues.
+    There are a large number of little open formatting issues besides
+    vertical alignment.
 
     One item is that at present, the -lp option breaks lists like this:
 
@@ -36,19 +36,10 @@ Perltidy TODO List
     fixed. These are low priority compared to formatting issues, but need to
     be done.
 
-  Option to reformat block comments
-
-    I'm looking into an option to use Text::Autoformat to reformat comments.
-    Thanks to Tim Maher for this suggestion. Some preliminary testing
-    suggests that this might best be an interactive tool, something like a
-    spelling checker, which would walk through a file looking for groups of
-    comments, and present a proposed a reformatting to the user with a Y/N
-    response request.
-
   Documentation
 
-    A FAQ or maybe COOKBOOK needs to be written, to explain some of the more
-    subtle formatting issues, and to give examples of different styles.
+    A FAQ is being written to explain some of the more subtle formatting
+    issues, and to give examples of different styles.
 
     The tokenizer needs extensive documentation before it can be released as
     a separate module.
@@ -91,4 +82,13 @@ Perltidy TODO List
     welcome, of course, to extract the tokenizer and use it for other
     projects, but it would be good to let me know so that we can coordinate
     updates to the tokenizer.
+
+  Option to reformat block comments
+
+    I'm looking into an option to use Text::Autoformat to reformat comments.
+    Thanks to Tim Maher for this suggestion. Some preliminary testing
+    suggests that this might best be an interactive tool, something like a
+    spelling checker, which would walk through a file looking for groups of
+    comments, and present a proposed a reformatting to the user with a Y/N
+    response request.
 

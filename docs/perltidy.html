@@ -752,7 +752,10 @@ The commands to do this are:
 <P><STRONG>-dac</STRONG> or  <STRONG>--delete-all-comments</STRONG>,  <STRONG>-dbc</STRONG> or  <STRONG>--delete-block-comments</STRONG>, 
 <STRONG>-dsc</STRONG> or  <STRONG>--delete-side-comments</STRONG>,
 and <STRONG>-dp</STRONG> or  <STRONG>--delete-pod</STRONG>.  The negatives of these commands also
-work, and are the defaults.</P>
+work, and are the defaults.  When block comments are deleted, any leading
+'hash-bang' will be retained.  Also, if the <STRONG>-x</STRONG> flag is used, any
+system commands before a leading hash-bang will be retained (even if
+they are in the form of comments).</P>
 <P></P>
 <DT><STRONG><A NAME="item_Using_a_%2Eperltidyrc_command_file">Using a <EM>.perltidyrc</EM> command file</A></STRONG><BR>
 <DD>
@@ -1040,7 +1043,7 @@ confusing filenames such as <EM>somefile.tdy.tdy.tdy</EM>.
 <P>
 <HR>
 <H1><A NAME="version">VERSION</A></H1>
-<P>This man page documents perltidy version 20010731.</P>
+<P>This man page documents perltidy version 20010903.</P>
 <P>
 <HR>
 <H1><A NAME="author">AUTHOR</A></H1>

@@ -725,7 +725,10 @@ OPTIONS
 
         -dac or --delete-all-comments, -dbc or --delete-block-comments, -dsc
         or --delete-side-comments, and -dp or --delete-pod. The negatives of
-        these commands also work, and are the defaults.
+        these commands also work, and are the defaults. When block comments
+        are deleted, any leading 'hash-bang' will be retained. Also, if the
+        -x flag is used, any system commands before a leading hash-bang will
+        be retained (even if they are in the form of comments).
 
     Using a .perltidyrc command file
         If you use perltidy frequently, you probably won't be happy until
@@ -1026,7 +1029,7 @@ SEE ALSO
     perl2web(1), perlstyle(1)
 
 VERSION
-    This man page documents perltidy version 20010731.
+    This man page documents perltidy version 20010903.
 
 AUTHOR
       Steven L. Hancock

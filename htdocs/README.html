@@ -1,6 +1,6 @@
 <HTML>
 <HEAD>
-<TITLE>Welcome to perltidy!</TITLE>
+<TITLE>Welcome to Perltidy!</TITLE>
 <LINK REV="made" HREF="mailto:perl@packages.debian.org">
 </HEAD>
 
@@ -11,15 +11,14 @@
 
 <UL>
 
-	<LI><A HREF="#welcome to perltidy!">Welcome to perltidy!</A></LI>
+	<LI><A HREF="#welcome to perltidy!">Welcome to Perltidy!</A></LI>
 	<UL>
 
 		<LI><A HREF="#installation  unix">Installation - Unix</A></LI>
-		<LI><A HREF="#windows me warning">Windows ME WARNING</A></LI>
+		<LI><A HREF="#windows me caution">Windows ME Caution</A></LI>
 		<LI><A HREF="#installation  windows">Installation - Windows</A></LI>
-		<LI><A HREF="#windows problem with command.com">Windows problem with command.com</A></LI>
+		<LI><A HREF="#windows 95 problem with command.com">Windows 95 problem with command.com</A></LI>
 		<LI><A HREF="#vms notes">VMS Notes</A></LI>
-		<LI><A HREF="#bug notices for current users">Bug Notices for Current Users</A></LI>
 	</UL>
 
 	<LI><A HREF="#what next">WHAT NEXT</A></LI>
@@ -29,7 +28,7 @@
 
 <HR>
 <P>
-<H1><A NAME="welcome to perltidy!">Welcome to perltidy!</A></H1>
+<H1><A NAME="welcome to perltidy!">Welcome to Perltidy!</A></H1>
 <P>Perltidy is a tool to indent and reformat perl scripts.</P>
 <P>Perltidy is free software released under the GNU General Public
 License -- please see the included file ``COPYING'' for details.</P>
@@ -42,7 +41,8 @@ in a separate package (but there is no automated test procedure yet).
 These are distributed separately because they will not be of interest to
 the average user.  If you do want the test files, you should untar or
 unzip them at the same directory that you untar or unzip the source files.</P>
-<P>Please see the ChangeLog for notices of any recent updates.</P>
+<P>Please see the ChangeLog file for notices of any recent updates.</P>
+<P>Please see the BUGS file for a list of all known open bugs.</P>
 <P>
 <H2><A NAME="installation  unix">Installation - Unix</A></H2>
 <P>Try this quick test. Look at <EM>lextest.pl</EM> with your editor - it's a mess.</P>
@@ -50,22 +50,22 @@ unzip them at the same directory that you untar or unzip the source files.</P>
 <PRE>
  perl ./perltidy lextest.pl</PRE>
 <P>and then look at the output file, which will be <EM>lextest.pl.tdy</EM>.  You
-should see a nicely formatted version of the program, in which perltidy
+should see a nicely formatted version of the program, in which Perltidy
 has added indentation, whitespace, and line breaks.  This simple example
-illustrates what perltidy does.</P>
+illustrates what Perltidy does.</P>
 <P>Perltidy does not require any special modules.  We just have to get the
 script in your path and, optionally, install two man pages.  You probably
 know the routine:</P>
 <P>1. If the script is not executable, use</P>
 <PRE>
  chmod +x perltidy</PRE>
-<P>2. Verify that the initial line in perltidy works for your system by
+<P>2. Verify that the initial line in Perltidy works for your system by
 entering:</P>
 <PRE>
  ./perltidy -h</PRE>
 <P>which should produce the usage text and then exit.  This should usually
 work, but if it does not, you will need to change the first line in
-perltidy to reflect the location of perl on your system.  On a Unix
+Perltidy to reflect the location of perl on your system.  On a Unix
 system, you might find the path to perl with the command 'which perl'.</P>
 <P>3. Edit <EM>Makefile</EM> to have the correct paths.  See the comments in the
 <EM>Makefile</EM>.</P>
@@ -73,7 +73,7 @@ system, you might find the path to perl with the command 'which perl'.</P>
 somewhere in your home directory.  Then issue the command</P>
 <PRE>
  make install</PRE>
-<P>This installs perltidy and the man pages perltidy.1 and perl2web.1.</P>
+<P>This installs Perltidy and the man pages perltidy.1 and perl2web.1.</P>
 <P>5. Test the installation using</P>
 <PRE>
  perltidy -h</PRE>
@@ -82,54 +82,43 @@ try</P>
 <PRE>
  man perltidy</PRE>
 <P>which should bring up the manual page.</P>
-<P>If you ever want to remove perltidy, you can remove perltidy and its man
+<P>If you ever want to remove Perltidy, you can remove Perltidy and its man
 pages by hand or use</P>
 <PRE>
  make uninstall</PRE>
 <P>
-<H2><A NAME="windows me warning">Windows ME WARNING</A></H2>
-<P>Some limited testing gave these discouraging results when attempting to
-run perltidy with Active State Perl with Windows ME:</P>
-<PRE>
-    Binary Build    Perl Version  Windows Result
-    522             5.005_03      95      ok
-    623             5.6.0         ME      Windows freezes
-    628             5.6.1         ME      Windows freezes
-    628             5.6.1         95      ok
-    ???             5.6.1         2000    ok</PRE>
-<P>I've only tested one Windows ME system, so this may be specific to that
-machine (a new Dell with no known hardware problems).  The crash was
-so bad that even alt+control+delete did not work.  If you decide to try
-to run perltidy on a Windows ME machine, please close all existing
-applications first to avoid losing any data.  I would like to hear of
-any successes or failures (is it just ME?) so that we can ask
-ActiveState to look into it if this is a general problem.</P>
-<P>As far as I know, perltidy runs ok under ActiveState Perl and Windows
-95 and Windows 2000.</P>
+<H2><A NAME="windows me caution">Windows ME Caution</A></H2>
+<P>Perltidy should run under all versions of Windows.  I test it on
+a Windows 95 system using Perl version 5.005_03 before each release,
+and I occasionally test it on a Windows 2000 system.  I have seen one
+Windows ME system with Active State Perl that froze when attempting to
+run Perltidy, but I have other reports of success with Windows ME.  In
+any case, if you install Perltidy on a Windows ME system, please close
+all applications before the first test to avoid loss of data in case the
+system freezes.  If the first test works, it should be fine.</P>
 <P>
 <H2><A NAME="installation  windows">Installation - Windows</A></H2>
-<P>Here is how to install perltidy under Windows.
+<P>Here is how to install Perltidy under Windows.
 After unpacking the zip file, test the script:</P>
 <PRE>
  perl perltidy lextest.pl</PRE>
 <P>This will produce an output file lextest.pl.tdy which can be
-compared to the input file.  (This is the point at which the above
-Windows ME machine hung badly).</P>
+compared to the input file.</P>
 <P>Placing <EM>perltidy</EM> and <EM>perltidy.bat</EM> in your path should work.  (You can
 determine your path by issuing the msdos command <CODE>PATH</CODE>).  However,
 the batch file probably will not support file redirection.  So, for
 example, to pipe the long help message through 'more', you might have
-to invoke perltidy with perl directly, like this:</P>
+to invoke Perltidy with perl directly, like this:</P>
 <PRE>
  perl \somepath\perltidy -h | more</PRE>
 <P>The documentation that comes with your perl distribution discusses other
 installation options.</P>
 <P>
-<H2><A NAME="windows problem with command.com">Windows problem with command.com</A></H2>
+<H2><A NAME="windows 95 problem with command.com">Windows 95 problem with command.com</A></H2>
 <P>There is a minor problem that you should be aware of if you are running
-perltidy (and perl) under Windows with the <EM>command.com</EM>
+Perltidy (and perl) under Windows 95 with the <EM>command.com</EM>
 shell.  The problem is that <EM>command.com</EM> always sends the standard
-error output to the screen.  This makes it impossible for perltidy to
+error output to the screen.  This makes it impossible for Perltidy to
 capture the message 'syntax OK' when it runs 'perl -c' with the
 following code:</P>
 <PRE>
@@ -146,6 +135,7 @@ command</P>
 <P>The best way to solve this problem is probably to use a better shell,
 such as bash - see <A HREF="http://www.cygwin.com.">http://www.cygwin.com.</A>  If anyone knows a way
 to code around this in perl please let me know.</P>
+<P>Windows 2000 does not have this problem.</P>
 <P>
 <H2><A NAME="vms notes">VMS Notes</A></H2>
 <P>Perltidy runs under VMS, thanks to Michael Cartmell.  You will
@@ -163,7 +153,7 @@ dot, so</P>
  $ perl                               !This is DCL not perl
  $ deck/dollar=&quot;$$Not-In-Perl$$&quot;      !This is DCL not perl
  #!/usr/bin/perl</PRE>
-<P>you must use the <STRONG>-x</STRONG> flag to tell perltidy to wait until the
+<P>you must use the <STRONG>-x</STRONG> flag to tell Perltidy to wait until the
 ``hash bang'' line to start parsing, like this:</P>
 <PRE>
       perltidy -x myfile.pl</PRE>
@@ -171,39 +161,12 @@ dot, so</P>
 <PRE>
  <A HREF="http://w4.lns.cornell.edu/~pvhp/perl/VMS.html">http://w4.lns.cornell.edu/~pvhp/perl/VMS.html</A></PRE>
 <P>
-<H2><A NAME="bug notices for current users">Bug Notices for Current Users</A></H2>
-<P>Please see the ChangeLog for details.  The most serious bugs that have
-been reported are as follows:</P>
-<P>Release 20010608 had a bug with the -t option in which a tab
-would be added before the last line of a multiline quote or pattern.
-Scripts formatted with -t on this version should be run once with
-the -chk option to see if this might have happened.</P>
-<P>Prior to release 20010608, there was a bug which perltidy removed trailing 
-white space from multiline quotes.</P>
-<P>Prior to release 20010406, there was a bug which perltidy accidentally
-added continuation indentation to the last line of some multi-line
-quotes and patterns.  A special new flag, -chk, has been added to check
-for this error.  You should rerun previously formatted scripts once with
-the -chk flag to check for this.  It will warn of all possible occurances
-of this error.</P>
-<P>Prior to release 20010328, there was a bug which perltidy accidentally
-promoted a function name following a print or printf to a filehandle.
-For example,</P>
-<PRE>
-  print usage() and exit;</PRE>
-<P>became</P>
-<PRE>
-  print usage () and exit;</PRE>
-<P>The result is that perl then considers 'usage' to be a filehandle.
-To fix this, just rerun with the latest version of perltidy.  It will
-look for this situation and issue a warning.</P>
-<P>
 <HR>
 <H1><A NAME="what next">WHAT NEXT</A></H1>
 <P>The documentation has been supplied as man pages, as 
 html files, and as text files.</P>
-<P>Reading the brief tutorial should help you use perltidy effectively.</P>
 <P>These documents can also be found at <A HREF="http://perltidy.sourceforge.net">http://perltidy.sourceforge.net</A></P>
+<P>Reading the brief tutorial should help you use Perltidy effectively.</P>
 <P>Perltidy is still being developed, so please check sourceforge occasionally
 for updates if you find that it is useful.  New releases are announced
 on freshmeat.net.</P>
@@ -211,11 +174,11 @@ on freshmeat.net.</P>
 <HR>
 <H1><A NAME="feedback / bug reports">FEEDBACK / BUG REPORTS</A></H1>
 <P>If you see ways to improve this document for the particular system on
-which you install perltidy, please let the author know so that it can be
+which you install Perltidy, please let the me know so that it can be
 updated.</P>
 <P>Bug reports, comments and suggestions are welcome.  Attach the smallest
 piece of code which demonstrates the bug or issue, plus a .LOG file from
-a perltidy run, if appropriate.  Your efforts are greatly appreciated.</P>
+a Perltidy run, if appropriate.  Your efforts are greatly appreciated!</P>
 <P>Thank You</P>
 <PRE>
  Steve Hancock

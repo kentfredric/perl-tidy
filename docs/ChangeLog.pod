@@ -1,8 +1,10 @@
 =head1 Perltidy Change Log
 
- You can help perltidy evolve into a better program.  If you 
+ You can help Perltidy evolve into a better program.  If you 
  have hit a bug, unusual behavior, annoyance, or have a suggested
  improvement, please send a note to perltidy at users.sourceforge.net.  
+
+=head2 2001 09 03 
 
  -html updates:
      - sub definition names are now specially colored, red by default.  
@@ -20,7 +22,7 @@
   error output file, .ERR.  These include complaints about pod usage,
   for example.  The default is to not include these.
 
-  NOTE: This replaces the undocumented -w=0 or --warning-level flag
+  NOTE: This replaces an undocumented -w=0 or --warning-level flag
   which was tentatively introduced in the previous version to avoid some
   unwanted messages.  The new default is the same as the old -w=0, so
   that is no longer needed. 
@@ -39,7 +41,8 @@
 
  -New syntax check: after wasting 5 minutes trying to resolve a syntax
   error in which I had an extra terminal ';' in a complex for (;;) statement, 
-  I spent a few more minutes adding a check for this in perltidy.  
+  I spent a few more minutes adding a check for this in perltidy so it won't
+  happen again.
 
  -The behavior of --break-before-subs (-bbs) and --break-before-blocks
  (-bbb) has been modified.  Also, a new control parameter,
@@ -52,7 +55,7 @@
  inherited from Bubba.  I did a lot of experimenting with different
  schemes for introducing blank lines before and after code blocks, and
  decided that there is no really good way to do it.  But I think the new
- scheme is an improvement.  You can always deactive this with -nbbb.
+ scheme is an improvement.  You can always deactivate this with -nbbb.
  I've been meaning to work on this; thanks to Erik Thaysen for bringing
  it to my attention.
 
@@ -113,12 +116,11 @@
                                $bibitems
                                );
 
- -I discovered a mis-tokenization of $#-.  Some experimenting with Perl
- indicated that it allows just these non-alphanumeric '$#' array maximum
- index varaibles: $#: $#- $#+ so I updated the parser accordingly.  (You
- can use the @; array, for example, but you cannot get at its maximum
- index with $#;  ).  Now perltidy can parse this correctly:
- $#:+=+$#,$#=+$#-+$#++$#;#$;)
+ -I updated the tokenizer to allow $#+ and $#-, which seem to be new to
+ Perl 5.6.  Some experimenting with a recent version of Perl indicated
+ that it allows these non-alphanumeric '$#' array maximum index
+ varaibles: $#: $#- $#+ so I updated the parser accordingly.  Only $#:
+ seems to be valid in older versions of Perl.
 
  -Fixed a rare formatting problem with -lp (and -gnu) which caused
  excessive indentation.
@@ -148,6 +150,8 @@
 
  -Corrected minor problem where a line after a format had unwanted
  extra continuation indentation.  
+
+ -Delete-block-comments (and -dac) now retain any leading hash-bang line
 
  -Update for -lp (and -gnu) to not align the leading '=' of a list
  with a previous '=', since this interferes with alignment of parameters.
@@ -188,7 +192,7 @@
 
  Thanks to Erik Thaysen for noting this.
 
- -Discovered a new bug involving during testing!  See BUGS.html.  
+ -Discovered a new bug involving here-docs during testing!  See BUGS.html.  
 
  -Finally fixed parsing of subroutine attributes (A Perl 5.6 feature).
  However, the attributes and prototypes must still be on the same line

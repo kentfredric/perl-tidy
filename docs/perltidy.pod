@@ -799,7 +799,10 @@ The commands to do this are:
 B<-dac> or  B<--delete-all-comments>,  B<-dbc> or  B<--delete-block-comments>, 
 B<-dsc> or  B<--delete-side-comments>,
 and B<-dp> or  B<--delete-pod>.  The negatives of these commands also
-work, and are the defaults.
+work, and are the defaults.  When block comments are deleted, any leading
+'hash-bang' will be retained.  Also, if the B<-x> flag is used, any
+system commands before a leading hash-bang will be retained (even if
+they are in the form of comments).
 
 =item Using a F<.perltidyrc> command file
 
@@ -1127,7 +1130,7 @@ perl2web(1), perlstyle(1)
 
 =head1 VERSION
 
-This man page documents perltidy version 20010731.
+This man page documents perltidy version 20010903.
 
 =head1 AUTHOR
 

@@ -7,7 +7,7 @@
  This file only lists open bugs.  For bugs which have been fixed, 
  see the ChangeLog.  
 
-=head2 A here-doc invoked through an 'e' modifier on the replacement text is not recognized (SLH, 2001-08-02)
+=head2 A here-doc invoked through an 'e' modifier on a pattern replacement text is not recognized 
 
 For example, the output of perltidy for this script has a syntax error:
 
@@ -22,7 +22,9 @@ For example, the output of perltidy for this script has a syntax error:
 
 Subroutine prototypes and attributes (a perl 5.6 feature) are not
 correctly parsed unless they are on the same line as the subroutine
-name.  For example, this would cause an error:
+name.  (Older versions of perl require the prototype to be on
+the same line as the sub name, but perl 5.6 allows it to be on
+a separate line).  For example, this would cause an error:
 
    sub pi 
    ()
@@ -30,7 +32,7 @@ name.  For example, this would cause an error:
      4 * atan2(1,1);
    }
 
-The workaround is to place the prototype and/or attribute on the same
+The workaround is to simply place the prototype and/or attribute on the same
 line as the sub name, like this:
 
    sub pi ()
@@ -38,3 +40,5 @@ line as the sub name, like this:
      4 * atan2(1,1);
    }
 
+I have not encountered this problem in an actual script.  Fixing
+it is low priority. 

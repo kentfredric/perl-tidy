@@ -20,9 +20,9 @@ foreach $i (0 .. $#: ) {
 $#=5;
 @: = ("a", "b", "c");
 my $num1=$#:;
+
+# $#+ and $#- are valid in perl 5.6 but will fail in earlier versions:
 my $num2=$#-;
 my $num3=$#+;
 $sum=+$#:+ +$#-+$#++$#;#:)
 print "num1 = $num1, num2=$num2, num3=$num3, sum is: $sum\n";
-
-$#=+$#:+ +$#-+$#++$#;#:)
