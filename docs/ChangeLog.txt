@@ -3,6 +3,161 @@ Perltidy Change Log
      have hit a bug, unusual behavior, annoyance, or have a suggested
      improvement, please send a note to perltidy at users.sourceforge.net.  
 
+  2001 xx xx
+
+     -Added check for multiple definitions of same subroutine.  It is easy
+     to introduce this problem when cutting and pasting, and perl does not
+     complain about it.  
+
+     -New command -acsc (--add-closing-side-comment) and several related
+     commands allow comments to be added to (and deleted from) selected
+     closing block braces.  This can be useful to maintenance programmers;
+     see updated man page.  Thanks to Peter Masiar for this suggestion.
+
+     -New commands -ola, for outdenting labels, and -okw, for outdenting
+      selected control keywords, were implemented.  See the perltidy man
+      page for details.  Thanks to Peter Masiar for this suggestion.
+
+     -Hanging side comment change: a comment will not be considered to be a
+      hanging side comment if there is no leading whitespace on the line.
+      This should improve the reliability of identifying hanging side comments.
+      Thanks to Peter Masiar for this suggestion.
+
+     -Two new commands for outdenting, -olq (outdent-long-quotes) and -olc
+      (outdent-long-comments) have been added.  The original -oll
+      (outdent-long-lines) remains, and now is an abbreviation for -olq and -olc.
+      The new default is just -olq.  This was necessary to avoid inconsistency with
+      the new sticky block comment option
+
+     -Sticky block comments:  to provide a way to display commented code
+      better, the convention is used that comments with a leading '##' should
+      not be formatted as usual.  Please see '-sbc' (or '--sticky-block-comment')
+      for documentation.  It can be deactivated with with -nsbc, but
+      should not normally be necessary. Thanks to Peter Masiar for this 
+      suggestion.
+
+     -Two changes were made to help show structure of complex lists:
+      (1) breakpoints are forced after every ',' in a list where any of
+      the list items spans multiple lines, and
+      (2) List items which span multiple lines now get continuation indentation.
+
+      The following example illustrates both of these points. Thanks to
+      Wolfgang Weisselberg for this snippet and a discussion of it.  Note
+      how it is easier to see the call parameters in the NEW version:
+
+        OLD:
+        assert( __LINE__, ( not defined $check )
+            or ref $check
+            or $check eq "new"
+            or $check eq "old", "Error in parameters",
+            defined $old_new ? ( ref $old_new ? ref $old_new : $old_new ) : "undef",
+            defined $db_new  ? ( ref $db_new  ? ref $db_new  : $db_new )  : "undef",
+            defined $old_db ? ( ref $old_db ? ref $old_db : $old_db ) : "undef" );
+
+        NEW: 
+        assert(
+            __LINE__,
+            ( not defined $check )
+              or ref $check
+              or $check eq "new"
+              or $check eq "old",
+            "Error in parameters",
+            defined $old_new ? ( ref $old_new ? ref $old_new : $old_new ) : "undef",
+            defined $db_new  ? ( ref $db_new  ? ref $db_new  : $db_new )  : "undef",
+            defined $old_db  ? ( ref $old_db  ? ref $old_db  : $old_db )  : "undef"
+        );
+
+        Another example shows how this helps displaying lists:
+
+        OLD:
+        %{ $self->{COMPONENTS} } = (
+            fname =>
+            { type => 'name', adj => 'yes', font => 'Helvetica', 'index' => 0 },
+            street =>
+            { type => 'road', adj => 'yes', font => 'Helvetica', 'index' => 2 },
+        );
+
+        The structure is clearer with the added indentation:
+    
+        NEW:
+        %{ $self->{COMPONENTS} } = (
+            fname =>
+              { type => 'name', adj => 'yes', font => 'Helvetica', 'index' => 0 },
+            street =>
+              { type => 'road', adj => 'yes', font => 'Helvetica', 'index' => 2 },
+        );
+
+        -The structure of nested logical expressions is now displayed
+        better, as illustrated by this snippet taken from Deparse.pm. 
+        Thanks to Wolfgang Weisselberg for helpful discussions.
+
+        OLD:
+        return ( !null($op)
+              and null( $op->sibling )
+              and $op->ppaddr eq "pp_null"
+              and class($op) eq "UNOP"
+              and ( ( $op->first->ppaddr =~ /^pp_(and|or)$/
+                and $op->first->first->sibling->ppaddr eq "pp_lineseq" )
+                or ( $op->first->ppaddr eq "pp_lineseq"
+                    and not null $op->first->first->sibling
+                    and $op->first->first->sibling->ppaddr eq "pp_unstack" ) ) );
+
+        NEW:
+        return (
+            !null($op)
+              and null( $op->sibling )
+              and $op->ppaddr eq "pp_null"
+              and class($op) eq "UNOP"
+              and (
+                (
+                    $op->first->ppaddr =~ /^pp_(and|or)$/
+                    and $op->first->first->sibling->ppaddr eq "pp_lineseq"
+                )
+                or (
+                    $op->first->ppaddr eq "pp_lineseq"
+                    and not null $op->first->first->sibling
+                    and $op->first->first->sibling->ppaddr eq "pp_unstack"
+                )
+              )
+        );
+
+       -A break will always be put before a list item containing a comma-arrow.
+       This will improve formatting of mixed lists of this form:
+
+            OLD:
+            $c->create(
+                'text', 225, 20, -text => 'A Simple Plot',
+                -font => $font,
+                -fill => 'brown'
+            );
+
+            NEW:
+            $c->create(
+                'text', 225, 20,
+                -text => 'A Simple Plot',
+                -font => $font,
+                -fill => 'brown'
+            );
+
+      -For convenience, the command -dac (--delete-all-comments) now also
+      deletes pod.  Likewise, -tac (--tee-all-comments) now also sends pod
+      to a '.TEE' file.  Complete control over the treatment of pod and
+      comments is still possible, as described in the updated help message 
+      and man page.
+
+      -To simplify development and testing of .perltidyrc files, the command
+        -pro=filename  or -profile=filename may be used to specify a
+      configuration file which will override the default name of
+      .perltidyrc.  There must not be a space on either side of the '='
+      sign.  
+
+      -Corrected tokenization error for the following (non-recommended) construct:
+        $user = @vars[1] / 100;
+ 
+      -Resolved cause of a difference between perltidy under perl v5.6.1 and
+      5.005_03; the problem was different behavior of \G regex position
+      marker(!)
+
   2001 10 20
 
      -Corrected a bug in which a break was not being made after a full-line

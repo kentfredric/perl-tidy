@@ -450,55 +450,125 @@ To deactivate this feature, use B<-nhsc> or B<--nohanging-side-comments>.
 If block comments are preceded by a blank line, or have no leading
 whitespace, they will not be mistaken as hanging side comments.
 
-=item B<-sbc>, B<--static-block-comments>
+=item Sticky Block Comments: B<-sbc>, B<--sticky-block-comments>
 
-Perltidy has a simple mechanism for displaying commented code.  When
-B<-sbc> is used, a block comment with a special leading pattern
-will be treated specially.
-By default, this special pattern is two (or more) leading hash
-symbols, C<##>, but this can be changed (see next item, B<-sbcp>).
-Comments so identified  are treated as follows: (1) No blank line
-will be inserted before such a comment, (2) If there is no leading space
-on the line, then the comment will not be indented, and otherwise it
-will, and (3) such a comment will never become a hanging side comment.
-For example, assuming C<@month_of_year> is left-adjusted:
+When B<-sbc> is used, a block comment with a special leading pattern will
+be treated specially, and will effectively behave as if it had glue along
+its left and top edges.  This option is useful for controlling
+how commented code is displayed.
 
-    @month_of_year = (
+A sticky block comment is identified by a special leading pattern, which
+by default is two (or more) leading hash symbols, C<##>.  See the next
+item, B<-sbcp>, for a way to change this.
+
+Comments so identified  are treated as follows: 
+(1) If there is no leading space on the line, then the comment will not
+be indented, and otherwise it may be, (2) no new blank line will be
+inserted before such a comment, and (3) such a comment will never become
+a hanging side comment.  For example, assuming C<@month_of_year> is
+left-adjusted:
+
+    @month_of_year = (    # -sbc (default)
         'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct',
-    ##  'nov', 'dec'
+    ##  'Dec', 'Nov'
         'Nov', 'Dec');
 
-The default is to use B<-sbc>.  This may be deactivated with B<-nsbc>.
-Without this convention, the above code would become:
+Without this convention, the above code would become
 
     @month_of_year = (   # -nsbc
         'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct',
 
-        ##  'nov', 'dec'
+        ##  'Dec', 'Nov'
         'Nov', 'Dec'
     );
 
-=item B<-sbcp=string>, B<--static-block-comment-prefix=string>
+which is not as clear.
+The default is to use B<-sbc>.  This may be deactivated with B<-nsbc>.
 
-This parameter defines the prefix used to identify static block comments
+=item B<-sbcp=string>, B<--sticky-block-comment-prefix=string>
+
+This parameter defines the prefix used to identify sticky block comments
 when the B<-sbc> parameter is set.  The default prefix is C<##>,
-corresponding to C<-sbcp="##">.  The first character must be a C<#>
-symbol, since this must only match comments.  Also, this string is used
-in a perl regular expression, so it must not form an invalid regular
-expression.  As a simple example, to identify all comments as static
-block comments, one would use C<-sbcp=#>.  Please note that B<-sbcp>
-merely defines the pattern used to identify static block comments; it
-will not be used unless the switch B<-sbc> is set.
+corresponding to C<-sbcp=##>.  The first character must be a C<#>
+symbol, since this must only match comments.  As a simple example, to
+identify all comments as sticky block comments, one would use C<-sbcp=#>.
+
+Please note that B<-sbcp> merely defines the pattern used to identify
+sticky block comments; it will not be used unless the switch B<-sbc> is
+set.  Also, note that this string is used in a perl regular expression
+which identifies these comments, so it must enable a valid regular
+expression to be formed.
+
+=item Closing Side Comments
+
+A closing side comment is a special comment which can be placed after
+the closing brace of a code block.  They can be useful for code
+maintenance and debugging.  The command B<-acsc> (or
+B<-add-closing-side-comments>) adds closing side comments (if none
+exists).  Here is a small code snippet which has been processed with
+B<-acsc>: 
+
+        sub foo {
+            if ( !defined( $_[0] ) ) {
+                print("Hello, World\n");
+            }  ##  end if
+            else {
+                print( $_[0], "\n" );
+            }  ##  end else
+        }  ##  end sub foo
+
+The result of this command is to add comments such as the last one, 
+C<## end sub foo>, to closing block braces.  
+
+The command B<-dcsc>, (or B<--delete-closing-side-comments>) reverses
+this process and removes these comments.
+
+Two other commands complete the set.  One is B<-cscp=string>, or
+B<-closing-side-comment-prefix=string>, where string is the prefix used
+before the name of the block type.  The default prefix, shown above, is
+C<## end>.  It is best to stick to a single prefix to avoid mixing
+prefixes in a file.  Otherwise, deleting closing side comments can
+be difficult.
+
+The last command is B<-cscl=string>, or
+B<--closing-side-comment-list=string>, where C<string> is a list of
+block types to be tagged with closing side comments.  By default, all
+block types preceded by a keyword or label (such as C<if>, C<sub>, and so on) will
+be tagged.  The B<-cscl> command changes the default list to be
+any selected block types.  One block type which is not a keyword is
+a statement label.  To request that a block with a label be included,
+include a bare colon, C<:>, in the list of block types.  For example,
+the following command requests that C<sub>'s, labels, C<BEGIN>, an
+C<END> blocks be included in any addition or deletion operation:
+
+   -cscl="sub : BEGIN END"
+
+Adding and deleting of closing side comments take place only through
+the commands C<-acsc> and B<-dcsc>.  The other two commands merely
+define the prefix and the list of block types that will be considered
+in any addition and deletion operations.
+
+=item B<-olq>, B<--outdent-long-quotes>
+
+When B<-olq> is set, lines which is a quoted string longer than the
+value B<maximum-line-length> will have their indentation removed to make
+them more readable.  This is the default.  To prevent such out-denting,
+use B<-nolq> or B<--nooutdent-long-lines>.
+
+=item B<-olc>, B<--outdent-long-comments>
+
+When B<-olc> is set, lines which are full-line (block) comments longer
+than the value B<maximum-line-length> will have their indentation
+removed.  The default is not to do this.  
 
 =item B<-oll>, B<--outdent-long-lines>
 
-When B<-oll> is set, lines which cannot be broken into pieces less than
-the B<maximum-line-length> will have their indentation removed to make
-them more readable.  This is the default.  This can mainly occur for
-long quoted strings and long comments.  To prevent such out-denting, use
-B<-noll> or B<--nooutdent-long-lines>.
+This command is equivalent to B<-olq> and B<-olc> and is included for
+compatability with previous versions of perltidy.  The negation of this
+also works, B<-noll> or B<--nooutdent-long-lines>, and is equivalent to
+setting B<-nolq> and B<-nolc>.
 
-=item B<-ola>,  B<--outdent-labels>
+=item Outdenting Labels: B<-ola>,  B<--outdent-labels>
 
 This command will cause labels to be outdented by 2 spaces (or whatever
 B<-ci> has been set to), if possible.  For example, with B<perltidy -ola>:
@@ -510,16 +580,18 @@ B<-ci> has been set to), if possible.  For example, with B<perltidy -ola>:
             fixit($i);
         }
 
-The current default is not to do this.  Use B<-nola> to not outdent
-labels.
+Labels which are already at the leftmost column will not be affected by
+this command.  Use B<-nola> to not outdent labels.  The current
+default is not to outdent labels.
 
-=item B<-ock>,  B<--outdent-control-keywords>
+=item Outdenting Control Keywords: B<-okw>,  B<--outdent-keywords>
 
-This command will cause certain leading control keywords to be outdented
-by 2 spaces (or whatever B<-ci> has been set to), if possible.  The
-keywords are C<redo>, C<next>, C<last>, C<goto>, and C<return>.  The
-intention is to make these control keywords easier to see.  (To control
-which keywords are outdented, see the next section).
+The command B<-okw> will will cause certain leading control keywords to
+be outdented by 2 spaces (or whatever B<-ci> has been set to), if
+possible.  By default, these keywords are C<redo>, C<next>, C<last>,
+C<goto>, and C<return>.  The intention is to make these control keywords
+easier to see.  (To change this list of keywords being outdented, see
+the next section).
 
 For example, using C<perltidy -ock> on the previous example gives:
 
@@ -530,18 +602,20 @@ For example, using C<perltidy -ock> on the previous example gives:
             fixit($i);
         }
 
-Normally, B<-ock> would be used with B<-ola>.  The default is not to do
+Normally, B<-okw> would be used with B<-ola>.  The default is not to do
 this.  
 
-=item B<-okl=string>,  B<--outdent-keywords-list=string>
+=item Specifying Outdented Keywords: B<-okwl=string>,  B<--outdent-keyword-list=string>
 
-This command is a generalization of B<-ock>, and will cause any selected
-leading keywords to be outdented by 2 spaces (or whatever B<-ci> has
-been set to), if possible.  The parameter B<string> is a required list
-of perl keywords.  
+This command can be used to change the keywords which are outdented with
+the B<-okw> command.  The parameter B<string> is a required list of perl
+keywords, which should be placed in quotes if there are more than one.
+By itself, it does not cause any outdenting to occur, so the B<-okw>
+command is still required.
 
-For example, the command C<-okl="next last redo goto"> will cause 
-those four keywords to be outdented.
+For example, the commands C<-okwl="next last redo goto" -okw> will cause
+those four keywords to be outdented.  It is probably simplest to place
+any B<-okwl> command in a F<.perltidyrc> file.
 
 =item B<-msc=n>,  B<--minimum-space-to-comment=n>
 
@@ -1229,7 +1303,7 @@ The following list shows all short parameter names which allow a prefix
 
     D anl asc aws bbb bbc bbs bli baa syn ce dac dbc dnl
     dws dp dsm dsc ddf dln dop dsn dtt dwls dwrs f fll
-    hsc html ibc icb icp lp log lal x lsl bl sbl oll pvl
+    hsc html ibc icb icp lp log lal x lsl bl sbl okw ola oll pvl
     q opt sbc sfs sts se st sob t tac tbc tp tsc tqw w
 
 Equivalently, the prefix 'no' on the corresponding long names may be

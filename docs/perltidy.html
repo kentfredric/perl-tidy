@@ -219,6 +219,17 @@ on the command line.  If no <EM>.perltidyrc</EM> file is found, it looks for one
 in your home directory.
 <P>If you set the <STRONG>-npro</STRONG> flag, perltidy will not look for this file.</P>
 <P></P>
+<DT><STRONG><A NAME="item_%2Dpro%3Dfilename_or_%2D%2Dprofile%3Dfilename"><STRONG>-pro=filename</STRONG> or  <STRONG>--profile=filename</STRONG></A></STRONG><BR>
+<DD>
+To simplify testing and switching .perltidyrc files, this command may be
+used to specify a configuration file which will override the default
+name of .perltidyrc.  There must not be a space on either side of the
+'=' sign.  For example, the line
+<PRE>
+   perltidy -pro=testcfg</PRE>
+<P>would cause file <EM>testcfg</EM> to be used instead of the 
+default <EM>.perltidyrc</EM>.</P>
+<P></P>
 <DT><STRONG><A NAME="item_%2Dopt%2C_%2D%2Dshow%2Doptions"><STRONG>-opt</STRONG>,   <STRONG>--show-options</STRONG></A></STRONG><BR>
 <DD>
 Write a list of all options used to the <EM>.LOG</EM> file.  This is useful for
@@ -260,6 +271,9 @@ with the <STRONG>-i</STRONG> command).</P>
 introduce any tab characters into your file, and it removes any tabs
 from the code (unless requested not to do so with <STRONG>-fws</STRONG>).  If you have
 any tabs in your comments, quotes, or here-documents, they will remain.</P>
+<P>Certain commands are incompatable with tabs, and if these are given,
+then a warning message will be given and tabs will be deactivated.  An
+example is the <STRONG>-lp</STRONG> option.</P>
 <P></P>
 <DT><STRONG><A NAME="item_%2Dnt%2C_%2D%2Dnotabs"><STRONG>-nt</STRONG>,   <STRONG>--notabs</STRONG></A></STRONG><BR>
 <DD>
@@ -337,6 +351,9 @@ a long line is broken.  The default is n=2, illustrated here:
 <PRE>
  my $level =   # -ci=0    
  ( $max_index_to_go &gt;= 0 ) ? $levels_to_go[0] : $last_output_level;</PRE>
+<P>The value given to <STRONG>-ci</STRONG> is also used by some commands when a small
+space is required.  Examples are commands for outdenting labels, <STRONG>-ola</STRONG>,
+and control keywords, <STRONG>-ock</STRONG>.</P>
 <P></P>
 <DT><STRONG><A NAME="item_List_indentation_using_%2Dlp%2C_%2D%2Dline%2Dup%2D">List indentation using <STRONG>-lp</STRONG>, <STRONG>--line-up-parentheses</STRONG></A></STRONG><BR>
 <DD>
@@ -419,21 +436,167 @@ comments'', which are something like this:
         my $IGNORE = 0;    # This is a side comment
                            # This is a hanging side comment
                            # And so is this</PRE>
-<P>A comment is considered to be a hanging side comment if it immediately
-follows a line with a side comment, or another hanging side comment.
+<P>A comment is considered to be a hanging side comment if (1) it immediately
+follows a line with a side comment, or another hanging side comment, and
+(2) there is some leading whitespace on the line.
 To deactivate this feature, use <STRONG>-nhsc</STRONG> or <STRONG>--nohanging-side-comments</STRONG>.  
-If block comments are preceded by a blank line, they will not be mistaken as
-hanging side comments.</P>
+If block comments are preceded by a blank line, or have no leading
+whitespace, they will not be mistaken as hanging side comments.</P>
+<P></P>
+<DT><STRONG><A NAME="item_Sticky_Block_Comments%3A_%2Dsbc%2C_%2D%2Dsticky%2D">Sticky Block Comments: <STRONG>-sbc</STRONG>, <STRONG>--sticky-block-comments</STRONG></A></STRONG><BR>
+<DD>
+When <STRONG>-sbc</STRONG> is used, a block comment with a special leading pattern will
+be treated specially, and will effectively behave as if it had glue along
+its left and top edges.  This option is useful for controlling
+how commented code is displayed.
+<P>A sticky block comment is identified by a special leading pattern, which
+by default is two (or more) leading hash symbols, <CODE>##</CODE>.  See the next
+item, <STRONG>-sbcp</STRONG>, for a way to change this.</P>
+<P>Comments so identified  are treated as follows: 
+(1) If there is no leading space on the line, then the comment will not
+be indented, and otherwise it may be, (2) no new blank line will be
+inserted before such a comment, and (3) such a comment will never become
+a hanging side comment.  For example, assuming <CODE>@month_of_year</CODE> is
+left-adjusted:</P>
+<PRE>
+    @month_of_year = (    # -sbc (default)
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct',
+    ##  'Dec', 'Nov'
+        'Nov', 'Dec');</PRE>
+<P>Without this convention, the above code would become</P>
+<PRE>
+    @month_of_year = (   # -nsbc
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct',</PRE>
+<PRE>
+        ##  'Dec', 'Nov'
+        'Nov', 'Dec'
+    );</PRE>
+<P>which is not as clear.
+The default is to use <STRONG>-sbc</STRONG>.  This may be deactivated with <STRONG>-nsbc</STRONG>.</P>
+<P></P>
+<DT><STRONG><A NAME="item_%2Dsbcp%3Dstring%2C_%2D%2Dsticky%2Dblock%2Dcomment"><STRONG>-sbcp=string</STRONG>, <STRONG>--sticky-block-comment-prefix=string</STRONG></A></STRONG><BR>
+<DD>
+This parameter defines the prefix used to identify sticky block comments
+when the <STRONG>-sbc</STRONG> parameter is set.  The default prefix is <CODE>##</CODE>,
+corresponding to <CODE>-sbcp=##</CODE>.  The first character must be a <CODE>#</CODE>
+symbol, since this must only match comments.  As a simple example, to
+identify all comments as sticky block comments, one would use <CODE>-sbcp=#</CODE>.
+<P>Please note that <STRONG>-sbcp</STRONG> merely defines the pattern used to identify
+sticky block comments; it will not be used unless the switch <STRONG>-sbc</STRONG> is
+set.  Also, note that this string is used in a perl regular expression
+which identifies these comments, so it must enable a valid regular
+expression to be formed.</P>
+<P></P>
+<DT><STRONG><A NAME="item_Closing_Side_Comments">Closing Side Comments</A></STRONG><BR>
+<DD>
+A closing side comment is a special comment which can be placed after
+the closing brace of a code block.  They can be useful for code
+maintenance and debugging.  The command <STRONG>-acsc</STRONG> (or
+<STRONG>-add-closing-side-comments</STRONG>) adds closing side comments (if none
+exists).  Here is a small code snippet which has been processed with
+<STRONG>-acsc</STRONG>:
+<PRE>
+        sub foo {
+            if ( !defined( $_[0] ) ) {
+                print(&quot;Hello, World\n&quot;);
+            }  ##  end if
+            else {
+                print( $_[0], &quot;\n&quot; );
+            }  ##  end else
+        }  ##  end sub foo</PRE>
+<P>The result of this command is to add comments such as the last one, 
+<CODE>## end sub foo</CODE>, to closing block braces.</P>
+<P>The command <STRONG>-dcsc</STRONG>, (or <STRONG>--delete-closing-side-comments</STRONG>) reverses
+this process and removes these comments.</P>
+<P>Two other commands complete the set.  One is <STRONG>-cscp=string</STRONG>, or
+<STRONG>-closing-side-comment-prefix=string</STRONG>, where string is the prefix used
+before the name of the block type.  The default prefix, shown above, is
+<CODE>## end</CODE>.  It is best to stick to a single prefix to avoid mixing
+prefixes in a file.  Otherwise, deleting closing side comments can
+be difficult.</P>
+<P>The last command is <STRONG>-cscl=string</STRONG>, or
+<STRONG>--closing-side-comment-list=string</STRONG>, where <CODE>string</CODE> is a list of
+block types to be tagged with closing side comments.  By default, all
+block types preceded by a keyword or label (such as <CODE>if</CODE>, <CODE>sub</CODE>, and so on) will
+be tagged.  The <STRONG>-cscl</STRONG> command changes the default list to be
+any selected block types.  One block type which is not a keyword is
+a statement label.  To request that a block with a label be included,
+include a bare colon, <CODE>:</CODE>, in the list of block types.  For example,
+the following command requests that <CODE>sub</CODE>'s, labels, <CODE>BEGIN</CODE>, an
+<CODE>END</CODE> blocks be included in any addition or deletion operation:</P>
+<PRE>
+   -cscl=&quot;sub : BEGIN END&quot;</PRE>
+<P>Adding and deleting of closing side comments take place only through
+the commands <CODE>-acsc</CODE> and <STRONG>-dcsc</STRONG>.  The other two commands merely
+define the prefix and the list of block types that will be considered
+in any addition and deletion operations.</P>
+<P></P>
+<DT><STRONG><A NAME="item_%2Dolq%2C_%2D%2Doutdent%2Dlong%2Dquotes"><STRONG>-olq</STRONG>, <STRONG>--outdent-long-quotes</STRONG></A></STRONG><BR>
+<DD>
+When <STRONG>-olq</STRONG> is set, lines which is a quoted string longer than the
+value <STRONG>maximum-line-length</STRONG> will have their indentation removed to make
+them more readable.  This is the default.  To prevent such out-denting,
+use <STRONG>-nolq</STRONG> or <STRONG>--nooutdent-long-lines</STRONG>.
+<P></P>
+<DT><STRONG><A NAME="item_%2Dolc%2C_%2D%2Doutdent%2Dlong%2Dcomments"><STRONG>-olc</STRONG>, <STRONG>--outdent-long-comments</STRONG></A></STRONG><BR>
+<DD>
+When <STRONG>-olc</STRONG> is set, lines which are full-line (block) comments longer
+than the value <STRONG>maximum-line-length</STRONG> will have their indentation
+removed.  The default is not to do this.
 <P></P>
 <DT><STRONG><A NAME="item_%2Doll%2C_%2D%2Doutdent%2Dlong%2Dlines"><STRONG>-oll</STRONG>, <STRONG>--outdent-long-lines</STRONG></A></STRONG><BR>
 <DD>
-When <STRONG>-oll</STRONG> is set, lines which cannot be broken into pieces less than
-the <STRONG>maximum-line-length</STRONG> will have their indentation removed to make
-them more readable.  This is the default.  This can mainly occur for
-long quoted strings and long comments.  To prevent such out-denting, use
-<STRONG>-noll</STRONG> or <STRONG>--nooutdent-long-lines</STRONG>.
+This command is equivalent to <STRONG>-olq</STRONG> and <STRONG>-olc</STRONG> and is included for
+compatability with previous versions of perltidy.  The negation of this
+also works, <STRONG>-noll</STRONG> or <STRONG>--nooutdent-long-lines</STRONG>, and is equivalent to
+setting <STRONG>-nolq</STRONG> and <STRONG>-nolc</STRONG>.
 <P></P>
-<DT><STRONG><A NAME="item_%2Dmsc%3Dn%2C_minimum%2Dspace%2Dto%2Dcomment%3Dn"><STRONG>-msc=n</STRONG>,  <STRONG>minimum-space-to-comment=n</STRONG></A></STRONG><BR>
+<DT><STRONG><A NAME="item_Outdenting_Labels%3A_%2Dola%2C_%2D%2Doutdent%2Dlab">Outdenting Labels: <STRONG>-ola</STRONG>,  <STRONG>--outdent-labels</STRONG></A></STRONG><BR>
+<DD>
+This command will cause labels to be outdented by 2 spaces (or whatever
+<STRONG>-ci</STRONG> has been set to), if possible.  For example, with <STRONG>perltidy -ola</STRONG>:
+<PRE>
+        my $i;
+      LOOP: while ( $i = &lt;FOTOS&gt; ) {
+            chomp($i);
+            next unless $i;
+            fixit($i);
+        }</PRE>
+<P>Labels which are already at the leftmost column will not be affected by
+this command.  Use <STRONG>-nola</STRONG> to not outdent labels.  The current
+default is not to outdent labels.</P>
+<P></P>
+<DT><STRONG><A NAME="item_Outdenting_Control_Keywords%3A_%2Dokw%2C_%2D%2Dout">Outdenting Control Keywords: <STRONG>-okw</STRONG>,  <STRONG>--outdent-keywords</STRONG></A></STRONG><BR>
+<DD>
+The command <STRONG>-okw</STRONG> will will cause certain leading control keywords to
+be outdented by 2 spaces (or whatever <STRONG>-ci</STRONG> has been set to), if
+possible.  By default, these keywords are <CODE>redo</CODE>, <CODE>next</CODE>, <CODE>last</CODE>,
+<CODE>goto</CODE>, and <CODE>return</CODE>.  The intention is to make these control keywords
+easier to see.  (To change this list of keywords being outdented, see
+the next section).
+<P>For example, using <CODE>perltidy -ock</CODE> on the previous example gives:</P>
+<PRE>
+        my $i;
+        LOOP: while ( $i = &lt;FOTOS&gt; ) {
+            chomp($i);
+          next unless $i;
+            fixit($i);
+        }</PRE>
+<P>Normally, <STRONG>-okw</STRONG> would be used with <STRONG>-ola</STRONG>.  The default is not to do
+this.</P>
+<P></P>
+<DT><STRONG><A NAME="item_Specifying_Outdented_Keywords%3A_%2Dokwl%3Dstring%">Specifying Outdented Keywords: <STRONG>-okwl=string</STRONG>,  <STRONG>--outdent-keyword-list=string</STRONG></A></STRONG><BR>
+<DD>
+This command can be used to change the keywords which are outdented with
+the <STRONG>-okw</STRONG> command.  The parameter <STRONG>string</STRONG> is a required list of perl
+keywords, which should be placed in quotes if there are more than one.
+By itself, it does not cause any outdenting to occur, so the <STRONG>-okw</STRONG>
+command is still required.
+<P>For example, the commands <CODE>-okwl=&quot;next last redo goto&quot; -okw</CODE> will cause
+those four keywords to be outdented.  It is probably simplest to place
+any <STRONG>-okwl</STRONG> command in a <EM>.perltidyrc</EM> file.</P>
+<P></P>
+<DT><STRONG><A NAME="item_%2Dmsc%3Dn%2C_%2D%2Dminimum%2Dspace%2Dto%2Dcomment"><STRONG>-msc=n</STRONG>,  <STRONG>--minimum-space-to-comment=n</STRONG></A></STRONG><BR>
 <DD>
 Side comments look best when lined up several spaces to the right of
 code.  Perltidy will try to keep comments at least n spaces to the
@@ -759,26 +922,35 @@ style overrides the default style with the following parameters:
 <P>
 <H2><A NAME="other controls">Other Controls</A></H2>
 <DL>
+<DT><STRONG><A NAME="item_Deleting_selected_text">Deleting selected text</A></STRONG><BR>
+<DD>
+Perltidy can selectively delete comments and/or pod documentation.  The
+command <STRONG>-dac</STRONG> or  <STRONG>--delete-all-comments</STRONG> will delete all comments
+<STRONG>and</STRONG> all pod documentation, leaving just code and any leading system
+control lines.
+<P>The command <STRONG>-dp</STRONG> or <STRONG>--delete-pod</STRONG> will remove all pod documentation
+(but not comments).</P>
+<P>Two commands which remove comments (but not pod) are: <STRONG>-dbc</STRONG> or
+<STRONG>--delete-block-comments</STRONG> and <STRONG>-dsc</STRONG> or  <STRONG>--delete-side-comments</STRONG>.
+(Hanging side comments will be deleted with block comments here.)</P>
+<P>The negatives of these commands also work, and are the defaults.  When
+block comments are deleted, any leading 'hash-bang' will be retained.
+Also, if the <STRONG>-x</STRONG> flag is used, any system commands before a leading
+hash-bang will be retained (even if they are in the form of comments).</P>
+<P></P>
 <DT><STRONG><A NAME="item_Writing_selected_text_to_a_file">Writing selected text to a file</A></STRONG><BR>
 <DD>
 When perltidy writes a formatted text file, it has the ability to also
 send selected text to a file with a <EM>.TEE</EM> extension.  This text can
-include comments and pod documentation.  The relevant commands are:
-<STRONG>-tac</STRONG> or <STRONG>--tee-all-comments</STRONG>,  <STRONG>-tbc</STRONG> or  <STRONG>--tee-block-comments</STRONG>,
-<STRONG>-tsc</STRONG> or <STRONG>--tee-side-comments</STRONG>, and <STRONG>-tp</STRONG> or  <STRONG>--tee-pod</STRONG>.  The
-negatives of these commands also work, and are the defaults.
-<P></P>
-<DT><STRONG><A NAME="item_Deleting_selected_text">Deleting selected text</A></STRONG><BR>
-<DD>
-Perltidy can selectively delete comments and pod documentation.
-The commands to do this are:
-<P><STRONG>-dac</STRONG> or  <STRONG>--delete-all-comments</STRONG>,  <STRONG>-dbc</STRONG> or  <STRONG>--delete-block-comments</STRONG>, 
-<STRONG>-dsc</STRONG> or  <STRONG>--delete-side-comments</STRONG>,
-and <STRONG>-dp</STRONG> or  <STRONG>--delete-pod</STRONG>.  The negatives of these commands also
-work, and are the defaults.  When block comments are deleted, any leading
-'hash-bang' will be retained.  Also, if the <STRONG>-x</STRONG> flag is used, any
-system commands before a leading hash-bang will be retained (even if
-they are in the form of comments).</P>
+include comments and pod documentation.
+<P>The command <STRONG>-tac</STRONG> or  <STRONG>--tee-all-comments</STRONG> will write all comments
+<STRONG>and</STRONG> all pod documentation.</P>
+<P>The command <STRONG>-tp</STRONG> or <STRONG>--tee-pod</STRONG> will write all pod documentation (but
+not comments).</P>
+<P>The commands which write comments (but not pod) are: <STRONG>-tbc</STRONG> or
+<STRONG>--tee-block-comments</STRONG> and <STRONG>-tsc</STRONG> or  <STRONG>--tee-side-comments</STRONG>.
+(Hanging side comments will be written with block comments here.)</P>
+<P>The negatives of these commands also work, and are the defaults.</P>
 <P></P>
 <DT><STRONG><A NAME="item_Using_a_%2Eperltidyrc_command_file">Using a <EM>.perltidyrc</EM> command file</A></STRONG><BR>
 <DD>
@@ -812,15 +984,19 @@ file which would cause some kind of dump and an exit.  These are:</P>
 <PRE>
  -h -v -ddf -dln -dop -dsn -dtt -dwls -dwrs -ss</PRE>
 <P>There are several options may be helpful in debugging a <EM>.perltidyrc</EM>
-file.  First, <STRONG>-log</STRONG> will force a <EM>.LOG</EM> file to be written, which
+file:  (1) <STRONG>-log</STRONG> will force a <EM>.LOG</EM> file to be written, which
 contains the path to the <EM>.perltidyrc</EM> file, if any, and a listing of
-its parameter settings.  Second, <STRONG>-opt</STRONG> will force a <EM>.LOG</EM> file to be
+its parameter settings.  (2) <STRONG>-opt</STRONG> will force a <EM>.LOG</EM> file to be
 written with a complete listing of all option flags in use for a run,
 taking into account the default settings, the <EM>.perltidyrc</EM> file, plus
-any command line options.  Third, the parameters in the <EM>.perltidyrc</EM>
-file can be ignored with the <STRONG>-npro</STRONG> option.  Finally, the
+any command line options.  (3) the parameters in the <EM>.perltidyrc</EM>
+file can be ignored with the <STRONG>-npro</STRONG> option.  (4) the
 commands <STRONG>-dump-options</STRONG>, <STRONG>-dump-defaults</STRONG>, <STRONG>-dump-long-names</STRONG>,
-and <STRONG>-dump-short-names</STRONG>, all described below, may all be helpful.</P>
+and <STRONG>-dump-short-names</STRONG>, all described below, may all be helpful.
+(5) It may be simplest to develop and test configuration files
+with alternative names, and invoke them with <STRONG>-pro=filename</STRONG> on
+the command line.  Then rename the desired file to <EM>.perltidyrc</EM> 
+when finished.</P>
 <P></P>
 <DT><STRONG><A NAME="item_Creating_a_new_abbreviation">Creating a new abbreviation</A></STRONG><BR>
 <DD>
@@ -1021,8 +1197,8 @@ page, perl2web(1).</P>
 <PRE>
     D anl asc aws bbb bbc bbs bli baa syn ce dac dbc dnl
     dws dp dsm dsc ddf dln dop dsn dtt dwls dwrs f fll
-    hsc html ibc icb icp lp log lal x lsl bl sbl oll pvl
-    q opt sfs sts se st sob t tac tbc tp tsc tqw w</PRE>
+    hsc html ibc icb icp lp log lal x lsl bl sbl okw ola oll pvl
+    q opt sbc sfs sts se st sob t tac tbc tp tsc tqw w</PRE>
 <P>Equivalently, the prefix 'no' on the corresponding long names may be
 used.</P>
 <P>
