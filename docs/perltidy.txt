@@ -1056,7 +1056,7 @@ SEE ALSO
     perl2web(1), perlstyle(1)
 
 VERSION
-    This man page documents perltidy version 20010903.
+    This man page documents perltidy version 20011003.
 
 AUTHOR
       Steven L. Hancock
