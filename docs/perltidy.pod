@@ -1417,7 +1417,7 @@ A similar technique can be used with B<--extrude> instead of B<--mangle>
 to make the minimum number of one-line blocks.
 
 Another use for B<--mangle> is to combine it with B<-dac> to reduce
-the size of a perl script for faster loading.
+the file size of a perl script.
 
 =item  One-line blocks 
 

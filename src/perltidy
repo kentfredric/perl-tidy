@@ -60,7 +60,7 @@ eval "use diagnostics";
 use IO::File;
 
 BEGIN {
-    ($VERSION=q($Id: perltidy,v 1.75 2001/12/21 22:47:28 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ($VERSION=q($Id: perltidy,v 1.76 2001/12/25 00:59:00 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 # Preloaded methods go here.
@@ -3047,6 +3047,10 @@ use vars qw{
   %space_before_paren
   $brace_follower_pattern
   $looking_for_else
+  $other_brace_follower_pattern
+  $else_brace_follower_pattern
+  $anon_sub_brace_follower_pattern
+  $anon_sub_1_brace_follower_pattern
 
   @has_broken_sublist
   @dont_align
@@ -3077,6 +3081,8 @@ use vars qw{
   $rOpts_line_up_parentheses
   $rOpts_maximum_line_length
 
+  %is_vertical_alignment_type
+  %is_logical_container
   %tightness
   %matching_token
   $rOpts
@@ -3091,6 +3097,18 @@ use vars qw{
 };
 
 BEGIN {
+
+    sub make_regex {
+
+        # Given a string, make the corresponding regex with qr.
+        # Versions of perl before 5.005 do not have qr,
+        # so we will just return the string, which will work
+        # but not be optimized.
+        if ( $] < 5.005 ) {
+            sub qr { $_[0] }
+        }
+        qr($_[0]);
+    }
 
     # block types for which -bli is active
     $bli_pattern = '^((if|else|elsif|unless|while|for|foreach|do|\w+:)$|sub)';
@@ -3575,16 +3593,6 @@ sub set_leading_whitespace {
                 my $comma_count =
                   $gnu_stack[$max_gnu_stack_index]->get_COMMA_COUNT();
 
-##              ##########TESTING############
-##              this patch doesn't seem to be too helpful
-##                if ( $max_index_to_go > 0
-##                    && $container_environment_to_go[ $max_index_to_go - 1 ] eq
-##                    'LIST' )
-##                {
-##                    $comma_count = 1;
-##                }
-##              ############################
-
                 if ( $comma_count <= 0 && $available_spaces > 0 ) {
 
                     my $i     = $gnu_stack[$max_gnu_stack_index]->get_INDEX();
@@ -3652,10 +3660,8 @@ sub set_leading_whitespace {
         # choice results in a smooth transition between the gnu-style
         # and the standard style.
         my $standard_increment =
-          ##( $level - $current_level ) * $rOpts->{'indent-columns'} +
           ( $level - $current_level ) * $rOpts_indent_columns +
           ( $ci_level - $current_ci_level ) * $rOpts_continuation_indentation;
-        ##$rOpts->{'continuation-indentation'};
 
         # Now we have to define how much extra incremental space
         # ("$available_space") we want.  This extra space will be
@@ -3667,7 +3673,6 @@ sub set_leading_whitespace {
 
         # initialization on empty stack..
         if ( $max_gnu_stack_index == 0 ) {
-            ##$space_count = $level * $rOpts->{'indent-columns'};
             $space_count = $level * $rOpts_indent_columns;
         }
 
@@ -3678,7 +3683,7 @@ sub set_leading_whitespace {
 
         # if last nonblank token was not structural indentation,
         # just use standard increment
-        elsif ( $last_nonblank_type !~ /^[\{]$/ ) {
+        elsif ( $last_nonblank_type ne '{' ) {
             $space_count += $standard_increment;
         }
 
@@ -3757,13 +3762,13 @@ sub set_leading_whitespace {
             $last_nonblank_type =~ /^([\:\?\,])$/
 
             # previous character was opening and this does not close it
-            || ( $last_nonblank_type =~ /^([\{])$/ && $type !~ /^([\}])$/ )
+            || ( $last_nonblank_type eq '{' && $type ne '}' )
 
             # or this token is one of these:
             || $type =~ /^([\.]|\|\||\&\&)$/
 
             # or this is a closing structure
-            || ( $type =~ /^([\}])$/ && $token eq $type )
+            || ( $type eq '}' && $token eq $type )
 
             # or previous token was a keyword
             || (
@@ -3892,7 +3897,6 @@ sub check_for_long_gnu_style_lines {
     # remove some whitespace if it exceeds the desired maximum
 
     # this is only for the '-lp' style
-    ##return unless ( $rOpts->{'line-up-parentheses'} );
     return unless ($rOpts_line_up_parentheses);
 
     # nothing can be done if no stack items defined for this line
@@ -3986,7 +3990,6 @@ sub finish_lp_batch {
     # get the space back if there are side comments.
 
     # this is only for the 'lp' style
-    ##return unless ( $rOpts->{'line-up-parentheses'} );
     return unless ($rOpts_line_up_parentheses);
 
     # nothing can be done if no stack items defined for this line
@@ -4034,7 +4037,6 @@ sub reduce_lp_indentation {
     my $deleted_spaces = 0;
 
     # this is only for the -lp style
-    ##if ( $rOpts->{'line-up-parentheses'} ) {
     if ($rOpts_line_up_parentheses) {
 
         # it is only safe to undo indentation if there are no children.  
@@ -4341,16 +4343,35 @@ EOM
     # Define here tokens which may follow the closing brace of a do statement
     # on the same line, as in:
     #   } while ( $something);
-    $do_follower_pattern = qr'^(until|while|unless|if|;|,)$';
+    $do_follower_pattern = make_regex('^(until|while|unless|if|;|,)$');
 
     # These tokens may follow the closing brace of an if or elsif block.
     # In other words, for cuddled else we want code to look like:
     #   } elsif ( $something) {
     #   } else {
     if ( $rOpts->{'cuddled-else'} ) {
-        $if_brace_follower_pattern = qr'^(else|elsif)$';
+        $if_brace_follower_pattern = make_regex('^(else|elsif)$');
     }
     else { $if_brace_follower_pattern = undef; }
+
+    # nothing can follow the closing curly of an else { } block:
+    $else_brace_follower_pattern = make_regex('^$');
+
+    # what can follow a multi-line anonymous sub definition closing curly:
+    $anon_sub_brace_follower_pattern =
+      make_regex('^(\,|\;|:|=>|or|and|\&\&|\|\}|\)|)$');
+
+    # what can follow a one-line anonynomous sub closing curly:
+    # one-line anonumous subs also have ']' here...
+    # see tk3.t and PP.pm
+    $anon_sub_1_brace_follower_pattern =
+      make_regex('^(\,|\;|:|=>|or|and|\&\&|\|\}|\]|\)|)$');
+
+    # What can follow a closing curly of a short block
+    # which is not an if/elsif/else/do/sort/map/grep/eval/sub
+    # Testfiles: 'Toolbar.pm', 'Menubar.pm', bless.t, '3rules.pl'
+    $other_brace_follower_pattern =
+      make_regex('^(\,|\;|:|=>|or|and|\&\&|\|\}|\)|)$');
 
     # TESTING -- deactivated 20010614 because -bl didn't
     # work well with it.
@@ -4587,10 +4608,13 @@ sub is_essential_whitespace {
     # ($tokenl, $typel) is the token to the left of the space in question
     # ($tokenr, $typer) is the token to the right of the space in question
     # ($tokenll, $typell) is previous nonblank token to the left of $tokenl
+    #
+    # This is a slow routine but is needed too often except when -mangle
+    # is used.
     my ( $tokenll, $typell, $tokenl, $typel, $tokenr, $typer ) = @_;
 
     # never combine two bare words or numbers
-    ( ( $tokenr =~ /^[\'\w]/ ) && ( $tokenl =~ /[\'\w]$/ ) )
+    my $result = ( ( $tokenr =~ /^[\'\w]/ ) && ( $tokenl =~ /[\'\w]$/ ) )
 
       # do not combine a number with a concatination dot
       # example: pom.caputo:
@@ -4601,11 +4625,20 @@ sub is_essential_whitespace {
       # do not join a minus with a bare word, because you might form
       # a file test operator.  Example from Complex.pm:
       # if (CORE::abs($z - i) < $eps); "z-i" would be taken as a file test.
-      || ( ( $tokenr =~ /^[A-Za-z]$/ ) && ( $tokenl =~ /\-$/ ) )
+      || ( ( $tokenl eq '-' ) && ( $tokenr =~ /^[_A-Za-z]$/ ) )
+
+      # and something like this could become ambiguous without space
+      # after the '-':
+      #   use constant III=>1;
+      #   $a = $b - III;
+      # and even this:
+      #   $a = - III;
+      || ( ( $tokenl eq '-' )
+        && ( $typer =~ /^[wC]$/ && $tokenr =~ /^[_A-Za-z]/ ) )
 
       # keep a space between a quote and a bareword to prevent the
       # bareword from becomming a quote modifier.
-      || ( ( $tokenr =~ /^[a-zA-Z_]/ ) && ( $typel eq 'Q' ) )
+      || ( ( $typel eq 'Q' ) && ( $tokenr =~ /^[a-zA-Z_]/ ) )
 
       # perl is very fussy about spaces before <<
       || ( $tokenr =~ /^\<\</ )
@@ -4638,12 +4671,12 @@ sub is_essential_whitespace {
       # need space after foreach my; for example, this will fail in
       # older versions of Perl:
       # foreach my$ft(@filetypes)...
-      || ( $tokenll =~ /^(for|foreach)$/
-        && ( $tokenl eq 'my' )
-        && ( $tokenr =~ /^\$/ ) )
+      || ( $tokenl eq 'my'
+        && $tokenll =~ /^(for|foreach)$/
+        && $tokenr  =~ /^\$/ )
 
       # must have space between grep and left paren; "grep(" will fail
-      || ( $tokenl =~ /^(sort|grep|map)$/ && ( $tokenr eq '(' ) )
+      || ( $tokenr eq '(' && $tokenl =~ /^(sort|grep|map)$/ )
 
       # don't stick numbers next to left parens, as in:
       #use Mail::Internet 1.28 (); (see Entity.pm, Head.pm, Test.pm)
@@ -4653,6 +4686,7 @@ sub is_essential_whitespace {
       # example is "%overload:: and" in files Dumpvalue.pm or colonbug.pl
       || ( $tokenl =~ /\:\:$/ && ( $tokenr =~ /^[\'\w]/ ) )
       ;    # the value of this long logic sequence is the result we want
+    return $result;
 }
 
 sub set_white_space_flag {
@@ -5016,6 +5050,11 @@ sub set_white_space_flag {
         # always space before side comment
         if ( $type eq '#' && $j > 0 ) { $ws = WS_YES }
 
+        # retain any space between '-' and bare word
+        if ( $last_type eq '-' && ( $type eq 'w' || $type eq 'C' ) ) {
+            $ws = WS_OPTIONAL;
+        }
+
         my $ws_4 = $ws;
 
         #---------------------------------------------------------------
@@ -5079,7 +5118,7 @@ sub set_white_space_flag {
     return \@white_space_flag;
 }
 
-{    # print_line_of_tokens
+{    ## print_line_of_tokens
 
     my $rtoken_type;
     my $rtokens;
@@ -5441,7 +5480,7 @@ sub set_white_space_flag {
          /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
      Examples:
        *VERSION = \'1.01';
-       ( $VERSION ) = '$Revision: 1.75 $ ' =~ /\$Revision:\s+([^\s]+)/;
+       ( $VERSION ) = '$Revision: 1.76 $ ' =~ /\$Revision:\s+([^\s]+)/;
      We will pass such a line straight through (by changing it
      to a quoted string) unless -npvl is used
     
@@ -5450,7 +5489,7 @@ sub set_white_space_flag {
      block sequence numbers may see a closing sequence number but not
      the corresponding opening sequence number (sidecmt.t).  Example:
 
-    my $VERSION = do { my @r = (q$Revision: 1.75 $ =~ /\d+/g); sprintf
+    my $VERSION = do { my @r = (q$Revision: 1.76 $ =~ /\d+/g); sprintf
     "%d."."%02d" x $#r, @r }; 
 
     Here, the opening brace of 'do {' will not be seen, while the closing
@@ -5891,26 +5930,24 @@ sub set_white_space_flag {
                     $brace_follower_pattern = $if_brace_follower_pattern;
                 }
                 elsif ( $block_type eq 'else' ) {
-                    $brace_follower_pattern = qr'^$';
+                    $brace_follower_pattern = $else_brace_follower_pattern;
                 }
 
                 # added eval for borris.t
                 elsif ( $block_type =~ /^(sort|map|grep|eval)$/ ) {
-                    $brace_follower_pattern = undef;
+                    $brace_follower_pattern = "";
                 }
 
                 # anonymous sub
                 elsif ( $block_type =~ /^sub\W*$/ ) {
 
-                    # one-line anonumous subs also have ']' here...
-                    # see tk3.t and PP.pm
                     if ($is_one_line_block) {
                         $brace_follower_pattern =
-                          qr'^(\,|\;|:|=>|or|and|\&\&|\|\}|\]|\)|)$';
+                          $anon_sub_1_brace_follower_pattern;
                     }
                     else {
                         $brace_follower_pattern =
-                          qr'^(\,|\;|:|=>|or|and|\&\&|\|\}|\)|)$';
+                          $anon_sub_brace_follower_pattern;
                     }
                 }
 
@@ -5920,8 +5957,7 @@ sub set_white_space_flag {
                 # Testfiles: 'Toolbar.pm', 'Menubar.pm', bless.t, '3rules.pl'
                 # break1.t
                 else {
-                    $brace_follower_pattern =
-                      qr'^(\,|\;|:|=>|or|and|\&\&|\|\}|\)|)$';
+                    $brace_follower_pattern = $other_brace_follower_pattern;
                 }
 
                 # See if an elsif block is followed by another elsif or else;
@@ -6055,13 +6091,11 @@ sub set_white_space_flag {
                             $$rtoken_type[ $j + 1 ]
                           );
                     }
-
                 }
                 store_token_to_go();
             }
 
             # remember two previous nonblank OUTPUT tokens
-            ##if ( $type !~ /^[#b]/ ) {
             if ( $type ne '#' && $type ne 'b' ) {
                 $last_last_nonblank_token = $last_nonblank_token;
                 $last_last_nonblank_type  = $last_nonblank_type;
@@ -6102,7 +6136,6 @@ sub set_white_space_flag {
             $old_breakpoint_to_go[$max_index_to_go] = 1;
         }
     }
-
 }
 
 sub note_added_semicolon {
@@ -6167,7 +6200,6 @@ sub starting_one_line_block {
     else {
 
         # cannot use one-line blocks with cuddled else else/elsif lines
-        ##if ( ( $tokens_to_go[0] eq '}' ) && ( $rOpts->{'cuddled-else'} ) ) {
         if ( ( $tokens_to_go[0] eq '}' ) && $rOpts_cuddled_else ) {
             return 0;
         }
@@ -6563,7 +6595,7 @@ sub output_line_to_go {
                 $want_blank = ( $rOpts->{'blanks-before-subs'} )
                   && (
                     terminal_type( \@types_to_go, \@block_type_to_go, $imin,
-                        $imax ) !~ /^[\}]$/
+                        $imax ) ne '}'
                   );
             }
 
@@ -6583,7 +6615,7 @@ sub output_line_to_go {
                   $rOpts->{'long-block-line-count'}
                   && (
                     terminal_type( \@types_to_go, \@block_type_to_go, $imin,
-                        $imax ) !~ /^[\}]$/
+                        $imax ) ne '}'
                   );
             }
 
@@ -6600,14 +6632,11 @@ sub output_line_to_go {
         $last_last_line_leading_level = $last_line_leading_level;
         $last_line_leading_level      = $levels_to_go[$imin];
         $last_line_leading_type       = $types_to_go[$imin];
-        if (
-            $last_line_leading_level == $last_last_line_leading_level
+        if ( $last_line_leading_level == $last_last_line_leading_level
             && $last_line_leading_level >= 0
-            ##&& $last_line_leading_type !~ /^[#b]$/
-            && $last_line_leading_type ne '#'
             && $last_line_leading_type ne 'b'
-            && defined( $nonblank_lines_at_depth[$last_line_leading_level] )
-          )
+            && $last_line_leading_type ne '#'
+            && defined( $nonblank_lines_at_depth[$last_line_leading_level] ) )
         {
             $nonblank_lines_at_depth[$last_line_leading_level]++;
         }
@@ -6635,7 +6664,6 @@ sub output_line_to_go {
           )
         {
             $saw_good_break = scan_list();
-
         }
 
         # let $ri_first and $ri_last be references to lists of 
@@ -7137,7 +7165,7 @@ sub send_lines_to_vertical_aligner {
     save_opening_indentation( $ri_first, $ri_last, $rindentation_list );
 }
 
-{
+{        ## UNMATCHED INDEXES
 
     # closure to keep track of unbalanced containers.
     # arrays shared by the routines in this block:
@@ -7536,6 +7564,11 @@ sub set_adjusted_indentation {
         $is_outdented_line );
 }
 
+BEGIN {
+    @_ = qw#{ ? : => = += -= =~ *= /= && || #;
+    @is_vertical_alignment_type{@_} = (1) x scalar(@_);
+}
+
 sub set_vertical_alignment_markers {
 
     # Look at the tokens in this output batch and define the array
@@ -7543,7 +7576,6 @@ sub set_vertical_alignment_markers {
     # accept vertical alignment.
 
     # nothing to do if we aren't allowed to change whitespace
-    ##if ( !$rOpts->{'add-whitespace'} ) {
     if ( !$rOpts_add_whitespace ) {
         for my $i ( 0 .. $max_index_to_go ) {
             $matching_token_to_go[$i] = '';
@@ -7621,31 +7653,34 @@ sub set_vertical_alignment_markers {
             elsif ( $last_vertical_alignment_before_index == $i - 2 ) {
             }
 
-            # alignment_type before one of these types..
-            # Note: add '.' after new vertical aligner is operational
-            elsif ( $type =~ /^(\{|\?|:|=>|=|\+=|\-=|=~|\*=|\/=|&&|\|\|)$/ ) {
-                $alignment_type = $token;
-
-                # be sure the alignment tokens are unique
-                # This didn't work well: reason not determined
-                # if ($token ne $type) {$alignment_type .= $type}  
-            }
-
             # alignment_type before one of these keywords 
             # (within a line, since $i>1)
-            elsif ( $type eq 'k' && $token =~ /^(if|unless|and|or|eq|ne)$/ ) {
-                $alignment_type = $token;
+            elsif ( $type eq 'k' ) {
+                if ( $token =~ /^(if|unless|and|or|eq|ne)$/ ) {
+                    $alignment_type = $token;
+                }
             }
 
             # We have to be very careful about alignment before opening parens.
             # It is ok to line up sequences like this:
             #    if    ( $something eq "simple" )  { &handle_simple }
             #    elsif ( $something eq "hard" )    { &handle_hard }
-            elsif ( $type eq '('
-                && ( $i == $ibeg + 2 )
-                && $tokens_to_go[$ibeg] =~ /^(if|elsif)/ )
-            {
-                $alignment_type = $type;
+            elsif ( $type eq '(' ) {
+                if ( ( $i == $ibeg + 2 )
+                    && $tokens_to_go[$ibeg] =~ /^(if|elsif)/ )
+                {
+                    $alignment_type = $type;
+                }
+            }
+
+            # alignment_type before one of these types..
+            # Note: add '.' after new vertical aligner is operational
+            elsif ( $is_vertical_alignment_type{$type} ) {
+                $alignment_type = $token;
+
+                # be sure the alignment tokens are unique
+                # This didn't work well: reason not determined
+                # if ($token ne $type) {$alignment_type .= $type}  
             }
 
             # NOTE: This is deactivated until the new vertical aligner
@@ -7674,14 +7709,14 @@ sub set_vertical_alignment_markers {
                 # and its not the first token of the line
                 && ( $i > $ibeg )
 
-                # and it's NOT one of these
-                && ( $type !~ /^[b\#\)\]\}]$/ )
+                # and it follows a blank
+                && $types_to_go[ $i - 1 ] eq 'b'
 
                 # and previous token IS one of these:
                 && ( $vert_last_nonblank_type =~ /^[\,\;]$/ )
 
-                # and it follows a blank
-                && $types_to_go[ $i - 1 ] eq 'b'
+                # and it's NOT one of these
+                && ( $type !~ /^[b\#\)\]\}]$/ )
 
                 # then go ahead and align 
               )
@@ -7723,7 +7758,6 @@ sub terminal_type {
             # skip past any side comment and blanks
             next if ( $$rtype[$i] eq 'b' );
             next if ( $$rtype[$i] eq '#' );
-            ##next if ( $$rtype[$i] =~ /^[\#b]$/ );
 
             # found it..make sure it is a BLOCK termination,
             # but hide a terminal } after sort/grep/map because it is not
@@ -8003,7 +8037,6 @@ sub set_bond_strengths {
         if ( $next_nonblank_token eq 'and' ) {
             $bsl = VERY_WEAK - 0.01;
         }
-        ##elsif ( $next_nonblank_token =~ /^(ne|eq)$/ ) {
         elsif ( $next_nonblank_token eq 'ne' or $next_nonblank_token eq 'eq' ) {
             $bsl = NOMINAL;
         }
@@ -8116,7 +8149,6 @@ sub set_bond_strengths {
         # but make them a little below STRONG to allow breaking open
         # something like {'some-word'}{'some-very-long-word'} at the }{
         # (bracebrk.t)
-        ##if ( ( $type =~ /^[\]R]$/ ) && ( $next_nonblank_type =~ /^[\[L]$/ ) ) {
         if ( ( $type eq ']' or $type eq 'R' )
             && ( $next_nonblank_type eq '[' or $next_nonblank_type eq 'L' ) )
         {
@@ -8446,18 +8478,32 @@ sub scan_list {
         return ( $bp_count, $do_not_break_apart );
     };
 
-    my $is_logical_container = sub {
-        my $dd = shift;
-        $container_type[$dd] =~
-          /^(if|elsif|unless|while|and|or|not|&&|\|\||\?|\:|\!)$/;
-    };
+    BEGIN {
+        @_ = qw# if elsif unless while and or not && | || ? : ! #;
+        @is_logical_container{@_} = (1) x scalar(@_);
+    }
+
+##    @_ = (@_, qw(xxx elsu each ~));
+##    foreach (@_) {
+##    my $b=$is_logical_container{$_};
+##    print "a=$_  is=($b)\n";
+##    }
+
+##    my $is_logical_container = sub {
+##        my $dd = shift;
+##        $container_type[$dd] =~
+##          /^(if|elsif|unless|while|and|or|not|&&|\|\||\?|\:|\!)$/;
+##    };
 
     my $set_logical_breakpoints = sub {
         my $dd        = shift;
         my $i_opening = $opening_structure_index_stack[$dd];
-        if ( defined( $rand_or_list[$dd] )
+        if (
+            defined( $rand_or_list[$dd] )
             && $item_count_stack[$dd] == 0
-            && $is_logical_container->($dd) )
+            ##&& $is_logical_container->($dd) )
+            && $is_logical_container{ $container_type[$dd] }
+          )
         {
             while ( my $j = pop ( @{ $rand_or_list[$dd] } ) ) {
                 set_forced_breakpoint($j);
@@ -8585,7 +8631,11 @@ sub scan_list {
         # block -- but we will break in logical breaks below so that
         # they do not add to the forced_breakpoint_count
         if ( $type eq 'k' && $token eq 'or' ) {
-            if ( $is_logical_container->($depth) ) {
+            if (
+                ##$is_logical_container->($depth) 
+                $is_logical_container{ $container_type[$depth] }
+              )
+            {
                 push @{ $rand_or_list[$depth] }, $i;
             }
             else {
@@ -8686,10 +8736,10 @@ sub scan_list {
                 #    my($var1, $var2, ...) 
                 # (This test should probably be refined, for now I'm just
                 # testing for any keyword)
-                ( $last_nonblank_type =~ /^[k]$/ )
+                ( $last_nonblank_type eq 'k' )
 
                 # a trailing '(' usually indicates a non-list
-                || ( $next_nonblank_type =~ /^[\(]$/ )
+                || ( $next_nonblank_type eq '(' )
               );
 
             # patch to outdent opening brace of long if/for/..
@@ -8890,10 +8940,13 @@ will be a forced break at its 'and'.
 
             # set some flags telling something about this container..
             my $is_simple_logical_expression = 0;
-            if ( $item_count_stack[$current_depth] == 0
+            if (
+                $item_count_stack[$current_depth] == 0
                 && $saw_opening_structure
                 && $tokens_to_go[$i_opening] eq '('
-                && $is_logical_container->($current_depth) )
+                ##&& $is_logical_container->($current_depth) )
+                && $is_logical_container{ $container_type[$current_depth] }
+              )
             {
 
                 # This seems to be a simple logical expression with no existing
@@ -9056,7 +9109,6 @@ will be a forced break at its 'and'.
 
 =cut
 
-##if ( $rOpts->{'line-up-parentheses'} ) {
                 if ($rOpts_line_up_parentheses) {
 
                     if ( $token eq ')' ) {
@@ -10629,11 +10681,9 @@ sub set_continuation_breaks {
             FORMATTER_DEBUG_FLAG_BREAK
               && print
 "BREAK: testing i = $i_test imax=$imax $types_to_go[$i_test] $next_nonblank_type leading sp=($leading_spaces) next length = $lengths_to_go[$i_test+2] too_long=$too_long str=$strength\n";
-##}
 
             # allow one extra terminal token after exceeding line length
             # if it would strand this token.
-            ##if ( $rOpts->{'fuzzy-line-length'}
             if ( $rOpts_fuzzy_line_length
                 && $too_long
                 && ( $i_lowest == $i_test )
@@ -11488,6 +11538,11 @@ use vars qw(
   $rOpts_indent_columns
   $rOpts_tabs
 
+  $rOpts_maximum_whitespace_columns
+  $rOpts_big_space_jump
+  $rOpts_minimum_space_to_comment
+  $rOpts_maximum_space_to_comment
+
 );
 
 sub initialize {
@@ -11518,11 +11573,11 @@ sub initialize {
     $last_side_comment_line_number = 0;
     $last_side_comment_level       = -1;
 
-    # TBD: frequently used parameters
-##    $rOpts_maximum_line_length=$rOpts->{'maximum-line-length'};
-##    $rOpts_continuation_indentation=$rOpts->{'continuation-indentation'};
-##    $rOpts_indent_columns=$rOpts->{'indent-columns'};
-##    $rOpts_tabs=$rOpts->{'tabs'};
+    # frequently used parameters
+    $rOpts_maximum_whitespace_columns = $rOpts->{'maximum-whitespace-columns'};
+    $rOpts_big_space_jump             = $rOpts->{'big-space-jump'};
+    $rOpts_minimum_space_to_comment   = $rOpts->{'minimum-space-to-comment'};
+    $rOpts_maximum_space_to_comment   = $rOpts->{'maximum-space-to-comment'};
 
     forget_side_comment();
 
@@ -11835,8 +11890,7 @@ The log file warns the user if there are any such tabs.
         # will have to start a new group, making alignment less likely.
         # --------------------------------------------------------------------
         $is_hanging_side_comment =
-          $jmax == 1 # optimization
-          && hanging_comment_check( $new_line, $current_line );
+          hanging_comment_check( $new_line, $current_line );
 
         # --------------------------------------------------------------------
         # If there is just one previous line, and it has more fields
@@ -11882,8 +11936,6 @@ The log file warns the user if there are any such tabs.
     # Future update to allow this to vary:
     $current_line = $new_line if ( $maximum_line_index == 0 );
 
-    #unless ($is_hanging_side_comment && $current_line); 
-
     # --------------------------------------------------------------------
     # Step 8. Some old debugging stuff
     # --------------------------------------------------------------------
@@ -11900,124 +11952,118 @@ The log file warns the user if there are any such tabs.
 
 sub hanging_comment_check {
 
-    my $line     = shift;
-    my $old_line = shift;
-
-    my $jmax                = $line->get_jmax();
-    my $rtokens             = $line->get_rtokens();
-    my $rfields             = $line->get_rfields();
-    my $rpatterns           = $line->get_rpatterns();
+    my $line = shift;
+    my $jmax = $line->get_jmax();
+    return 0 unless $jmax == 1;    # must be 2 fields
+    my $rtokens = $line->get_rtokens();
+    return 0 unless $$rtokens[0] eq '#';    # the second field is a comment..
+    my $rfields = $line->get_rfields();
+    return 0 unless $$rfields[0] =~ /^\s*$/;    # the first field is empty...
+    my $old_line            = shift;
     my $maximum_field_index = $old_line->get_jmax();
+    return 0
+      unless $maximum_field_index > $jmax;    # the current line has more fields
+    my $rpatterns = $line->get_rpatterns();
 
-    # It is a hanging side comment ..
-    if (    # if..
-        $jmax == 1    # there are 2 fields..
-        && $$rfields[0] =~ /^\s*$/    # and the first field is empty...
-        && $$rtokens[0] eq '#'        # and the second field is a comment..
-        && $maximum_field_index > $jmax   # and the current line has more fields
-      )
-    {
-
-        $line->set_is_hanging_side_comment(1);
-        $jmax = $maximum_field_index;
-        $line->set_jmax($jmax);
-        $$rfields[$jmax] = $$rfields[1];
-        $$rtokens[ $jmax - 1 ]   = $$rtokens[0];
-        $$rpatterns[ $jmax - 1 ] = $$rpatterns[0];
-        for ( my $j = 1 ; $j < $jmax ; $j++ ) {
-            $$rfields[$j] = " ";    # NOTE: caused glitch unless 1 blank, why?
-            $$rtokens[ $j - 1 ]   = "";
-            $$rpatterns[ $j - 1 ] = "";
-        }
-        return 1;
+    $line->set_is_hanging_side_comment(1);
+    $jmax = $maximum_field_index;
+    $line->set_jmax($jmax);
+    $$rfields[$jmax] = $$rfields[1];
+    $$rtokens[ $jmax - 1 ]   = $$rtokens[0];
+    $$rpatterns[ $jmax - 1 ] = $$rpatterns[0];
+    for ( my $j = 1 ; $j < $jmax ; $j++ ) {
+        $$rfields[$j] = " ";    # NOTE: caused glitch unless 1 blank, why?
+        $$rtokens[ $j - 1 ]   = "";
+        $$rpatterns[ $j - 1 ] = "";
     }
-    else {
-        return 0;
-    }
+    return 1;
 }
 
 sub eliminate_old_fields {
-    my $new_line = shift;
-    my $old_line = shift;
 
-    my $jmax      = $new_line->get_jmax();
+    my $new_line = shift;
+    my $jmax     = $new_line->get_jmax();
+    if ( $jmax > $maximum_jmax_seen ) { $maximum_jmax_seen = $jmax }
+    if ( $jmax < $minimum_jmax_seen ) { $minimum_jmax_seen = $jmax }
+
+    # there must be one previous line
+    return unless ( $maximum_line_index == 0 );
+
+    my $old_line            = shift;
+    my $maximum_field_index = $old_line->get_jmax();
+
+    # this line must have fewer fields
+    return unless $maximum_field_index > $jmax;
+
+    # be reasonable, not too few
+    return unless ( $maximum_field_index - 2 <= $jmax );
+
+    # must have side comment
+    my $old_rfields = $old_line->get_rfields();
+    return unless ( length( $$old_rfields[$maximum_field_index] ) > 0 );
+
     my $rtokens   = $new_line->get_rtokens();
     my $rfields   = $new_line->get_rfields();
     my $rpatterns = $new_line->get_rpatterns();
 
-    my $old_rfields         = $old_line->get_rfields();
-    my $old_rtokens         = $old_line->get_rtokens();
-    my $old_rpatterns       = $old_line->get_rpatterns();
-    my $maximum_field_index = $old_line->get_jmax();
+    my $old_rtokens   = $old_line->get_rtokens();
+    my $old_rpatterns = $old_line->get_rpatterns();
 
     my $hid_equals = 0;
 
-    if ( $jmax > $maximum_jmax_seen ) { $maximum_jmax_seen = $jmax }
-    if ( $jmax < $minimum_jmax_seen ) { $minimum_jmax_seen = $jmax }
+    my @new_alignments        = ();
+    my @new_fields            = ();
+    my @new_matching_patterns = ();
+    my @new_matching_tokens   = ();
 
-    if (
-        ( $maximum_field_index > $jmax )    # this line has fewer fields
-        && ( $maximum_field_index - 2 <= $jmax )    # be reasonable, not too few
-        && ( $maximum_line_index == 0 )             # there is one previous line
-        && (
-            length( $$old_rfields[$maximum_field_index] ) >
-            0 )    # with side comment
-      )
-    {
-        my @new_alignments        = ();
-        my @new_fields            = ();
-        my @new_matching_patterns = ();
-        my @new_matching_tokens   = ();
+    my $j = 0;
+    my $k;
+    my $current_field   = '';
+    my $current_pattern = '';
 
-        my $j = 0;
-        my $k;
-        my $current_field   = '';
-        my $current_pattern = '';
+    # loop over all old tokens
+    my $in_match = 0;
+    for ( $k = 0 ; $k < $maximum_field_index ; $k++ ) {
+        $current_field .= $$old_rfields[$k];
+        $current_pattern .= $$old_rpatterns[$k];
+        last if ( $j > $jmax - 1 );
 
-        # loop over all old tokens
-        my $in_match = 0;
-        for ( $k = 0 ; $k < $maximum_field_index ; $k++ ) {
-            $current_field .= $$old_rfields[$k];
-            $current_pattern .= $$old_rpatterns[$k];
-            last if ( $j > $jmax - 1 );
-
-            if ( $$old_rtokens[$k] eq $$rtokens[$j] ) {
-                $in_match = 1;
-                $new_fields[$j]            = $current_field;
-                $new_matching_patterns[$j] = $current_pattern;
-                $current_field   = '';
-                $current_pattern = '';
-                $new_matching_tokens[$j] = $$old_rtokens[$k];
-                $new_alignments[$j]      = $old_line->get_alignment($k);
-                $j++;
-            }
-            else {
-
-                if ( $$old_rtokens[$k] =~ /^\=\d*$/ ) {
-                    $hid_equals = 1;
-                }
-                last if $in_match;    # disallow gaps in matching field types
-            }
-        }
-
-        # Modify the current state if we are successful.
-        # We must exactly reach the ends of both lists for success.
-        if ( ( $j == $jmax ) && ( $current_field eq '' ) && $hid_equals ) {
-            $k = $maximum_field_index;
-            $current_field .= $$old_rfields[$k];
-            $current_pattern .= $$old_rpatterns[$k];
+        if ( $$old_rtokens[$k] eq $$rtokens[$j] ) {
+            $in_match = 1;
             $new_fields[$j]            = $current_field;
             $new_matching_patterns[$j] = $current_pattern;
-
-            $new_alignments[$j] = $old_line->get_alignment($k);
-            $maximum_field_index = $j;
-
-            $old_line->set_alignments(@new_alignments);
-            $old_line->set_jmax($jmax);
-            $old_line->set_rtokens( \@new_matching_tokens );
-            $old_line->set_rfields( \@new_fields );
-            $old_line->set_rpatterns( \@$rpatterns );
+            $current_field   = '';
+            $current_pattern = '';
+            $new_matching_tokens[$j] = $$old_rtokens[$k];
+            $new_alignments[$j]      = $old_line->get_alignment($k);
+            $j++;
         }
+        else {
+
+            if ( $$old_rtokens[$k] =~ /^\=\d*$/ ) {
+                $hid_equals = 1;
+            }
+            last if $in_match;    # disallow gaps in matching field types
+        }
+    }
+
+    # Modify the current state if we are successful.
+    # We must exactly reach the ends of both lists for success.
+    if ( ( $j == $jmax ) && ( $current_field eq '' ) && $hid_equals ) {
+        $k = $maximum_field_index;
+        $current_field .= $$old_rfields[$k];
+        $current_pattern .= $$old_rpatterns[$k];
+        $new_fields[$j]            = $current_field;
+        $new_matching_patterns[$j] = $current_pattern;
+
+        $new_alignments[$j] = $old_line->get_alignment($k);
+        $maximum_field_index = $j;
+
+        $old_line->set_alignments(@new_alignments);
+        $old_line->set_jmax($jmax);
+        $old_line->set_rtokens( \@new_matching_tokens );
+        $old_line->set_rfields( \@new_fields );
+        $old_line->set_rpatterns( \@$rpatterns );
     }
 }
 
@@ -12028,6 +12074,7 @@ sub make_side_comment {
     my $jmax      = $new_line->get_jmax();
     my $rtokens   = $new_line->get_rtokens();
 
+    # if line does not have a side comment...
     if ( ( $jmax == 0 ) || ( $$rtokens[ $jmax - 1 ] ne '#' ) ) {
         my $rfields   = $new_line->get_rfields();
         my $rpatterns = $new_line->get_rpatterns();
@@ -12037,6 +12084,8 @@ sub make_side_comment {
         $new_line->set_jmax($jmax);
         $new_line->set_jmax_original_line($jmax);
     }
+
+    # line has a side comment..
     else {
 
         # don't remember old side comment location for very long
@@ -12081,58 +12130,60 @@ sub decide_if_list {
 }
 
 sub eliminate_new_fields {
+
+    return unless ( $maximum_line_index >= 0 );
     my $new_line = shift;
-    my $old_line = shift;
-    my $jmax      = $new_line->get_jmax();
+    my $jmax     = $new_line->get_jmax();
 
-    ##my $list_type = $new_line->get_list_type();
+    # must be monotonic variation
+    return unless ( $previous_maximum_jmax_seen <= $jmax );
 
-    ##my $starting_jmax       = $old_line->get_jmax_original_line();
+    # must be more fields in the new line
+    my $old_line            = shift;
     my $maximum_field_index = $old_line->get_jmax();
+    return unless ( $maximum_field_index < $jmax );
 
-    if (
-        ( $maximum_line_index >= 0 )
-        && ( $maximum_field_index < $jmax )
-        ##&& ( $starting_jmax == $minimum_jmax_seen )    # only if monotonic
-        && ( $old_line->get_jmax_original_line() == $minimum_jmax_seen )    # only if monotonic
-        && ( $previous_maximum_jmax_seen <= $jmax )    # only if monotonic
-        ##&& ( $maximum_field_index > 1 ) && ( $list_type !~ /^,/ )
-        && ( $maximum_field_index > 1 ) && ( $new_line->get_list_type() !~ /^,/ )
-      )    # never combine fields of a comma list
-    {
-        my $rtokens   = $new_line->get_rtokens();
-        my $rfields   = $new_line->get_rfields();
-        my $rpatterns = $new_line->get_rpatterns();
-        my $old_rpatterns       = $old_line->get_rpatterns();
-        my $old_rtokens         = $old_line->get_rtokens();
+    return
+      unless ( $old_line->get_jmax_original_line() == $minimum_jmax_seen )
+      ;    # only if monotonic
 
-        # loop over all old tokens except comment
-        my $match = 1;
-        my $k;
-        for ( $k = 0 ; $k < $maximum_field_index - 1 ; $k++ ) {
-            if ( ( $$old_rtokens[$k] ne $$rtokens[$k] )
-                || ( $$old_rpatterns[$k] ne $$rpatterns[$k] ) )
-            {
-                $match = 0;
-                last;
-            }
+    # never combine fields of a comma list
+    return
+      unless ( $maximum_field_index > 1 )
+      && ( $new_line->get_list_type() !~ /^,/ );
+
+    my $rtokens       = $new_line->get_rtokens();
+    my $rfields       = $new_line->get_rfields();
+    my $rpatterns     = $new_line->get_rpatterns();
+    my $old_rpatterns = $old_line->get_rpatterns();
+    my $old_rtokens   = $old_line->get_rtokens();
+
+    # loop over all old tokens except comment
+    my $match = 1;
+    my $k;
+    for ( $k = 0 ; $k < $maximum_field_index - 1 ; $k++ ) {
+        if ( ( $$old_rtokens[$k] ne $$rtokens[$k] )
+            || ( $$old_rpatterns[$k] ne $$rpatterns[$k] ) )
+        {
+            $match = 0;
+            last;
+        }
+    }
+
+    # first tokens agree, so combine new tokens
+    if ($match) {
+        for $k ( $maximum_field_index .. $jmax - 1 ) {
+
+            $$rfields[ $maximum_field_index - 1 ] .= $$rfields[$k];
+            $$rfields[$k] = "";
+            $$rpatterns[ $maximum_field_index - 1 ] .= $$rpatterns[$k];
+            $$rpatterns[$k] = "";
         }
 
-        # first tokens agree, so combine new tokens
-        if ($match) {
-            for $k ( $maximum_field_index .. $jmax - 1 ) {
-
-                $$rfields[ $maximum_field_index - 1 ] .= $$rfields[$k];
-                $$rfields[$k] = "";
-                $$rpatterns[ $maximum_field_index - 1 ] .= $$rpatterns[$k];
-                $$rpatterns[$k] = "";
-            }
-
-            $$rtokens[ $maximum_field_index - 1 ] = '#';
-            $$rfields[$maximum_field_index]   = $$rfields[$jmax];
-            $$rpatterns[$maximum_field_index] = $$rpatterns[$jmax];
-            $jmax = $maximum_field_index;
-        }
+        $$rtokens[ $maximum_field_index - 1 ] = '#';
+        $$rfields[$maximum_field_index]   = $$rfields[$jmax];
+        $$rpatterns[$maximum_field_index] = $$rpatterns[$jmax];
+        $jmax = $maximum_field_index;
     }
     $new_line->set_jmax($jmax);
 }
@@ -12142,104 +12193,102 @@ sub check_match {
     my $new_line = shift;
     my $old_line = shift;
 
-    my $jmax                    = $new_line->get_jmax();
+    my $jmax                = $new_line->get_jmax();
+    my $maximum_field_index = $old_line->get_jmax();
+
+    # flush if this line has too many fields
+    if ( $jmax > $maximum_field_index ) { flush(); return }
+
+    # flush if adding this line would make a non-monotonic field count
+    if (
+        ( $maximum_field_index > $jmax )    # this has too few fields
+        && (
+            ( $previous_minimum_jmax_seen < $jmax )  # and wouldn't be monotonic
+            || ( $old_line->get_jmax_original_line() != $maximum_jmax_seen )
+        )
+      )
+    {
+        flush();
+        return;
+    }
+
+    # otherwise append this line if everything matches
     my $jmax_original_line      = $new_line->get_jmax_original_line();
-    my $leading_space_count     = $new_line->get_leading_space_count();
     my $is_hanging_side_comment = $new_line->get_is_hanging_side_comment();
     my $rtokens                 = $new_line->get_rtokens();
     my $rfields                 = $new_line->get_rfields();
     my $rpatterns               = $new_line->get_rpatterns();
     my $list_type               = $new_line->get_list_type();
 
-    my $old_rpatterns       = $old_line->get_rpatterns();
-    my $old_rtokens         = $old_line->get_rtokens();
-    my $starting_jmax       = $old_line->get_jmax_original_line();
-    my $group_list_type     = $old_line->get_list_type();
-    my $maximum_field_index = $old_line->get_jmax();
+    my $group_list_type = $old_line->get_list_type();
+    my $old_rpatterns   = $old_line->get_rpatterns();
+    my $old_rtokens     = $old_line->get_rtokens();
 
-    # flush if this line has too many fields
-    if ( $jmax > $maximum_field_index ) { flush(); }
+    my $jlimit = $jmax - 1;
+    if ( $maximum_field_index > $jmax ) {
+        $jlimit = $jmax_original_line;
+        --$jlimit unless ( length( $new_line->get_rfields()->[$jmax] ) );
+    }
 
-    # flush if adding this line would make a non-monotonic field count
-    elsif (
-        ( $maximum_field_index > $jmax )    # this has too few fields
-        && (
-            ( $previous_minimum_jmax_seen < $jmax )  # and wouldn't be monotonic
-            || ( $starting_jmax != $maximum_jmax_seen )
-        )
-      )
+    my $everything_matches = 1;
+
+    # common list types always match
+    unless ( ( $group_list_type && ( $list_type eq $group_list_type ) )
+        || $is_hanging_side_comment )
     {
-        flush();
-    }
 
-    # otherwise append this line if everything matches
-    else {
+        my $leading_space_count = $new_line->get_leading_space_count();
+        for my $j ( 0 .. $jlimit ) {
+            my $match = 1;
+            if (
+                ( $j < $jlimit )
+                && ( ( $$old_rtokens[$j] ne $$rtokens[$j] )
+                    || ( $$old_rpatterns[$j] ne $$rpatterns[$j] ) )
+              )
+            {
+                $match = 0;
+            }
 
-        my $jlimit = $jmax - 1;
-        if ( $maximum_field_index > $jmax ) {
-            $jlimit = $jmax_original_line;
-            --$jlimit unless ( length( $new_line->get_rfields()->[$jmax] ) );
-        }
+            # Don't let line with fewer fields increase column widths
+            # ( align3.t )
+            if ( $maximum_field_index > $jmax ) {
+                my $pad =
+                  length( $$rfields[$j] ) - $old_line->current_field_width($j);
 
-        my $everything_matches = 1;
-
-        # common list types always match
-        unless ( ( $group_list_type && ( $list_type eq $group_list_type ) )
-            || $is_hanging_side_comment )
-        {
-
-            for my $j ( 0 .. $jlimit ) {
-                my $match = 1;
-                if (
-                    ( $j < $jlimit )
-                    && ( ( $$old_rtokens[$j] ne $$rtokens[$j] )
-                        || ( $$old_rpatterns[$j] ne $$rpatterns[$j] ) )
-                  )
-                {
-                    $match = 0;
+                if ( $j == 0 ) {
+                    $pad += $leading_space_count;
                 }
+                if ( $pad > 0 ) { $match = 0 }
+            }
 
-                # Don't let line with fewer fields increase column widths
-                # ( align3.t )
-                if ( $maximum_field_index > $jmax ) {
-                    my $pad =
-                      length( $$rfields[$j] ) -
-                      $old_line->current_field_width($j);
-
-                    if ( $j == 0 ) {
-                        $pad += $leading_space_count;
-                    }
-                    if ( $pad > 0 ) { $match = 0 }
-                }
-
-                unless ($match) {
-                    $everything_matches = 0;
-                    last;
-                }
+            unless ($match) {
+                $everything_matches = 0;
+                last;
             }
         }
-
-        if ( $maximum_field_index > $jmax ) {
-
-            if ($everything_matches) {
-
-                my $comment = $$rfields[$jmax];
-                for $jmax ( $jlimit .. $maximum_field_index ) {
-                    $$rtokens[$jmax] = $$old_rtokens[$jmax];
-                    $$rfields[ ++$jmax ] = '';
-                    $$rpatterns[$jmax] = $$old_rpatterns[$jmax];
-                }
-                $$rfields[$jmax] = $comment;
-                $new_line->set_jmax($jmax);
-            }
-        }
-
-        flush() unless ($everything_matches);
     }
+
+    if ( $maximum_field_index > $jmax ) {
+
+        if ($everything_matches) {
+
+            my $comment = $$rfields[$jmax];
+            for $jmax ( $jlimit .. $maximum_field_index ) {
+                $$rtokens[$jmax] = $$old_rtokens[$jmax];
+                $$rfields[ ++$jmax ] = '';
+                $$rpatterns[$jmax] = $$old_rpatterns[$jmax];
+            }
+            $$rfields[$jmax] = $comment;
+            $new_line->set_jmax($jmax);
+        }
+    }
+
+    flush() unless ($everything_matches);
 }
 
 sub check_fit {
 
+    return unless ( $maximum_line_index >= 0 );
     my $new_line = shift;
     my $old_line = shift;
 
@@ -12252,88 +12301,85 @@ sub check_fit {
 
     my $group_list_type = $group_lines[0]->get_list_type();
 
-    if ( $maximum_line_index >= 0 ) {
-        my $padding_so_far    = 0;
-        my $padding_available = $old_line->get_available_space_on_right();
+    my $padding_so_far    = 0;
+    my $padding_available = $old_line->get_available_space_on_right();
 
-        # save current columns in case this doesn't work
-        save_alignment_columns();
+    # save current columns in case this doesn't work
+    save_alignment_columns();
 
-        for my $j ( 0 .. $jmax ) {
+    my ( $j, $pad, $eight, $big_jump );
+    for $j ( 0 .. $jmax ) {
 
-            my $pad =
-              length( $$rfields[$j] ) - $old_line->current_field_width($j);
+        $pad = length( $$rfields[$j] ) - $old_line->current_field_width($j);
 
-            if ( $j == 0 ) {
-                $pad += $leading_space_count;
-            }
-
-            # sudden increase or decrease in whitespace space looks bad 
-            # (unless this is a list or side comment).  The number was
-            # initially '8', but that seems too small and it is now a parameter
-            # ( eight.t )
-            # my $eight    = $group_list_type ? 12 : 8;
-            my $big_jump = 0;
-            my $eight    =
-              $group_list_type 
-              ? 1.5 * $rOpts->{'big-space-jump'}
-              : $rOpts->{'big-space-jump'};
-
-            if ( !$is_hanging_side_comment && $j < $jmax - 1 ) {
-
-                # a sudden increase of over '8' spaces is too much
-                if ( $pad > $eight ) { $big_jump = 1 }
-
-                # a sudden decrease of over '8' spaces to a new low is too much
-                elsif ( $pad < 0 ) {
-                    my $test_pad =
-                      length( $$rfields[$j] ) -
-                      $old_line->starting_field_width($j);
-
-                    if ( $j == 0 ) {
-                        $test_pad += $leading_space_count;
-                    }
-                    if ( $test_pad < -$eight ) { $big_jump = 1 }
-                }
-            }
-
-            next if !$big_jump && $pad < 0;
-
-            # This line will need space; lets see if we want to accept it..
-            if (
-
-                # not if padding increases too much
-                $big_jump
-
-                # not if this won't fit
-                || ( $pad > $padding_available )
-
-                # or, with the exception of space to side comments, ..
-                || (
-                    $j < $jmax - 1
-
-                    # causes too many consecutive columns of whitespace 
-                    && (
-                        (
-                            $pad + $old_line->field_width_growth($j) >
-                            $rOpts->{'maximum-whitespace-columns'}
-                        )
-
-                    )
-                )
-              )
-            {
-
-                # revert to starting state then flush; things didn't work out
-                restore_alignment_columns();
-                flush();
-                last;
-            }
-
-            # looks ok, squeeze this field in
-            $old_line->increase_field_width( $j, $pad );
-            $padding_available -= $pad;
+        if ( $j == 0 ) {
+            $pad += $leading_space_count;
         }
+
+        # sudden increase or decrease in whitespace space looks bad 
+        # (unless this is a list or side comment).  The number was
+        # initially '8', but that seems too small and it is now a parameter
+        # ( eight.t )
+        # my $eight    = $group_list_type ? 12 : 8;
+        $big_jump = 0;
+        $eight    =
+          $group_list_type 
+          ? 1.5 * $rOpts_big_space_jump
+          : $rOpts_big_space_jump;
+
+        if ( !$is_hanging_side_comment && $j < $jmax - 1 ) {
+
+            # a sudden increase of over '8' spaces is too much
+            if ( $pad > $eight ) { $big_jump = 1 }
+
+            # a sudden decrease of over '8' spaces to a new low is too much
+            elsif ( $pad < 0 ) {
+                my $test_pad =
+                  length( $$rfields[$j] ) - $old_line->starting_field_width($j);
+
+                if ( $j == 0 ) {
+                    $test_pad += $leading_space_count;
+                }
+                if ( $test_pad < -$eight ) { $big_jump = 1 }
+            }
+        }
+
+        next if !$big_jump && $pad < 0;
+
+        # This line will need space; lets see if we want to accept it..
+        if (
+
+            # not if padding increases too much
+            $big_jump
+
+            # not if this won't fit
+            || ( $pad > $padding_available )
+
+            # or, with the exception of space to side comments, ..
+            || (
+                $j < $jmax - 1
+
+                # causes too many consecutive columns of whitespace 
+                && (
+                    (
+                        $pad + $old_line->field_width_growth($j) >
+                        $rOpts_maximum_whitespace_columns
+                    )
+
+                )
+            )
+          )
+        {
+
+            # revert to starting state then flush; things didn't work out
+            restore_alignment_columns();
+            flush();
+            last;
+        }
+
+        # looks ok, squeeze this field in
+        $old_line->increase_field_width( $j, $pad );
+        $padding_available -= $pad;
     }
 }
 
@@ -12483,11 +12529,11 @@ sub adjust_side_comment {
 
             # but if this doesn't work, give up and use the minimum space
             if ( $move > $avail ) {
-                $move = $rOpts->{'minimum-space-to-comment'} - 1;
+                $move = $rOpts_minimum_space_to_comment - 1;
             }
 
             # but we want some minimum space to the comment
-            my $min_move = $rOpts->{'minimum-space-to-comment'} - 1;
+            my $min_move = $rOpts_minimum_space_to_comment - 1;
             if ( $move >= 0
                 && $last_side_comment_length > 0
                 && ( $first_side_comment_line == 0 )
@@ -12501,8 +12547,8 @@ sub adjust_side_comment {
             }
 
             # if this causes too much space, give up and use the minimum space
-            if ( $move > $rOpts->{'maximum-space-to-comment'} - 1 ) {
-                $move = $rOpts->{'minimum-space-to-comment'} - 1;
+            if ( $move > $rOpts_maximum_space_to_comment - 1 ) {
+                $move = $rOpts_minimum_space_to_comment - 1;
             }
 
             # don't exceed the available space
@@ -12613,7 +12659,8 @@ sub write_vertically_aligned_line {
 
     # loop to concatenate all fields of this line and needed padding
     my $total_pad_count = 0;
-    for my $j ( 1 .. $maximum_field_index ) {
+    my ( $j, $pad );
+    for $j ( 1 .. $maximum_field_index ) {
 
         # skip zero-length side comments
         last
@@ -12622,14 +12669,14 @@ sub write_vertically_aligned_line {
           );
 
         # compute spaces of padding before this field
-        my $pad =
+        $pad =
           $line->get_column( $j - 1 ) - ( length($str) + $leading_space_count );
 
         if ($do_not_align) {
             $pad =
               ( $j < $maximum_field_index ) 
               ? 0
-              : $rOpts->{'minimum-space-to-comment'} - 1;
+              : $rOpts_minimum_space_to_comment - 1;
         }
 
         # accumulate the padding
@@ -12677,7 +12724,8 @@ sub get_extra_leading_spaces {
               get_RECOVERABLE_SPACES($object);
 
             # all indentation objects must be the same
-            for my $i ( 1 .. $maximum_line_index ) {
+            my $i;
+            for $i ( 1 .. $maximum_line_index ) {
                 if ( $object != $group_lines[$i]->get_indentation() ) {
                     $extra_indentation_spaces_wanted = 0;
                     last;
@@ -13260,6 +13308,18 @@ BEGIN {
     TOKENIZER_DEBUG_FLAG_QUOTE    && $debug_warning->('QUOTE');
     TOKENIZER_DEBUG_FLAG_SCAN_ID  && $debug_warning->('SCAN_ID');
     TOKENIZER_DEBUG_FLAG_TOKENIZE && $debug_warning->('TOKENIZE');
+
+    sub make_regex {
+
+        # Given a string, make the corresponding regex with qr.
+        # Versions of perl before 5.005 do not have qr,
+        # so we will just return the string, which will work
+        # but not be optimized.
+        if ( $] < 5.005 ) {
+            sub qr { $_[0] }
+        }
+        qr($_[0]);
+    }
 }
 
 use Carp;
@@ -13590,7 +13650,7 @@ such as print and printf statements of the form
 
     print bareword ( $etc
 
-PerlTidy needs your help in deciding if 'bareword' is a filehandle or a
+Perltidy needs your help in deciding if 'bareword' is a filehandle or a
 function call.  The problem is the space between 'bareword' and '('.  If
 'bareword' is a function call, you should remove the trailing space.  If
 'bareword' is a filehandle, you should avoid the opening paren or else
@@ -13604,7 +13664,7 @@ or
     print BAREWORD ( $etc   # filehandle
 
 If you want to keep the line as it is, and are sure it is correct,
-you can use -w=0 to prevent this message and I'll shut up.
+you can use -w=0 to prevent this message.
 ------------------------------------------------------------------
 EOM
 
@@ -14459,7 +14519,8 @@ sub reset_indentation_level {
     push @slevel_stack, $slevel_in_tokenizer;
 }
 
-{
+PRINT_LINE_OF_TOKENS: {
+
     use constant BRACE          => 0;
     use constant SQUARE_BRACKET => 1;
     use constant PAREN          => 2;
@@ -15269,10 +15330,6 @@ current version.
         ( $rtokens, $rtoken_map, $rtoken_type ) =
           ( $rpretokens, $rpretoken_map, $rpretoken_type );
 
-##    my @a= keys %$tokenization_code;
-##    print "@a";
-##    exit;
-
         # initialize for main loop
         for $i ( 0 .. $max_token_index + 3 ) {
             $output_token_type[$i]     = "";
@@ -15769,6 +15826,13 @@ EOM
                     if ( $type eq 'w' ) {
                         $error_if_expecting_OPERATOR->("bareword");
 
+                        # BUBBA: mark bare words immediately followed by a paren as
+                        # functions
+                        $next_tok = $$rtokens[ $i + 1 ];
+                        if ( $next_tok eq '(' ) {
+                            $type = 'U';
+                        }
+
                         # mark bare words following a file test operator as
                         # something that will expect an operator next.
                         # patch 072901: unless followed immediately by a paren,
@@ -15861,7 +15925,7 @@ EOM
         my $im = -1;                       # previous $i value
         my $num;
         my %matching_start_token = ( '}' => '{', ']' => '[', ')' => '(' );
-        my $ci_string_sum = sum_ones($ci_string_in_tokenizer);
+        my $ci_string_sum = ( $_ = $ci_string_in_tokenizer ) =~ tr/1/0/;
 
 =head1 Computing Token Indentation
 
@@ -16086,7 +16150,7 @@ indentation, but only single continuation-indentation
 
                 $ci_string_in_tokenizer .=
                   ( $intervening_secondary_structure != 0 ) ? '1' : '0';
-                $ci_string_sum = sum_ones($ci_string_in_tokenizer);
+                $ci_string_sum = ( $_ = $ci_string_in_tokenizer ) =~ tr/1/0/;
                 $continuation_string_in_tokenizer .=
                   ( $in_statement_continuation > 0 ) ? '1' : '0';
 
@@ -16139,7 +16203,9 @@ indentation, but only single continuation-indentation
                     chop $nesting_list_string;
 
                     chop $ci_string_in_tokenizer;
-                    $ci_string_sum = sum_ones($ci_string_in_tokenizer);
+                    $ci_string_sum =
+                      ( $_ = $ci_string_in_tokenizer ) =~ tr/1/0/;
+
                     $in_statement_continuation =
                       chop $continuation_string_in_tokenizer;
 
@@ -16351,12 +16417,6 @@ indentation, but only single continuation-indentation
     }
 }
 
-sub sum_ones {
-    my $sum = 0;
-    while ( $_[0] =~ m/1/g ) { $sum++ }
-    return $sum;
-}
-
 sub new_statement_ok {
 
     # return true if the current token can start a new statement
@@ -16400,7 +16460,7 @@ sub code_block_type {
 
     # print "BLOCK_TYPE EXAMINING: type=$last_nonblank_type tok=$last_nonblank_token\n"; 
 
-    if ( $last_nonblank_token =~ /^[\{]$/
+    if ( $last_nonblank_token eq '{'
         && $last_nonblank_type eq $last_nonblank_token )
     {
 
@@ -16424,7 +16484,7 @@ sub code_block_type {
     }
 
     # handle case of '}{'
-    elsif ( $last_nonblank_token =~ /^[\}]$/
+    elsif ( $last_nonblank_token eq '}'
         && $last_nonblank_type eq $last_nonblank_token )
     {
 
@@ -18116,8 +18176,8 @@ sub do_scan_sub {
 
         if ($attrs) {
 
-            # remove this after testing
-            ##write_diagnostics("Found sub ATTRS $attrs for NAME=$2\n");
+            # unused for now
+
         }
         $package = ( defined($1) && $1 ) ? $1 : $current_package;
         $package =~ s/\'/::/g;
@@ -18306,7 +18366,6 @@ updated id_scan_state and the next index after the identifier.
     my $message             = "";
 
     # these flags will be used to help figure out the type:
-    ##my $saw_alpha = ( $tok =~ /[A-Za-z_]/ );
     my $saw_alpha = ( $tok =~ /^[A-Za-z_]/ );
     my $saw_type;
 
@@ -18324,21 +18383,18 @@ updated id_scan_state and the next index after the identifier.
         }
         $identifier = $tok;
 
-        ##if ( $tok =~ /[\$\*]/ ) {
-        if ( $tok eq '$' || $tok eq '*') { 
+        if ( $tok eq '$' || $tok eq '*' ) {
             $id_scan_state = '$';
             $context       = SCALAR_CONTEXT;
         }
-        ##elsif ( $tok =~ /[\%\@]/ ) {
-        elsif ( $tok eq '%' || $tok eq '@') { 
+        elsif ( $tok eq '%' || $tok eq '@' ) {
             $id_scan_state = '$';
             $context       = LIST_CONTEXT;
         }
         elsif ( $tok eq '&' ) {
             $id_scan_state = '&';
         }
-        ##elsif ( $tok =~ /^(sub|package)$/ ) {
-        elsif ( $tok eq 'sub' or $tok eq 'package') {
+        elsif ( $tok eq 'sub' or $tok eq 'package' ) {
             $saw_alpha     = 0;     # 'sub' is considered type info here
             $id_scan_state = '$';
             $identifier .= ' ';     # need a space to separate sub from sub name
@@ -18346,6 +18402,7 @@ updated id_scan_state and the next index after the identifier.
         elsif ( $tok eq '::' ) {
             $id_scan_state = 'A';
         }
+
         #elsif ( $tok =~ /[A-Za-z_]/ ) {
         elsif ( $tok =~ /^[A-Za-z_]/ ) {
             $id_scan_state = ':';
@@ -18398,10 +18455,9 @@ updated id_scan_state and the next index after the identifier.
                 $id_scan_state = ':';           # now need ::
                 $identifier .= $tok;
             }
-            ##elsif ( ( $tok =~ /^[\']$/ ) && $allow_tick ) {    # alphanumeric ..
             elsif ( $tok eq "'" && $allow_tick ) {    # alphanumeric ..
                 $saw_alpha     = 1;
-                $id_scan_state = ':';                          # now need ::
+                $id_scan_state = ':';                 # now need ::
                 $identifier .= $tok;
 
                 # Perl will accept leading digits in identifiers,
@@ -18412,9 +18468,9 @@ updated id_scan_state and the next index after the identifier.
                 #  howdy::123::bubba();
                 #
             }
-            elsif ( $tok =~ /^[0-9]/ ) {                       # numeric
+            elsif ( $tok =~ /^[0-9]/ ) {              # numeric
                 $saw_alpha     = 1;
-                $id_scan_state = ':';                          # now need ::
+                $id_scan_state = ':';                 # now need ::
                 $identifier .= $tok;
             }
             elsif ( $tok eq '::' ) {
@@ -18434,7 +18490,7 @@ updated id_scan_state and the next index after the identifier.
                 last;
             }
 
-            # space ok after leading $ % * & @ ->
+            # space ok after leading $ % * & @
             elsif ( $tok =~ /^\s*$/ ) {
 
                 if ( $identifier =~ /^[\$\%\*\&\@]/ ) {
@@ -18461,16 +18517,21 @@ updated id_scan_state and the next index after the identifier.
                         }
                     }
                 }
+
+                # else:
+                # space after '->' is ok
+                # other cases?
+
                 ##elsif ( $identifier =~ /^(->)$/ ) {
                 ## BUBBA: this seems to do nothing!!
-                elsif ( $identifier =~ /^(->)$/ ) {
-
-                    if ( length($identifier) > 2 ) {
-                        warning("BUBBA! identifier is $identifier\n");
-                        $id_scan_state = '';
-                        last;
-                    }
-                }
+##                elsif ( $identifier =~ /^(->)$/ ) {
+##
+##                    if ( length($identifier) > 2 ) {
+##                        warning("BUBBA! identifier is $identifier\n");
+##                        $id_scan_state = '';
+##                        last;
+##                    }
+##                }
             }
             elsif ( $tok eq '^' ) {
 
@@ -18492,8 +18553,7 @@ updated id_scan_state and the next index after the identifier.
 
                 elsif ( $identifier eq '$#' ) {
 
-                    ##if ( $tok =~ /^[\{]$/ ) { $type = 'i'; $i = $i_save }
-                    if ( $tok eq '{') { $type = 'i'; $i = $i_save }
+                    if ( $tok eq '{' ) { $type = 'i'; $i = $i_save }
 
                     # perl seems to allow just these: $#: $#- $#+
                     elsif ( $tok =~ /^[\:\-\+]$/ ) {
@@ -18516,7 +18576,6 @@ updated id_scan_state and the next index after the identifier.
                     #  $a = ${$:};
 
                     $i = $i_save;
-                    ##if ( $tok =~ /^[\{]$/ ) { $type = 't' }
                     if ( $tok eq '{' ) { $type = 't' }
                     else { $type = 'i' }
                 }
@@ -18538,9 +18597,8 @@ updated id_scan_state and the next index after the identifier.
                 $saw_alpha     = 1;
                 $identifier .= $tok;
             }
-            ##elsif ( ( $tok =~ /^[\']$/ ) && $allow_tick ) {    # alphanumeric ..
             elsif ( $tok eq "'" && $allow_tick ) {    # alphanumeric ..
-                $id_scan_state = ':';                          # now need ::
+                $id_scan_state = ':';                 # now need ::
                 $saw_alpha     = 1;
                 $identifier .= $tok;
             }
@@ -18584,7 +18642,6 @@ updated id_scan_state and the next index after the identifier.
                 $id_scan_state = ':';        # now need ::
                 $saw_alpha     = 1;
             }
-            ##elsif ( ( $tok =~ /^[\']$/ ) && $allow_tick ) {
             elsif ( $tok eq "'" && $allow_tick ) {
                 $identifier .= $tok;
                 $id_scan_state = ':';        # now need ::
@@ -18625,11 +18682,10 @@ updated id_scan_state and the next index after the identifier.
                 $id_scan_state = ':';           # now need ::
                 $saw_alpha     = 1;
             }
-            ##elsif ( $tok =~ /^[\']/ && $allow_tick ) {    # tick
             elsif ( $tok eq "'" && $allow_tick ) {    # tick
 
                 if ( $is_keyword{$identifier} ) {
-                    $id_scan_state = '';                  # that's all
+                    $id_scan_state = '';              # that's all
                     $i             = $i_save;
                 }
                 else {
@@ -18945,14 +19001,14 @@ BEGIN {
     # these functions have prototypes of the form (&@), so when they are
     # followed by a block, that block MAY NOT be followed by an
     # operator.
-    $block_list_operator = qr'^(sort|grep|map)$';
+    $block_list_operator = make_regex('^(sort|grep|map)$');
 
     # these functions have prototypes of the form (&), so when they are
     # followed by a block, that block MAY BE followed by an operator.
-    $block_operator = qr'^(do|eval)$';
+    $block_operator = make_regex('^(do|eval)$');
 
     # these functions allow an identifier in the indirect object slot
-    $indirect_object_taker = qr'^(print|printf|sort|exec|system)$';
+    $indirect_object_taker = make_regex('^(print|printf|sort|exec|system)$');
 
     # I'll build the list of keywords incrementally
     my @Keywords = ();

@@ -12,3 +12,8 @@ $# eq $,? print "yes\n" : print "no\n";
 
 # The space after the '?' is essential and must not be deleted
 print $::opt_m ? "  Files:  ".my_wrap("","          ",$v) : $v;
+
+# must not remove space before 'CAKE'
+use constant CAKE => atan2(1,1)/2;
+if ($arc >= - CAKE && $arc <= CAKE) {
+}
