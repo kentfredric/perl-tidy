@@ -1,8 +1,17 @@
-{{{{
+{{{
 # break at '-' not '->'
                 $temptotalr +=
                   $charges[$i2]->{'amount'} - $charges[$i2]
                   ->{'amountoutstanding'};
+
+                  # break at -> not {
+                  $gControlFields{$lMarcTag}->clusters->{
+                    substr($gPosDefData, 0, 1)
+                  }->field_length;
+
+                # break at -> not ','
+                defined $self->{_parent}->{_fh}->read($buf,
+                                                $self->{_parent}->{_blocksize});
 }}}
 {
 
