@@ -423,11 +423,38 @@ comments", which are something like this:
                            # This is a hanging side comment
                            # And so is this
 
-A comment is considered to be a hanging side comment if it immediately
-follows a line with a side comment, or another hanging side comment.
+A comment is considered to be a hanging side comment if (1) it immediately
+follows a line with a side comment, or another hanging side comment, and
+(2) there is some leading whitespace on the line.
 To deactivate this feature, use B<-nhsc> or B<--nohanging-side-comments>.  
-If block comments are preceded by a blank line, they will not be mistaken as
-hanging side comments.
+If block comments are preceded by a blank line, or have no leading
+whitespace, they will not be mistaken as hanging side comments.
+
+=item B<-sbc>, B<--static-block-comments>
+
+Perltidy has a simple mechanism for displaying commented code.  When
+B<-sbc> is used, a block comment with two (or more) leading hash
+symbols, C<##>, will be treated specially, as follows: (1) No blank line
+will be inserted before such a comment, (2) If there is no leading space
+on the line, then the comment will not be indented, and otherwise it
+will, and (3) such a comment will never become a hanging side comment.
+For example, assuming C<@month_of_year> is left-adjusted:
+
+    @month_of_year = (
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct',
+    ##  'nov', 'dec'
+        'Nov', 'Dec'
+    );
+
+The default is to use B<-sbc>.  This may be deactivated with B<-nsbc>.
+Without this convention, the above code would become:
+
+    @month_of_year = (   # -nsbc
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct',
+
+        ##  'nov', 'dec'
+        'Nov', 'Dec'
+    );
 
 =item B<-oll>, B<--outdent-long-lines>
 
@@ -1120,7 +1147,7 @@ The following list shows all short parameter names which allow a prefix
     D anl asc aws bbb bbc bbs bli baa syn ce dac dbc dnl
     dws dp dsm dsc ddf dln dop dsn dtt dwls dwrs f fll
     hsc html ibc icb icp lp log lal x lsl bl sbl oll pvl
-    q opt sfs sts se st sob t tac tbc tp tsc tqw w
+    q opt sbc sfs sts se st sob t tac tbc tp tsc tqw w
 
 Equivalently, the prefix 'no' on the corresponding long names may be
 used.

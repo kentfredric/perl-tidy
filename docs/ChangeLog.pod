@@ -9,6 +9,18 @@
  to introduce this problem when cutting and pasting, and perl does not
  complain about it.  
 
+ -Hanging side comment change: a comment will not be considered to be a
+  hanging side comment if there is no leading whitespace on the line.
+  This should improve the reliability of identifying hanging side comments.
+  Thanks to Peter Masiar for this suggestion.
+
+ -Static block comments:  to provide a way to display commented code
+  better, the convention is used that comments with a leading '##' should
+  not be formatted as usual.  Please see '-sbc' (or '--static-block-comment')
+  for documentation.  It can be deactivated with with -nsbc, but
+  should not normally be necessary. Thanks to Peter Masiar for this 
+  suggestion.
+
  -Two changes were made to help show structure of complex lists:
   (1) breakpoints are forced after every ',' in a list where any of
   the list items spans multiple lines, and

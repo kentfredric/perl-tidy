@@ -133,3 +133,10 @@ $thumbheight, $pub, $createtm,$inserttm,$refcount,$crapb,$crapc,$crapd,$border) 
             )
         );
 
+    # This is ugly..
+    $contents = join (
+        '', ( ( $inner_math =~ /in(display|line)/ ) ? '$' : '' ),
+        "\\begin{$env}", ( $color_env ? "\\bgroup\\$color_env" : '' ),
+        $contents, ( $color_env ? "\\egroup" : '' ),
+        "\\end{$env}", ( ( $inner_math =~ /in(display|line)/ ) ? '$' : '' )
+    );
