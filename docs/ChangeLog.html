@@ -14,6 +14,8 @@
 	<LI><A HREF="#perltidy change log">Perltidy Change Log</A></LI>
 	<UL>
 
+		<LI><A HREF="#2002 xx xx">2002 xx xx</A></LI>
+		<LI><A HREF="#2002 04 25">2002 04 25</A></LI>
 		<LI><A HREF="#2002 04 16">2002 04 16</A></LI>
 		<LI><A HREF="#2002 02 25">2002 02 25</A></LI>
 		<LI><A HREF="#2001 12 31">2001 12 31</A></LI>
@@ -45,6 +47,60 @@
  have hit a bug, unusual behavior, annoyance, or have a
  suggested improvement, please send a note to perltidy at
  users.sourceforge.net.</PRE>
+<P>
+<H2><A NAME="2002 xx xx">2002 xx xx</A></H2>
+<PRE>
+ -Added new flag -osbc (--outdent-static-block-comments) which will
+  outdent static block comments by 2 spaces (or whatever -ci equals).
+  Requested by Jon Robison.</PRE>
+<P>
+<H2><A NAME="2002 04 25">2002 04 25</A></H2>
+<PRE>
+
+ -Corrected a bug, introduced in the previous release, in which some
+  closing side comments (-csc) could have incorrect text.  This is
+  annoying but will be correct the next time perltidy is run with -csc.</PRE>
+<PRE>
+ -Implemented XHTML patch submitted by Ville Skyttä.</PRE>
+<PRE>
+ -Fixed bug where whitespace was being removed between 'Bar' and '()' 
+  in a use statement like:</PRE>
+<PRE>
+       use Foo::Bar ();</PRE>
+<PRE>
+  Thanks to Ville Skyttä for reporting this.</PRE>
+<PRE>
+ -Whenever possible, if a logical expression is broken with leading
+  '&amp;&amp;', '||', 'and', or 'or', then the leading line will be padded
+  with additional space to produce alignment.  This has been on the
+  todo list for a long time; thanks to Frank Steinhauer for reminding
+  me to do it.  Notice the first line after the open parens here:</PRE>
+<PRE>
+        OLD: perltidy -lp
+        if (
+             !param(&quot;rules.to.$linecount&quot;)
+             &amp;&amp; !param(&quot;rules.from.$linecount&quot;)
+             &amp;&amp; !param(&quot;rules.subject.$linecount&quot;)
+             &amp;&amp; !(
+                   param(&quot;rules.fieldname.$linecount&quot;)
+                   &amp;&amp; param(&quot;rules.fieldval.$linecount&quot;)
+             )
+             &amp;&amp; !param(&quot;rules.size.$linecount&quot;)
+             &amp;&amp; !param(&quot;rules.custom.$linecount&quot;)
+          )</PRE>
+<PRE>
+        NEW: perltidy -lp
+        if (
+                !param(&quot;rules.to.$linecount&quot;)
+             &amp;&amp; !param(&quot;rules.from.$linecount&quot;)
+             &amp;&amp; !param(&quot;rules.subject.$linecount&quot;)
+             &amp;&amp; !(
+                      param(&quot;rules.fieldname.$linecount&quot;)
+                   &amp;&amp; param(&quot;rules.fieldval.$linecount&quot;)
+             )
+             &amp;&amp; !param(&quot;rules.size.$linecount&quot;)
+             &amp;&amp; !param(&quot;rules.custom.$linecount&quot;)
+          )</PRE>
 <P>
 <H2><A NAME="2002 04 16">2002 04 16</A></H2>
 <PRE>

@@ -61,7 +61,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.20 2002/04/25 15:19:00 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.21 2002/05/19 22:37:20 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 # Preloaded methods go here.
@@ -925,6 +925,7 @@ sub process_command_line {
     $add_option->( 'outdent-labels',                            'ola',   '!' );
     $add_option->( 'outdent-long-comments',                     'olc',   '!' );
     $add_option->( 'outdent-long-quotes',                       'olq',   '!' );
+    $add_option->( 'outdent-static-block-comments',             'osbc',  '!' );
     $add_option->( 'outfile',                                   'o',     '=s' );
     $add_option->( 'output-file-extension',                     'oext',  '=s' );
     $add_option->( 'output-path',                               'opath', '=s' );
@@ -1615,7 +1616,7 @@ sub check_vms_filename {
     $base =~ s/;-?\d*$//
 
       # remove explicit . version ie two dots in filename NB ^ escapes a dot
-      or $base =~ s/(              # begin capture $1
+      or $base =~ s/(          # begin capture $1
                   (?:^|[^^])\. # match a dot not preceded by a caret
                   (?:          # followed by nothing
                     |          # or
@@ -2202,6 +2203,7 @@ Comment controls
 
  -sbc    use 'static block comments' identified by leading '##' (default)
  -sbcp=s change static block comment identifier to be other than '##'
+ -osbc   outdent static block comments
 
  -ssc    use 'static side comments' identified by leading '##' (default)
  -sscp=s change static side comment identifier to be other than '##'
@@ -6057,15 +6059,17 @@ sub set_white_space_flag {
         # if (either is -1) use it
         # That is,
         # left  vs right
-        # 1    vs    1     --> 1
-        # 0     vs    0     --> 0
-        # -1    vs   -1    --> -1
-        # 0     vs   -1    --> -1
-        # 0     vs    1     --> 1
-        # 1     vs    0     --> 1
+        #  1    vs    1     -->  1
+        #  0    vs    0     -->  0
+        # -1    vs   -1     --> -1
+        #
+        #  0    vs   -1     --> -1
+        #  0    vs    1     -->  1
+        #  1    vs    0     -->  1
         # -1    vs    0     --> -1
+        #
         # -1    vs    1     --> -1
-        # 1     vs   -1    --> -1
+        #  1    vs   -1     --> -1
         if ( !defined($ws) ) {
             my $wl = $want_left_space{$type};
             my $wr = $want_right_space{$last_type};
@@ -6477,7 +6481,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.20 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.21 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -7412,8 +7416,8 @@ sub set_logical_padding {
 
     # Look at a batch of lines and see if extra padding can improve the
     # alignment when there are leading logical operators. Here is an
-    # example, in which some extra space is introduced before the
-    # second '(' to make it line up with the subsequent lines:
+    # example, in which some extra space is introduced before 
+    # '( $year' to make it line up with the subsequent lines:
     #
     #       if (   ( $Year < 1601 )
     #           || ( $Year > 2899 )
@@ -7486,11 +7490,15 @@ sub set_logical_padding {
                     # can look very confusing.
                     if ( $max_line > 2 ) {
                         my $leading_token = $tokens_to_go[$ibeg_next];
+                        my $count=1;
                         foreach my $l ( 2 .. 3 ) {
+                            my $ibeg_next_next = $$ri_first[ $line + $l ];
                             next
-                              unless $tokens_to_go[$ibeg_next] eq
+                              unless $tokens_to_go[$ibeg_next_next] eq
                               $leading_token;
+                            $count++;
                         }
+                        next unless $count == 3;
                         $ipad = $ibeg;
                     }
                     else {
@@ -7527,19 +7535,46 @@ sub set_logical_padding {
             $inext_next++;
         }
         my $type = $types_to_go[$ipad];
+        
+        # see if there are multiple continuation lines
+        my $logical_continuation_lines=1;
+        if ( $line + 2 <= $max_line ) {
+            my $leading_token  = $tokens_to_go[$ibeg_next];
+            my $ibeg_next_next = $$ri_first[ $line + 2 ];
+            if (
+                   $tokens_to_go[$ibeg_next_next] eq $leading_token
+                && $nesting_depth_to_go[$ibeg_next] eq
+                $nesting_depth_to_go[$ibeg_next_next]
+              )
+            {
+                $logical_continuation_lines++;
+            }
+        }
         if (
 
-            # types must match
-            $types_to_go[$inext_next] eq $type
-
             # next line must not be at greater depth
-            && $nesting_depth_to_go[ $iend_next + 1 ] <=
+            $nesting_depth_to_go[ $iend_next + 1 ] <=
             $nesting_depth_to_go[$ipad]
 
-            # keywords must match if keyword
-            && !(
-                   $type eq 'k'
-                && $tokens_to_go[$ipad] ne $tokens_to_go[$inext_next]
+            # and ..
+            && (
+
+                # either we have multiple continuation lines to follow
+                # and we are not padding the first token
+                ($logical_continuation_lines > 1 && $ipad>0)
+
+                # or..
+                || (
+
+                    # types must match
+                    $types_to_go[$inext_next] eq $type
+
+                    # and keywords must match if keyword
+                    && !(
+                           $type eq 'k'
+                        && $tokens_to_go[$ipad] ne $tokens_to_go[$inext_next]
+                    )
+                )
             )
           )
         {
@@ -9067,20 +9102,40 @@ sub set_adjusted_indentation {
         # must be first word of this batch
         $ibeg == 0
 
-        # and be certain leading keywords if requested
-        && (   $rOpts->{'outdent-keywords'}
-            && $types_to_go[$ibeg] eq 'k'
-            && $outdent_keyword{ $tokens_to_go[$ibeg] } )
+        # and ...
+        && (
 
-        # or labels if requested
-        || ( $rOpts->{'outdent-labels'} && $types_to_go[$ibeg] eq 'J' )
+            # certain leading keywords if requested
+            (
+                   $rOpts->{'outdent-keywords'}
+                && $types_to_go[$ibeg] eq 'k'
+                && $outdent_keyword{ $tokens_to_go[$ibeg] }
+            )
+
+            # or labels if requested
+            || ( $rOpts->{'outdent-labels'} && $types_to_go[$ibeg] eq 'J' )
+
+            # or static block comments if requested
+            || (   $types_to_go[$ibeg] eq '#'
+                && $rOpts->{'outdent-static-block-comments'}
+                && $tokens_to_go[$ibeg] =~ /$static_block_comment_pattern/o
+                && $rOpts->{'static-block-comments'} )
+        )
       )
+
     {
         my $space_count = leading_spaces_to_go($ibeg);
         if ( $space_count > 0 ) {
             $space_count -= $rOpts_continuation_indentation;
             $is_outdented_line = 1;
             if ( $space_count < 0 ) { $space_count = 0 }
+
+            # do not promote a spaced static block comment to non-spaced;
+            # this is not normally necessary but could be for some
+            # unusual user inputs (such as -ci = -i)
+            if ( $types_to_go[$ibeg] eq '#' && $space_count == 0 ) {
+                $space_count = 1;
+            }
 
             if ($rOpts_line_up_parentheses) {
                 $indentation =
@@ -17693,7 +17748,7 @@ sub reset_indentation_level {
         'qx' => "",
     );
 
-    # tably showing how many quoted things to look for after quote operator..
+    # table showing how many quoted things to look for after quote operator..
     # s, y, tr have 2 (pattern and replacement)
     # others have 1 (pattern only)
     my %quote_items = (
@@ -18621,31 +18676,6 @@ EOM
 # information for the current token, and the string
 # "$ci_string_in_tokenizer" is a stack of previous values of this
 # variable.
-# 
-# If no breaks are made just after a secondary structure, this method 
-# will give ci where it really isn't required.  For example,
-# 
-#     my $str = join ( " ", map {
-#        /\n/ ? do { my $n = $_; $n =~ tr/\n/ /; $n }
-#        : $_;
-#       } @_ ) . "\015\012";
-# 
-# Here, there is no break after the first '(', so the second line gets
-# ci + one indent, but it would look ok without the ci.  However, the
-# extra ci does no harm.
-# 
-# This logic works well, but it is still incomplete.  A current problem is
-# that the ci logic does not propagate down hierarchically through
-# consecutive non-structural bracing.  More work needs to be done to
-# improve the formatting in this case.  The next step in development along
-# these lines will be to define parens following a comma, in LIST context,
-# to be structural.  Here is an example of two levels of non-structural
-# indentation, but only single continuation-indentation
-# 
-#    $deps = control_fields(
-#      ( "Pre-Depends", "Depends",  "Recommends", "Suggests",
-#      "Conflicts",     "Provides" )
-#    );
 # 
 # =cut
 
@@ -19890,10 +19920,10 @@ sub find_angle_operator_termination {
             # fooled.
             my $pos = pos($input_line);
 
-            ######################################debug#####
             my $pos_beg = $$rtoken_map[$i];
             my $str     = substr( $input_line, $pos_beg, ( $pos - $pos_beg ) );
 
+            ######################################debug#####
             #write_diagnostics( "ANGLE? :$str\n");
             #print "ANGLE: found $1 at pos=$pos\n";
             ######################################debug#####
@@ -22100,7 +22130,7 @@ to perltidy.
 
 =head1 VERSION
 
-This man page documents Perl::Tidy version 20020416.
+This man page documents Perl::Tidy version 20020425.
 
 =head1 AUTHOR
 

@@ -1,15 +1,3 @@
-        if (
-             $type_sequence_to_go[$iend]
-             && !$block_type_to_go[$iend]
-             && $is_opening_token{$token_end}
-             && (
-                  $opening_vertical_tightness{$token_end} > 0
-                  || (    $rOpts_line_up_parentheses
-                       && $token_end eq '('
-                       && $iend > $ibeg
-                       && $types_to_go[ $iend - 1 ] ne 'b' )
-             )
-          )
 Perltidy TODO List
     This is a "wish-list" of features to add and things to do. All of these
     are of interest, but there is no particular schedule for implementing

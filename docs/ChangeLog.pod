@@ -5,8 +5,21 @@
  suggested improvement, please send a note to perltidy at
  users.sourceforge.net.  
 
-=head2 2002 xx xx 
+=head2 2002 xx xx
+
+ -Updated rules for padding logical expressions to include more cases.
+  Thanks to Wolfgang Weisselberg for helpful discussions.
+
+ -Added new flag -osbc (--outdent-static-block-comments) which will
+  outdent static block comments by 2 spaces (or whatever -ci equals).
+  Requested by Jon Robison.
+
+=head2 2002 04 25
  
+ -Corrected a bug, introduced in the previous release, in which some
+  closing side comments (-csc) could have incorrect text.  This is
+  annoying but will be correct the next time perltidy is run with -csc.
+
  -Implemented XHTML patch submitted by Ville Skyttä.
 
  -Fixed bug where whitespace was being removed between 'Bar' and '()' 
@@ -16,23 +29,37 @@
 
   Thanks to Ville Skyttä for reporting this.
 
- -Corrected a bug in which some closing side comments (-csc) could be
-  incorrect.  The comments will be correct the next time perltidy is run 
-  with -csc.
-
  -Whenever possible, if a logical expression is broken with leading
   '&&', '||', 'and', or 'or', then the leading line will be padded
   with additional space to produce alignment.  This has been on the
   todo list for a long time; thanks to Frank Steinhauer for reminding
-  me to do it.
+  me to do it.  Notice the first line after the open parens here:
 
-    OLD:
-    if ( $q->user_agent('Nokia6210')
-        || $q->user_agent('Nokia6250') )
+        OLD: perltidy -lp
+        if (
+             !param("rules.to.$linecount")
+             && !param("rules.from.$linecount")
+             && !param("rules.subject.$linecount")
+             && !(
+                   param("rules.fieldname.$linecount")
+                   && param("rules.fieldval.$linecount")
+             )
+             && !param("rules.size.$linecount")
+             && !param("rules.custom.$linecount")
+          )
 
-    NEW:
-    if (   $q->user_agent('Nokia6210')
-        || $q->user_agent('Nokia6250') )
+        NEW: perltidy -lp
+        if (
+                !param("rules.to.$linecount")
+             && !param("rules.from.$linecount")
+             && !param("rules.subject.$linecount")
+             && !(
+                      param("rules.fieldname.$linecount")
+                   && param("rules.fieldval.$linecount")
+             )
+             && !param("rules.size.$linecount")
+             && !param("rules.custom.$linecount")
+          )
 
 =head2 2002 04 16
 

@@ -926,6 +926,11 @@ FORMATTING OPTIONS
             comments, so it must enable a valid regular expression to be
             formed.
 
+        -osbc, --outdent-static-block-comments
+            The command -osbc will will cause static block comments to be
+            outdented by 2 spaces (or whatever -ci=n has been set to), if
+            possible.
+
     Static Side Comments
         Static side comments are side comments with a special leading
         pattern. This option can be useful for controlling how commented
@@ -1944,7 +1949,7 @@ SEE ALSO
     perlstyle(1), Perl::Tidy(3)
 
 VERSION
-    This man page documents perltidy version 20020416.
+    This man page documents perltidy version 20020425.
 
 CREDITS
     Michael Cartmell supplied code for adaptation to VMS and helped with

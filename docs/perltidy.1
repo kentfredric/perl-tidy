@@ -130,7 +130,7 @@
 .\" ========================================================================
 .\"
 .IX Title "PERLTIDY 1"
-.TH PERLTIDY 1 "2002-04-16" "perl v5.6.1" "User Contributed Perl Documentation"
+.TH PERLTIDY 1 "2002-05-13" "perl v5.6.1" "User Contributed Perl Documentation"
 .UC
 .SH "NAME"
 perltidy \- a perl script indenter and reformatter
@@ -1110,6 +1110,10 @@ block comments; it will not be used unless the switch \fB\-sbc\fR is set.  Also,
 please be aware that this string is used in a perl regular expression which
 identifies these comments, so it must enable a valid regular expression to be
 formed.
+.IP "\fB\-osbc\fR, \fB\-\-outdent\-static\-block\-comments\fR" 4
+.IX Item "-osbc, --outdent-static-block-comments"
+The command \fB\-osbc\fR will will cause static block comments to be outdented by 2
+spaces (or whatever \fB\-ci=n\fR has been set to), if possible.
 .RE
 .RS 4
 .RE
@@ -2195,7 +2199,7 @@ confusing filenames such as \fIsomefile.tdy.tdy.tdy\fR.
 \&\fIperlstyle\fR\|(1), \fIPerl::Tidy\fR\|(3)
 .SH "VERSION"
 .IX Header "VERSION"
-This man page documents perltidy version 20020416.
+This man page documents perltidy version 20020425.
 .SH "CREDITS"
 .IX Header "CREDITS"
 Michael Cartmell supplied code for adaptation to \s-1VMS\s0 and helped with

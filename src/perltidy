@@ -1052,6 +1052,11 @@ please be aware that this string is used in a perl regular expression which
 identifies these comments, so it must enable a valid regular expression to be
 formed.
 
+=item B<-osbc>, B<--outdent-static-block-comments>
+
+The command B<-osbc> will will cause static block comments to be outdented by 2
+spaces (or whatever B<-ci=n> has been set to), if possible.
+
 =back
 
 =item Static Side Comments
@@ -2200,7 +2205,7 @@ perlstyle(1), Perl::Tidy(3)
 
 =head1 VERSION
 
-This man page documents perltidy version 20020416.
+This man page documents perltidy version 20020425.
 
 =head1 CREDITS
 
