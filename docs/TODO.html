@@ -14,16 +14,13 @@
 	<LI><A HREF="#perltidy todo list">Perltidy TODO List</A></LI>
 	<UL>
 
+		<LI><A HREF="#improved : formatting">improved ?: formatting</A></LI>
 		<LI><A HREF="#improved vertical alignment">Improved Vertical Alignment</A></LI>
 		<LI><A HREF="#fix numerous little formatting issues">Fix numerous little formatting issues</A></LI>
-		<LI><A HREF="#bugs">BUGS</A></LI>
-		<LI><A HREF="#outdent block comments as a group">Outdent block comments as a group</A></LI>
-		<LI><A HREF="#improved : formatting">improved ?: formatting</A></LI>
 		<LI><A HREF="#xml output">XML Output</A></LI>
 		<LI><A HREF="#documentation">Documentation</A></LI>
 		<LI><A HREF="#html writer">HTML writer</A></LI>
 		<LI><A HREF="#tokenization issues">Tokenization issues</A></LI>
-		<LI><A HREF="#option to reformat block comments">Option to reformat block comments</A></LI>
 	</UL>
 
 </UL>
@@ -36,35 +33,25 @@
 are of interest, but there is no particular schedule for implementing
 them.</P>
 <P>
-<H2><A NAME="improved vertical alignment">Improved Vertical Alignment</A></H2>
-<P>Coding modifications are underway to improve the vertical alignment
-logic.</P>
-<P>
-<H2><A NAME="fix numerous little formatting issues">Fix numerous little formatting issues</A></H2>
-<P>There is, and always will be, a large number of relatively minor
-formatting issues that need to be addressed.</P>
-<P>
-<H2><A NAME="bugs">BUGS</A></H2>
-<P>There are still a couple of bugs listed in the BUGS file that need
-to be fixed.  These are low priority compared to formatting
-issues, but need to be done.</P>
-<P>
-<H2><A NAME="outdent block comments as a group">Outdent block comments as a group</A></H2>
-<P>At present, the decision to outdent a long block comment, when that
-option is used, is made on a line-by-line basis.  Instead, the decision
-should be made for a sequence of comments as a group, so that the result
-is not ragged.</P>
-<P>
 <H2><A NAME="improved : formatting">improved ?: formatting</A></H2>
-<P>An indentation level will be associated with ?: statements.
+<P>An indentation level should be associated with ?: statements.
 This will make nested ?: statements more readable.</P>
 <P>
+<H2><A NAME="improved vertical alignment">Improved Vertical Alignment</A></H2>
+<P>Improved vertical alignment has been on the list for some time.  It's
+important, but I need a good sized block of coding time to get
+it done because it is very tedious.</P>
+<P>
+<H2><A NAME="fix numerous little formatting issues">Fix numerous little formatting issues</A></H2>
+<P>There is, and always will be, a large number of other relatively minor
+formatting issues that need to be addressed.</P>
+<P>
 <H2><A NAME="xml output">XML Output</A></H2>
-<P>A -xml option is being tested.  This will allow the creation of simple
-utilities to reliably manipulate perl code.</P>
+<P>A -xml option would allow the creation of simple utilities to reliably
+manipulate perl code.</P>
 <P>
 <H2><A NAME="documentation">Documentation</A></H2>
-<P>A FAQ is being written to explain some of the more subtle formatting
+<P>A FAQ is needed to explain some of the more subtle formatting
 issues, and to give examples of different styles.</P>
 <P>The tokenizer needs extensive documentation before it can be released as
 a separate module.</P>
@@ -99,16 +86,6 @@ However, this should be done eventually for correctness.</P>
 names.  It needs to be implemented; I've patched around this in the html
 writer for now.  I'm considering new token types for prototypes and
 attributes, to simplify parsing and formatting.</P>
-<P>
-<H2><A NAME="option to reformat block comments">Option to reformat block comments</A></H2>
-<P>I'm looking into an option to use Text::Autoformat to reformat comments.
-Thanks to Tim Maher for this suggestion.  I made some preliminary tests
-on code from a variety of sources and decided that this is probably best
-left for an interactive tool, something like a spelling checker, which
-would walk through a file looking for groups of comments, and present a
-proposed a reformatting to the user with a Y/N response request.</P>
-<P>One way to do this would be to first implement the XML feature mentioned
-above, and then write a separate utility to read and process the XML.</P>
 
 </BODY>
 

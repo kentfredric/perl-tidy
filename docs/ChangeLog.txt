@@ -4,7 +4,7 @@ Perltidy Change Log
      suggested improvement, please send a note to perltidy at
      users.sourceforge.net.  
 
-  2002 xx xx
+  2002 11 05
      -Switch/case or given/when syntax is now recognized.  Its vertical alignment
      is not great yet, but it parses ok.  The words 'switch', 'case', 'given', and
      'when' are now treated as keywords.  If this causes trouble with older code,
@@ -14,17 +14,16 @@ Perltidy Change Log
      -Corrected error parsing sub attributes with call parameters.
      Thanks to Marc Kerr for catching this.
 
-     -Sub prototypes no longer need to be on the same line as sub names.  This
-     was required in perl 5 but not perl 6.
-
-     -The new default for -html formatting is to pass the pod through Pod::Html.
-     The result is syntax colored code within your pod documents. This can be
-     deactivated with -npod.  Thanks to all who have written to discuss this,
-     particularly Mark Olesen and Hugh Myers.
+     -Sub prototypes no longer need to be on the same line as sub names.  
 
      -a new flag -frm or --frames will cause html output to be in a
      frame, with table of contents in the left panel and formatted source
      in the right panel.  Try 'perltidy -html -frm somemodule.pm' for example.
+
+     -The new default for -html formatting is to pass the pod through Pod::Html.
+     The result is syntax colored code within your pod documents. This can be
+     deactivated with -npod.  Thanks to those who have written to discuss this,
+     particularly Mark Olesen and Hugh Myers.
 
      -the -olc (--outdent-long-comments) option works much better.  It now outdents
      groups of consecutive comments together, and by just the amount needed to
@@ -55,7 +54,7 @@ Perltidy Change Log
      -default color for keywords under -html changed from 
      SaddleBrown (#8B4513) to magenta4 (#8B008B).
 
-     -fixed a glitch in which something like:
+     -fixed an arg parsing glitch in which something like:
        perltidy quick-help
      would trigger the help message and exit, rather than operate on the
      file 'quick-help'.

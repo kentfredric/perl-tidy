@@ -130,7 +130,7 @@
 .\" ========================================================================
 .\"
 .IX Title "PERLTIDY 1"
-.TH PERLTIDY 1 "2002-10-28" "perl v5.6.1" "User Contributed Perl Documentation"
+.TH PERLTIDY 1 "2002-11-05" "perl v5.6.1" "User Contributed Perl Documentation"
 .UC
 .SH "NAME"
 perltidy \- a perl script indenter and reformatter
@@ -590,7 +590,7 @@ It may, however, be used with the \fB\-et=n\fR tab method.
 In addition, any parameter which significantly restricts the ability of
 perltidy to choose newlines will conflict with \fB\-lp\fR and will cause
 \&\fB\-lp\fR to be deactivated.  These include \fB\-io\fR, \fB\-fnl\fR, \fB\-nanl\fR, and
-\&\fB\-ndnl\fR.  The reason is that the \fB\-lp\fR indenation style can require
+\&\fB\-ndnl\fR.  The reason is that the \fB\-lp\fR indentation style can require
 the careful coordination of an arbitrary number of break points in
 hierarchical lists, and these flags may prevent that.
 .IP "\fB\-icp\fR, \fB\-\-indent\-closing\-paren\fR" 4
@@ -2032,23 +2032,32 @@ There are two options for formatting pod documentation.  The default is
 to pass the pod through the Pod::Html module (which forms the basis of
 the pod2html utility).  Any code sections are formatted by perltidy, and
 the results then merged.  Note: perltidy creates a temporary file when
-Pod::Html is used; see \s-1FILES\s0.  Also, Pod::Html creates temporary
+Pod::Html is used; see \*(L"\s-1FILES\s0\*(R".  Also, Pod::Html creates temporary
 files for its cache.
 .Sp
 If there is a single pod text section (one =cut line), the pod text will
 be at the top of the html output and the perl code will follow.
 Otherwise, the order of pod text and perl code will be unchanged.
 .Sp
-All of the flags accepted by pod2html may be included in the perltidy
-command line, and they will be passed to pod2html.  These include
+Most of the flags accepted by pod2html may be included in the perltidy
+command line, and they will be passed to pod2html.  In some cases,
+the flags have a prefix \f(CW\*(C`pod\*(C'\fR to emphasize that they are for the
+pod2html, and this prefix will be removed before they are passed to
+pod2html.  The flags which have the additional \f(CW\*(C`pod\*(C'\fR prefix are:
 .Sp
-.Vb 3
-\&   --backlink=s --cachedir=s --htmlroot=s --libpods=s --title=s --css=s
-\&   --podpath=s --podroot=s --[no]header --[no]index --[no]recurse
-\&   --flush
+.Vb 2
+\&   --[no]podheader --[no]podindex --[no]podrecurse --[no]podquiet 
+\&   --[no]podverbose --podflush
 .Ve
-where 's' is an appropriate character string. See Pod::Html for more
-information.
+The flags which are unchanged from their use in pod2html are:
+.Sp
+.Vb 2
+\&   --backlink=s --cachedir=s --htmlroot=s --libpods=s --title=s
+\&   --podpath=s --podroot=s
+.Ve
+where 's' is an appropriate character string.  Not all of these flags are
+available in older versions of Pod::Html.  See your Pod::Html documentation for
+more information.
 .Sp
 The alternative, indicated with \fB\-npod\fR, is not to use Pod::Html, but
 rather to format pod text in italics (or whatever the stylesheet
@@ -2319,7 +2328,7 @@ purpose of this rule is to prevent generating confusing filenames such as
 \&\fIperlstyle\fR\|(1), \fIPerl::Tidy\fR\|(3)
 .SH "VERSION"
 .IX Header "VERSION"
-This man page documents perltidy version 20020922.
+This man page documents perltidy version 20021105.
 .SH "CREDITS"
 .IX Header "CREDITS"
 Michael Cartmell supplied code for adaptation to \s-1VMS\s0 and helped with

@@ -61,7 +61,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.32 2002/11/05 17:47:16 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.33 2002/11/06 23:27:13 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 sub streamhandle {
@@ -560,7 +560,7 @@ EOM
                     my ( $base, $old_path ) = fileparse($fileroot);
                     my $new_path = $rOpts->{'output-path'};
                     unless ( -d $new_path ) {
-                        unless ( mkdir $new_path ) {
+                        unless ( mkdir $new_path, 0777 ) {
                             die "unable to create directory $new_path: $!\n";
                         }
                     }
@@ -4679,9 +4679,10 @@ sub write_line {
                         # leave a marker in the pod stream so we know
                         # where to put the pre section we just
                         # finished.
+                        my $for_html='=for html'; # don't confuse pod utils
                         $html_pod_fh->print(<<EOM);
 
-=for html
+$for_html
 <!-- pERLTIDY sECTION -->
 
 EOM
@@ -7605,7 +7606,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.32 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.33 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -20403,8 +20404,8 @@ sub label_ok {
     }
 
     # otherwise, it is a label if and only if it follows a ';'
+    # (real or fake)
     else {
-        ##return ( $last_nonblank_token eq ';' );
         return ( $last_nonblank_type eq ';' );
     }
 }
@@ -23568,7 +23569,7 @@ to perltidy.
 
 =head1 VERSION
 
-This man page documents Perl::Tidy version 20020922.
+This man page documents Perl::Tidy version 20021105.
 
 =head1 AUTHOR
 

@@ -435,7 +435,7 @@ FORMATTING OPTIONS
         In addition, any parameter which significantly restricts the ability
         of perltidy to choose newlines will conflict with -lp and will cause
         -lp to be deactivated. These include -io, -fnl, -nanl, and -ndnl.
-        The reason is that the -lp indenation style can require the careful
+        The reason is that the -lp indentation style can require the careful
         coordination of an arbitrary number of break points in hierarchical
         lists, and these flags may prevent that.
 
@@ -1787,23 +1787,30 @@ HTML OPTIONS
         is to pass the pod through the Pod::Html module (which forms the
         basis of the pod2html utility). Any code sections are formatted by
         perltidy, and the results then merged. Note: perltidy creates a
-        temporary file when Pod::Html is used; see FILES. Also, Pod::Html
+        temporary file when Pod::Html is used; see "FILES". Also, Pod::Html
         creates temporary files for its cache.
 
         If there is a single pod text section (one =cut line), the pod text
         will be at the top of the html output and the perl code will follow.
         Otherwise, the order of pod text and perl code will be unchanged.
 
-        All of the flags accepted by pod2html may be included in the
-        perltidy command line, and they will be passed to pod2html. These
-        include
+        Most of the flags accepted by pod2html may be included in the
+        perltidy command line, and they will be passed to pod2html. In some
+        cases, the flags have a prefix "pod" to emphasize that they are for
+        the pod2html, and this prefix will be removed before they are passed
+        to pod2html. The flags which have the additional "pod" prefix are:
 
-           --backlink=s --cachedir=s --htmlroot=s --libpods=s --title=s --css=s
-           --podpath=s --podroot=s --[no]header --[no]index --[no]recurse
-           --flush
+           --[no]podheader --[no]podindex --[no]podrecurse --[no]podquiet 
+           --[no]podverbose --podflush
 
-        where 's' is an appropriate character string. See Pod::Html for more
-        information.
+        The flags which are unchanged from their use in pod2html are:
+
+           --backlink=s --cachedir=s --htmlroot=s --libpods=s --title=s
+           --podpath=s --podroot=s 
+
+        where 's' is an appropriate character string. Not all of these flags
+        are available in older versions of Pod::Html. See your Pod::Html
+        documentation for more information.
 
         The alternative, indicated with -npod, is not to use Pod::Html, but
         rather to format pod text in italics (or whatever the stylesheet
@@ -2067,7 +2074,7 @@ SEE ALSO
     perlstyle(1), Perl::Tidy(3)
 
 VERSION
-    This man page documents perltidy version 20020922.
+    This man page documents perltidy version 20021105.
 
 CREDITS
     Michael Cartmell supplied code for adaptation to VMS and helped with

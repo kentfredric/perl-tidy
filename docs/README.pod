@@ -1,16 +1,15 @@
 =head1 Welcome to Perltidy!
 
-Perltidy is a tool to indent and reformat perl scripts.
+Perltidy is a tool to indent and reformat perl scripts.  It can also
+write scripts in html format.
 
 Perltidy is free software released under the GNU General Public
 License -- please see the included file "COPYING" for details.
 
 =head1 PREREQUISITES
 
-The main prerequisite is that your version of Perl not be too old.
-
-Perltidy is programmed to work with versions as old as 5.004.  (You
-can find your version with C<perl -v>).  However, some systems this
+Perltidy is programmed to work with versions of Perl as old as 5.004.
+(You can find your version with C<perl -v>).  However, some systems this
 old may have problems, particularly Windows versions.
 
 This this release was successfully tested on a 5.004_04 linux
@@ -22,11 +21,10 @@ detected:
 
   Win32    will be used to help identify a Windows system if detected
   HTML::Entities  will be used to encode HTML entities if detected
+  Pod::Html will be used to format pod text
 
 The total disk space needed after removing the installation directory will
-about 1 Mb.  (If really necessary, this could be reduced to about 320k by
-using perltidy to squeeze itself down using B<perltidy -dac --mangle Tidy.pm>
-.)
+about 1 Mb.  
 
 =head1 DOWNLOAD
 
@@ -44,28 +42,6 @@ A zip file, F<.zip>, with Windows-style <cr><lf> line endings.
 
 =back
 
-
-Here are some things to watch out for:
-
-=over 4
-
-=item *
-
-Be sure to get the file with appropriate line endings.  For example,
-under Unix the pod utilities will not work correctly with Windows line
-endings.
-
-=item *
-
-Some browsers do unwanted transformations to files and filenames during
-download.  You can usually fix things after you figure out what
-happened.  For example, some browsers will decompress the F<.tgz> file
-without changing the file extension.  So if it does not decompress, see
-if it may already be a F<.tar> file.  Under Unix systems, the B<file>
-command can tell the format.
-
-=back
-
 =head1 INSTALLATION
 
 For most standard installations, the standard Makefile.PL method should work:
@@ -75,7 +51,7 @@ For most standard installations, the standard Makefile.PL method should work:
  make test
  make install
 
-But please at least take a quick look at the INSTALL file.
+The INSTALL file has additional installation notes.
 
 =head1 WHAT NEXT
 
@@ -88,19 +64,14 @@ found at http://perltidy.sourceforge.net
 
 Reading the brief tutorial should help you use perltidy effectively.  
 
-Perltidy is still being developed, so please check sourceforge occasionally
-for updates if you find that it is useful.  New releases are announced
-on freshmeat.net.
+Perltidy is still being developed, so please check sourceforge
+occasionally for updates.  New releases are announced on freshmeat.net.
 
 =head1 FEEDBACK / BUG REPORTS
 
-If you see ways to improve this document for the particular system on
-which you install perltidy, please let the me know so that it can be
-updated.
-
 Bug reports, comments and suggestions are welcome.  Attach the smallest
-piece of code which demonstrates the bug or issue, plus a .LOG file 
-if appropriate.  Your efforts are greatly appreciated!
+piece of code which demonstrates the bug or issue.  Your efforts are
+greatly appreciated!
 
 Thank You
 

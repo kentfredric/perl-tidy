@@ -3,36 +3,26 @@ Perltidy TODO List
     are of interest, but there is no particular schedule for implementing
     them.
 
-  Improved Vertical Alignment
-    Coding modifications are underway to improve the vertical alignment
-    logic.
-
-  Fix numerous little formatting issues
-    There is, and always will be, a large number of relatively minor
-    formatting issues that need to be addressed.
-
-  BUGS
-    There are still a couple of bugs listed in the BUGS file that need to be
-    fixed. These are low priority compared to formatting issues, but need to
-    be done.
-
-  Outdent block comments as a group
-    At present, the decision to outdent a long block comment, when that
-    option is used, is made on a line-by-line basis. Instead, the decision
-    should be made for a sequence of comments as a group, so that the result
-    is not ragged.
-
   improved ?: formatting
-    An indentation level will be associated with ?: statements. This will
+    An indentation level should be associated with ?: statements. This will
     make nested ?: statements more readable.
 
+  Improved Vertical Alignment
+    Improved vertical alignment has been on the list for some time. It's
+    important, but I need a good sized block of coding time to get it done
+    because it is very tedious.
+
+  Fix numerous little formatting issues
+    There is, and always will be, a large number of other relatively minor
+    formatting issues that need to be addressed.
+
   XML Output
-    A -xml option is being tested. This will allow the creation of simple
-    utilities to reliably manipulate perl code.
+    A -xml option would allow the creation of simple utilities to reliably
+    manipulate perl code.
 
   Documentation
-    A FAQ is being written to explain some of the more subtle formatting
-    issues, and to give examples of different styles.
+    A FAQ is needed to explain some of the more subtle formatting issues,
+    and to give examples of different styles.
 
     The tokenizer needs extensive documentation before it can be released as
     a separate module.
@@ -67,15 +57,4 @@ Perltidy TODO List
     names. It needs to be implemented; I've patched around this in the html
     writer for now. I'm considering new token types for prototypes and
     attributes, to simplify parsing and formatting.
-
-  Option to reformat block comments
-    I'm looking into an option to use Text::Autoformat to reformat comments.
-    Thanks to Tim Maher for this suggestion. I made some preliminary tests
-    on code from a variety of sources and decided that this is probably best
-    left for an interactive tool, something like a spelling checker, which
-    would walk through a file looking for groups of comments, and present a
-    proposed a reformatting to the user with a Y/N response request.
-
-    One way to do this would be to first implement the XML feature mentioned
-    above, and then write a separate utility to read and process the XML.
 

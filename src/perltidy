@@ -500,7 +500,7 @@ It may, however, be used with the B<-et=n> tab method.
 In addition, any parameter which significantly restricts the ability of
 perltidy to choose newlines will conflict with B<-lp> and will cause
 B<-lp> to be deactivated.  These include B<-io>, B<-fnl>, B<-nanl>, and
-B<-ndnl>.  The reason is that the B<-lp> indenation style can require
+B<-ndnl>.  The reason is that the B<-lp> indentation style can require
 the careful coordination of an arbitrary number of break points in
 hierarchical lists, and these flags may prevent that.
 
@@ -2029,7 +2029,7 @@ There are two options for formatting pod documentation.  The default is
 to pass the pod through the Pod::Html module (which forms the basis of
 the pod2html utility).  Any code sections are formatted by perltidy, and
 the results then merged.  Note: perltidy creates a temporary file when
-Pod::Html is used; see L<FILES>.  Also, Pod::Html creates temporary
+Pod::Html is used; see L<"FILES">.  Also, Pod::Html creates temporary
 files for its cache.
 
 If there is a single pod text section (one =cut line), the pod text will
@@ -2340,7 +2340,7 @@ perlstyle(1), Perl::Tidy(3)
 
 =head1 VERSION
 
-This man page documents perltidy version 20020922.
+This man page documents perltidy version 20021105.
 
 =head1 CREDITS
 
