@@ -4,7 +4,13 @@
  have hit a bug, unusual behavior, annoyance, or have a suggested
  improvement, please send a note to perltidy at users.sourceforge.net.  
 
-=head2 2001 06 25 
+=head2 2001 07 01 
+
+ -the directory of test files has been moved to a separate distribution
+ file because it is getting large but is of little interest to most users.
+ For the current distribution:
+   perltidy-20010701.tgz        contains the source and docs for perltidy
+   perltidy-20010701-test.tgz   contains the test files
 
  -fixed bug where temporary file perltidy.TMPI was not being deleted 
  when input was from stdin.
@@ -17,13 +23,18 @@
  'automake' was used as a guide in setting the parameters; these
  parameters will probably be adjusted over time.
 
+ -an empty code block now has one space for emphasis:
+   if ( $cmd eq "bg_untested" ) {}    # old
+   if ( $cmd eq "bg_untested" ) { }   # new
+ If this bothers anyone, we could create a parameter.
+
  -the -bt (--brace-tightness) parameter has been split into two
  parameters to give more control. -bt now applies only to non-BLOCK
  braces, while a new parameter -bbt (block-brace-tightness) applies to
  curly braces which contain code BLOCKS. The default value is -bbt=1.
 
  -added flag -icp (--indent-closing-paren) which leaves a statment
- termination of the form C<);>, C<};>, or C<];> indented with the same
+ termination of the form );, };, or ]; indented with the same
  indentation as the previous line.  For example,
 
     @month_of_year = (          # default, or -nicp

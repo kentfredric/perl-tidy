@@ -24,7 +24,8 @@ EXAMPLES
       perltidy somefile.pl
 
     This will produce a file somefile.pl.tdy containing the script
-    reformatted using the default options.
+    reformatted using the default options, which approximate the style
+    suggested in perlstyle(1). Perltidy never changes the input file.
 
       perltidy *.pl
 
@@ -33,30 +34,30 @@ EXAMPLES
     extension. For any file with an error, there will be files with
     extensions .ERR and .LOG.
 
+      perltidy -gnu somefile.pl
+
+    Execute perltidy on file somefile.pl with a style which approximates the
+    GNU Coding Standards for C programs. The output will be somefile.pl.tdy.
+
       perltidy -i=3 somefile.pl
 
     Execute perltidy on file somefile.pl, with 3 columns for each level of
-    indentation (instead of the default 4 columns). There will not be any
-    tabs in the reformatted script, except for any which already exist in
-    comments, pod documents, quotes, and here documents. Output will be
+    indentation (-i=3) instead of the default 4 columns. There will not be
+    any tabs in the reformatted script, except for any which already exist
+    in comments, pod documents, quotes, and here documents. Output will be
     somefile.pl.tdy.
 
       perltidy -i=3 -t somefile.pl
 
     Same as the previous example, except that each set of 3 columns of
-    indentation will be represented by one leading tab character.
+    indentation (-i=3) will be represented by one leading tab character
+    (-t).
 
       perltidy -ce -l=72 somefile.pl
 
     Execute perltidy on file somefile.pl with all defaults except use
-    "cuddled elses" and a maximum line length of 72 columns (instead of the
-    default 80 columns).
-
-      perltidy -io somefile.pl
-
-    Execute perltidy on file somefile.pl but restrict changes to
-    "indentation only", which means that existing line breaks and whitespace
-    will be unchanged.
+    "cuddled elses" (-ce) and a maximum line length of 72 columns (-l=72)
+    instead of the default 80 columns.
 
       perltidy -g somefile.pl
 
@@ -250,19 +251,27 @@ OPTIONS
         default, there is a space unless the quantity within the parens is a
         single token, such as an identifier or quoted string.
 
-        Likewise, the parameter -bt=n or --brace-tightness=n controls the
-        space within curly braces, as illustrated in the example below.
-
-         if ( $Opts{ help } ) { usage(); exit 1; }    # -bt=0
-         if ( $Opts{help} ) { usage(); exit 1; }      # -bt=1 (default)
-         if ( $Opts{help} ) {usage(); exit 1;}        # -bt=2
-
-        And finally, the parameter -sbt=n or --square-bracket-tightness
+        Likewise, the parameter -sbt=n or --square-bracket-tightness
         controls the space within square brackets, as illustrated below.
 
          $width = $col[ $j + $k ] - $col[ $j ];  # -sbt=0
          $width = $col[ $j + $k ] - $col[$j];    # -sbt=1 (default)
          $width = $col[$j + $k] - $col[$j];      # -sbt=2 
+
+        Curly braces which do not contain code blocks are controlled by the
+        parameter -bt=n or --brace-tightness=n.
+
+         $obj->{ $parsed_sql->{ 'table' }[0] };    # -bt=0
+         $obj->{ $parsed_sql->{'table'}[0] };      # -bt=1 (default)
+         $obj->{$parsed_sql->{'table'}[0]};        # -bt=2
+
+        And finally, curly braces which contain blocks of code are
+        controlled by the parameter -bbt=n or --block-brace-tightness=n as
+        illustrated in the example below.
+
+         %bf = map { $_ => -M $_ } grep { /\.deb$/ } dirents '.'; # -bbt=0 (default)
+         %bf = map { $_ => -M $_ } grep {/\.deb$/} dirents '.';   # -bbt=1
+         %bf = map {$_ => -M $_} grep {/\.deb$/} dirents '.';     # -bbt=2
 
     -ci=n, --continuation-indentation=n
         Continuation indentation is extra indentation spaces applied when a
@@ -310,6 +319,16 @@ OPTIONS
         In addition, any parameter which restricts the ability of perltidy
         to choose newlines will all conflict with -lp and will cause -lp to
         be deactivated. These include -io, -fnl, -nanl, and -ndnl.
+
+    -icp, --indent-closing-paren
+        The -icp option leaves a list-termination line of the form ");",
+        "};", or "];" indented with the same indentation as the previous
+        line. The previous example with -icp would give,
+
+            @month_of_year = (          # -icp
+                'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct',
+                'Nov', 'Dec'
+                );
 
     -ibc, --indent-block-comments
         Block comments, meaning full-line comments, normally look best when
@@ -621,6 +640,16 @@ OPTIONS
         curly braces, which should be controlled with the parameter bl
         provided for that purpose.
 
+  Styles
+
+    -gnu, --gnu-style
+        -gnu gives an approximation to the GNU Coding Standards (which do
+        not apply to perl) as they are sometimes implemented. At present,
+        this style overrides the default style with the following
+        parameters:
+
+            -lp -bl -noll -pt=2 -bt=2 -sbt=2 -icp
+
   Other Controls
 
     Writing selected text to a file
@@ -743,7 +772,16 @@ OPTIONS
         section of code to force a list to have a particular number of
         fields per line, and then a single comment could be introduced
         somewhere to freeze the formatting in future applications of
-        perltidy.
+        perltidy, like this:
+
+            @month_of_year = (    # -mft=2
+                'Jan', 'Feb',
+                'Mar', 'Apr',
+                'May', 'Jun',
+                'Jul', 'Aug',
+                'Sep', 'Oct',
+                'Nov', 'Dec'
+            );
 
         Vertical alignment refers to lining up similar tokens vertically,
         like this:
@@ -914,7 +952,7 @@ SEE ALSO
     perl2web(1), perlstyle(1)
 
 VERSION
-    This man page documents perltidy version 20010625.
+    This man page documents perltidy version 20010701.
 
 AUTHOR
       Steven L. Hancock

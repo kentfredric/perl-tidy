@@ -1,17 +1,19 @@
 Perltidy TODO List
     This is a "wish-list" of features to add and things to do.
 
-  Clean up a few -lp issues
+  Fix numerous little formatting issues
 
-    The new -lp feature seems to be working well, but there are a few
-    situations where it might be improved. In particular, it needs to be
-    updated to handle lists following certain perl keywords.
+    There is (and always will be) a large backlog of little formatting
+    issues in which the formatting could be better. These are things like
+    improving line break choices and improving vertical alignment. I'm
+    working on them as time permits, with priority given to items that are
+    of interest to perltidy users.
 
-  Add more formatting options
+  BUGS
 
-    Although there are many options already, there is still a need for more
-    options to help programmers match particular styles. An example would be
-    the manner in which terminal parens of lists are handled.
+    There are still a couple of bugs listed in the BUGS file that need to be
+    fixed. These are low priority compared to formatting issues, but need to
+    be done.
 
   Automated testing
 
@@ -23,19 +25,14 @@ Perltidy TODO List
     A FAQ or maybe COOKBOOK needs to be written, to explain some of the more
     subtle formatting issues.
 
-  BUGS
-
-    There are still a couple of bugs listed in the BUGS file that need to be
-    addressed. These are low priority, but need to be done.
-
   Tokenization issues
 
     It would be nice to introduce some more token types, such as procedure
     calls, so that they can be given separate colors in html files.
 
     There are some subtle issues with distinguishing block types that should
-    eventually be addressed to make the tokenizer more correct, even though
-    they do not interfere with code beautification.
+    be addressed to make the tokenizer more correct, even though they do not
+    interfere with code beautification.
 
   Modularization
 

@@ -8,6 +8,13 @@ Welcome to perltidy!
     systems and a zip file, .zip for Windows. The only differences is that
     the line endings have been changed to <cr><lf> for the Windows version.
 
+    Besides the source distribution files, a set of test files is available
+    in a separate package (but there is not automated test procedure yet).
+    These are distributed separately because they will not be of interest to
+    the average user. If you do want the test files, you should untar or
+    unzip them at the same directory that you untar or unzip the source
+    files.
+
     Please see the ChangeLog for notices of any recent updates.
 
   Installation - Unix
@@ -24,7 +31,8 @@ Welcome to perltidy!
     illustrates what perltidy does.
 
     Perltidy does not require any special modules. We just have to get the
-    script in your path and, optionally, install two man pages.
+    script in your path and, optionally, install two man pages. You probably
+    know the routine:
 
     1. If the script is not executable, use
 
@@ -135,7 +143,7 @@ Welcome to perltidy!
     Please see the ChangeLog for details. The most serious bugs that have
     been reported are as follows:
 
-    Release 20010608 had a bug with the -t option in which a -t would be
+    Release 20010608 had a bug with the -t option in which a tab would be
     added before the last line of a multiline quote or pattern. Scripts
     formatted with -t on this version should be run once with the -chk
     option to see if this might have happened.

@@ -1,6 +1,6 @@
 =head1 Welcome to perltidy!
 
-Perltidy is a tool to indent and reformat perl scripts.  
+Perltidy is a tool to indent and reformat perl scripts. 
 
 Perltidy is free software released under the GNU General Public
 License -- please see the included file "LICENSE" for details.
@@ -9,6 +9,12 @@ There are two source distribution files, a F<.tgz> "tarball" for unix
 systems and a zip file, F<.zip> for Windows.  The only differences is
 that the line endings have been changed to <cr><lf> for the Windows
 version.
+
+Besides the source distribution files, a set of test files is available
+in a separate package (but there is not automated test procedure yet).
+These are distributed separately because they will not be of interest to
+the average user.  If you do want the test files, you should untar or
+unzip them at the same directory that you untar or unzip the source files.
 
 Please see the ChangeLog for notices of any recent updates.
 
@@ -26,7 +32,8 @@ has added indentation, whitespace, and line breaks.  This simple example
 illustrates what perltidy does.
 
 Perltidy does not require any special modules.  We just have to get the
-script in your path and, optionally, install two man pages.
+script in your path and, optionally, install two man pages.  You probably
+know the routine:
 
 1. If the script is not executable, use 
 
@@ -139,7 +146,7 @@ Information on running perl under VMS can be found at:
 Please see the ChangeLog for details.  The most serious bugs that have
 been reported are as follows:
 
-Release 20010608 had a bug with the -t option in which a -t
+Release 20010608 had a bug with the -t option in which a tab
 would be added before the last line of a multiline quote or pattern.
 Scripts formatted with -t on this version should be run once with
 the -chk option to see if this might have happened.
@@ -167,7 +174,6 @@ became
 The result is that perl then considers 'usage' to be a filehandle.
 To fix this, just rerun with the latest version of perltidy.  It will
 look for this situation and issue a warning.
-
 
 =head1 WHAT NEXT
 

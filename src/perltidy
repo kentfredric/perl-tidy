@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'CVS';
-    $Id: perltidy,v 1.11 2001/06/30 06:19:59 perltidy Exp $
+    $Id: perltidy,v 1.12 2001/07/01 04:22:48 perltidy Exp $
 CVS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -696,7 +696,7 @@ sub process_command_line {
         ],
 
         # (experimental) stricter match to perlstyle(1)
-        'camel' => [ "wba='<< >> && || .'" ],
+        'camel' => ["wba='<< >> && || .'"],
 
         # this style tries to follow the GNU Coding Standards (which do
         # not really apply to perl but which are followed by some perl
@@ -3107,11 +3107,10 @@ sub set_leading_whitespace {
           # or this is a closing structure
           || $type =~ /^[\}]$/
 
-          # or this is after an equality after a closing structure
-
-          # TESTING- reactivated
-          || ( $last_nonblank_type =~ /^[=]/ && $last_nonblank_type ne '=>'
-          && ( $last_last_nonblank_type =~ /^[\}\)\]]$/ ) ) )
+          # or this is after an assignment after a closing structure
+          || ( $last_nonblank_type =~ /=/
+          && $last_nonblank_type !~ /(==|!=|>=|<=|=~|=>)/
+          && $last_last_nonblank_type =~ /^[\}\)\]]$/ ) )
 
         {
             check_for_long_gnu_style_lines();
@@ -4377,8 +4376,10 @@ sub print_line_of_tokens {
             note_embedded_tab();
         }
 
-        # trim blanks from right of side comments and 'q' quotes
-        # (This could become an option if necessary)
+        # trim blanks from right of side comments and qw quotes
+        # (To avoid trimming qw quotes use -ntqw. There is no way
+        # at present to avoid trimming comments, but it could be an
+        # option)
         if ( $type =~ /^[#q]$/ ) {
             $token =~ s/\s*$//;
         }
@@ -5659,7 +5660,7 @@ sub set_bond_strengths {
 
         # make these a little weaker than nominal so that they get
         # favored for end-of-line characters
-        @tmp = qw"!= == >= <= =~ !~";
+        @tmp = qw"!= == =~ !~";
         @left_bond_strength{@tmp}  = (STRONG) x scalar(@tmp);
         @right_bond_strength{@tmp} =
           ( 0.9 * NOMINAL + 0.1 * WEAK ) x scalar(@tmp);
@@ -6390,7 +6391,8 @@ which is not as nice.
             next;
         }
 
-        if ( $type eq '=' ) {
+        # remember location of any of the assignment operators
+        if ( $type =~ /=/ && $type !~ /(==|!=|>=|<=|=~|=>)/ ) {
             $last_equals_index[$depth] = $i;
         }
 
@@ -14102,8 +14104,9 @@ BEGIN {
     );
     push ( @Keywords, @special_keywords );
 
-    # List of keywords after which a list is accepted.
-    # FIXME: still needs to be filled in 
+    # List of keywords after which a list is accepted:
+    # FIXME: this list needs to be filled in to allow lists
+    # after certain keywords to be formatted nicely
     my @keyword_taking_list = qw(
       sprintf
     );

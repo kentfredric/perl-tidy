@@ -41,14 +41,15 @@ uninstall:
 # I've removed pods because they waste space and can be obtained from CVS
 ###############################################################
 
-VERSION=20010625
+VERSION=20010701
 PROG=$(PROGRAM)-$(VERSION)
+PROGTEST=$(PROGRAM)-$(VERSION)-test
 TMPDIR=/tmp/$(PROG)
 dist:
 	(cd ../docs; make)
 	# cp ../perltidy.pl perltidy
 	mkdir $(TMPDIR)
-	mkdir $(TMPDIR)/test
+	#mkdir $(TMPDIR)/test
 	mkdir $(TMPDIR)/docs
 	cp ../src/perltidy $(TMPDIR)
 	cp lextest.pl $(TMPDIR)
@@ -58,7 +59,7 @@ dist:
 	cp ../docs/COPYING $(TMPDIR)
 	cp ../docs/perl2web.1 $(TMPDIR)
 	cp ../docs/perltidy.1 $(TMPDIR)
-	cp ../test/*.t $(TMPDIR)/test
+	#cp ../test/*.t $(TMPDIR)/test
 	cp ../docs/perltidy.pod $(TMPDIR)/docs
 	cp ../docs/perl2web.pod $(TMPDIR)/docs
 	cp ../docs/tutorial.pod $(TMPDIR)/docs
@@ -78,12 +79,24 @@ dist:
 	cp ../docs/TODO.txt $(TMPDIR)/docs
 	(cd $(TMPDIR)/..; \
 	    tar cfz /tmp/$(PROG).tgz $(PROG))
+	mv /tmp/$(PROG).tgz ../archive
 	flipall $(TMPDIR) -m
-	flipall $(TMPDIR)/test -m
+	#flipall $(TMPDIR)/test -m
 	flipall $(TMPDIR)/docs -m
 	(cd $(TMPDIR)/..; \
 	    zip $(PROG).zip $(PROG)/*  $(PROG)/*/*)
+	mv /tmp/$(PROG).zip ../archive
 	rm -rf $(TMPDIR)
+	mkdir $(TMPDIR)
+	mkdir $(TMPDIR)/test
+	cp ../test/*.t $(TMPDIR)/test
+	(cd $(TMPDIR)/..; \
+	    tar cfz /tmp/$(PROGTEST).tgz $(PROG))
+	mv /tmp/$(PROGTEST).tgz ../archive
+	flipall $(TMPDIR)/test -m
+	(cd $(TMPDIR)/..; \
+	    zip $(PROGTEST).zip $(PROG)/test/*  )
+	mv /tmp/$(PROGTEST).zip ../archive
 
 .PHONY: docs
 

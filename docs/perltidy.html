@@ -22,6 +22,7 @@
 		<LI><A HREF="#basic options">Basic Options</A></LI>
 		<LI><A HREF="#whitespace control">Whitespace Control</A></LI>
 		<LI><A HREF="#line break control">Line Break Control</A></LI>
+		<LI><A HREF="#styles">Styles</A></LI>
 		<LI><A HREF="#other controls">Other Controls</A></LI>
 	</UL>
 
@@ -65,7 +66,8 @@ which are described in <A HREF="#options">OPTIONS</A>.</P>
 <PRE>
   perltidy somefile.pl</PRE>
 <P>This will produce a file <EM>somefile.pl.tdy</EM> containing the script reformatted
-using the default options.</P>
+using the default options, which approximate the style suggested in 
+perlstyle(1).  Perltidy never changes the input file.</P>
 <PRE>
   perltidy *.pl</PRE>
 <P>Execute perltidy on all .pl files in the current directory with the
@@ -73,25 +75,24 @@ default options.  The output will be in files with an appended <EM>.tdy</EM>
 extension.  For any file with an error, there will be files with extensions
 <EM>.ERR</EM> and <EM>.LOG</EM>.</P>
 <PRE>
+  perltidy -gnu somefile.pl</PRE>
+<P>Execute perltidy on file <EM>somefile.pl</EM> with a style which approximates the
+GNU Coding Standards for C programs.  The output will be <EM>somefile.pl.tdy</EM>.</P>
+<PRE>
   perltidy -i=3 somefile.pl</PRE>
-<P>Execute perltidy on file <EM>somefile.pl</EM>, with 3 columns for each
-level of indentation (instead of the default 4 columns).  There will not
-be any tabs in the reformatted script, except for any which already
-exist in comments, pod documents, quotes, and here documents.
-Output will be <EM>somefile.pl.tdy</EM>.</P>
+<P>Execute perltidy on file <EM>somefile.pl</EM>, with 3 columns for each level of
+indentation (<STRONG>-i=3</STRONG>) instead of the default 4 columns.  There will not be any
+tabs in the reformatted script, except for any which already exist in comments,
+pod documents, quotes, and here documents.  Output will be <EM>somefile.pl.tdy</EM>.</P>
 <PRE>
   perltidy -i=3 -t somefile.pl</PRE>
-<P>Same as the previous example, except that each set of 3 columns of
-indentation will be represented by one leading tab character.</P>
+<P>Same as the previous example, except that each set of 3 columns of indentation
+(<STRONG>-i=3</STRONG>) will be represented by one leading tab character (<STRONG>-t</STRONG>).</P>
 <PRE>
   perltidy -ce -l=72 somefile.pl</PRE>
-<P>Execute perltidy on file <EM>somefile.pl</EM> with all defaults except use
-``cuddled elses'' and a maximum line length of 72 columns (instead of the
-default 80 columns).</P>
-<PRE>
-  perltidy -io somefile.pl</PRE>
-<P>Execute perltidy on file <EM>somefile.pl</EM> but restrict changes to ``indentation
-only'', which means that existing line breaks and whitespace will be unchanged.</P>
+<P>Execute perltidy on file <EM>somefile.pl</EM> with all defaults except use ``cuddled
+elses'' (<STRONG>-ce</STRONG>) and a maximum line length of 72 columns (<STRONG>-l=72</STRONG>) instead of
+the default 80 columns.</P>
 <PRE>
   perltidy -g somefile.pl</PRE>
 <P>Execute perltidy on file <EM>somefile.pl</EM> and save a log file <EM>somefile.pl.LOG</EM>
@@ -277,18 +278,25 @@ values, 0, 1, and 2:</P>
 of a ')'.  For n=2 there is never a space.  For n=1, the default, there
 is a space unless the quantity within the parens is a single token, such
 as an identifier or quoted string.</P>
-<P>Likewise, the parameter <STRONG>-bt=n</STRONG> or <STRONG>--brace-tightness=n</STRONG> controls the
-space within curly braces, as illustrated in the example below.</P>
-<PRE>
- if ( $Opts{ help } ) { usage(); exit 1; }    # -bt=0
- if ( $Opts{help} ) { usage(); exit 1; }      # -bt=1 (default)
- if ( $Opts{help} ) {usage(); exit 1;}        # -bt=2</PRE>
-<P>And finally, the parameter <STRONG>-sbt=n</STRONG> or <STRONG>--square-bracket-tightness</STRONG>
+<P>Likewise, the parameter <STRONG>-sbt=n</STRONG> or <STRONG>--square-bracket-tightness</STRONG>
 controls the space within square brackets, as illustrated below.</P>
 <PRE>
  $width = $col[ $j + $k ] - $col[ $j ];  # -sbt=0
  $width = $col[ $j + $k ] - $col[$j];    # -sbt=1 (default)
  $width = $col[$j + $k] - $col[$j];      # -sbt=2</PRE>
+<P>Curly braces which do not contain code blocks are controlled by
+the parameter <STRONG>-bt=n</STRONG> or <STRONG>--brace-tightness=n</STRONG>.</P>
+<PRE>
+ $obj-&gt;{ $parsed_sql-&gt;{ 'table' }[0] };    # -bt=0
+ $obj-&gt;{ $parsed_sql-&gt;{'table'}[0] };      # -bt=1 (default)
+ $obj-&gt;{$parsed_sql-&gt;{'table'}[0]};        # -bt=2</PRE>
+<P>And finally, curly braces which contain blocks of code are controlled by the
+parameter <STRONG>-bbt=n</STRONG> or <STRONG>--block-brace-tightness=n</STRONG> as illustrated in the
+example below.</P>
+<PRE>
+ %bf = map { $_ =&gt; -M $_ } grep { /\.deb$/ } dirents '.'; # -bbt=0 (default)
+ %bf = map { $_ =&gt; -M $_ } grep {/\.deb$/} dirents '.';   # -bbt=1
+ %bf = map {$_ =&gt; -M $_} grep {/\.deb$/} dirents '.';     # -bbt=2</PRE>
 <P></P>
 <DT><STRONG><A NAME="item_%2Dci%3Dn%2C_%2D%2Dcontinuation%2Dindentation%3Dn"><STRONG>-ci=n</STRONG>, <STRONG>--continuation-indentation=n</STRONG></A></STRONG><BR>
 <DD>
@@ -333,6 +341,17 @@ If <STRONG>-t</STRONG> is specified, it will be ignored.</P>
 choose newlines will all conflict with <STRONG>-lp</STRONG> and will cause <STRONG>-lp</STRONG> to
 be deactivated.  These include 
 <STRONG>-io</STRONG>, <STRONG>-fnl</STRONG>, <STRONG>-nanl</STRONG>, and <STRONG>-ndnl</STRONG>.</P>
+<P></P>
+<DT><STRONG><A NAME="item_%2Dicp%2C_%2D%2Dindent%2Dclosing%2Dparen"><STRONG>-icp</STRONG>, <STRONG>--indent-closing-paren</STRONG></A></STRONG><BR>
+<DD>
+The <STRONG>-icp</STRONG> option leaves a list-termination line of the form <CODE>);</CODE>, <CODE>};</CODE>,
+or <CODE>];</CODE> indented with the same indentation as the previous line.  The
+previous example with <STRONG>-icp</STRONG> would give,
+<PRE>
+    @month_of_year = (          # -icp
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct',
+        'Nov', 'Dec'
+        );</PRE>
 <P></P>
 <DT><STRONG><A NAME="item_%2Dibc%2C_%2D%2Dindent%2Dblock%2Dcomments"><STRONG>-ibc</STRONG>,  <STRONG>--indent-block-comments</STRONG></A></STRONG><BR>
 <DD>
@@ -642,6 +661,17 @@ example is curly braces, which should be controlled with the
 parameter <STRONG>bl</STRONG> provided for that purpose.</P>
 <P></P></DL>
 <P>
+<H2><A NAME="styles">Styles</A></H2>
+<DL>
+<DT><STRONG><A NAME="item_%2Dgnu%2C_%2D%2Dgnu%2Dstyle"><STRONG>-gnu</STRONG>, <STRONG>--gnu-style</STRONG></A></STRONG><BR>
+<DD>
+<STRONG>-gnu</STRONG> gives an approximation to the GNU Coding Standards (which do
+not apply to perl) as they are sometimes implemented.  At present, this
+style overrides the default style with the following parameters:
+<PRE>
+    -lp -bl -noll -pt=2 -bt=2 -sbt=2 -icp</PRE>
+<P></P></DL>
+<P>
 <H2><A NAME="other controls">Other Controls</A></H2>
 <DL>
 <DT><STRONG><A NAME="item_Writing_selected_text_to_a_file">Writing selected text to a file</A></STRONG><BR>
@@ -761,7 +791,16 @@ number, 40.  If the computed number of fields for any table exceeds
 be left unchanged as a general rule, it might be used on a small section
 of code to force a list to have a particular number of fields per line,
 and then a single comment could be introduced somewhere to freeze the
-formatting in future applications of perltidy.</P>
+formatting in future applications of perltidy, like this:</P>
+<PRE>
+    @month_of_year = (    # -mft=2
+        'Jan', 'Feb',
+        'Mar', 'Apr',
+        'May', 'Jun',
+        'Jul', 'Aug',
+        'Sep', 'Oct',
+        'Nov', 'Dec'
+    );</PRE>
 <P>Vertical alignment refers to lining up similar tokens vertically, like
 this:</P>
 <PRE>
@@ -923,7 +962,7 @@ confusing filenames such as <EM>somefile.tdy.tdy.tdy</EM>.
 <P>
 <HR>
 <H1><A NAME="version">VERSION</A></H1>
-<P>This man page documents perltidy version 20010625.</P>
+<P>This man page documents perltidy version 20010701.</P>
 <P>
 <HR>
 <H1><A NAME="author">AUTHOR</A></H1>
