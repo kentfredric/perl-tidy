@@ -61,7 +61,7 @@ use vars qw{
 use IO::File;
 
 BEGIN {
-    ($VERSION=q($Id: perltidy,v 1.87 2002/01/29 00:45:47 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ($VERSION=q($Id: perltidy,v 1.88 2002/01/30 03:38:46 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 # Preloaded methods go here.
@@ -5641,7 +5641,7 @@ sub set_white_space_flag {
          /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
      Examples:
        *VERSION = \'1.01';
-       ( $VERSION ) = '$Revision: 1.87 $ ' =~ /\$Revision:\s+([^\s]+)/;
+       ( $VERSION ) = '$Revision: 1.88 $ ' =~ /\$Revision:\s+([^\s]+)/;
      We will pass such a line straight through (by changing it
      to a quoted string) unless -npvl is used
     
@@ -5650,7 +5650,7 @@ sub set_white_space_flag {
      block sequence numbers may see a closing sequence number but not
      the corresponding opening sequence number (sidecmt.t).  Example:
 
-    my $VERSION = do { my @r = (q$Revision: 1.87 $ =~ /\d+/g); sprintf
+    my $VERSION = do { my @r = (q$Revision: 1.88 $ =~ /\d+/g); sprintf
     "%d."."%02d" x $#r, @r }; 
 
     Here, the opening brace of 'do {' will not be seen, while the closing
@@ -9681,6 +9681,10 @@ sub find_token_starting_list {
         my $i_prev;
         my $first_term_length;
         my @max_length = ( 0, 0 );
+        my @last_length_2 = (undef, undef);
+        my $last_length = undef;
+        my $total_variation_1 = 0;
+        my @total_variation_2 = (0,0);
         my $i      = $i_opening_paren;
         my $is_odd = 1;
         for ( my $j = 0 ; $j < $comma_count ; $j++ ) {
@@ -9697,11 +9701,27 @@ sub find_token_starting_list {
                 $first_term_length = $length;
             }
             else {
+
                 if ( $length > $max_length[$is_odd] ) {
                     $max_length[$is_odd] = $length;
                 }
+
+                if ( defined($last_length) ) {
+                    my $dl = abs( $length - $last_length );
+                    $total_variation_1 += $dl;
+                }
+                $last_length = $length;
+
+                my $ll = $last_length_2[$is_odd];
+                if ( defined($ll) ) {
+                    my $dl = abs( $length - $ll );
+                    $total_variation_2[$is_odd] += $dl;
+                }
+                $last_length_2[$is_odd] = $length;
+
             }
         }
+        my $total_variation_2 = $total_variation_2[0]+$total_variation_2[1];
 
         # now we have to make a distinction between the comma count and item count,
         # because the item count will be one greater than the comma count if
@@ -9830,47 +9850,42 @@ sub find_token_starting_list {
 
         if ( $number_of_fields < 2 ) {
 
-            #my $available_spaces = get_AVAILABLE_SPACES_to_go($i_first_comma);
-            #if ( $available_spaces > 0 ) {
+            my $available_spaces = get_AVAILABLE_SPACES_to_go($i_first_comma);
+            if ( $available_spaces > 0 ) {
 
-## FIXME: re-do to allow for 2 fields in some cases
-##                # asking for an extra space for safety
-##                my $spaces_wanted = 1 + $pair_width - $columns;   # for 2 fields
-##                if ( $spaces_wanted > $available_spaces
-##                    || $rOpts_maximum_fields_per_table == 1 )
-##                {
-##                    $spaces_wanted = 1 + $max_width - $columns;    # for 1 field
-##                }
+                my $spaces_wanted = $max_width - $columns;    # for 1 field
 
-            # BUBBA: Patch: don't ask for too much
-            # Until we are sure we really want an even number
-            my $spaces_wanted = $max_width - $columns;    # for 1 field
+                if ( !( $rOpts_maximum_fields_per_table == 1 )
+                    && $item_count > 10
+                    && $total_variation_2 < $total_variation_1 )
+                {
 
-            # ask for space if needed
-            ##if ( $spaces_wanted > 0 ) {
-            ##if ( $spaces_wanted > 0 && $spaces_wanted < $available_spaces) {
-            if ( $spaces_wanted > 0 ) {
-                my $deleted_spaces =
-                  reduce_lp_indentation( $i_first_comma, $spaces_wanted );
+                    my $spaces_wanted_2 =
+                      1 + $pair_width - $columns;             # for 2 fields
+                    if ( $available_spaces > $spaces_wanted_2 ) {
+                        $spaces_wanted = $spaces_wanted_2;
+                    }
+                }
 
-                # redo the math
-                if ( $deleted_spaces > 0 ) {
-                    $columns          = table_columns_available($i_first_comma);
-                    $number_of_fields =
-                      maximum_number_of_fields( $columns, $odd_or_even,
-                        $max_width, $pair_width );
+                if ( $spaces_wanted > 0 ) {
+                    my $deleted_spaces =
+                      reduce_lp_indentation( $i_first_comma, $spaces_wanted );
+
+                    # redo the math
+                    if ( $deleted_spaces > 0 ) {
+                        $columns = table_columns_available($i_first_comma);
+                        $number_of_fields =
+                          maximum_number_of_fields( $columns, $odd_or_even,
+                            $max_width, $pair_width );
+                    }
                 }
             }
-
-            #}
         }
 
         # try for one column if two won't work
         if ( $number_of_fields <= 0 ) {
             $number_of_fields = int( $columns / $max_width );
         }
-
-        #print "LISTX: fields=$number_of_fields columns=$columns max_width==$max_width  w0=${$rmax_length}[0]  w1=${$rmax_length}[1] width=$pair_width\n";
 
         # The user can place an upper bound on the number of fields,
         # which can be useful for doing maintenance on tables
@@ -15169,6 +15184,15 @@ sub reset_indentation_level {
                 }
             }
 
+            # patch for paren-less for/foreach glitch, part 2.
+            # see note below under 'qw'
+            elsif ( $last_nonblank_token eq 'qw'
+                && $is_for_foreach{$want_paren} )
+            {
+                $last_nonblank_token = $want_paren;
+                $want_paren     = "";
+            }
+
             # now identify which of the three possible types of
             # curly braces we have: hash index container, anonymous
             # hash reference, or code block.
@@ -16104,8 +16128,19 @@ EOM
 
                 # various quote operators
                 elsif ( $is_q_qq_qw_qx_qr_s_y_tr_m{$tok} ) {
-                    error_if_expecting_OPERATOR()
-                      if ( $expecting == OPERATOR );
+                    if ( $expecting == OPERATOR ) {
+            
+                        # patch for paren-less for/foreach glitch, part 1
+                        # perl will accept this construct as valid:
+                        #
+                        #    foreach my $key qw\Uno Due Tres Quadro\ {
+                        #        print "Set $key\n";
+                        #    }
+                        unless ( $tok eq 'qw' && $is_for_foreach{$want_paren} )
+                        {
+                            error_if_expecting_OPERATOR();
+                        }
+                    }
                     $in_quote                = $quote_items{$tok};
                     $allowed_quote_modifiers = $quote_modifiers{$tok};
 

@@ -41,6 +41,14 @@
                   '92', '94', '96', '98', '100', '102', '104'
                   );
 
+ -Added patch to properly handle a for/foreach loop without parens
+  around a list represented as a qw.  I didn't know this was possible
+  until Wolfgang Weisselberg sent me a working example:
+
+        foreach my $key qw\Uno Due Tres Quadro\ {
+            print "Set $key\n";
+        }
+
  -Merged VMS filename handling patch sent by Michael Cartmell.  (Invalid
   output filenames were being created in some cases). 
 

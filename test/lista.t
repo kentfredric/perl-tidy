@@ -1,3 +1,18 @@
+my %EuroRates = (
+         BEF => {EUR=>0.0247899055505,   BEF => 1},
+         DEM => {EUR=>0.511291881196,	 DEM => 1},
+         ESP => {EUR=>0.00601012104384,  ESP => 1},
+         EUR => {ATS=>13.7603, BEF=>40.3399, DEM=>1.95583, EUR=>1, ESP=>166.386, FIM=>5.94573, FRF=>6.55957, GRD=>340.750, IEP=>.787564, ITL=>1936.27, LUF=>40.3399, NLG=>2.20371, PTE=>200.482}, 
+         FRF => {EUR=>0.152449017237, 	 FRF => 1},
+         GRD => {EUR=>0.00293470286134,  GRD => 1},
+         IEP => {EUR=>1.26973807843, 	 IEP => 1},
+         ITL => {EUR=>0.000516456899089, ITL => 1},    
+         LUF => {EUR=>0.0247899055505,   LUF => 1},
+         NLG => {EUR=>0.45378021609, 	 NLG => 1},
+         ATS => {EUR=>0.0726728341679,   ATS => 1},
+         PTE => {EUR=>0.00498797897068,  PTE => 1},
+         FIM => {EUR=>0.168187926462,	 FIM => 1}
+		                  );
 # A list without parens, quite a mess
 print $query->header, $query->start_html( -title => 'A Simple Example' ),
   $query->startform, "<CENTER><H3>Testing Module Pg</H3></CENTER>",
