@@ -5,6 +5,11 @@
  suggested improvement, please send a note to perltidy at
  users.sourceforge.net.  
 
+=head2 2002 xx xx
+
+ -Corrected html error in .toc file when -frm -html is used (extra ");
+  browsers were tolerant of it.
+
 =head2 2002 11 30
 
  -Implemented scalar attributes.  Thanks to Sean Tobin for noting this.

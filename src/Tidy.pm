@@ -61,7 +61,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.37 2002/12/02 14:54:46 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.38 2002/12/22 17:07:36 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 sub streamhandle {
@@ -4268,7 +4268,7 @@ sub write_toc_html {
 <title>$title</title>
 </head>
 <body>
-<h1><a href=\"$src_basename\"#-top-" target="$src_frame_name">$title</a></h1>
+<h1><a href=\"$src_basename#-top-" target="$src_frame_name">$title</a></h1>
 EOM
 
     my $first_anchor =
@@ -7100,7 +7100,7 @@ sub set_white_space_flag {
             #   myfun(    &myfun(   ->myfun(
             # -----------------------------------------------------
             if (   ( $last_type =~ /^[wkU]$/ )
-                || ( $last_type eq 'i' && $last_token =~ /^(\&|->)/ ) )
+                || ( $last_type =~ /^[wi]$/ && $last_token =~ /^(\&|->)/ ) )
             {
 
                 # Do not introduce new space between keyword or function
@@ -7148,7 +7148,7 @@ sub set_white_space_flag {
             }
         }
 
-        elsif ( $type eq 'i' ) {
+        elsif ( $type eq 'i' ) { 
 
             # never a space before ->
             if ( $token =~ /^\-\>/ ) {
@@ -7159,6 +7159,11 @@ sub set_white_space_flag {
         # retain any space between '-' and bare word
         elsif ( $type eq 'w' || $type eq 'C' ) {
             $ws = WS_OPTIONAL if $last_type eq '-';
+
+            # never a space before ->
+            if ( $token =~ /^\-\>/ ) {
+                $ws = WS_NO;
+            }
         }
 
         # retain any space between '-' and bare word
@@ -7633,7 +7638,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.37 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.38 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -7780,10 +7785,11 @@ sub set_white_space_flag {
             # Modify certain tokens here for whitespace
             # The following is not yet done, but could be:
             #   sub (x x x)
-            # These become type 'i', space and all.
-            if ( $type eq 'i' or $type eq 't' ) {
+            if ( $type =~ /^[wit]$/) {
 
-                # change "$  var"  to "$var" etc
+                # Examples:
+                # change '$  var'  to '$var' etc
+                #        '-> new'  to '->new'
                 if ( $token =~ /^([\$\&\%\*\@]|\-\>)\s/ ) {
                     $token =~ s/\s*//g;
                 }
@@ -10529,7 +10535,7 @@ sub set_vertical_tightness_flags {
     my %is_vertical_alignment_keyword;
 
     BEGIN {
-        @_ = qw#{ ? : => = += -= =~ *= /= && || ||= #;
+        @_ = qw#{ ? : => = += -= =~ *= /= .= && || ||= #;
         @is_vertical_alignment_type{@_} = (1) x scalar(@_);
 
         @_ = qw(if unless and or eq ne);
@@ -18590,10 +18596,11 @@ sub reset_indentation_level {
                     $expecting == OPERATOR
 
                     # be sure this is not a method call of the form
-                    # &method(...), $method->(..), &{method}(...)
+                    # &method(...), $method->(..), &{method}(...),
+                    # $ref[2](list) is ok & short for $ref[2]->(list)
                     # NOTE: at present, braces in something like &{ xxx }
                     # are not marked as a block, we might have a method call
-                    && $last_nonblank_token !~ /^([\}\&]|\-\>)/
+                    && $last_nonblank_token !~ /^([\]\}\&]|\-\>)/
 
                   )
                 {
@@ -19194,6 +19201,11 @@ sub reset_indentation_level {
         # type = 'pp' for pre-increment, '++' for post-increment
         '++' => sub {
             if ( $expecting == TERM ) { $type = 'pp' }
+            elsif ( $expecting == UNKNOWN ) { 
+               my ( $next_nonblank_token, $i_next ) =
+                          find_next_nonblank_token( $i, $rtokens );
+               if ($next_nonblank_token eq '$') {$type = 'pp'}
+            }
         },
 
         '=>' => sub {
@@ -19206,6 +19218,11 @@ sub reset_indentation_level {
         '--' => sub {
 
             if ( $expecting == TERM ) { $type = 'mm' }
+            elsif ( $expecting == UNKNOWN ) { 
+               my ( $next_nonblank_token, $i_next ) =
+                          find_next_nonblank_token( $i, $rtokens );
+               if ($next_nonblank_token eq '$') {$type = 'mm'}
+            }
         },
 
         '&&' => sub {
@@ -19955,11 +19972,12 @@ EOM
                     elsif ( $tok eq 'continue' ) {
                         if (   $last_nonblank_token ne ';'
                             && $last_nonblank_block_type !~
-                            /^(\{|\}|;|while|until|for|foreach)$/ )
+                            /(^(\{|\}|;|while|until|for|foreach)|:$)/ )
                         {
 
                             # note: ';' '{' and '}' in list above
-                            # because continues can follow bare blocks
+                            # because continues can follow bare blocks;
+                            # ':' is labeled block
                             warning("'$tok' should follow a block\n");
                         }
                     }
@@ -21026,7 +21044,7 @@ sub operator_expected {
         # after most bare words
         $op_expected = UNKNOWN;
     }
-
+    
     # operator, but not term possible after these types
     # Note: moved ')' from type to token because parens in list context
     # get marked as '{' '}' now.  This is a minor glitch in the following:
@@ -22989,7 +23007,10 @@ sub scan_identifier_do {
         if ($saw_type) {
 
             if ($saw_alpha) {
-                $type = 'i';
+                if ( $identifier =~ /^->/ && $last_nonblank_type eq 'w' ) {
+                    $type = 'w';
+                }
+                else { $type = 'i' }
             }
             elsif ( $identifier eq '->' ) {
                 $type = '->';
