@@ -22,13 +22,13 @@ perl2web.html
 docs: $(DOCS)
 
 README: README.pod
-	pod2text README.pod >../README
+	pod2text README.pod >README
 
 perltidy.1: perltidy.pod
-	pod2man perltidy.pod >../perltidy.1
+	pod2man perltidy.pod >perltidy.1
 
 perl2web.1: perl2web.pod
-	pod2man perl2web.pod >../perl2web.1
+	pod2man perl2web.pod >perl2web.1
 
 README.html: README.pod
 	pod2html README.pod >README.html

@@ -529,6 +529,27 @@ OPTIONS
 
           if ( $input_file eq '-' ) {   # -nbl (default)
 
+    -bar, --opening-brace-always-on-right
+        However, the default style, -nbl places the opening brace on a new
+        line if it does not fit on the same line as the opening keyword,
+        like this:
+
+                if ( $bigwasteofspace1 && $bigwasteofspace2
+                  || $bigwasteofspace3 && $bigwasteofspace4 )
+                {
+                    do_something();
+                }
+
+        To force the opening brace to always be on the right, use the -bar
+        flag. In this case, the above example becomes
+
+                if ( $bigwasteofspace1 && $bigwasteofspace2
+                  || $bigwasteofspace3 && $bigwasteofspace4 ) {
+                    do_something();
+                }
+
+        It is an error to specify both -bl and -bar.
+
     -dnl, --delete-old-newlines
         By default, perltidy first deletes all old line break locations, and
         then it looks for optimal break points to match the desired line

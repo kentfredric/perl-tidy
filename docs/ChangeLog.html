@@ -37,9 +37,30 @@
 <H2><A NAME="2001 xx xx">2001 xx xx</A></H2>
 <PRE>
 
+ -A '-bar' flag has been added to require braces to always be on the
+ right, even for multi-line if and foreach statements.  For example,
+ the default formatting of a long if statement would be:</PRE>
+<PRE>
+        if ($bigwasteofspace1 &amp;&amp; $bigwasteofspace2
+          || $bigwasteofspace3 &amp;&amp; $bigwasteofspace4)
+        {
+        }</PRE>
+<PRE>
+ With -bar, the formatting is:</PRE>
+<PRE>
+        if ($bigwasteofspace1 &amp;&amp; $bigwasteofspace2
+          || $bigwasteofspace3 &amp;&amp; $bigwasteofspace4) {
+        }
+ (Suggested by Eli Fidler 2001-06-11)</PRE>
+<PRE>
+ -Uploaded perltidy to cvs 2001-06-10</PRE>
+<PRE>
  -A '-gnu' flag has been added which causes lists to be indented
  with extra indentation in the manner sometimes associated with
- emacs or the GNU suggestions.  (Suggested by Ian Stuart).</PRE>
+ emacs or the GNU suggestions.  (Suggested by Ian Stuart).  NOTE:
+ This feature is functional for simple cases but will be under 
+ development for some time.  The formatting reverts to the standard
+ method when the -gnu coding is incomplete.</PRE>
 <PRE>
  -Subroutine call parameter lists are now formatted as other lists.
  This will improve formatting of tables being passed via subroutine

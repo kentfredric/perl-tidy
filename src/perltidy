@@ -25,7 +25,7 @@
 #
 #    This script was formatted with the command:
 #
-#      perltidy perltidy.pl
+#      perltidy perltidy
 #
 #    Code Contributions:
 #      Thanks to Michael Cartmell for adaptation to VMS and for v-string help
@@ -43,7 +43,7 @@ use IO::File;
 
 BEGIN {
     $VERSION = <<'RCS';
-    $Id: perltidy,v 1.1 2001/06/10 22:58:15 perltidy Exp $
+    $Id: perltidy,v 1.2 2001/06/12 02:12:17 perltidy Exp $
 RCS
     chomp $VERSION;
     $VERSION =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/;
@@ -427,6 +427,7 @@ sub process_command_line {
       maximum-continuation-indentation=i
       trim-qw!
       hanging-side-comments!
+      opening-brace-always-on-right
     );
 
     # The Perltidy::HtmlWriter will add its own options to the string
@@ -582,6 +583,7 @@ sub process_command_line {
         'cb'                 => [qw(comma-break-flag)],
         'bl'                 => [qw(opening-brace-on-new-line)],
         'nbl'                => [qw(noopening-brace-on-new-line)],
+        'bar'                => [qw(opening-brace-always-on-right)],
         'icb'                => [qw(indent-closing-brace)],
         'nicb'               => [qw(noindent-closing-brace)],
         'br'                 => [qw(noopening-brace-on-new-line)],
@@ -891,6 +893,16 @@ EOM
       && !$Opts{'add-newlines'} && !$Opts{'delete-old-newlines'} )
     {
         $Opts{'indent-only'} = 1;
+    }
+
+    if ( $Opts{'opening-brace-always-on-right'}
+      && $Opts{'opening-brace-on-new-line'} )
+    {
+        print STDERR <<EOM;
+ Conflict: you specified both 'opening-brace-always-on-right' (-bar) and 
+  'opening-brace-on-new-line' (-bl).  Ignoring -bl. 
+EOM
+        $Opts{'opening-brace-on-new-line'} = 0;
     }
 
     # set shortcut flag if no blanks to be written
@@ -2536,17 +2548,6 @@ use constant UNDEFINED_INDEX => -1;
 # Maximum number of little messages; probably need not be changed.
 use constant MAX_NAG_MESSAGES => 6;
 
-# Indexes for gnu_style indentation item
-use constant GNU_ITEM_SPACES           => 0;    # total leading white spaces
-use constant GNU_ITEM_LEVEL            => 1;    # the indentation 'level'
-use constant GNU_ITEM_CI_LEVEL         => 2;    # the 'continuation level'
-use constant GNU_ITEM_AVAILABLE_SPACES => 3;    # how many spaces we could free
-use constant GNU_ITEM_CLOSED           => 4;    # tells if we saw a closing '}'
-use constant GNU_ITEM_COMMA_COUNT      => 5;    # how many commas at this level?
-use constant GNU_ITEM_SEQUENCE_NUMBER  => 6;    # output batch number
-use constant GNU_ITEM_INDEX            => 7;    # index in output batch list
-use constant GNU_ITEM_HAVE_CHILD       => 8;    # any dependents?
-
 # interface to Perltidy::Logger routines
 sub warning {
     if ($logger_object) {
@@ -2772,7 +2773,7 @@ sub leading_spaces_to_go {
     }
 
     # gnu style stores a reference to the spaces
-    return $leading_spaces_to_go[$i]->[GNU_ITEM_SPACES];
+    return $leading_spaces_to_go[$i]->get_SPACES();
 }
 
 sub reduced_leading_spaces_to_go {
@@ -2788,26 +2789,18 @@ sub reduced_leading_spaces_to_go {
     }
 
     # gnu style stores a reference to the spaces
-    return $reduced_spaces_to_go[$i]->[GNU_ITEM_SPACES];
+    return $reduced_spaces_to_go[$i]->get_SPACES();
 }
 
 sub new_gnu_indentation_item {
 
-    # Create an 'indentation_item' which describes one level of leading
-    # whitespace when the 'gnu-style' of indentation is used.  We return
-    # a reference to an anonymous array of associated variables.
-    # See constants GNU_ITEM_xxx for storage scheme.
+    # this is a temporary interface to the IndentationItem class
     my ( $spaces, $level, $ci_level, $available_spaces ) = @_;
-
-    my $closed      = 0;
-    my $comma_count = 0;
-    my $index       = 0;
+    my $index = 0;
     if ( $level >= 0 ) { $index = ++$max_gnu_item_index; }
-    my $have_child = -1;
-
     my $item =
-      [ $spaces, $level, $ci_level, $available_spaces, $closed, $comma_count,
-        $gnu_sequence_number, $index, $have_child ];
+      Perltidy::IndentationItem->new( $spaces, $level, $ci_level,
+        $available_spaces, $index, $gnu_sequence_number );
 
     # A negative level implies not to store the item in the item_list
     if ( $level >= 0 ) {
@@ -2872,17 +2865,18 @@ sub set_leading_whitespace {
     }
 
     # get the top state from the stack
-    my $space_count      = $gnu_stack[$max_gnu_stack_index]->[GNU_ITEM_SPACES];
-    my $current_level    = $gnu_stack[$max_gnu_stack_index]->[GNU_ITEM_LEVEL];
-    my $current_ci_level =
-      $gnu_stack[$max_gnu_stack_index]->[GNU_ITEM_CI_LEVEL];
+    my $space_count      = $gnu_stack[$max_gnu_stack_index]->get_SPACES();
+    my $current_level    = $gnu_stack[$max_gnu_stack_index]->get_LEVEL();
+    my $current_ci_level = $gnu_stack[$max_gnu_stack_index]->get_CI_LEVEL();
 
     # Count commas and look for non-list characters.  Once we see a
     # non-list character, we give up and don't look for any more commas.
     my $type = $types_to_go[$max_index_to_go];
     if ( $type eq ',' ) {
-        if ( $gnu_stack[$max_gnu_stack_index]->[GNU_ITEM_COMMA_COUNT] >= 0 ) {
-            $gnu_stack[$max_gnu_stack_index]->[GNU_ITEM_COMMA_COUNT]++;
+
+        my $comma_count = $gnu_stack[$max_gnu_stack_index]->get_COMMA_COUNT();
+        if ( $comma_count >= 0 ) {
+            $gnu_stack[$max_gnu_stack_index]->set_COMMA_COUNT( ++$comma_count );
         }
     }
 
@@ -2899,7 +2893,7 @@ sub set_leading_whitespace {
     #   ); 
 
     elsif ( $type =~ /(^[\?\:\;\<\>\~]$)|[=]/ && $type !~ /^=>$/ ) {
-        $gnu_stack[$max_gnu_stack_index]->[GNU_ITEM_COMMA_COUNT] = -1;
+        $gnu_stack[$max_gnu_stack_index]->set_COMMA_COUNT(-1);
     }
 
     # Check for decreasing depth ..
@@ -2915,20 +2909,19 @@ sub set_leading_whitespace {
             if ($max_gnu_stack_index) {
 
                 # mark this stack item as complete
-                $gnu_stack[$max_gnu_stack_index]->[GNU_ITEM_CLOSED] = 1;
+                $gnu_stack[$max_gnu_stack_index]->set_CLOSED(1);
 
                 # Undo any extra indentation if we saw no commas
                 my $available_spaces =
-                  $gnu_stack[$max_gnu_stack_index]->[GNU_ITEM_AVAILABLE_SPACES];
+                  $gnu_stack[$max_gnu_stack_index]->get_AVAILABLE_SPACES();
                 my $comma_count =
-                  $gnu_stack[$max_gnu_stack_index]->[GNU_ITEM_COMMA_COUNT];
+                  $gnu_stack[$max_gnu_stack_index]->get_COMMA_COUNT();
 
                 if ( $comma_count <= 0 && $available_spaces > 0 ) {
 
-                    my $i = $gnu_stack[$max_gnu_stack_index]->[GNU_ITEM_INDEX];
+                    my $i     = $gnu_stack[$max_gnu_stack_index]->get_INDEX();
                     my $seqno =
-                      $gnu_stack[$max_gnu_stack_index]
-                      ->[GNU_ITEM_SEQUENCE_NUMBER];
+                      $gnu_stack[$max_gnu_stack_index]->get_SEQUENCE_NUMBER();
 
                     # Be sure this item was created in this batch.  This
                     # should be true because we delete any available
@@ -2944,26 +2937,26 @@ sub set_leading_whitespace {
 
                     else {
 
-                        $gnu_item_list[$i]->[GNU_ITEM_AVAILABLE_SPACES] -=
-                          $available_spaces;
+                        $gnu_item_list[$i]
+                          ->decrease_AVAILABLE_SPACES($available_spaces);
 
                         my $j;
                         for ( $j = $i ; $j <= $max_gnu_item_index ; $j++ ) {
-                            $gnu_item_list[$j]->[GNU_ITEM_SPACES] -=
-                              $available_spaces;
+                            $gnu_item_list[$j]
+                              ->decrease_SPACES($available_spaces);
                         }
                     }
                 }
 
                 # go down one level
                 --$max_gnu_stack_index;
-                $lev    = $gnu_stack[$max_gnu_stack_index]->[GNU_ITEM_LEVEL];
-                $ci_lev = $gnu_stack[$max_gnu_stack_index]->[GNU_ITEM_CI_LEVEL];
+                $lev    = $gnu_stack[$max_gnu_stack_index]->get_LEVEL();
+                $ci_lev = $gnu_stack[$max_gnu_stack_index]->get_CI_LEVEL();
 
                 # stop when we reach a level at or below the current level
                 if ( $lev <= $level && $ci_lev <= $ci_level ) {
                     $space_count =
-                      $gnu_stack[$max_gnu_stack_index]->[GNU_ITEM_SPACES];
+                      $gnu_stack[$max_gnu_stack_index]->get_SPACES();
                     $current_level    = $lev;
                     $current_ci_level = $ci_lev;
                     last;
@@ -3028,7 +3021,7 @@ sub set_leading_whitespace {
         # update state, but not on a blank token
         if ( $types_to_go[$max_index_to_go] ne 'b' ) {
 
-            $gnu_stack[$max_gnu_stack_index]->[GNU_ITEM_HAVE_CHILD] = 1;
+            $gnu_stack[$max_gnu_stack_index]->set_HAVE_CHILD(1);
 
             $gnu_stack[ ++$max_gnu_stack_index ] =
               new_gnu_indentation_item( $space_count, $level, $ci_level,
@@ -3090,7 +3083,7 @@ sub get_gnu_indentation {
     my ( $standard_increment, $gnu_indentation ) = @_;
 
     # total indentation we already have:
-    my $space_count = $gnu_stack[$max_gnu_stack_index]->[GNU_ITEM_SPACES];
+    my $space_count = $gnu_stack[$max_gnu_stack_index]->get_SPACES();
 
     # but avoid excessive space if requested
     my $excess =
@@ -3152,9 +3145,9 @@ sub check_for_long_gnu_style_lines {
 
         # item must still be open to be a candidate (otherwise it
         # cannot influence the current token)
-        next if ( $item->[GNU_ITEM_CLOSED] );
+        next if ( $item->get_CLOSED() );
 
-        my $available_spaces = $item->[GNU_ITEM_AVAILABLE_SPACES];
+        my $available_spaces = $item->get_AVAILABLE_SPACES();
 
         if ( $available_spaces > 0 ) {
             push ( @candidates, [ $i, $available_spaces ] );
@@ -3176,7 +3169,7 @@ sub check_for_long_gnu_style_lines {
           $available_spaces;
 
         # remove the incremental space from this item
-        $gnu_item_list[$i]->[GNU_ITEM_AVAILABLE_SPACES] -= $deleted_spaces;
+        $gnu_item_list[$i]->decrease_AVAILABLE_SPACES($deleted_spaces);
 
         my $i_debug = $i;
 
@@ -3184,17 +3177,17 @@ sub check_for_long_gnu_style_lines {
         # that came after it
         for ( ; $i <= $max_gnu_item_index ; $i++ ) {
 
-            my $old_spaces = $gnu_item_list[$i]->[GNU_ITEM_SPACES];
+            my $old_spaces = $gnu_item_list[$i]->get_SPACES();
             if ( $old_spaces > $deleted_spaces ) {
-                $gnu_item_list[$i]->[GNU_ITEM_SPACES] -= $deleted_spaces;
+                $gnu_item_list[$i]->decrease_SPACES($deleted_spaces);
             }
 
             # shouldn't happen except for code bug:
             else {
-                my $level     = $gnu_item_list[$i_debug]->[GNU_ITEM_LEVEL];
-                my $ci_level  = $gnu_item_list[$i_debug]->[GNU_ITEM_CI_LEVEL];
-                my $old_level = $gnu_item_list[$i]->[GNU_ITEM_LEVEL];
-                my $old_ci_level = $gnu_item_list[$i]->[GNU_ITEM_CI_LEVEL];
+                my $level        = $gnu_item_list[$i_debug]->get_LEVEL();
+                my $ci_level     = $gnu_item_list[$i_debug]->get_CI_LEVEL();
+                my $old_level    = $gnu_item_list[$i]->get_LEVEL();
+                my $old_ci_level = $gnu_item_list[$i]->get_CI_LEVEL();
                 warning(
 "program bug with -gnu: want to delete $deleted_spaces from item $i, but old=$old_spaces deleter: lev=$level ci=$ci_level  deleted: level=$old_level ci=$ci_level\n"
                 );
@@ -3235,19 +3228,19 @@ sub finish_gnu_batch {
         my $item = $gnu_item_list[$i];
 
         # only look for open items
-        next if ( $item->[GNU_ITEM_CLOSED] );
+        next if ( $item->get_CLOSED() );
 
-        my $deleted_spaces = $item->[GNU_ITEM_AVAILABLE_SPACES];
+        my $deleted_spaces = $item->get_AVAILABLE_SPACES();
 
         if ( $deleted_spaces > 0 ) {
 
             # remove the available space from this item
-            $gnu_item_list[$i]->[GNU_ITEM_AVAILABLE_SPACES] -= $deleted_spaces;
+            $gnu_item_list[$i]->decrease_AVAILABLE_SPACES($deleted_spaces);
 
             # now remove total space from this and any that follow
             my $j;
             for ( $j = $i ; $j <= $max_gnu_item_index ; $j++ ) {
-                $gnu_item_list[$j]->[GNU_ITEM_SPACES] -= $deleted_spaces;
+                $gnu_item_list[$j]->decrease_SPACES($deleted_spaces);
             }
         }
     }
@@ -3274,17 +3267,17 @@ sub undo_gnu_indentation {
 
     # it is only safe to undo indentation if there are no children.  
     my $item = $leading_spaces_to_go[$i];
-    if ( $item->[GNU_ITEM_HAVE_CHILD] >= 0 ) {
+    if ( $item->get_HAVE_CHILD() >= 0 ) {
         return $deleted_spaces;
     }
 
-    my $available_spaces = $item->[GNU_ITEM_AVAILABLE_SPACES];
+    my $available_spaces = $item->get_AVAILABLE_SPACES();
     $deleted_spaces =
       ( $available_spaces > $spaces_needed ) ? $spaces_needed :
       $available_spaces;
 
-    $item->[GNU_ITEM_AVAILABLE_SPACES] -= $deleted_spaces;
-    $item->[GNU_ITEM_SPACES] -= $deleted_spaces;
+    $item->decrease_AVAILABLE_SPACES($deleted_spaces);
+    $item->decrease_SPACES($deleted_spaces);
     return $deleted_spaces;
 }
 
@@ -4362,8 +4355,10 @@ sub print_line_of_tokens {
               && ( $index_start_one_line_block == UNDEFINED_INDEX )
 
               # or if it will not be on same line as its keyword, so that
-              # it will be outdented (eval.t, overload.t) 
-              || !$keyword_on_same_line
+              # it will be outdented (eval.t, overload.t), and the user
+              # has not insisted on keeping it on the right
+              || ( !$keyword_on_same_line
+              && !$rOpts->{'opening-brace-always-on-right'} )
 
               )
             {
@@ -5787,6 +5782,8 @@ sub scan_list {
     my $type       = ';';
     my $token      = ';';
     my $i = -1;
+    my $next_nonblank_type;
+    my $next_nonblank_token;
 
     # loop over all tokens in this batch
     while ( ++$i <= $max_index_to_go ) {
@@ -5799,15 +5796,15 @@ sub scan_list {
         $type       = $types_to_go[$i];
         $block_type = $block_type_to_go[$i];
         $token      = $tokens_to_go[$i];
-        my $next_type           = $types_to_go[ $i + 1 ];
-        my $next_token          = $tokens_to_go[ $i + 1 ];
-        my $i_next_nonblank     = ( ( $next_type eq 'b' ) ? $i + 2 : $i + 1 );
-        my $next_nonblank_type  = $types_to_go[$i_next_nonblank];
-        my $next_nonblank_token = $tokens_to_go[$i_next_nonblank];
+        my $next_type       = $types_to_go[ $i + 1 ];
+        my $next_token      = $tokens_to_go[ $i + 1 ];
+        my $i_next_nonblank = ( ( $next_type eq 'b' ) ? $i + 2 : $i + 1 );
+        $next_nonblank_type  = $types_to_go[$i_next_nonblank];
+        $next_nonblank_token = $tokens_to_go[$i_next_nonblank];
         next if ( $type eq 'b' );
         $depth = $nesting_depth_to_go[ $i + 1 ];
 
-        #print "LIST sees: i=$i type=$type  tok=$token  depth=$depth\n";
+        #print "LISTX sees: i=$i type=$type  tok=$token  depth=$depth\n";
 
         # prepare for a new list when depth increases
         # token $i is a '(','{', or '['
@@ -5885,6 +5882,9 @@ sub scan_list {
                     $breakpoint_undo_stack[$current_depth] );
             }
 
+            my $is_multi_line =
+              $breakpoint_stack[$current_depth] != $forced_breakpoint_count;
+
             if ( $item_count > 0 ) {
                 set_list_breakpoints(
                     $i_opening,
@@ -5893,7 +5893,9 @@ sub scan_list {
                     $identifier_count_stack[$current_depth],
                     $comma_index[$current_depth],
                     $interrupted_list[$current_depth],
-                    $max_length[$current_depth]
+                    $max_length[$current_depth],
+                    $next_nonblank_type,
+                    $is_multi_line
                   )
                   unless $dont_align[$current_depth];
             }
@@ -5933,7 +5935,7 @@ sub scan_list {
                   # but not a )
                   if ( ( $type ne ')' )
 
-                  # unless preced by a ','
+                  # unless preceded by a ','
                   || ( $last_nonblank_type eq ',' )
 
                   # or followed by a ';' and there are some breaks
@@ -6020,11 +6022,15 @@ sub scan_list {
                 }
 
                 my $i_opening = $opening_structure_index_stack[$dd];
+
+                my $is_multi_line =
+                  $breakpoint_stack[$current_depth] != $forced_breakpoint_count;
                 set_list_breakpoints(
                     $i_opening,        $i,
                     $item_count,       $identifier_count_stack[$dd],
                     $comma_index[$dd], $interrupted_list[$dd],
-                    $max_length[$dd]
+                    $max_length[$dd],  $next_nonblank_type,
+                    $is_multi_line
                   )
                   unless $dont_align[$dd];
                 $item_count_stack[$dd]       = 0;
@@ -6084,12 +6090,16 @@ sub scan_list {
     # Mark any pending list as having been interrupted
     $interrupted_list[$current_depth] = 1;
 
+    my $is_multi_line =
+      $breakpoint_stack[$current_depth] != $forced_breakpoint_count;
     my $i_opening = $opening_structure_index_stack[$current_depth];
     set_list_breakpoints(
         $i_opening,  $i,
         $item_count, $identifier_count_stack[$current_depth],
         $comma_index[$current_depth], $interrupted_list[$current_depth],
-        $max_length[$current_depth]
+        $max_length[$current_depth],
+        $next_nonblank_type,
+        $is_multi_line
       )
       unless $dont_align[$current_depth];
 
@@ -6114,25 +6124,47 @@ sub scan_list {
 sub set_list_breakpoints {
 
     my ( $i_opening_paren, $i_closing_paren, $item_count, $identifier_count,
-      $rcomma_index, $interrupted, $rmax_length ) = @_;
+      $rcomma_index, $interrupted, $rmax_length, $next_nonblank_type,
+      $is_multiline ) = @_;
 
+    # nothing to do if no commas seen
     return if ( $item_count < 1 );
 
     my $i_first_comma = $$rcomma_index[0];
     my $i_last_comma  = $$rcomma_index[ $item_count - 1 ];
 
     #my ( $a, $b, $c ) = caller();
-    #print "LIST: in set_list $a $c interupt=$interrupted count=$item_count
+    #print "LISTX: in set_list $a $c interupt=$interrupted count=$item_count
     #i_first = $i_first_comma  i_last=$i_last_comma max=$max_index_to_go\n";
 
-    # handle list which is forced to use old breakpoints because it
-    # was interrupted by side comments or blank lines.
+    #---------------------------------------------------------------
+    # Interrupted List Rule:
+    # A list is is forced to use old breakpoints if it was interrupted
+    # by side comments or blank lines.
+    #---------------------------------------------------------------
     if ( $interrupted || !defined($i_opening_paren) ) {
         write_logfile_entry("list broken: using old breakpoints\n")
           unless ( $item_count < 6 );
         copy_old_breakpoints( $i_first_comma, $i_last_comma );
         return;
     }
+
+    #---------------------------------------------------------------
+    # Compound List Rule 2: 
+    # Break at every comma for a list containing multi-line items.
+    #---------------------------------------------------------------
+    if ($is_multiline) {
+        for ( my $j = 0 ; $j < $item_count ; $j++ ) {
+            my $i = $$rcomma_index[$j];
+            set_forced_breakpoint($i);
+        }
+        return;
+    }
+
+    #---------------------------------------------------------------
+    # Now we have to look at this thing and "do the math" to size it up.
+    # This gets ugly.
+    #---------------------------------------------------------------
 
     return if ( $i_first_comma < 1 );
     if ( $i_last_comma >= $max_index_to_go ) {
@@ -6194,7 +6226,7 @@ sub set_list_breakpoints {
         $number_of_fields = int( $columns / $max_width );
     }
 
-#print "LIST: max_pairs=$max_pairs  w0=${$rmax_length}[0]  w1=${$rmax_length}[1] width=$pair_width\n";
+#print "LISTX: max_pairs=$max_pairs  w0=${$rmax_length}[0]  w1=${$rmax_length}[1] width=$pair_width\n";
 
     # The user can place an upper bound on the number of fields,
     # which can be useful for doing maintenance on tables
@@ -6202,6 +6234,7 @@ sub set_list_breakpoints {
         $number_of_fields = int $rOpts->{'maximum-fields-per-table'};
     }
 
+    # FIXME: maybe need to break at all commas in this case?
     return if ( $number_of_fields <= 0 );
 
     my $formatted_lines = $item_count / ($number_of_fields);
@@ -6230,9 +6263,6 @@ sub set_list_breakpoints {
     my $packed_lines   = 1 + int( $packed_columns / $columns );
     my $unused_columns = $formatted_columns - $packed_columns;
 
-    # Give up and use old breakpoints if this is a tiny table or it would
-    # be too spaced.  It seems that the more packed lines we have, the
-    # sparser the list that can be allowed and still look ok.
     my $max_allowed_sparsity = ( $item_count < 4 ) ? 0.1 :
 
       ( $packed_lines == 1 ) ? 0.15 : ( $packed_lines == 2 ) ? 0.25 : 0.7;
@@ -6249,9 +6279,32 @@ sub set_list_breakpoints {
 
     }
 
-    if ( ( $formatted_lines < 3 && $packed_lines < $formatted_lines )
+    #---------------------------------------------------------------
+    # Compound List Rule 1: 
+    # If this list is too long for one line, and it is an item of a
+    # larger list, then we must format it, regardless of sparsity
+    # (ian.t).  One reason that we have to do this is to trigger
+    # Compound List Rule 2, above, which causes breaks at all commas of
+    # all outer lists.  In this way, the structure will be properly
+    # displayed.
+    #---------------------------------------------------------------
+    my $must_format =
+      ( $next_nonblank_type =~ /^[\}\,]$/ && $packed_columns > $columns );
+
+#print "LISTX: next=$next_nonblank_type  avail cols=$columns packed=$packed_columns must format = $must_format\n";
+
+    #---------------------------------------------------------------
+    # The main decision:
+    # Now decide if we will align the data into aligned columns.  Do not
+    # attempt to align columns if this is a tiny table or it would be
+    # too spaced.  It seems that the more packed lines we have, the
+    # sparser the list that can be allowed and still look ok.
+    #---------------------------------------------------------------
+
+    if ( !$must_format
+      && ( ( $formatted_lines < 3 && $packed_lines < $formatted_lines )
       || ( $formatted_lines < 2 )
-      || ( $unused_columns > $max_allowed_sparsity * $formatted_columns ) )
+      || ( $unused_columns > $max_allowed_sparsity * $formatted_columns ) ) )
     {
 
         # EXPERIMENTAL .. revert to standard indentation if we are not
@@ -6259,6 +6312,9 @@ sub set_list_breakpoints {
         my $deleted =
           undo_gnu_indentation( $i_first_comma, $i_last_comma, 100000 );
 
+        # use old breakpoints if this is more than 2 lines
+        # (otherwise, the list breakup will be at the mercy of the
+        # standard continuation line break algorithm).
         if ( $packed_lines > 2 ) {
             write_logfile_entry("List sparse: using old breakpoints\n");
             copy_old_breakpoints( $i_first_comma, $i_last_comma );
@@ -6266,10 +6322,13 @@ sub set_list_breakpoints {
         return;
     }
 
+    #---------------------------------------------------------------
     # looks ok, so go ahead and format the table
+    #---------------------------------------------------------------
     write_logfile_entry(
       "List: auto formatting with $number_of_fields fields/row\n");
     my $j;
+
     for ( $j = $number_of_fields - 1 ; $j < $comma_count ;
       $j += $number_of_fields )
     {
@@ -6611,7 +6670,8 @@ sub set_continuation_breaks {
               # be outdented
               # TESTING: modified for switch to sub calls being lists
               || ( $line_count && ( $token eq ')' )
-              && ( $next_nonblank_type eq '{' ) )
+              && ( $next_nonblank_type eq '{' )
+              && !$rOpts->{'opening-brace-always-on-right'} )
 
               # There is an implied forced break at a terminal opening brace
               || ( ( $type eq '{' ) && ( $i_test == $imax ) ) )
@@ -6759,6 +6819,131 @@ sub compare_indentation_levels {
         }
     }
     $input_line_tabbing = undef;    # deactivate test for this input line
+}
+
+#####################################################################
+#
+# the Perltidy::IndentationItem class supplies items which contain
+# how much whitespace should be used at the start of a line
+#
+#####################################################################
+
+package Perltidy::IndentationItem;
+
+# Indexes for indentation items
+use constant GNU_ITEM_SPACES           => 0;    # total leading white spaces
+use constant GNU_ITEM_LEVEL            => 1;    # the indentation 'level'
+use constant GNU_ITEM_CI_LEVEL         => 2;    # the 'continuation level'
+use constant GNU_ITEM_AVAILABLE_SPACES => 3;    # how many spaces we could free
+use constant GNU_ITEM_CLOSED           => 4;    # tells if we saw a closing '}'
+use constant GNU_ITEM_COMMA_COUNT      => 5;    # how many commas at this level?
+use constant GNU_ITEM_SEQUENCE_NUMBER  => 6;    # output batch number
+use constant GNU_ITEM_INDEX            => 7;    # index in output batch list
+use constant GNU_ITEM_HAVE_CHILD       => 8;    # any dependents?
+
+sub new {
+
+    # Create an 'indentation_item' which describes one level of leading
+    # whitespace when the 'gnu-style' of indentation is used.  We return
+    # a reference to an anonymous array of associated variables.
+    # See constants GNU_ITEM_xxx for storage scheme.
+    my ( $class, $spaces, $level, $ci_level, $available_spaces, $index,
+      $gnu_sequence_number ) = @_;
+    my $closed      = 0;
+    my $comma_count = 0;
+    my $have_child  = -1;
+    bless [
+        $spaces,              $level,
+        $ci_level,            $available_spaces,
+        $closed,              $comma_count,
+        $gnu_sequence_number, $index,
+        $have_child
+    ], $class;
+}
+
+sub get_SPACES {
+    my ( $self ) = @_;
+    return $self->[GNU_ITEM_SPACES];
+}
+
+sub get_AVAILABLE_SPACES {
+    my ( $self ) = @_;
+    return $self->[GNU_ITEM_AVAILABLE_SPACES];
+}
+
+sub decrease_SPACES {
+    my ( $self, $value ) = @_;
+    if ( defined($value) ) {
+        $self->[GNU_ITEM_SPACES] -= $value;
+    }
+    return $self->[GNU_ITEM_SPACES];
+}
+
+sub decrease_AVAILABLE_SPACES {
+    my ( $self, $value ) = @_;
+    if ( defined($value) ) {
+        $self->[GNU_ITEM_AVAILABLE_SPACES] -= $value;
+    }
+    return $self->[GNU_ITEM_AVAILABLE_SPACES];
+}
+
+sub get_CI_LEVEL {
+    my ( $self ) = @_;
+    return $self->[GNU_ITEM_CI_LEVEL];
+}
+
+sub get_LEVEL {
+    my ( $self ) = @_;
+    return $self->[GNU_ITEM_LEVEL];
+}
+
+sub get_SEQUENCE_NUMBER {
+    my ( $self ) = @_;
+    return $self->[GNU_ITEM_SEQUENCE_NUMBER];
+}
+
+sub get_INDEX {
+    my ( $self ) = @_;
+    return $self->[GNU_ITEM_INDEX];
+}
+
+sub set_HAVE_CHILD {
+    my ( $self, $value ) = @_;
+    if ( defined($value) ) {
+        $self->[GNU_ITEM_HAVE_CHILD] = $value;
+    }
+    return $self->[GNU_ITEM_HAVE_CHILD];
+}
+
+sub get_HAVE_CHILD {
+    my ( $self ) = @_;
+    return $self->[GNU_ITEM_HAVE_CHILD];
+}
+
+sub set_COMMA_COUNT {
+    my ( $self, $value ) = @_;
+    if ( defined($value) ) {
+        $self->[GNU_ITEM_COMMA_COUNT] = $value;
+    }
+    return $self->[GNU_ITEM_COMMA_COUNT];
+}
+
+sub get_COMMA_COUNT {
+    my ( $self ) = @_;
+    return $self->[GNU_ITEM_COMMA_COUNT];
+}
+
+sub set_CLOSED {
+    my ( $self, $value ) = @_;
+    if ( defined($value) ) {
+        $self->[GNU_ITEM_CLOSED] = $value;
+    }
+    return $self->[GNU_ITEM_CLOSED];
+}
+
+sub get_CLOSED {
+    my ( $self ) = @_;
+    return $self->[GNU_ITEM_CLOSED];
 }
 
 =pod

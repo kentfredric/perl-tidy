@@ -573,6 +573,28 @@ the keyword introducing it.  For example,
 
   if ( $input_file eq '-' ) {   # -nbl (default)
 
+=item B<-bar>,    B<--opening-brace-always-on-right>     
+
+However, the default style, B<-nbl> places the opening brace on a new
+line if it does not fit on the same line as the opening keyword, like
+this:
+
+        if ( $bigwasteofspace1 && $bigwasteofspace2
+          || $bigwasteofspace3 && $bigwasteofspace4 )
+        {
+            do_something();
+        }
+
+To force the opening brace to always be on the right, use the B<-bar>
+flag.  In this case, the above example becomes
+
+        if ( $bigwasteofspace1 && $bigwasteofspace2
+          || $bigwasteofspace3 && $bigwasteofspace4 ) {
+            do_something();
+        }
+
+It is an error to specify both B<-bl> and B<-bar>.
+
 =item B<-dnl>,  B<--delete-old-newlines>
 
 By default, perltidy first deletes all old line break locations, and then it

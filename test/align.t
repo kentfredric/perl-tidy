@@ -73,3 +73,11 @@ my %fallback=(
                       $max_length[$dd] )
                       unless $dont_align[$dd];
 		      }}}
+
+# two things to note here: (1) this will be broken by the compound list rules,
+# (2) vertical alignment is bad because 'undef's are not (yet) allowed
+# to match with quotes and numbers.  This needs to be fixed.
+my $ti =
+          [ $names,
+            [ 'Not Done Yet', 12, 2000, '\'', '\'', 'max length', 1, 1, 3,
+                undef, '0', '0', undef, undef, undef ] ];

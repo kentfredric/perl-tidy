@@ -40,7 +40,7 @@ uninstall:
 # The rest of this is just to build the distribution file
 ###############################################################
 
-VERSION=20010610
+VERSION=20010611
 PROG=$(PROGRAM)-$(VERSION)
 TMPDIR=/tmp/$(PROG)
 dist:
