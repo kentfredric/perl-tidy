@@ -61,7 +61,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.35 2002/11/28 22:28:42 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.36 2002/11/30 15:05:23 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 sub streamhandle {
@@ -3702,6 +3702,7 @@ BEGIN {
         ')'  => 'p',
         'M'  => 'm',
         'P'  => 'pd',
+        'A'  => 'co',
     );
 
     # These token types will all be called identifiers for now
@@ -6837,7 +6838,7 @@ sub set_white_space_flag {
         my @spaces_both_sides = qw"
           + - * / % ? = . : x < > | & ^ .. << >> ** && .. ||  => += -=
           .= %= x= &= |= ^= *= <> <= >= == =~ !~ /= != ... <<= >>=
-          &&= ||= <=> k f w F n C Y U G v
+          &&= ||= <=> A k f w F n C Y U G v
           ";
 
         my @spaces_left_side = qw"
@@ -7632,7 +7633,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.35 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.36 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -10794,6 +10795,8 @@ sub set_bond_strengths {
         $right_bond_strength{'J'} = NOMINAL;
         $left_bond_strength{'j'}  = STRONG;
         $right_bond_strength{'j'} = STRONG;
+        $left_bond_strength{'A'}  = STRONG;
+        $right_bond_strength{'A'} = STRONG;
 
         $left_bond_strength{'->'}  = STRONG;
         $right_bond_strength{'->'} = VERY_STRONG;
@@ -18298,6 +18301,7 @@ The following additional token types are defined:
     m    unary -
     pp   pre-increment operator ++
     mm   pre-decrement operator -- 
+    A    : used as attribute separator
 END_OF_LIST
 }
 
@@ -19015,7 +19019,7 @@ sub reset_indentation_level {
             # ATTRS: check for a ':' which introduces an attribute list
             # (this might eventually get its own token type)
             elsif ( $statement_type =~ /^sub/ ) {
-                $type = ':';
+                $type = 'A';
             }
 
             # check for scalar attribute, such as
@@ -19023,7 +19027,7 @@ sub reset_indentation_level {
             elsif ($is_my_our{$statement_type}
                 && $current_depth[QUESTION_COLON] == 0 )
             {
-                $type = ':';
+                $type = 'A';
             }
 
             # otherwise, it should be part of a ?/: operator
@@ -22419,7 +22423,7 @@ sub scan_id_do {
 
             # catch case of line with leading ATTR ':' after anonymous sub
             if ( $pos == $pos_beg && $tok eq ':' ) {
-                $type = ':';
+                $type = 'A';
             }
 
             # We must convert back from character position
@@ -23215,7 +23219,7 @@ BEGIN {
     # make a hash of all valid token types for self-checking the tokenizer
     # (adding NEW_TOKENS : select a new character and add to this list)
     my @valid_token_types = qw#
-      b C G L R f h Q k t w i q n p m F pp mm U j J Y Z v
+      A b C G L R f h Q k t w i q n p m F pp mm U j J Y Z v
       { } ( ) [ ] ; + - / * | % ! x ~ = \ ? : . < > ^ &
       #;
     push ( @valid_token_types, @digraphs );
@@ -23533,7 +23537,7 @@ BEGIN {
     # note: pp and mm are pre-increment and decrement
     # f=semicolon in for,  F=file test operator
     my @value_requestor_type = qw#
-      L { ( [ ~ !~ =~ ; . .. ...  : && ! || = + - x
+      L { ( [ ~ !~ =~ ; . .. ... A : && ! || = + - x
       **= += -= .= /= *= %= x= &= |= ^= <<= >>= &&= ||=
       <= >= == != => \ > < % * / ? & | ** <=>
       f F pp mm Y p m U J G
