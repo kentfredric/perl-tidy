@@ -38,7 +38,7 @@
 ############################################################
 
 package PerlTidy;
-use 5.004;
+use 5.004;    # need IO::File from 5.004 or later
 BEGIN { $^W = 1; }    # turn on warnings
 use strict;
 use Exporter;
@@ -60,7 +60,7 @@ eval "use diagnostics";
 use IO::File;
 
 BEGIN {
-    ($VERSION=q($Id: perltidy,v 1.79 2001/12/30 16:19:10 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ($VERSION=q($Id: perltidy,v 1.80 2001/12/31 15:48:42 perltidy Exp $)) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 # Preloaded methods go here.
@@ -169,8 +169,8 @@ sub perltidy {
     }
 
     # handle command line options
-    my ( $rOpts, $config_file, $rraw_options, $pending_complaint ) =
-      process_command_line();
+    my ( $rOpts, $config_file, $rraw_options, $pending_complaint, $saw_extrude )
+      = process_command_line();
     PerlTidy::Formatter::check_options($rOpts);
     if ( $rOpts->{'html'} ) {
         PerlTidy::HtmlWriter->check_options($rOpts);
@@ -347,7 +347,8 @@ sub perltidy {
         my $log_file     = $fileroot . $dot . "LOG";
 
         my $logger_object =
-          PerlTidy::Logger->new( $rOpts, $log_file, $warning_file );
+          PerlTidy::Logger->new( $rOpts, $log_file, $warning_file,
+            $saw_extrude );
         write_logfile_header( $rOpts, $logger_object, $config_file,
             $rraw_options );
         if ($pending_complaint) {
@@ -835,10 +836,11 @@ sub process_command_line {
     # Uncomment next line to dump all expansions for debugging:
     # dump_short_names(\%expansion);
 
-    my ($word);
+    my $word;
     my @raw_options        = ();
     my $config_file        = "";
     my $saw_ignore_profile = 0;
+    my $saw_extrude        = 0;
     my $i;
 
     #---------------------------------------------------------------
@@ -862,6 +864,9 @@ sub process_command_line {
             print STDERR
               "usage: -pro=filename or --profile=filename, no spaces\n";
             exit 1;
+        }
+        elsif ( $i =~ /-extrude$/ ) {
+            $saw_extrude = 1;
         }
         elsif ( $i =~ /-(help|h)$/ ) {
             usage();
@@ -1048,7 +1053,8 @@ EOM
     unless ( $Opts{'maximum-consecutive-blank-lines'} ) {
         $Opts{'swallow-optional-blank-lines'} = 1;
     }
-    return ( \%Opts, $config_file, \@raw_options, $pending_complaint );
+    return ( \%Opts, $config_file, \@raw_options, $pending_complaint,
+        $saw_extrude );
 
 }    # end of process_command_line
 
@@ -1951,7 +1957,7 @@ package PerlTidy::Logger;
 sub new {
     my $class = shift;
     my $fh;
-    my ( $rOpts, $log_file, $warning_file ) = @_;
+    my ( $rOpts, $log_file, $warning_file, $saw_extrude ) = @_;
     $fh = IO::File->new(">$log_file")
       or die ("couldn't open log file $log_file: $!\n");
 
@@ -1975,8 +1981,9 @@ sub new {
         _warning_file                  => $warning_file,
         _warning_count                 => 0,
         _complaint_count               => 0,
-        _saw_code_bug    => -1,    # -1=no 0=maybe 1=for sure
+        _saw_code_bug    => -1,             # -1=no 0=maybe 1=for sure
         _saw_brace_error => 0,
+        _saw_extrude     => $saw_extrude,
     }, $class;
 }
 
@@ -2288,7 +2295,21 @@ EOM
 
     }
     elsif ( $saw_code_bug == 1 ) {
-        $self->warning(<<EOM);
+        if ( $self->{_saw_extrude} ) {
+            $self->warning(<<EOM);
+You may have encountered a bug in perltidy.  However, since you are
+using the -extrude option, the problem may be with perl itself, which
+has occasional parsing problems with this type of file.  If you believe
+that the problem is with perltidy, and the problem is not listed in the
+BUGS file at http://perltidy.sourceforge.net, please report it so that
+it can be corrected.  Include the smallest possible script which has the
+problem, along with the .LOG file. See the manual pages for contact
+information.
+Thank you!
+EOM
+        }
+        else {
+            $self->warning(<<EOM);
 
 Oops, you seem to have encountered a bug in perltidy.  Please check the
 BUGS file at http://perltidy.sourceforge.net.  If the problem is not
@@ -2298,15 +2319,16 @@ smallest possible script which produces this message, along with the
 Your efforts are appreciated.  
 Thank you!
 EOM
-        my $added_semicolon_count = $formatter->get_added_semicolon_count();
-        if ( $added_semicolon_count > 0 ) {
-            $self->warning(<<EOM);
+            my $added_semicolon_count = $formatter->get_added_semicolon_count();
+            if ( $added_semicolon_count > 0 ) {
+                $self->warning(<<EOM);
 
 The log file shows that perltidy added $added_semicolon_count semicolons.
 Please rerun with -nasc to see if that is the cause of the syntax error.  Even
 if that is the problem, please report it so that it can be fixed.
 EOM
 
+            }
         }
     }
 }
@@ -2370,7 +2392,81 @@ use vars qw{
   $rOpts
   $css_filename
   $css_linkname
+  $missing_html_entities
 };
+
+# replace unsafe characters with HTML entity representation if HTML::Entities 
+# is available
+{ eval "use HTML::Entities"; $missing_html_entities = $@; }
+
+sub new {
+
+    my ( $class, $input_file, $html_file ) = @_;
+
+    my $html_file_opened = 0;
+    my $html_fh;
+    unless ( $html_fh = IO::File->new("> $html_file") ) {
+        warn("can't open $html_file: $!\n");
+        return undef;
+    }
+    $html_file_opened = 1;
+
+    unless ( $rOpts->{'html-pre-only'} ) {
+        $html_fh->print( <<"HTML_START");
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+<HEAD>
+HTML_START
+
+        # use css linked to another file
+        if ( $rOpts->{'html-linked-style-sheet'} ) {
+            $html_fh->print(
+                qq(<link rel=stylesheet href="$css_linkname" type="text/css">));
+            $html_fh->print( <<"ENDCSS");
+<TITLE>$input_file</TITLE>
+</HEAD>
+<BODY> 
+ENDCSS
+        }
+
+        # use css embedded in this file
+        elsif ( !$rOpts->{'nohtml-style-sheets'} ) {
+            $html_fh->print( <<'ENDCSS');
+<STYLE TYPE="text/css">
+<!--
+ENDCSS
+            write_style_sheet_data($html_fh);
+            $html_fh->print( <<"ENDCSS");
+-->
+</STYLE>
+<TITLE>$input_file</TITLE>
+</HEAD>
+<BODY> 
+ENDCSS
+        }
+
+        # no css used
+        else {
+
+            $html_fh->print( <<"HTML_START");
+<TITLE>$input_file</TITLE>
+</HEAD>
+<BODY BGCOLOR=\"$rOpts->{'html-color-background'}\" TEXT=\"$rOpts->{'html-color-punctuation'}\">
+HTML_START
+        }
+    }
+
+    $html_fh->print( <<"END_PRE");
+<!-- filename: $input_file -->
+<PRE>
+END_PRE
+
+    bless {
+        _html_file        => $html_file,
+        _html_file_opened => $html_file_opened,
+        _html_fh          => $html_fh,
+    }, $class;
+}
 
 BEGIN {
 
@@ -2687,75 +2783,6 @@ sub set_default_properties {
     $rOpts->{$key} = ( defined $rOpts->{$key} ) ? $rOpts->{$key} : $italic;
 }
 
-sub new {
-
-    my ( $class, $input_file, $html_file ) = @_;
-
-    my $html_file_opened = 0;
-    my $html_fh;
-    unless ( $html_fh = IO::File->new("> $html_file") ) {
-        warn("can't open $html_file: $!\n");
-        return undef;
-    }
-    $html_file_opened = 1;
-
-    unless ( $rOpts->{'html-pre-only'} ) {
-        $html_fh->print( <<"HTML_START");
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<HTML>
-<HEAD>
-HTML_START
-
-        # use css linked to another file
-        if ( $rOpts->{'html-linked-style-sheet'} ) {
-            $html_fh->print(
-                qq(<link rel=stylesheet href="$css_linkname" type="text/css">));
-            $html_fh->print( <<"ENDCSS");
-<TITLE>$input_file</TITLE>
-</HEAD>
-<BODY> 
-ENDCSS
-        }
-
-        # use css embedded in this file
-        elsif ( !$rOpts->{'nohtml-style-sheets'} ) {
-            $html_fh->print( <<'ENDCSS');
-<STYLE TYPE="text/css">
-<!--
-ENDCSS
-            write_style_sheet_data($html_fh);
-            $html_fh->print( <<"ENDCSS");
--->
-</STYLE>
-<TITLE>$input_file</TITLE>
-</HEAD>
-<BODY> 
-ENDCSS
-        }
-
-        # no css used
-        else {
-
-            $html_fh->print( <<"HTML_START");
-<TITLE>$input_file</TITLE>
-</HEAD>
-<BODY BGCOLOR=\"$rOpts->{'html-color-background'}\" TEXT=\"$rOpts->{'html-color-punctuation'}\">
-HTML_START
-        }
-    }
-
-    $html_fh->print( <<"END_PRE");
-<!-- filename: $input_file -->
-<PRE>
-END_PRE
-
-    bless {
-        _html_file        => $html_file,
-        _html_file_opened => $html_file_opened,
-        _html_fh          => $html_fh,
-    }, $class;
-}
-
 sub close_html_file {
     my $self = shift;
     return unless $self->{_html_file_opened};
@@ -2814,15 +2841,21 @@ sub markup_html_element {
 
     return $token if ( $type eq 'b' );    # skip a blank
     return $token if ( $token =~ /^\s*$/ );
-    $token =~ s/\&/&amp;/g;
-    $token =~ s/\</&lt;/g;
-    $token =~ s/\>/&gt;/g;
-    $token =~ s/\"/&quot;/g;
+
+    if ($missing_html_entities) {
+        $token =~ s/\&/&amp;/g;
+        $token =~ s/\</&lt;/g;
+        $token =~ s/\>/&gt;/g;
+        $token =~ s/\"/&quot;/g;
+    }
+    else {
+        encode_entities($token);
+    }
 
     # get the short abbreviation for this token type
     my $short_name = $token_short_names{$type};
     if ( !defined($short_name) ) {
-        $short_name = "pu";               # punctuation is default
+        $short_name = "pu";    # punctuation is default
     }
 
     # handle style sheets..
@@ -4692,7 +4725,7 @@ sub is_essential_whitespace {
       #    $b=join $comma ? ',' : ':', @_;   # ok
       #    $b=join $comma ?',' : ':', @_;   # error!
       # but this is ok :)
-      #    $b=join $comma?',' : ':', @_;   # not a problem
+      #    $b=join $comma?',' : ':', @_;   # not a problem!
       ## || ($typel eq '?')
 
       # be careful with a space around ++ and --, to avoid ambiguity as to
@@ -5510,7 +5543,7 @@ sub set_white_space_flag {
          /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
      Examples:
        *VERSION = \'1.01';
-       ( $VERSION ) = '$Revision: 1.79 $ ' =~ /\$Revision:\s+([^\s]+)/;
+       ( $VERSION ) = '$Revision: 1.80 $ ' =~ /\$Revision:\s+([^\s]+)/;
      We will pass such a line straight through (by changing it
      to a quoted string) unless -npvl is used
     
@@ -5519,7 +5552,7 @@ sub set_white_space_flag {
      block sequence numbers may see a closing sequence number but not
      the corresponding opening sequence number (sidecmt.t).  Example:
 
-    my $VERSION = do { my @r = (q$Revision: 1.79 $ =~ /\d+/g); sprintf
+    my $VERSION = do { my @r = (q$Revision: 1.80 $ =~ /\d+/g); sprintf
     "%d."."%02d" x $#r, @r }; 
 
     Here, the opening brace of 'do {' will not be seen, while the closing
@@ -6877,10 +6910,11 @@ sub accumulate_csc_text {
                         reset_block_text_accumulator();
                     }
                     else {
-##                         shouldn't happen, but not serious.
-##                         warning(
-## "NOTE: accumulating block type $accumulating_text_for_block but found '{' for type $block_type\n"
-##                         );
+
+                        # shouldn't happen, but not a serious error.
+                        # We were accumulating -csc text for block type
+                        # $accumulating_text_for_block and unexpectedly
+                        # encountered a '{' for block type $block_type.
                     }
                 }
 
@@ -7060,7 +7094,8 @@ sub send_lines_to_vertical_aligner {
         PerlTidy::VerticalAligner::flush();
     }
 
-##    TESTING
+##    TESTING - in preparation for future update to adjust ci_levels in
+##    certain cases for better alignment.
 ##    my @levs = @levels_to_go[ @$ri_first[0..@$ri_first-1]];
 ##    my @cilevs = @ci_levels_to_go[ @$ri_first[0..@$ri_first-1]];
 ##    print "BUB: levs are:(@levs) ci=(@cilevs)\n";
@@ -14736,7 +14771,11 @@ sub reset_indentation_level {
             $paren_type[$paren_depth] = $container_type;
             $type_sequence = increase_nesting_depth( PAREN, $i_tok );
 
-            # FUTURE UPDATE: give all parens full indentation 
+            #-------------------------------------------------------------
+            # FUTURE UPDATE: give almost all parens full indentation.
+            # parens are trouble because the user is free to add almost
+            # as many as desired, even if they are not necessary.   And
+            # they can be misleading, because perl flattens lists.
             #$type = '{';
             #-------------------------------------------------------------
 
@@ -14816,6 +14855,7 @@ sub reset_indentation_level {
             if ( $last_nonblank_type eq ',' ) {
                 complain("Repeated ','s \n");
             }
+##                FIXME: need to move this elsewhere, perhaps check after a '('
 ##                elsif ($last_nonblank_token eq '(') {
 ##                    warning("Leading ','s illegal in some versions of perl\n");
 ##                }
@@ -19528,17 +19568,7 @@ BEGIN {
 
     @is_keyword{@Keywords} = (1) x scalar(@Keywords);
 }
-
 1;
 
 package main;
-
-PerlTidy::perltidy(
-    source      => undef,
-    destination => undef,
-
-    # Place for future parameters
-);
-
-# vi: set ts=4 sw=4 :
-
+PerlTidy::perltidy();

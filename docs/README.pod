@@ -141,10 +141,8 @@ versions of Windows do not require the -nsyn switch.
 
 =head2 VMS Notes
 
-Perltidy runs under VMS, thanks to Michael Cartmell.  You will
-probably want to use the .zip distribution file to get the <cr><lf> line
-endings.  File extensions will use an underscore character instead of a
-dot, so 
+Perltidy runs under VMS, thanks to Michael Cartmell.  File extensions
+will use an underscore character instead of a dot, so 
 
       perltidy myfile.pl
 

@@ -16,6 +16,9 @@
  packaging as a module should be ready early next year; This is an elegant,
  powerful update; many thanks to Hugh for contributing it.
 
+ -perltidy -html will check to see if HTML::Entities is installed, and if so,
+ it will use it to encode unsafe characters.
+
  -Added flag -oext=ext to change the output file extension to be different
  from the default ('tdy' or 'html').  For example:
 
