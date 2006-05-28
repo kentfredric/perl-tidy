@@ -1,58 +1,89 @@
-<HTML>
-<HEAD>
-<TITLE>Perltidy TODO List</TITLE>
-<LINK REV="made" HREF="mailto:perl@packages.debian.org">
-</HEAD>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>Perltidy TODO List</title>
+<link rev="made" href="mailto:root@localhost" />
+</head>
 
-<BODY>
+<body style="background-color: white">
 
-<A NAME="__index__"></A>
+<p><a name="__index__"></a></p>
 <!-- INDEX BEGIN -->
 
-<UL>
+<ul>
 
-	<LI><A HREF="#perltidy todo list">Perltidy TODO List</A></LI>
-	<UL>
+	<li><a href="#perltidy_todo_list">Perltidy TODO List</a></li>
+	<ul>
 
-		<LI><A HREF="#improved vertical alignment">Improved Vertical Alignment</A></LI>
-		<LI><A HREF="#improved : formatting">improved ?: formatting</A></LI>
-		<LI><A HREF="#recursive file processing">Recursive file processing</A></LI>
-		<LI><A HREF="#documentation">Documentation</A></LI>
-		<LI><A HREF="#html writer">HTML writer</A></LI>
-	</UL>
+		<li><a href="#improved_vertical_alignment">Improved Vertical Alignment</a></li>
+		<li><a href="#more_options_for_controling_placement_of_opening_closing_tokens">More options for controling placement of opening/closing tokens</a></li>
+		<li><a href="#improved___formatting">improved ?: formatting</a></li>
+		<li><a href="#improved_internal_if_unless_formatting">improved internal if/unless formatting</a></li>
+		<li><a href="#enable_ole_under_windows">enable -ole under Windows</a></li>
+		<li><a href="#documentation">Documentation</a></li>
+		<li><a href="#html_writer">HTML writer</a></li>
+		<li><a href="#recursive_file_processing">Recursive file processing</a></li>
+	</ul>
 
-</UL>
+</ul>
 <!-- INDEX END -->
 
-<HR>
-<P>
-<H1><A NAME="perltidy todo list">Perltidy TODO List</A></H1>
-<P>This is a ``wish-list'' of features to add and things to do.  All of these
-are of interest, but there is no particular schedule for implementing
-them.</P>
-<P>
-<H2><A NAME="improved vertical alignment">Improved Vertical Alignment</A></H2>
-<P>There are many opportunities for improving vertical alignment.</P>
-<P>
-<H2><A NAME="improved : formatting">improved ?: formatting</A></H2>
-<P>An indentation level should be associated with ?: statements.
-This will make nested ?: statements more readable.</P>
-<P>
-<H2><A NAME="recursive file processing">Recursive file processing</A></H2>
-<P>A -r flag might be nice.</P>
-<P>
-<H2><A NAME="documentation">Documentation</A></H2>
-<P>A FAQ is needed to explain some of the more subtle formatting
-issues, and to give examples of different styles.</P>
-<P>The -formatter callback object documentation is incomplete.</P>
-<P>
-<H2><A NAME="html writer">HTML writer</A></H2>
-<P>The HTML writer does not colorize interpolated identifiers in here
+<hr />
+<p>
+</p>
+<h1><a name="perltidy_todo_list">Perltidy TODO List</a></h1>
+<p>This is a partial ``wish-list'' of features to add and things to do.  All of
+these are of interest, but there is no particular schedule for implementing
+them.</p>
+<p>
+</p>
+<h2><a name="improved_vertical_alignment">Improved Vertical Alignment</a></h2>
+<p>There are many opportunities for improving vertical alignment.</p>
+<p>
+</p>
+<h2><a name="more_options_for_controling_placement_of_opening_closing_tokens">More options for controling placement of opening/closing tokens</a></h2>
+<p>Many have requested even more options to control opening and closing token
+placement.</p>
+<p>
+</p>
+<h2><a name="improved___formatting">improved ?: formatting</a></h2>
+<p>An indentation level should be associated with ?: statements.
+This will make nested ?: statements more readable.</p>
+<p>
+</p>
+<h2><a name="improved_internal_if_unless_formatting">improved internal if/unless formatting</a></h2>
+<p>Consider giving internal if/unless statements an additional level
+of indentation.  This would avoid running out of indentation levels.
+Suggested by Jeff Armstorng. For example, we would like the 'ands' in
+the following statement to be indented more than the if:</p>
+<pre>
+    return $ship-&gt;chargeWeapons(&quot;phaser-canon&quot;)
+      if $encounter-&gt;description eq 'klingon'
+      and $ship-&gt;firepower &gt;= $encounter-&gt;firepower
+      and $location-&gt;status ne 'neutral';</pre>
+<p>
+</p>
+<h2><a name="enable_ole_under_windows">enable -ole under Windows</a></h2>
+<p>This only works reliably under unix at present.</p>
+<p>
+</p>
+<h2><a name="documentation">Documentation</a></h2>
+<p>A FAQ is needed to explain some of the more subtle formatting
+issues, and to give examples of different styles.</p>
+<p>The -formatter callback object documentation is incomplete.</p>
+<p>
+</p>
+<h2><a name="html_writer">HTML writer</a></h2>
+<p>The HTML writer does not colorize interpolated identifiers in here
 documents or quoted strings.  The tokenizer outputs interpolation
 information for here docs; it still needs to be updated to do this for
 multi-line quotes.  Then code needs to be written to scan for and markup
-identifiers.</P>
+identifiers.</p>
+<p>
+</p>
+<h2><a name="recursive_file_processing">Recursive file processing</a></h2>
+<p>A -r flag might be nice.</p>
 
-</BODY>
+</body>
 
-</HTML>
+</html>

@@ -121,16 +121,16 @@ OPTIONS - OVERVIEW
 
     Most parameters which serve as on/off flags can be negated with a
     leading "n" (for the short name) or a leading "no" or "no-" (for the
-    long name). For example, the flag to have perl check syntax using perl
-    -c is -syn or --check-syntax. The flag to skip this is -nsyn or
-    --nocheck-syntax or --no-check-syntax.
+    long name). For example, the flag to outdent long quotes is is -olq or
+    --outdent-long-quotes. The flag to skip this is -nolq or
+    --nooutdent-long-quotes or --no-outdent-long-quotes.
 
     Options may not be bundled together. In other words, options -q and -g
     may NOT be entered as -qg.
 
     Option names may be terminated early as long as they are uniquely
-    identified. For example, instead of -dump-token-types, it would be
-    sufficient to enter -dump-tok, or even -dump-t, to uniquely identify
+    identified. For example, instead of --dump-token-types, it would be
+    sufficient to enter --dump-tok, or even --dump-t, to uniquely identify
     this command.
 
   I/O control
@@ -155,10 +155,7 @@ OPTIONS - OVERVIEW
           perltidy somefile.pl -st >somefile.new.pl
 
         This option may only be used if there is just a single input file.
-        When this option is used, perltidy will have to create a temporary
-        copy of the output file to feed to perl for syntax checking, unless
-        allow syntax checking is disabled. This file will be deleted when
-        the job finishes. The default is -nst or -nostandard-output.
+        The default is -nst or --nostandard-output.
 
     -se, --standard-error-output
         If perltidy detects an error when processing file somefile.pl, its
@@ -207,11 +204,11 @@ OPTIONS - OVERVIEW
         the default .bak. See "Specifying File Extensions".
 
     -w, --warning-output
-        Setting -w causes perltidy to include any non-critical warning
-        messages be reported as errors. These include messages about
-        possible pod problems, possibly bad starting indentation level, and
-        cautions about indirect object usage. The default, -nw or
-        --nowarning-output, is not to include these warnings.
+        Setting -w causes any non-critical warning messages to be reported
+        as errors. These include messages about possible pod problems,
+        possibly bad starting indentation level, and cautions about indirect
+        object usage. The default, -nw or --nowarning-output, is not to
+        include these warnings.
 
     -q, --quiet
         Deactivate error messages and syntax checking (for running under an
@@ -321,31 +318,22 @@ FORMATTING OPTIONS
             be unset. One example is the -lp option.
 
     -syn, --check-syntax
-        The purpose of this flag is to alert you to any situation in which
-        the input file has good syntax but the output file has bad syntax,
-        which implies an error by perltidy.
-
         This flag causes perltidy to run "perl -c -T" to check syntax of
         input and output. (To change the flags passed to perl, see the next
         item, -pscf). The results are written to the .LOG file, which will
         be saved if an error is detected in the output script. The output
         script is not checked if the input script has a syntax error.
+        Perltidy does its own checking, but this option employs perl to get
+        a "second opinion".
 
-        If Perl reports errors in the input file, they will not be reported
-        in the error output unless the -warning-output flag is given.
+        If perl reports errors in the input file, they will not be reported
+        in the error output unless the --warning-output flag is given.
 
-        To skip syntax checking, use -nsyn or --nocheck-syntax. Syntax
-        checking is also deactivated by the --quiet flag, discussed above.
-
-        The default is to do a syntax check on most operating systems. An
-        exception is Windows 9x/Me systems, which do not handle this well.
-        Another exception is when the input or output streams are not
-        connected to identifiable filenames. In the past, copies of these
-        streams were saved in temporary files, but this has caused too many
-        portability problems.
-
-        Please note: Even if this type of syntax checking is deactivated,
-        perltidy will still do extensive syntax checking on its own.
+        The default is not to do this type of syntax checking (although
+        perltidy will still do as much self-checking as possible). The
+        reason is that it causes all code in BEGIN blocks to be executed,
+        for all modules being used, and this opens the door to security
+        issues and infinite loops when running perltidy.
 
     -pscf=s, -perl-syntax-check-flags=s
         When perl is invoked to check syntax, the normal flags are "-c -T".
@@ -372,18 +360,22 @@ FORMATTING OPTIONS
         Setting this flag is equivalent to setting --freeze-newlines and
         --freeze-whitespace.
 
-    -ple, --preserve-line-endings
-        This flag causes perltidy to retain the original dos or unix line
-        separator characters of a script when it is processed under dos or
-        unix. (Normally, perltidy writes files with the line separator
-        character of the host machine, and the original line separator
-        characters are lost). This might be useful, for example, if a dos
-        script is processed on a unix machine and the output then sent back
-        to the dos machine, since it would avoid a dos2unix and unix2dos
-        operation. The flag may not be useful for other operating systems.
+    -ole=s, --output-line-ending=s
+        where s="win", "dos", "unix", or "mac". This flag tells perltidy to
+        output line endings for a specific system. Normally, perltidy writes
+        files with the line separator character of the host system. The
+        "win" and "dos" flags have an identical result. NOTE: This only
+        works under unix-like systems and is ignored under other systems.
 
-        The logic for this option works on a line-by-line basis. Thus, files
-        with mixed unix/dos line endings will remain mixed.
+    -ple, --preserve-line-endings
+        This flag tells perltidy to write its output files with the same
+        line endings as the input file, if possible. It should work for dos,
+        unix, and mac line endings. It will only work if perltidy input
+        comes from a filename (rather than stdin, for example). If perltidy
+        has trouble determining the input file line ending, it will revert
+        to the default behavior of using the line ending of the host system.
+        NOTE: This only works under unix-like systems and is ignored under
+        other systems.
 
   Code Indentation Control
     -ci=n, --continuation-indentation=n
@@ -400,7 +392,7 @@ FORMATTING OPTIONS
 
         The value given to -ci is also used by some commands when a small
         space is required. Examples are commands for outdenting labels,
-        -ola, and control keywords, -ock.
+        -ola, and control keywords, -okw.
 
         When default values are not used, it is suggested that the value n
         given with -ci=n be no more than about one-half of the number of
@@ -487,9 +479,9 @@ FORMATTING OPTIONS
         If desired, this control can be applied independently to each of the
         closing container token types. In fact, -cti=n is merely an
         abbreviation for -cpi=n -csbi=n -cbi=n, where: -cpi or
-        -closing-paren-indentation controls )'s, -csbi or
-        -closing-square-bracket-indentation controls ]'s, -cbi or
-        -closing-brace-indentation controls non-block }'s.
+        --closing-paren-indentation controls )'s, -csbi or
+        --closing-square-bracket-indentation controls ]'s, -cbi or
+        --closing-brace-indentation controls non-block }'s.
 
     -icp, --indent-closing-paren
         The -icp flag is equivalent to -cti=2, described in the previous
@@ -547,7 +539,7 @@ FORMATTING OPTIONS
             these control keywords easier to see. To change this list of
             keywords being outdented, see the next section.
 
-            For example, using "perltidy -ock" on the previous example
+            For example, using "perltidy -okw" on the previous example
             gives:
 
                     my $i;
@@ -710,7 +702,7 @@ FORMATTING OPTIONS
 
         It is necessary to have a list of all token types in order to create
         this type of input. Such a list can be obtained by the command
-        -dump-token-types.
+        --dump-token-types.
 
     Space between keyword and opening paren
         When an opening paren follows a keyword, no space is introduced
@@ -772,7 +764,7 @@ FORMATTING OPTIONS
     -olc, --outdent-long-comments
         When -olc is set, lines which are full-line (block) comments longer
         than the value maximum-line-length will have their indentation
-        removed. The default is not to do this.
+        removed. This is the default; use -nolc to prevent outdenting.
 
     -msc=n, --minimum-space-to-comment=n
         Side comments look best when lined up several spaces to the right of
@@ -798,7 +790,7 @@ FORMATTING OPTIONS
         A closing side comment is a special comment which perltidy can
         automatically create and place after the closing brace of a code
         block. They can be useful for code maintenance and debugging. The
-        command -csc (or -closing-side-comments) adds or updates closing
+        command -csc (or --closing-side-comments) adds or updates closing
         side comments. For example, here is a small code snippet
 
                 sub message {
@@ -832,7 +824,7 @@ FORMATTING OPTIONS
         Several commands are available to modify the behavior of these two
         basic commands, -csc and -dcsc:
 
-        -csci=n, or -closing-side-comment-interval=n
+        -csci=n, or --closing-side-comment-interval=n
             where "n" is the minimum number of lines that a block must have
             in order for a closing side comment to be added. The default
             value is "n=6". To illustrate:
@@ -850,7 +842,7 @@ FORMATTING OPTIONS
             Now the "if" and "else" blocks are commented. However, now this
             has become very cluttered.
 
-        -cscp=string, or -closing-side-comment-prefix=string
+        -cscp=string, or --closing-side-comment-prefix=string
             where string is the prefix used before the name of the block
             type. The default prefix, shown above, is "## end". This string
             will be added to closing side comments, and it will also be used
@@ -858,7 +850,7 @@ FORMATTING OPTIONS
             Any comment identified as a closing side comment will be placed
             just a single space to the right of its closing brace.
 
-        -cscl=string, or -closing-side-comment-list-string
+        -cscl=string, or --closing-side-comment-list-string
             where "string" is a list of block types to be tagged with
             closing side comments. By default, all code block types preceded
             by a keyword or label (such as "if", "sub", and so on) will be
@@ -870,7 +862,7 @@ FORMATTING OPTIONS
 
                -cscl="sub : BEGIN END"
 
-        -csct=n, or -closing-side-comment-maximum-text=n
+        -csct=n, or --closing-side-comment-maximum-text=n
             The text appended to certain block types, such as an "if" block,
             is whatever lies between the keyword introducing the block, such
             as "if", and the opening brace. Since this might be too much
@@ -878,13 +870,13 @@ FORMATTING OPTIONS
             the purpose of this parameter. The default value is "n=20",
             meaning that no additional tokens will be appended to this text
             after its length reaches 20 characters. Omitted text is
-            indicated with .... (Tokens, including sub names, are never
+            indicated with "...". (Tokens, including sub names, are never
             truncated, however, so actual lengths may exceed this). To
             illustrate, in the above example, the appended text of the first
             block is " ( !defined( $_[0] )...". The existing limit of "n=20"
-            caused this text to be truncated, as indicated by the ....
+            caused this text to be truncated, as indicated by the "...".
 
-        -csce=n, or -closing-side-comment-else-flag=n
+        -csce=n, or --closing-side-comment-else-flag=n
             The default, n=0, places the text of the opening "if" statement
             after any terminal "else".
 
@@ -896,7 +888,7 @@ FORMATTING OPTIONS
             If n=1 is used, the results will be the same as n=2 whenever the
             resulting line length is less than the maximum allowed.
 
-        -cscw, or -closing-side-comment-warnings
+        -cscw, or --closing-side-comment-warnings
             This parameter is intended to help make the initial transition
             to the use of closing side comments. It causes two things to
             happen if a closing side comment replaces an existing, different
@@ -1029,6 +1021,58 @@ FORMATTING OPTIONS
             switch -ssc is set. Also, note that this string is used in a
             perl regular expression which identifies these comments, so it
             must enable a valid regular expression to be formed.
+
+  Skipping Selected Sections of Code
+    Selected lines of code may be passed verbatim to the output without any
+    formatting. This feature is enabled by default but can be disabled with
+    the --noformat-skipping or -nfs flag. It should be used sparingly to
+    avoid littering code with markers, but it might be helpful for working
+    around occasional problems. For example it might be useful for keeping
+    the indentation of old commented code unchanged, keeping indentation of
+    long blocks of aligned comments unchanged, keeping certain list
+    formatting unchanged, or working around a glitch in perltidy.
+
+    -fs, --format-skipping
+        This flag, which is enabled by default, causes any code between
+        special beginning and ending comment markers to be passed to the
+        output without formatting. The default beginning marker is #<<< and
+        the default ending marker is #>>> but they may be changed (see next
+        items below). Additional text may appear on these special comment
+        lines provided that it is separated from the marker by at least one
+        space. For example
+
+         #<<<  do not let perltidy touch this
+            my @list = (1,
+                        1, 1,
+                        1, 2, 1,
+                        1, 3, 3, 1,
+                        1, 4, 6, 4, 1,);
+         #>>>
+
+        The comment markers may be placed at any location that a block
+        comment may appear. If they do not appear to be working, use the
+        -log flag and examine the .LOG file. Use -nfs to disable this
+        feature.
+
+    -fsb=string, --format-skipping-begin=string
+        The -fsb=string parameter may be used to change the beginning marker
+        for format skipping. The default is equivalent to -fsb='#<<<'. The
+        string that you enter must begin with a # and should be in quotes as
+        necessary to get past the command shell of your system. It is
+        actually the leading text of a pattern that is constructed by
+        appending a '\s', so you must also include backslashes for
+        characters to be taken literally rather than as patterns.
+
+        Some examples show how example strings become patterns:
+
+         -fsb='#\{\{\{' becomes /^#\{\{\{\s/  which matches  #{{{ but not #{{{{
+         -fsb='#\*\*'   becomes /^#\*\*\s/    which matches  #** but not #***
+         -fsb='#\*{2,}' becomes /^#\*{2,}\s/  which matches  #** and #***** 
+
+    -fse=string, --format-skipping-end=string
+        The -fsb=string is the corresponding parameter used to change the
+        ending marker for format skipping. The default is equivalent to
+        -fse='#<<<'.
 
   Line Break Control
     -fnl, --freeze-newlines
@@ -1311,10 +1355,10 @@ FORMATTING OPTIONS
     -anl, --add-newlines
         By default, perltidy will add line breaks when necessary to create
         continuations of long lines and to improve the script appearance.
-        Use -nanl or -noadd-newlines to prevent any new line breaks.
+        Use -nanl or --noadd-newlines to prevent any new line breaks.
 
         This flag does not prevent perltidy from eliminating existing line
-        breaks; see -freeze-newlines to completely prevent changes to line
+        breaks; see --freeze-newlines to completely prevent changes to line
         break points.
 
     Controlling whether perltidy breaks before or after operators
@@ -1388,7 +1432,8 @@ FORMATTING OPTIONS
                         1, 4, 6, 4, 1,);
 
         A disadvantage of this flag is that all tables in the file must
-        already be nicely formatted.
+        already be nicely formatted. For another possibility see the -fs
+        flag in "Skipping Selected Sections of Code".
 
     -mft=n, --maximum-fields-per-table=n
         If the computed number of fields for any table exceeds n, then it
@@ -1658,8 +1703,8 @@ FORMATTING OPTIONS
         *   The parameters in the .perltidyrc file can be switched off with
             the -npro option.
 
-        *   The commands -dump-options, -dump-defaults, -dump-long-names,
-            and -dump-short-names, all described below, may all be helpful.
+        *   The commands --dump-options, --dump-defaults, --dump-long-names,
+            and --dump-short-names, all described below, may all be helpful.
 
     Creating a new abbreviation
         A special notation is available for use in a .perltidyrc file for
@@ -2015,24 +2060,24 @@ HTML OPTIONS
 
         Besides color, two other character attributes may be set: bold, and
         italics. To set a token type to use bold, use the flag
-        -html-bold-xxxxxx or -hbx, where xxxxxx or x are the long or short
+        --html-bold-xxxxxx or -hbx, where xxxxxx or x are the long or short
         names from the above table. Conversely, to set a token type to NOT
-        use bold, use -nohtml-bold-xxxxxx or -nhbx.
+        use bold, use --nohtml-bold-xxxxxx or -nhbx.
 
         Likewise, to set a token type to use an italic font, use the flag
-        -html-italic-xxxxxx or -hix, where again xxxxxx or x are the long or
-        short names from the above table. And to set a token type to NOT use
-        italics, use -nohtml-italic-xxxxxx or -nhix.
+        --html-italic-xxxxxx or -hix, where again xxxxxx or x are the long
+        or short names from the above table. And to set a token type to NOT
+        use italics, use --nohtml-italic-xxxxxx or -nhix.
 
         For example, to use bold braces and lime color, non-bold, italics
         keywords the following command would be used:
 
                 perltidy -html -hbs -hck=00FF00 -nhbk -hik somefile.pl
 
-        The background color can be specified with -html-color-background=n,
-        or -hcbg=n for short, where n is a 6 character hex RGB value. The
-        default color of text is the value given to punctuation, which is
-        black as a default.
+        The background color can be specified with
+        --html-color-background=n, or -hcbg=n for short, where n is a 6
+        character hex RGB value. The default color of text is the value
+        given to punctuation, which is black as a default.
 
         Here are some notes and hints:
 
@@ -2087,7 +2132,7 @@ SWITCHES WHICH MAY BE NEGATED
         D anl asc aws b bbb bbc bbs bli boc bok bol bot syn ce csc 
         dac dbc dcsc dnl dws dp dpro dsm dsc ddf dln dop dsn dtt dwls dwrs 
         f fll frm hsc html ibc icb icp iob isbc lp log lal x lsl ple pod bl 
-        sbl okw ola oll pvl q opt sbc sfs ssc sts se st sob 
+        sbl okw ola oll ple pvl q opt sbc sfs ssc sts se st sob 
         t tac tbc toc tp tsc tqw w
 
     Equivalently, the prefix 'no' or 'no-' on the corresponding long names
@@ -2145,7 +2190,7 @@ SEE ALSO
     perlstyle(1), Perl::Tidy(3)
 
 VERSION
-    This man page documents perltidy version 20030726.
+    This man page documents perltidy version 20060606.
 
 CREDITS
     Michael Cartmell supplied code for adaptation to VMS and helped with
@@ -2168,7 +2213,7 @@ AUTHOR
       http://perltidy.sourceforge.net
 
 COPYRIGHT
-    Copyright (c) 2000-2003 by Steve Hancock
+    Copyright (c) 2000-2006 by Steve Hancock
 
 LICENSE
     This package is free software; you can redistribute it and/or modify it

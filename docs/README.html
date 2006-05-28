@@ -1,93 +1,101 @@
-<HTML>
-<HEAD>
-<TITLE>Welcome to Perltidy!</TITLE>
-<LINK REV="made" HREF="mailto:perl@packages.debian.org">
-</HEAD>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>Welcome to Perltidy!</title>
+<link rev="made" href="mailto:root@localhost" />
+</head>
 
-<BODY>
+<body style="background-color: white">
 
-<A NAME="__index__"></A>
+<p><a name="__index__"></a></p>
 <!-- INDEX BEGIN -->
 
-<UL>
+<ul>
 
-	<LI><A HREF="#welcome to perltidy!">Welcome to Perltidy!</A></LI>
-	<LI><A HREF="#prerequisites">PREREQUISITES</A></LI>
-	<LI><A HREF="#download">DOWNLOAD</A></LI>
-	<LI><A HREF="#installation">INSTALLATION</A></LI>
-	<LI><A HREF="#what next">WHAT NEXT</A></LI>
-	<LI><A HREF="#feedback / bug reports">FEEDBACK / BUG REPORTS</A></LI>
-</UL>
+	<li><a href="#welcome_to_perltidy_">Welcome to Perltidy!</a></li>
+	<li><a href="#prerequisites">PREREQUISITES</a></li>
+	<li><a href="#download">DOWNLOAD</a></li>
+	<li><a href="#installation">INSTALLATION</a></li>
+	<li><a href="#what_next">WHAT NEXT</a></li>
+	<li><a href="#feedback___bug_reports">FEEDBACK / BUG REPORTS</a></li>
+</ul>
 <!-- INDEX END -->
 
-<HR>
-<P>
-<H1><A NAME="welcome to perltidy!">Welcome to Perltidy!</A></H1>
-<P>Perltidy is a tool to indent and reformat perl scripts.  It can also
-write scripts in html format.</P>
-<P>Perltidy is free software released under the GNU General Public
-License -- please see the included file ``COPYING'' for details.</P>
-<P>
-<HR>
-<H1><A NAME="prerequisites">PREREQUISITES</A></H1>
-<P>Perltidy is programmed to work with versions of Perl as old as 5.004.
-(You can find your version with <CODE>perl -v</CODE>).  However, some systems this
-old may have problems, particularly Windows versions.</P>
-<P>This this release was successfully tested on a 5.004_04 linux
+<hr />
+<p>
+</p>
+<h1><a name="welcome_to_perltidy_">Welcome to Perltidy!</a></h1>
+<p>Perltidy is a tool to indent and reformat perl scripts.  It can also
+write scripts in html format.</p>
+<p>Perltidy is free software released under the GNU General Public
+License -- please see the included file ``COPYING'' for details.</p>
+<p>
+</p>
+<hr />
+<h1><a name="prerequisites">PREREQUISITES</a></h1>
+<p>Perltidy is programmed to work with versions of Perl as old as 5.004.
+(You can find your version with <code>perl -v</code>).  However, some systems this
+old may have problems, particularly Windows versions.</p>
+<p>This this release was successfully tested on a 5.004_04 linux
 distribution (1997) and a 5.005_03 Windows version (ActiveState
-build 522, 1999).</P>
-<P>The following modules are not required, but perltidy may use them if
-detected:</P>
-<PRE>
+build 522, 1999).</p>
+<p>The following modules are not required, but perltidy may use them if
+detected:</p>
+<pre>
   Win32    will be used to help identify a Windows system if detected
   HTML::Entities  will be used to encode HTML entities if detected
-  Pod::Html will be used to format pod text</PRE>
-<P>The total disk space needed after removing the installation directory will
-about 1 Mb.</P>
-<P>
-<HR>
-<H1><A NAME="download">DOWNLOAD</A></H1>
-<P>There are two source distribution files:</P>
-<UL>
-<LI>
-A <EM>.tgz</EM> ``tarball'', with Unix-style &lt;lf&gt; line endings, and
-<P></P>
-<LI>
-A zip file, <EM>.zip</EM>, with Windows-style &lt;cr&gt;&lt;lf&gt; line endings.
-<P></P></UL>
-<P>In addition, the web site has links to debian and RPM packages.</P>
-<P>
-<HR>
-<H1><A NAME="installation">INSTALLATION</A></H1>
-<P>For most standard installations, the standard Makefile.PL method should work:</P>
-<PRE>
+  Pod::Html will be used to format pod text</pre>
+<p>The total disk space needed after removing the installation directory will
+about 1 Mb.</p>
+<p>
+</p>
+<hr />
+<h1><a name="download">DOWNLOAD</a></h1>
+<p>There are two source distribution files:</p>
+<ul>
+<li></li>
+A <em>.tgz</em> ``tarball'', with Unix-style &lt;lf&gt; line endings, and
+<p></p>
+<li></li>
+A zip file, <em>.zip</em>, with Windows-style &lt;cr&gt;&lt;lf&gt; line endings.
+<p></p></ul>
+<p>In addition, the web site has links to debian and RPM packages.</p>
+<p>
+</p>
+<hr />
+<h1><a name="installation">INSTALLATION</a></h1>
+<p>For most standard installations, the standard Makefile.PL method should work:</p>
+<pre>
  perl Makefile.PL
  make
  make test
- make install</PRE>
-<P>The INSTALL file has additional installation notes.</P>
-<P>
-<HR>
-<H1><A NAME="what next">WHAT NEXT</A></H1>
-<P>Please see the CHANGES file for notices of any recent updates.</P>
-<P>Please see the BUGS file for a list of all known open bugs.</P>
-<P>Documentation can be found in the <EM>docs</EM> directory, and it can also be 
-found at <A HREF="http://perltidy.sourceforge.net">http://perltidy.sourceforge.net</A></P>
-<P>Reading the brief tutorial should help you use perltidy effectively.</P>
-<P>Perltidy is still being developed, so please check sourceforge
-occasionally for updates.  New releases are announced on freshmeat.net.</P>
-<P>
-<HR>
-<H1><A NAME="feedback / bug reports">FEEDBACK / BUG REPORTS</A></H1>
-<P>Bug reports, comments and suggestions are welcome.  Attach the smallest
+ make install</pre>
+<p>The INSTALL file has additional installation notes, and tells how
+to use perltidy without doing an installation.</p>
+<p>
+</p>
+<hr />
+<h1><a name="what_next">WHAT NEXT</a></h1>
+<p>Please see the CHANGES file for notices of any recent updates.</p>
+<p>Please see the BUGS file for a list of all known open bugs.</p>
+<p>Documentation can be found in the <em>docs</em> directory, and it can also be 
+found at <a href="http://perltidy.sourceforge.net">http://perltidy.sourceforge.net</a></p>
+<p>Reading the brief tutorial should help you use perltidy effectively.</p>
+<p>Perltidy is still being developed, so please check sourceforge
+occasionally for updates.  New releases are announced on freshmeat.net.</p>
+<p>
+</p>
+<hr />
+<h1><a name="feedback___bug_reports">FEEDBACK / BUG REPORTS</a></h1>
+<p>Bug reports, comments and suggestions are welcome.  Attach the smallest
 piece of code which demonstrates the bug or issue.  Your efforts are
-greatly appreciated!</P>
-<P>Thank You</P>
-<PRE>
+greatly appreciated!</p>
+<p>Thank You</p>
+<pre>
  Steve Hancock
  perltidy at users.sourceforge.net
- <A HREF="http://perltidy.sourceforge.net">http://perltidy.sourceforge.net</A></PRE>
+ <a href="http://perltidy.sourceforge.net">http://perltidy.sourceforge.net</a></pre>
 
-</BODY>
+</body>
 
-</HTML>
+</html>

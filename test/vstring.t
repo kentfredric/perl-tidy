@@ -51,9 +51,9 @@ v101 .102 .103.104,     #39
 );
 
 my $i = 0;
-foreach my $a (@a) {
+foreach my $bb (@a) {
     printf "%2d: [", $i++;
-    print $a, "]\n";
+    print $bb, "]\n";
 }
 
 print "\n--------------------\n";
@@ -116,20 +116,22 @@ v102
 
 print "\n--------------------\n";
 print "before goto\n";
-goto v102;
+# goto v102;  does not work now
+goto L101;
 print "goto considered bad\n";
-v102:
+# v102:  does not work now
+L101:
 print "but good for testing\n";
 
 print "\n--------------------\n";
-v102: for my $i (1..10.0) {
+L102: for my $i (1..10.0) {
     print "Testing ... ";
-    next v102 if $i < 3;
+    next L102 if $i < 3;
     print "OK\n";
-    last v102 if $i > 4;
+    last L102 if $i > 4;
 }
 
-$utf=(
+my $utf=(
 12298.26131.32463.12299.31532.19968.21350.
 24406.26352.65306.
 22823.21705.20094.20803.65292.19975.29289.36164.22987.65292.

@@ -53,7 +53,8 @@ For most standard installations, the standard Makefile.PL method should work:
  make test
  make install
 
-The INSTALL file has additional installation notes.
+The INSTALL file has additional installation notes, and tells how
+to use perltidy without doing an installation.
 
 =head1 WHAT NEXT
 

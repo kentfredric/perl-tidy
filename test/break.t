@@ -89,3 +89,15 @@ my $ado_info = [ qw{
         $r, $pu, $ps, $cu, $cs, $tt
       )
       if $style eq 'all';
+
+    die "method new called with wrong number of arguments"
+      unless @_ == 2 
+      or @_ == 4;
+
+    warn "Ignoring unknown flag '$thislib'\n"
+      if $verbose 
+          and !/^:(no)?(search|default)$/i;
+
+# retained 'and' break (even though it is within an 'if' ??
+$OS = "MPE" if ( defined $^O
+    and $^O =~ /MPE/i );

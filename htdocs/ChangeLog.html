@@ -15,6 +15,7 @@
 	<UL>
 
 		<LI><A HREF="#2003 xx xx">2003 xx xx</A></LI>
+		<LI><A HREF="#2003 10 21">2003 10 21</A></LI>
 		<LI><A HREF="#2003 07 26">2003 07 26</A></LI>
 		<LI><A HREF="#2002 11 30">2002 11 30</A></LI>
 		<LI><A HREF="#2002 11 06">2002 11 06</A></LI>
@@ -55,12 +56,37 @@
 <P>
 <H2><A NAME="2003 xx xx">2003 xx xx</A></H2>
 <PRE>
- -Added flags B&lt;-cti=n&gt; for finer control of closing token indentation.
+ -Some improved breakpoints for -wba='&amp;&amp; || and or'</PRE>
+<P>
+<H2><A NAME="2003 10 21">2003 10 21</A></H2>
+<PRE>
+ -The default has been changed to not do syntax checking with perl.  
+   Use -syn if you want it.  Perltidy is very robust now, and the -syn
+   flag now causes more problems than it's worth because of BEGIN blocks
+   (which get executed with perl -c).  For example, perltidy will never
+   return when trying to beautify this code if -syn is used:</PRE>
+<PRE>
+        BEGIN { 1 while { }; }</PRE>
+<PRE>
+  Although this is an obvious error, perltidy is often run on untested
+  code which is more likely to have this sort of problem.  A more subtle
+  example is:</PRE>
+<PRE>
+        BEGIN { use FindBin; }</PRE>
+<PRE>
+  which may hang on some systems using -syn if a shared file system is
+  unavailable.</PRE>
+<PRE>
+ -Changed style -gnu to use -cti=1 instead of -cti=2 (see next item).
+  In most cases it looks better.  To recover the previous format, use
+  '-gnu -cti=2'</PRE>
+<PRE>
+ -Added flags -cti=n for finer control of closing token indentation.
    -cti = 0 no extra indentation (default; same as -nicp)
    -cti = 1 enough indentation so that the closing token
         aligns with its opening token.
    -cti = 2 one extra indentation level if the line has the form 
-          C&lt;);&gt;, C&lt;];&gt;, or &lt;};&gt; (same as -icp).</PRE>
+          );   ];   or   };     (same as -icp).</PRE>
 <PRE>
    The new option -cti=1 works well with -lp:</PRE>
 <PRE>
@@ -78,15 +104,28 @@
                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
                        );
   This is backwards compatible with -icp. See revised manual for
-  details.  Suggested by Mike Pennington.</PRE>
+  details.  Suggested by Mike Pennington.
+</PRE>
 <PRE>
- -Added flag '--preserve-line-endings' or '-ple' which will retain dos
-    or unix line endings when running under dos or unix.
-  Suggested by Rainer Hochschild.</PRE>
+
+ -Added flag '--preserve-line-endings' or '-ple' to cause the output
+  line ending to be the same as in the input file, for unix, dos, 
+  or mac line endings.  Only works under unix. Suggested by 
+  Rainer Hochschild.</PRE>
+<PRE>
+ -Added flag '--output-line-ending=s' or '-ole=s' where s=dos or win,
+  unix, or mac.  Only works under unix.</PRE>
+<PRE>
+ -Files with Mac line endings should now be handled properly under unix
+  and dos without being passed through a converter.</PRE>
 <PRE>
  -You may now include 'and', 'or', and 'xor' in the list following
- '--want-break-after' to get line breaks after those keywords rather than
- before them.  Suggested by Rainer Hochschild.</PRE>
+  '--want-break-after' to get line breaks after those keywords rather than
+  before them.  Suggested by Rainer Hochschild.</PRE>
+<PRE>
+ -Corrected problem with command line option for -vtc=n and -vt=n. The
+  equals sign was being eaten up by the Windows shell so perltidy didn't
+  see it.</PRE>
 <P>
 <H2><A NAME="2003 07 26">2003 07 26</A></H2>
 <PRE>
@@ -121,7 +160,7 @@
  prevent the use of Html::Entities to encode special symbols.  The
  default is -hent.  Html::Entities when formatting perl text to escape
  special symbols.  This may or may not be the right thing to do,
- depending on browser/language combinations.  Thanks to Gurak Bursoy for
+ depending on browser/language combinations.  Thanks to Burak Gursoy for
  this suggestion.</PRE>
 <PRE>
  -Bareword strings with leading '-', like, '-foo' now count as 1 token

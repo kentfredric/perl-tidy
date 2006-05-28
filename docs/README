@@ -42,7 +42,8 @@ INSTALLATION
      make test
      make install
 
-    The INSTALL file has additional installation notes.
+    The INSTALL file has additional installation notes, and tells how to use
+    perltidy without doing an installation.
 
 WHAT NEXT
     Please see the CHANGES file for notices of any recent updates.

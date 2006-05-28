@@ -18,3 +18,29 @@ For example, the output of perltidy for this script has a syntax error:
         END
         print "$text\n";
 
+A workaround is to put the here-doc in a temporary string and then do the
+substitution:
+
+        my $text="Hello World!\n";
+        my $str=<<'END';
+        Goodbye 
+        Cruel
+        END
+        $text =~ s@Hello@$str@e;
+        print "$text\n";
+
+=head2 The --extrude option can occasionally produce code with syntax errors
+
+The --extrude tries to put as many newlines in the formatted code as possible.
+This option is of limited use for formatting, but it has been helpful for
+debugging purposes.  Occasionally it will produce code which Perl considers to
+have a syntax error.  These problems usually involve code where Perl is having
+to guess the tokenization.  For example, --extrude will currently cause a
+syntax error in the following line:
+
+ utime $inc+0 ? ($mtime, $ntime) : ($atime, $atime), $file;
+
+=head2 UTF variables are not recognized
+
+For example the test file jperl.t distributed with perl 5.8 is not
+parsed correctly.

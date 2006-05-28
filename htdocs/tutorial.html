@@ -23,7 +23,6 @@
 		<LI><A HREF="#style variations">Style Variations</A></LI>
 		<LI><A HREF="#configuration files">Configuration Files</A></LI>
 		<LI><A HREF="#error reporting">Error Reporting</A></LI>
-		<LI><A HREF="#syntax checking">Syntax Checking</A></LI>
 		<LI><A HREF="#the log file">The Log File</A></LI>
 		<LI><A HREF="#using perltidy as a filter on selected text from an editor">Using Perltidy as a Filter on Selected Text from an Editor</A></LI>
 		<LI><A HREF="#writing an html file">Writing an HTML File</A></LI>
@@ -146,12 +145,13 @@ points.  For example, the above snippet would look like this with
 <STRONG>perltidy -l=40</STRONG>:</P>
 <PRE>
  croak &quot;Couldn't pop genome file&quot;
-   unless sysread(
-     $impl-&gt;{file}, $element,
-     $impl-&gt;{group}
-   )
-   and truncate( $impl-&gt;{file},
-     $new_end );</PRE>
+   unless
+   sysread( $impl-&gt;{file}, $element,
+     $impl-&gt;{group} )
+   and
+   truncate( $impl-&gt;{file}, $new_end );</PRE>
+<P>You may be wondering what would happen with, say, <STRONG>-l=1</STRONG>.  Go 
+ahead and try it.</P>
 <P>
 <H2><A NAME="tabs or spaces">Tabs or Spaces?</A></H2>
 <P>With indentation, there is always a tab issue to resolve.  By default,
@@ -273,8 +273,13 @@ extra indentation.  Consider:
                            eight =&gt; 'VIII',
                            nine  =&gt; 'IX',
                            ten   =&gt; 'X'
-                           );</PRE>
-<P>which is preferred by some.</P>
+                         );</PRE>
+<P>which is preferred by some.  (I've actually used <STRONG>-lp</STRONG> and <STRONG>-cti=1</STRONG> to
+format this block.  The <STRONG>-cti=1</STRONG> flag causes the closing paren to align
+vertically with the opening paren, which works well with the <STRONG>-lp</STRONG>
+indentation style).  An advantage of <STRONG>-lp</STRONG> indentation are that it
+displays lists nicely.  A disadvantage is that deeply nested lists can
+require a long line length.</P>
 <P></P>
 <DT><STRONG><A NAME="item_%2Dbt%2C%2Dpt%2C%2Dsbt%3A_Container_tightness"><STRONG>-bt</STRONG>,<STRONG>-pt</STRONG>,<STRONG>-sbt</STRONG>:  Container tightness</A></STRONG><BR>
 <DD>
@@ -377,30 +382,6 @@ this line:
 
     $line = s/^\s*//;</PRE>
 <P>This kind of error can otherwise be hard to find.</P>
-<P>
-<H2><A NAME="syntax checking">Syntax Checking</A></H2>
-<P>Perltidy will normally try to check itself by running <CODE>perl -c</CODE> on both
-the input and output files.  If the input file has good syntax but the
-output file has bad syntax, then perltidy made an error.  This is very
-unlikely, but worth checking.</P>
-<P>Here's a diagram showing how this works:</P>
-<PRE>
-                          OK                            OK
-     check input file ----------&gt;  check output file ---------&gt; ok
-             |                            |
-             | Fail                       | Fail
-             |                            |
-       -w shows errors             perltidy made error</PRE>
-<P>If the input file has an error according to the <CODE>perl -c</CODE> check, then
-the output file will not be checked (since we already know that it will
-have an error), and any error messages returned by the <CODE>perl -c</CODE> check
-will be discarded (because they usually turn out to be more annoying
-than helpful).  If you want to see them, though, you can use the <STRONG>-w</STRONG>
-flag.  This might be useful if you are debugging a script.</P>
-<P>This syntax check will be deactivated for Windows 9x/Me and also when
-input or output are not from identifiable filenames.  Perltidy will, of
-course, still report any syntax errors that it detects by itself in
-these cases.</P>
 <P>
 <H2><A NAME="the log file">The Log File</A></H2>
 <P>One last topic that needs to be touched upon concerns the <EM>.LOG</EM> file.
