@@ -1,3 +1,13 @@
+# caused bug with -pro=perltidyrc_brand because of multiline quote
+        if ($conf_spec eq "dateFormat") {
+            $data->{fmtd}    = eval "
+		sub
+		{
+		    my (\$d, \$m, \$y, \$wd, \$w) = \@_;
+		    \$w = \$w / 7 + 1;
+		    sprintf qq!$fmt!$args;
+		    }";
+}
 {
     my (@indices) =
       sort {

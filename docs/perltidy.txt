@@ -489,9 +489,8 @@ FORMATTING OPTIONS
         backwards compatability.
 
     -icb, --indent-closing-brace
-        The -icb option leaves a brace which terminates a code block
-        indented with the same indentation as the previous line. For
-        example,
+        The -icb option gives one extra level of indentation to a brace
+        which terminates a code block . For example,
 
                 if ($task) {
                     yyy();
@@ -702,10 +701,14 @@ FORMATTING OPTIONS
 
         It is necessary to have a list of all token types in order to create
         this type of input. Such a list can be obtained by the command
-        --dump-token-types.
+        --dump-token-types. Also try the -D flag on a short snippet of code
+        and look at the .DEBUG file to see the tokenization.
 
-    Space between keyword and opening paren
-        When an opening paren follows a keyword, no space is introduced
+        WARNING Be sure to put these tokens in quotes to avoid having them
+        misinterpreted by your command shell.
+
+    Space between specific keywords and opening paren
+        When an opening paren follows a Perl keyword, no space is introduced
         after the keyword, unless it is (by default) one of these:
 
            my local our and or eq ne if else elsif until unless 
@@ -721,6 +724,30 @@ FORMATTING OPTIONS
 
           my ( $a, $b, $c ) = @_;    # default
           my( $a, $b, $c ) = @_;     # -nsak="my local our"
+
+        To put a space after all keywords, see the next item.
+
+    Space between all keywords and opening parens
+        When an opening paren follows a function or keyword, no space is
+        introduced after the keyword except for the keywords noted in the
+        previous item. To always put a space between a function or keyword
+        and its opening paren, use the command:
+
+        -skp or --space-keyword-paren
+
+        You will probably also want to use the flag -sfp (next item) too.
+
+    Space between all function names and opening parens
+        When an opening paren follows a function the default is not to
+        introduce a space. To cause a space to be introduced use:
+
+        -sfp or --space-function-paren
+
+          myfunc( $a, $b, $c );    # default 
+          myfunc ( $a, $b, $c );   # -sfp
+
+        You will probably also want to use the flag -skp (previous item)
+        too.
 
     Trimming whitespace around "qw" quotes
         -tqw or --trim-qw provide the default behavior of trimming spaces
@@ -981,16 +1008,20 @@ FORMATTING OPTIONS
         -sbcp=string, --static-block-comment-prefix=string
             This parameter defines the prefix used to identify static block
             comments when the -sbc parameter is set. The default prefix is
-            "##", corresponding to "-sbcp=##". The first character must be a
-            "#" symbol, since this must only match comments. As a simple
+            "##", corresponding to "-sbcp=##". The prefix is actually part
+            of a perl pattern used to match lines and it must either begin
+            with "#" or "^#". In the first case a prefix ^\s* will be added
+            to match any leading whitespace, while in the second case the
+            pattern will match only comments with no leading whitespace. For
             example, to identify all comments as static block comments, one
-            would use "-sbcp=#".
+            would use "-sbcp=#". To identify all left-adjusted comments as
+            static block comments, use "-sbcp='^#'".
 
             Please note that -sbcp merely defines the pattern used to
             identify static block comments; it will not be used unless the
-            switch -sbc is set. Also, please be aware that this string is
-            used in a perl regular expression which identifies these
-            comments, so it must enable a valid regular expression to be
+            switch -sbc is set. Also, please be aware that since this string
+            is used in a perl regular expression which identifies these
+            comments, it must enable a valid regular expression to be
             formed.
 
         -osbc, --outdent-static-block-comments
@@ -1161,8 +1192,9 @@ FORMATTING OPTIONS
         -blil='if elsif else' would apply it to only "if/elsif/else" blocks.
 
     -bar, --opening-brace-always-on-right
-        The default style, -nbl places the opening brace on a new line if it
-        does not fit on the same line as the opening keyword, like this:
+        The default style, -nbl places the opening code block brace on a new
+        line if it does not fit on the same line as the opening keyword,
+        like this:
 
                 if ( $bigwasteofspace1 && $bigwasteofspace2
                   || $bigwasteofspace3 && $bigwasteofspace4 )
@@ -1179,6 +1211,31 @@ FORMATTING OPTIONS
                 }
 
         A conflict occurs if both -bl and -bar are specified.
+
+    -otr, --opening-token-right and related flags
+        The -otr flag is a hint that perltidy should not place a break
+        between a comma and an opening token. For example:
+
+            # default formatting
+            push @{ $self->{$module}{$key} },
+              {
+                accno       => $ref->{accno},
+                description => $ref->{description}
+              };
+
+            # perltidy -otr
+            push @{ $self->{$module}{$key} }, {
+                accno       => $ref->{accno},
+                description => $ref->{description}
+              };
+
+        The flag -otr is actually a synonym for three other flags which can
+        be used to control parens, hash braces, and square brackets
+        separately if desired:
+
+          -opr  or --opening-paren-right
+          -ohbr or --opening-hash-brace-right
+          -osbr or --opening-square-bracket-right
 
     Vertical tightness of non-block curly braces, parentheses, and square
     brackets.
@@ -1339,12 +1396,90 @@ FORMATTING OPTIONS
         Block Types"
 
         For example, if we want to just apply this style to "if", "elsif",
-        and "else" blocks, we could use "perltidy -bli -bbvt -bbvtl='if
+        and "else" blocks, we could use "perltidy -bli -bbvt=1 -bbvtl='if
         elsif else'".
 
         There is no vertical tightness control for closing block braces;
         with the exception of one-line blocks, they will normally remain on
         a separate line.
+
+    -sot, --stack-opening-token and related flags
+        The -sot flag tells perltidy to "stack" opening tokens when possible
+        to avoid lines with isolated opening tokens.
+
+        For example:
+
+            # default
+            $opt_c = Text::CSV_XS->new(
+                {
+                    binary       => 1,
+                    sep_char     => $opt_c,
+                    always_quote => 1,
+                }
+            );
+
+            # -sot
+            $opt_c = Text::CSV_XS->new( {
+                    binary       => 1,
+                    sep_char     => $opt_c,
+                    always_quote => 1,
+                }
+            );
+
+        For detailed control of individual closing tokens the following
+        controls can be used:
+
+          -sop  or --stack-opening-paren
+          -sohb or --stack-opening-hash-brace
+          -sosb or --stack-opening-square-bracket
+
+        The flag -sot is a synonym for -sop -sohb -sosb.
+
+    -sct, --stack-closing-token and related flags
+        The -sct flag tells perltidy to "stack" closing tokens when possible
+        to avoid lines with isolated closing tokens.
+
+        For example:
+
+            # default
+            $opt_c = Text::CSV_XS->new(
+                {
+                    binary       => 1,
+                    sep_char     => $opt_c,
+                    always_quote => 1,
+                }
+            );
+
+            # -sct
+            $opt_c = Text::CSV_XS->new(
+                {
+                    binary       => 1,
+                    sep_char     => $opt_c,
+                    always_quote => 1,
+                } );
+
+        The -sct flag is somewhat similar to the -vtc flags, and in some
+        cases it can give a similar result. The difference is that the -vtc
+        flags try to avoid lines with leading opening tokens by "hiding"
+        them at the end of a previous line, whereas the -sot flag merely
+        tries to reduce the number of lines with isolated opening tokens by
+        stacking them but does not try to hide them. For example:
+
+            # -vtc=2
+            $opt_c = Text::CSV_XS->new(
+                {
+                    binary       => 1,
+                    sep_char     => $opt_c,
+                    always_quote => 1, } );
+
+        For detailed control of the stacking of individual closing tokens
+        the following controls can be used:
+
+          -scp  or --stack-closing-paren
+          -schb or --stack-closing-hash-brace
+          -scsb or --stack-closing-square-bracket
+
+        The flag -sct is a synonym for -scp -schb -scsb.
 
     -dnl, --delete-old-newlines
         By default, perltidy first deletes all old line break locations, and
@@ -1393,10 +1528,15 @@ FORMATTING OPTIONS
           -wbb="+ - / *"
 
         These commands should work well for most of the token types that
-        perltidy uses (use --dump-token-types for a list). However, for a
-        few token types there may be conflicts with hardwired logic which
-        cause unexpected results. One example is curly braces, which should
-        be controlled with the parameter bl provided for that purpose.
+        perltidy uses (use --dump-token-types for a list). Also try the -D
+        flag on a short snippet of code and look at the .DEBUG file to see
+        the tokenization. However, for a few token types there may be
+        conflicts with hardwired logic which cause unexpected results. One
+        example is curly braces, which should be controlled with the
+        parameter bl provided for that purpose.
+
+        WARNING Be sure to put these tokens in quotes to avoid having them
+        misinterpreted by your command shell.
 
   Controlling List Formatting
     Perltidy attempts to place comma-separated arrays of values in tables

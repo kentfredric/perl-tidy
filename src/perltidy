@@ -558,8 +558,8 @@ equivalent B<-cti=0>.  They are included for backwards compatability.
 
 =item B<-icb>, B<--indent-closing-brace>
 
-The B<-icb> option leaves a brace which terminates a code block 
-indented with the same indentation as the previous line.  For example,
+The B<-icb> option gives one extra level of indentation to a brace which
+terminates a code block .  For example,
 
         if ($task) {
             yyy();
@@ -1353,7 +1353,7 @@ B<-blil='if elsif else'> would apply it to only C<if/elsif/else> blocks.
 
 =item B<-bar>,    B<--opening-brace-always-on-right>     
 
-The default style, B<-nbl> places the opening structural brace on a new
+The default style, B<-nbl> places the opening code block brace on a new
 line if it does not fit on the same line as the opening keyword, like
 this:
 
@@ -1375,9 +1375,8 @@ A conflict occurs if both B<-bl> and B<-bar> are specified.
 
 =item B<-otr>,  B<--opening-token-right> and related flags
 
-The previous flag, B<-bar>, only applies to structural braces.  The B<-otr>
-flag tells the formatter to put other opening tokens to the right when
-possible.  The default is not to do this.  For example:
+The B<-otr> flag is a hint that perltidy should not place a break between a
+comma and an opening token.  For example:
 
     # default formatting
     push @{ $self->{$module}{$key} },
@@ -1396,7 +1395,7 @@ The flag B<-otr> is actually a synonym for three other flags
 which can be used to control parens, hash braces, and square brackets
 separately if desired:
 
-  -opr or --opening-paren-right
+  -opr  or --opening-paren-right
   -ohbr or --opening-hash-brace-right
   -osbr or --opening-square-bracket-right
 
@@ -1574,11 +1573,91 @@ possible values of this string, see L<Specifying Block Types>
 
 For example, if we want to just apply this style to C<if>,
 C<elsif>, and C<else> blocks, we could use 
-C<perltidy -bli -bbvt -bbvtl='if elsif else'>.
+C<perltidy -bli -bbvt=1 -bbvtl='if elsif else'>.
 
 There is no vertical tightness control for closing block braces; with
 the exception of one-line blocks, they will normally remain on a 
 separate line.
+
+=item B<-sot>,  B<--stack-opening-token> and related flags
+
+The B<-sot> flag tells perltidy to "stack" opening tokens
+when possible to avoid lines with isolated opening tokens.
+
+For example:
+
+    # default
+    $opt_c = Text::CSV_XS->new(
+        {
+            binary       => 1,
+            sep_char     => $opt_c,
+            always_quote => 1,
+        }
+    );
+
+    # -sot
+    $opt_c = Text::CSV_XS->new( {
+            binary       => 1,
+            sep_char     => $opt_c,
+            always_quote => 1,
+        }
+    );
+
+For detailed control of individual closing tokens the following
+controls can be used:
+
+  -sop  or --stack-opening-paren
+  -sohb or --stack-opening-hash-brace
+  -sosb or --stack-opening-square-bracket
+
+The flag B<-sot> is a synonym for B<-sop -sohb -sosb>.
+
+=item B<-sct>,  B<--stack-closing-token> and related flags
+
+The B<-sct> flag tells perltidy to "stack" closing tokens
+when possible to avoid lines with isolated closing tokens.
+
+For example:
+
+    # default
+    $opt_c = Text::CSV_XS->new(
+        {
+            binary       => 1,
+            sep_char     => $opt_c,
+            always_quote => 1,
+        }
+    );
+
+    # -sct
+    $opt_c = Text::CSV_XS->new(
+        {
+            binary       => 1,
+            sep_char     => $opt_c,
+            always_quote => 1,
+        } );
+
+The B<-sct> flag is somewhat similar to the B<-vtc> flags, and in some
+cases it can give a similar result.  The difference is that the B<-vtc>
+flags try to avoid lines with leading opening tokens by "hiding" them at
+the end of a previous line, whereas the B<-sot> flag merely tries to
+reduce the number of lines with isolated opening tokens by stacking them
+but does not try to hide them.  For example:
+
+    # -vtc=2
+    $opt_c = Text::CSV_XS->new(
+        {
+            binary       => 1,
+            sep_char     => $opt_c,
+            always_quote => 1, } );
+
+For detailed control of the stacking of individual closing tokens the
+following controls can be used:
+
+  -scp  or --stack-closing-paren
+  -schb or --stack-closing-hash-brace
+  -scsb or --stack-closing-square-bracket
+
+The flag B<-sct> is a synonym for B<-scp -schb -scsb>.
 
 =item B<-dnl>,  B<--delete-old-newlines>
 

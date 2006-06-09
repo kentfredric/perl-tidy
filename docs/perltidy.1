@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "PERLTIDY 1"
-.TH PERLTIDY 1 "2006-05-20" "perl v5.8.7" "User Contributed Perl Documentation"
+.TH PERLTIDY 1 "2006-06-08" "perl v5.8.7" "User Contributed Perl Documentation"
 .SH "NAME"
 perltidy \- a perl script indenter and reformatter
 .SH "SYNOPSIS"
@@ -668,8 +668,8 @@ The \fB\-icp\fR flag is equivalent to
 equivalent \fB\-cti=0\fR.  They are included for backwards compatability.
 .IP "\fB\-icb\fR, \fB\-\-indent\-closing\-brace\fR" 4
 .IX Item "-icb, --indent-closing-brace"
-The \fB\-icb\fR option leaves a brace which terminates a code block 
-indented with the same indentation as the previous line.  For example,
+The \fB\-icb\fR option gives one extra level of indentation to a brace which
+terminates a code block .  For example,
 .Sp
 .Vb 6
 \&        if ($task) {
@@ -903,10 +903,14 @@ a space takes priority.
 .Sp
 It is necessary to have a list of all token types in order to create
 this type of input.  Such a list can be obtained by the command
-\&\fB\-\-dump\-token\-types\fR.
-.IP "Space between keyword and opening paren" 4
-.IX Item "Space between keyword and opening paren"
-When an opening paren follows a keyword, no space is introduced after the
+\&\fB\-\-dump\-token\-types\fR.  Also try the \-D flag on a short snippet of code
+and look at the .DEBUG file to see the tokenization. 
+.Sp
+\&\fB\s-1WARNING\s0\fR Be sure to put these tokens in quotes to avoid having them
+misinterpreted by your command shell.
+.IP "Space between specific keywords and opening paren" 4
+.IX Item "Space between specific keywords and opening paren"
+When an opening paren follows a Perl keyword, no space is introduced after the
 keyword, unless it is (by default) one of these:
 .Sp
 .Vb 2
@@ -926,6 +930,31 @@ where \fBs\fR is a list of keywords (in quotes if necessary).  For example,
 \&  my ( $a, $b, $c ) = @_;    # default
 \&  my( $a, $b, $c ) = @_;     # \-nsak="my local our"
 .Ve
+.Sp
+To put a space after all keywords, see the next item.
+.IP "Space between all keywords and opening parens" 4
+.IX Item "Space between all keywords and opening parens"
+When an opening paren follows a function or keyword, no space is introduced
+after the keyword except for the keywords noted in the previous item.  To
+always put a space between a function or keyword and its opening paren,
+use the command:
+.Sp
+\&\fB\-skp\fR  or \fB\-\-space\-keyword\-paren\fR
+.Sp
+You will probably also want to use the flag \fB\-sfp\fR (next item) too.
+.IP "Space between all function names and opening parens" 4
+.IX Item "Space between all function names and opening parens"
+When an opening paren follows a function the default is not to introduce
+a space.  To cause a space to be introduced use:
+.Sp
+\&\fB\-sfp\fR  or \fB\-\-space\-function\-paren\fR
+.Sp
+.Vb 2
+\&  myfunc( $a, $b, $c );    # default 
+\&  myfunc ( $a, $b, $c );   # \-sfp
+.Ve
+.Sp
+You will probably also want to use the flag \fB\-skp\fR (previous item) too.
 .ie n .IP "Trimming whitespace around ""qw"" quotes" 4
 .el .IP "Trimming whitespace around \f(CWqw\fR quotes" 4
 .IX Item "Trimming whitespace around qw quotes"
@@ -1211,15 +1240,19 @@ The default is to use \fB\-sbc\fR.  This may be deactivated with \fB\-nsbc\fR.
 .IX Item "-sbcp=string, --static-block-comment-prefix=string"
 This parameter defines the prefix used to identify static block comments
 when the \fB\-sbc\fR parameter is set.  The default prefix is \f(CW\*(C`##\*(C'\fR,
-corresponding to \f(CW\*(C`\-sbcp=##\*(C'\fR.  The first character must be a \f(CW\*(C`#\*(C'\fR
-symbol, since this must only match comments.  As a simple example, to
+corresponding to \f(CW\*(C`\-sbcp=##\*(C'\fR.  The prefix is actually part of a perl 
+pattern used to match lines and it must either begin with \f(CW\*(C`#\*(C'\fR or \f(CW\*(C`^#\*(C'\fR.  
+In the first case a prefix ^\es* will be added to match any leading
+whitespace, while in the second case the pattern will match only
+comments with no leading whitespace.  For example, to
 identify all comments as static block comments, one would use \f(CW\*(C`\-sbcp=#\*(C'\fR.
+To identify all left-adjusted comments as static block comments, use \f(CW\*(C`\-sbcp='^#'\*(C'\fR.
 .Sp
 Please note that \fB\-sbcp\fR merely defines the pattern used to identify static
 block comments; it will not be used unless the switch \fB\-sbc\fR is set.  Also,
-please be aware that this string is used in a perl regular expression which
-identifies these comments, so it must enable a valid regular expression to be
-formed.
+please be aware that since this string is used in a perl regular expression
+which identifies these comments, it must enable a valid regular expression to
+be formed.
 .IP "\fB\-osbc\fR, \fB\-\-outdent\-static\-block\-comments\fR" 4
 .IX Item "-osbc, --outdent-static-block-comments"
 The command \fB\-osbc\fR will will cause static block comments to be outdented by 2
@@ -1414,7 +1447,7 @@ Use this parameter to change the types of block braces for which the
 \&\fB\-blil='if elsif else'\fR would apply it to only \f(CW\*(C`if/elsif/else\*(C'\fR blocks.
 .IP "\fB\-bar\fR,    \fB\-\-opening\-brace\-always\-on\-right\fR" 4
 .IX Item "-bar,    --opening-brace-always-on-right"
-The default style, \fB\-nbl\fR places the opening brace on a new
+The default style, \fB\-nbl\fR places the opening code block brace on a new
 line if it does not fit on the same line as the opening keyword, like
 this:
 .Sp
@@ -1437,6 +1470,37 @@ flag.  In this case, the above example becomes
 .Ve
 .Sp
 A conflict occurs if both \fB\-bl\fR and \fB\-bar\fR are specified.
+.IP "\fB\-otr\fR,  \fB\-\-opening\-token\-right\fR and related flags" 4
+.IX Item "-otr,  --opening-token-right and related flags"
+The \fB\-otr\fR flag is a hint that perltidy should not place a break between a
+comma and an opening token.  For example:
+.Sp
+.Vb 6
+\&    # default formatting
+\&    push @{ $self\->{$module}{$key} },
+\&      {
+\&        accno       => $ref\->{accno},
+\&        description => $ref\->{description}
+\&      };
+.Ve
+.Sp
+.Vb 5
+\&    # perltidy \-otr
+\&    push @{ $self\->{$module}{$key} }, {
+\&        accno       => $ref\->{accno},
+\&        description => $ref\->{description}
+\&      };
+.Ve
+.Sp
+The flag \fB\-otr\fR is actually a synonym for three other flags
+which can be used to control parens, hash braces, and square brackets
+separately if desired:
+.Sp
+.Vb 3
+\&  \-opr  or \-\-opening\-paren\-right
+\&  \-ohbr or \-\-opening\-hash\-brace\-right
+\&  \-osbr or \-\-opening\-square\-bracket\-right
+.Ve
 .IP "Vertical tightness of non-block curly braces, parentheses, and square brackets." 4
 .IX Item "Vertical tightness of non-block curly braces, parentheses, and square brackets."
 These parameters control what shall be called vertical tightness.  Here are the
@@ -1622,11 +1686,103 @@ possible values of this string, see \*(L"Specifying Block Types\*(R"
 .Sp
 For example, if we want to just apply this style to \f(CW\*(C`if\*(C'\fR,
 \&\f(CW\*(C`elsif\*(C'\fR, and \f(CW\*(C`else\*(C'\fR blocks, we could use 
-\&\f(CW\*(C`perltidy \-bli \-bbvt \-bbvtl='if elsif else'\*(C'\fR.
+\&\f(CW\*(C`perltidy \-bli \-bbvt=1 \-bbvtl='if elsif else'\*(C'\fR.
 .Sp
 There is no vertical tightness control for closing block braces; with
 the exception of one-line blocks, they will normally remain on a 
 separate line.
+.IP "\fB\-sot\fR,  \fB\-\-stack\-opening\-token\fR and related flags" 4
+.IX Item "-sot,  --stack-opening-token and related flags"
+The \fB\-sot\fR flag tells perltidy to \*(L"stack\*(R" opening tokens
+when possible to avoid lines with isolated opening tokens.
+.Sp
+For example:
+.Sp
+.Vb 8
+\&    # default
+\&    $opt_c = Text::CSV_XS\->new(
+\&        {
+\&            binary       => 1,
+\&            sep_char     => $opt_c,
+\&            always_quote => 1,
+\&        }
+\&    );
+.Ve
+.Sp
+.Vb 7
+\&    # \-sot
+\&    $opt_c = Text::CSV_XS\->new( {
+\&            binary       => 1,
+\&            sep_char     => $opt_c,
+\&            always_quote => 1,
+\&        }
+\&    );
+.Ve
+.Sp
+For detailed control of individual closing tokens the following
+controls can be used:
+.Sp
+.Vb 3
+\&  \-sop  or \-\-stack\-opening\-paren
+\&  \-sohb or \-\-stack\-opening\-hash\-brace
+\&  \-sosb or \-\-stack\-opening\-square\-bracket
+.Ve
+.Sp
+The flag \fB\-sot\fR is a synonym for \fB\-sop \-sohb \-sosb\fR.
+.IP "\fB\-sct\fR,  \fB\-\-stack\-closing\-token\fR and related flags" 4
+.IX Item "-sct,  --stack-closing-token and related flags"
+The \fB\-sct\fR flag tells perltidy to \*(L"stack\*(R" closing tokens
+when possible to avoid lines with isolated closing tokens.
+.Sp
+For example:
+.Sp
+.Vb 8
+\&    # default
+\&    $opt_c = Text::CSV_XS\->new(
+\&        {
+\&            binary       => 1,
+\&            sep_char     => $opt_c,
+\&            always_quote => 1,
+\&        }
+\&    );
+.Ve
+.Sp
+.Vb 7
+\&    # \-sct
+\&    $opt_c = Text::CSV_XS\->new(
+\&        {
+\&            binary       => 1,
+\&            sep_char     => $opt_c,
+\&            always_quote => 1,
+\&        } );
+.Ve
+.Sp
+The \fB\-sct\fR flag is somewhat similar to the \fB\-vtc\fR flags, and in some
+cases it can give a similar result.  The difference is that the \fB\-vtc\fR
+flags try to avoid lines with leading opening tokens by \*(L"hiding\*(R" them at
+the end of a previous line, whereas the \fB\-sot\fR flag merely tries to
+reduce the number of lines with isolated opening tokens by stacking them
+but does not try to hide them.  For example:
+.Sp
+.Vb 6
+\&    # \-vtc=2
+\&    $opt_c = Text::CSV_XS\->new(
+\&        {
+\&            binary       => 1,
+\&            sep_char     => $opt_c,
+\&            always_quote => 1, } );
+.Ve
+.Sp
+For detailed control of the stacking of individual closing tokens the
+following controls can be used:
+.Sp
+.Vb 3
+\&  \-scp  or \-\-stack\-closing\-paren
+\&  \-schb or \-\-stack\-closing\-hash\-brace
+\&  \-scsb or \-\-stack\-closing\-square\-bracket
+.Ve
+.Sp
+The flag \fB\-sct\fR is a synonym for \fB\-scp \-schb \-scsb\fR.
 .IP "\fB\-dnl\fR,  \fB\-\-delete\-old\-newlines\fR" 4
 .IX Item "-dnl,  --delete-old-newlines"
 By default, perltidy first deletes all old line break locations, and then it
@@ -1678,11 +1834,15 @@ math operators \f(CW'+'\fR, \f(CW'\-'\fR, \f(CW'/'\fR, and \f(CW'*'\fR:
 \&  \-wbb="+ \- / *"
 .Ve
 .Sp
-These commands should work well for most of the token types that
-perltidy uses (use \fB\-\-dump\-token\-types\fR for a list).  However, for a
-few token types there may be conflicts with hardwired logic which cause
-unexpected results.  One example is curly braces, which should be
-controlled with the parameter \fBbl\fR provided for that purpose.
+These commands should work well for most of the token types that perltidy uses
+(use \fB\-\-dump\-token\-types\fR for a list).  Also try the \-D flag on a short
+snippet of code and look at the .DEBUG file to see the tokenization.  However,
+for a few token types there may be conflicts with hardwired logic which cause
+unexpected results.  One example is curly braces, which should be controlled
+with the parameter \fBbl\fR provided for that purpose.
+.Sp
+\&\fB\s-1WARNING\s0\fR Be sure to put these tokens in quotes to avoid having them
+misinterpreted by your command shell.
 .Sh "Controlling List Formatting"
 .IX Subsection "Controlling List Formatting"
 Perltidy attempts to place comma-separated arrays of values in tables

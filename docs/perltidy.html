@@ -693,8 +693,8 @@ equivalent <strong>-cti=0</strong>.  They are included for backwards compatabili
 <dt><strong><a name="item__2dicb_2c__2d_2dindent_2dclosing_2dbrace"><strong>-icb</strong>, <strong>--indent-closing-brace</strong></a></strong><br />
 </dt>
 <dd>
-The <strong>-icb</strong> option leaves a brace which terminates a code block 
-indented with the same indentation as the previous line.  For example,
+The <strong>-icb</strong> option gives one extra level of indentation to a brace which
+terminates a code block .  For example,
 </dd>
 <dd>
 <pre>
@@ -988,13 +988,18 @@ a space takes priority.</p>
 <dd>
 <p>It is necessary to have a list of all token types in order to create
 this type of input.  Such a list can be obtained by the command
-<strong>--dump-token-types</strong>.</p>
+<strong>--dump-token-types</strong>.  Also try the -D flag on a short snippet of code
+and look at the .DEBUG file to see the tokenization.</p>
+</dd>
+<dd>
+<p><strong>WARNING</strong> Be sure to put these tokens in quotes to avoid having them
+misinterpreted by your command shell.</p>
 </dd>
 <p></p>
-<dt><strong><a name="item_space_between_keyword_and_opening_paren">Space between keyword and opening paren</a></strong><br />
+<dt><strong><a name="item_space_between_specific_keywords_and_opening_paren">Space between specific keywords and opening paren</a></strong><br />
 </dt>
 <dd>
-When an opening paren follows a keyword, no space is introduced after the
+When an opening paren follows a Perl keyword, no space is introduced after the
 keyword, unless it is (by default) one of these:
 </dd>
 <dd>
@@ -1018,6 +1023,42 @@ keyword, unless it is (by default) one of these:
 <pre>
   my ( $a, $b, $c ) = @_;    # default
   my( $a, $b, $c ) = @_;     # -nsak=&quot;my local our&quot;</pre>
+</dd>
+<dd>
+<p>To put a space after all keywords, see the next item.</p>
+</dd>
+<p></p>
+<dt><strong><a name="item_space_between_all_keywords_and_opening_parens">Space between all keywords and opening parens</a></strong><br />
+</dt>
+<dd>
+When an opening paren follows a function or keyword, no space is introduced
+after the keyword except for the keywords noted in the previous item.  To
+always put a space between a function or keyword and its opening paren,
+use the command:
+</dd>
+<dd>
+<p><strong>-skp</strong>  or <strong>--space-keyword-paren</strong></p>
+</dd>
+<dd>
+<p>You will probably also want to use the flag <strong>-sfp</strong> (next item) too.</p>
+</dd>
+<p></p>
+<dt><strong><a name="item_space_between_all_function_names_and_opening_paren">Space between all function names and opening parens</a></strong><br />
+</dt>
+<dd>
+When an opening paren follows a function the default is not to introduce
+a space.  To cause a space to be introduced use:
+</dd>
+<dd>
+<p><strong>-sfp</strong>  or <strong>--space-function-paren</strong></p>
+</dd>
+<dd>
+<pre>
+  myfunc( $a, $b, $c );    # default 
+  myfunc ( $a, $b, $c );   # -sfp</pre>
+</dd>
+<dd>
+<p>You will probably also want to use the flag <strong>-skp</strong> (previous item) too.</p>
 </dd>
 <p></p>
 <dt><strong><a name="item_trimming_whitespace_around_qw_quotes">Trimming whitespace around <code>qw</code> quotes</a></strong><br />
@@ -1355,16 +1396,20 @@ The default is to use <strong>-sbc</strong>.  This may be deactivated with <stro
 <dd>
 This parameter defines the prefix used to identify static block comments
 when the <strong>-sbc</strong> parameter is set.  The default prefix is <code>##</code>,
-corresponding to <code>-sbcp=##</code>.  The first character must be a <code>#</code>
-symbol, since this must only match comments.  As a simple example, to
+corresponding to <code>-sbcp=##</code>.  The prefix is actually part of a perl 
+pattern used to match lines and it must either begin with <code>#</code> or <code>^#</code>.  
+In the first case a prefix ^\s* will be added to match any leading
+whitespace, while in the second case the pattern will match only
+comments with no leading whitespace.  For example, to
 identify all comments as static block comments, one would use <code>-sbcp=#</code>.
+To identify all left-adjusted comments as static block comments, use <code>-sbcp='^#'</code>.
 </dd>
 <dd>
 <p>Please note that <strong>-sbcp</strong> merely defines the pattern used to identify static
 block comments; it will not be used unless the switch <strong>-sbc</strong> is set.  Also,
-please be aware that this string is used in a perl regular expression which
-identifies these comments, so it must enable a valid regular expression to be
-formed.</p>
+please be aware that since this string is used in a perl regular expression
+which identifies these comments, it must enable a valid regular expression to
+be formed.</p>
 </dd>
 <p></p>
 <dt><strong><a name="item__2dosbc_2c__2d_2doutdent_2dstatic_2dblock_2dcommen"><strong>-osbc</strong>, <strong>--outdent-static-block-comments</strong></a></strong><br />
@@ -1609,7 +1654,7 @@ Use this parameter to change the types of block braces for which the
 <dt><strong><a name="item__2dbar_2c__2d_2dopening_2dbrace_2dalways_2don_2dri"><strong>-bar</strong>,    <strong>--opening-brace-always-on-right</strong></a></strong><br />
 </dt>
 <dd>
-The default style, <strong>-nbl</strong> places the opening brace on a new
+The default style, <strong>-nbl</strong> places the opening code block brace on a new
 line if it does not fit on the same line as the opening keyword, like
 this:
 </dd>
@@ -1634,6 +1679,41 @@ flag.  In this case, the above example becomes</p>
 </dd>
 <dd>
 <p>A conflict occurs if both <strong>-bl</strong> and <strong>-bar</strong> are specified.</p>
+</dd>
+<p></p>
+<dt><strong><a name="item__2dotr_2c__2d_2dopening_2dtoken_2dright_and_relate"><strong>-otr</strong>,  <strong>--opening-token-right</strong> and related flags</a></strong><br />
+</dt>
+<dd>
+The <strong>-otr</strong> flag is a hint that perltidy should not place a break between a
+comma and an opening token.  For example:
+</dd>
+<dd>
+<pre>
+    # default formatting
+    push @{ $self-&gt;{$module}{$key} },
+      {
+        accno       =&gt; $ref-&gt;{accno},
+        description =&gt; $ref-&gt;{description}
+      };</pre>
+</dd>
+<dd>
+<pre>
+    # perltidy -otr
+    push @{ $self-&gt;{$module}{$key} }, {
+        accno       =&gt; $ref-&gt;{accno},
+        description =&gt; $ref-&gt;{description}
+      };</pre>
+</dd>
+<dd>
+<p>The flag <strong>-otr</strong> is actually a synonym for three other flags
+which can be used to control parens, hash braces, and square brackets
+separately if desired:</p>
+</dd>
+<dd>
+<pre>
+  -opr  or --opening-paren-right
+  -ohbr or --opening-hash-brace-right
+  -osbr or --opening-square-bracket-right</pre>
 </dd>
 <p></p>
 <dt><strong><a name="item_vertical_tightness_of_non_2dblock_curly_braces_2c_">Vertical tightness of non-block curly braces, parentheses, and square brackets.</a></strong><br />
@@ -1802,12 +1882,117 @@ possible values of this string, see <a href="#specifying_block_types">Specifying
 <dd>
 <p>For example, if we want to just apply this style to <code>if</code>,
 <code>elsif</code>, and <code>else</code> blocks, we could use 
-<code>perltidy -bli -bbvt -bbvtl='if elsif else'</code>.</p>
+<code>perltidy -bli -bbvt=1 -bbvtl='if elsif else'</code>.</p>
 </dd>
 <dd>
 <p>There is no vertical tightness control for closing block braces; with
 the exception of one-line blocks, they will normally remain on a 
 separate line.</p>
+</dd>
+<p></p>
+<dt><strong><a name="item__2dsot_2c__2d_2dstack_2dopening_2dtoken_and_relate"><strong>-sot</strong>,  <strong>--stack-opening-token</strong> and related flags</a></strong><br />
+</dt>
+<dd>
+The <strong>-sot</strong> flag tells perltidy to ``stack'' opening tokens
+when possible to avoid lines with isolated opening tokens.
+</dd>
+<dd>
+<p>For example:</p>
+</dd>
+<dd>
+<pre>
+    # default
+    $opt_c = Text::CSV_XS-&gt;new(
+        {
+            binary       =&gt; 1,
+            sep_char     =&gt; $opt_c,
+            always_quote =&gt; 1,
+        }
+    );</pre>
+</dd>
+<dd>
+<pre>
+    # -sot
+    $opt_c = Text::CSV_XS-&gt;new( {
+            binary       =&gt; 1,
+            sep_char     =&gt; $opt_c,
+            always_quote =&gt; 1,
+        }
+    );</pre>
+</dd>
+<dd>
+<p>For detailed control of individual closing tokens the following
+controls can be used:</p>
+</dd>
+<dd>
+<pre>
+  -sop  or --stack-opening-paren
+  -sohb or --stack-opening-hash-brace
+  -sosb or --stack-opening-square-bracket</pre>
+</dd>
+<dd>
+<p>The flag <strong>-sot</strong> is a synonym for <strong>-sop -sohb -sosb</strong>.</p>
+</dd>
+<p></p>
+<dt><strong><a name="item__2dsct_2c__2d_2dstack_2dclosing_2dtoken_and_relate"><strong>-sct</strong>,  <strong>--stack-closing-token</strong> and related flags</a></strong><br />
+</dt>
+<dd>
+The <strong>-sct</strong> flag tells perltidy to ``stack'' closing tokens
+when possible to avoid lines with isolated closing tokens.
+</dd>
+<dd>
+<p>For example:</p>
+</dd>
+<dd>
+<pre>
+    # default
+    $opt_c = Text::CSV_XS-&gt;new(
+        {
+            binary       =&gt; 1,
+            sep_char     =&gt; $opt_c,
+            always_quote =&gt; 1,
+        }
+    );</pre>
+</dd>
+<dd>
+<pre>
+    # -sct
+    $opt_c = Text::CSV_XS-&gt;new(
+        {
+            binary       =&gt; 1,
+            sep_char     =&gt; $opt_c,
+            always_quote =&gt; 1,
+        } );</pre>
+</dd>
+<dd>
+<p>The <strong>-sct</strong> flag is somewhat similar to the <strong>-vtc</strong> flags, and in some
+cases it can give a similar result.  The difference is that the <strong>-vtc</strong>
+flags try to avoid lines with leading opening tokens by ``hiding'' them at
+the end of a previous line, whereas the <strong>-sot</strong> flag merely tries to
+reduce the number of lines with isolated opening tokens by stacking them
+but does not try to hide them.  For example:</p>
+</dd>
+<dd>
+<pre>
+    # -vtc=2
+    $opt_c = Text::CSV_XS-&gt;new(
+        {
+            binary       =&gt; 1,
+            sep_char     =&gt; $opt_c,
+            always_quote =&gt; 1, } );</pre>
+</dd>
+<dd>
+<p>For detailed control of the stacking of individual closing tokens the
+following controls can be used:</p>
+</dd>
+<dd>
+<pre>
+  -scp  or --stack-closing-paren
+  -schb or --stack-closing-hash-brace
+  -scsb or --stack-closing-square-bracket</pre>
+</dd>
+<dd>
+<p>The flag <strong>-sct</strong> is a synonym for <strong>-scp -schb -scsb</strong>.</p>
 </dd>
 <p></p>
 <dt><strong><a name="item__2ddnl_2c__2d_2ddelete_2dold_2dnewlines"><strong>-dnl</strong>,  <strong>--delete-old-newlines</strong></a></strong><br />
@@ -1877,11 +2062,16 @@ math operators <code>'+'</code>, <code>'-'</code>, <code>'/'</code>, and <code>'
   -wbb=&quot;+ - / *&quot;</pre>
 </dd>
 <dd>
-<p>These commands should work well for most of the token types that
-perltidy uses (use <strong>--dump-token-types</strong> for a list).  However, for a
-few token types there may be conflicts with hardwired logic which cause
-unexpected results.  One example is curly braces, which should be
-controlled with the parameter <strong>bl</strong> provided for that purpose.</p>
+<p>These commands should work well for most of the token types that perltidy uses
+(use <strong>--dump-token-types</strong> for a list).  Also try the -D flag on a short
+snippet of code and look at the .DEBUG file to see the tokenization.  However,
+for a few token types there may be conflicts with hardwired logic which cause
+unexpected results.  One example is curly braces, which should be controlled
+with the parameter <strong>bl</strong> provided for that purpose.</p>
+</dd>
+<dd>
+<p><strong>WARNING</strong> Be sure to put these tokens in quotes to avoid having them
+misinterpreted by your command shell.</p>
 </dd>
 <p></p></dl>
 <p>

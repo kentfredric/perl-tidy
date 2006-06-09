@@ -59,16 +59,32 @@
 </p>
 <h2><a name="2006_06_06">2006 06 06</a></h2>
 <pre>
+ -Attribute argument lists are now correctly treated as quoted strings
+ and not formatted.  This is the most important update in this version.
+ Thanks to Borris Zentner, Greg Ferguson, Steve Kirkup.</pre>
+<pre>
  -Updated to recognize the defined or operator, //, to be released in Perl 10.
  Thanks to Sebastien Aperghis-Tramoni.</pre>
 <pre>
- -Attribute argument lists are now correctly treated as quoted strings
- and not formatted.  Thanks to Borris Zentner, Greg Ferguson, Steve Kirkup.</pre>
+ -Added option to have perltidy read and return a hash with the contents of a
+ perltidyrc file.  This may be used by Leif Eriksen's tidyview code.</pre>
+<pre>
+ -V-Strings with underscores are now recognized.
+ For example: $v = v1.2_3;</pre>
+<pre>
+ -To identify all left-adjusted comments as static block comments, use C&lt;-sbcp='^#'&gt;.</pre>
 <pre>
  -New parameters -fs, -fsb, -fse added to allow sections of code between #&lt;&lt;&lt;
  and #&gt;&gt;&gt; to be passed through verbatim. This is enabled by default and turned
  off by -nfs.  Flags -fsb and -fse allow other beginning and ending markers.
  Thanks to Wolfgang Werner and Marion Berryman for suggesting this.</pre>
+<pre>
+ -added flag -skp to put a space between all Perl keywords and following paren.
+ The default is to only do this for certain keywords.  Suggested by
+ H.Merijn Brand.</pre>
+<pre>
+ -added flag -sfp to put a space between a function name and following paren.
+ The default is not to do this.  Suggested by H.Merijn Brand.</pre>
 <pre>
  -Added patch to avoid breaking GetOpt::Long::Configure set by calling program. 
  Thanks to BOOK at CPAN.</pre>
@@ -93,25 +109,45 @@
  -Improved formatting for short trailing statements following a closing paren.
  Thanks to Joe Matarazzo.</pre>
 <pre>
+ -The handling of the -icb (indent closing block braces) flag has been changed
+ slightly to provide more consistent and predictable formatting of complex
+ structures.  Instead of giving a closing block brace the indentation of the
+ previous line, it is now given one extra indentation level.  The two methods
+ give the same result if the previous line was a complete statement, as in this
+ example:</pre>
+<pre>
+        if ($task) {
+            yyy();
+            }    # -icb
+        else {
+            zzz();
+            }
+ The change also fixes a problem with empty blocks such as:</pre>
+<pre>
+    OLD, -icb:
+    elsif ($debug) {
+    }</pre>
+<pre>
+    NEW, -icb:
+    elsif ($debug) {
+        }</pre>
+<pre>
+ -A problem with -icb was fixed in which a closing brace was misplaced when
+ it followed a quote which spanned multiple lines.</pre>
+<pre>
  -Some improved breakpoints for -wba='&amp;&amp; || and or'</pre>
 <pre>
- -The -gnu flag was changed from
-        lp bl noll pt=2 bt=2 sbt=2 cpi=1 csbi=1 cbi=1
-   to:
-        lp bl noll pt=2 bt=2 sbt=2 cpi=2 csbi=1 cbi=1
-   This seems to be better overall, but to recover the old format
-   you can use -gnu -cpi=1</pre>
-<pre>
- -Fixed problem with misaligned cuddled else in complex statements. 
- Thanks to Alex.</pre>
+ -Fixed problem with misaligned cuddled else in complex statements
+ when the -bar flag was also used.  Thanks to Alex and Royce Reese.</pre>
 <pre>
  -Corrected documentation to show that --outdent-long-comments is the default.
  Thanks to Mario Lia.</pre>
 <pre>
- -Temporary new flags -otr (opening-token-right), -sot (stack-opening-token),
- -sct (stack-closing-token) are in the code for Tony.  They are not
- documented yet because it is likely that they will change, so it is best
- to avoid using them until they are finalized.</pre>
+ -New flag -otr (opening-token-right) is similar to -bar (braces-always-right)
+ but applies to non-structural opening tokens.</pre>
+<pre>
+ -new flags -sot (stack-opening-token), -sct (stack-closing-token).
+ Suggested by Tony.</pre>
 <p>
 </p>
 <h2><a name="2003_10_21">2003 10 21</a></h2>

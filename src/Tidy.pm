@@ -34,6 +34,7 @@
 #        create a Perl::Tidy module which can operate on strings, arrays, etc.
 #      Yves Orton supplied coding to help detect Windows versions.
 #      Axel Rose supplied a patch for MacPerl.
+#      Sebastien Aperghis-Tramoni supplied a patch for the defined or operator.
 #      Many others have supplied key ideas, suggestions, and bug reports;
 #        see the CHANGES file.
 #
@@ -62,7 +63,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.47 2006/05/28 19:54:07 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.48 2006/06/09 04:18:00 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 sub streamhandle {
@@ -318,14 +319,16 @@ sub make_temporary_filename {
     sub perltidy {
 
         my %defaults = (
-            argv        => undef,
-            destination => undef,
-            formatter   => undef,
-            logfile     => undef,
-            errorfile   => undef,
-            perltidyrc  => undef,
-            source      => undef,
-            stderr      => undef,
+            argv              => undef,
+            destination       => undef,
+            formatter         => undef,
+            logfile           => undef,
+            errorfile         => undef,
+            perltidyrc        => undef,
+            source            => undef,
+            stderr            => undef,
+            options_dump      => undef,
+            options_dump_type => undef,
         );
 
         # don't overwrite callers ARGV
@@ -354,6 +357,45 @@ EOM
         my $source_stream      = $input_hash{'source'};
         my $stderr_stream      = $input_hash{'stderr'};
         my $user_formatter     = $input_hash{'formatter'};
+        my $options_dump       = $input_hash{'options_dump'};
+        my $options_dump_type  = $input_hash{'options_dump_type'};
+
+        # validate options_dump and options_dump_type
+        if (defined($options_dump)) {
+            unless (ref($options_dump) eq 'HASH') {
+                    croak <<EOM;
+------------------------------------------------------------------------
+error in call to perltidy:
+-options_dump must be reference to HASH
+------------------------------------------------------------------------
+EOM
+            }
+            unless(defined($options_dump_type) ){
+                $options_dump_type='perltidyrc';
+            }
+            unless ($options_dump_type=~/^(perltidyrc|full)$/) {
+                    croak <<EOM;
+------------------------------------------------------------------------
+Please check value of -options_dump_type in call to perltidy;
+saw: '$options_dump_type' 
+expecting: 'perltidyrc' or 'full'
+------------------------------------------------------------------------
+EOM
+
+            }
+        }
+        else {
+            if ( $options_dump_type ) {
+                croak <<EOM;
+------------------------------------------------------------------------
+Error in call to perltidy: 
+Saw -options_dump_type='$options_dump_type' but -options_dump is undefined or
+is not a hash ref.  
+------------------------------------------------------------------------
+EOM
+            }
+            $options_dump_type="";
+        }
 
         if ($user_formatter) {
 
@@ -436,8 +478,15 @@ EOM
         my ( $rOpts, $config_file, $rraw_options, $saw_extrude ) =
           process_command_line(
             $perltidyrc_stream, $is_Windows,
-            $Windows_type,      $rpending_complaint
+            $Windows_type,      $rpending_complaint, $options_dump_type,
           );
+
+        if (defined($options_dump)) {
+            %{$options_dump}=%{$rOpts};
+            return;
+        }
+
+        check_options ($rOpts, $is_Windows, $Windows_type, $rpending_complaint);
 
         if ($user_formatter) {
             $rOpts->{'format'} = 'user';
@@ -974,14 +1023,14 @@ sub write_logfile_header {
         "To find error messages search for 'WARNING' with your editor\n");
 }
 
-sub process_command_line {
-
-    my ( $perltidyrc_stream, $is_Windows, $Windows_type, $rpending_complaint ) =
-      @_;
-
-    use Getopt::Long;
+sub generate_options {
 
     ######################################################################
+    # Generate and return references to: 
+    #  @option_string - the list of options to be passed to Getopt::Long
+    #  @defaults - the list of default options
+    #  %expansion - a hash showing how all abbreviations are expanded
+
     # Note: a few options are not documented in the man page and usage
     # message. This is because these are experimental or debug options and
     # may or may not be retained in future versions.
@@ -1149,21 +1198,19 @@ sub process_command_line {
     $add_option->( 'opening-hash-brace-right',     'ohbr', '!' );
     $add_option->( 'opening-square-bracket-right', 'osbr', '!' );
 
-    # TESTING: STACK CLOSING TOKEN
-    # WARNING: This is option could be removed or changed in the future
     $add_option->( 'stack-closing-tokens',         'sct',  '!' );
     $add_option->( 'stack-closing-paren',          'scp',  '!' );
     $add_option->( 'stack-closing-hash-brace',     'schb', '!' );
     $add_option->( 'stack-closing-square-bracket', 'scsb', '!' );
-    $add_option->( 'stack-closing-block-brace',    'scbb', '!' );
+    $add_option->( 'stack-closing-block-brace',    'scbb', '!' );  # not
+                                                                   # implemented
 
-    # TESTING: STACK CLOSING TOKEN
-    # WARNING: This is option could be removed or changed in the future
     $add_option->( 'stack-opening-tokens',         'sot',  '!' );
     $add_option->( 'stack-opening-paren',          'sop',  '!' );
     $add_option->( 'stack-opening-hash-brace',     'sohb', '!' );
     $add_option->( 'stack-opening-square-bracket', 'sosb', '!' );
-    $add_option->( 'stack-opening-block-brace',    'sobb', '!' );
+    $add_option->( 'stack-opening-block-brace',    'sobb', '!' );   # not
+                                                                    #implemented
 
     $add_option->( 'outdent-keyword-list',                      'okwl',  '=s' );
     $add_option->( 'outdent-keywords',                          'okw',   '!' );
@@ -1298,34 +1345,6 @@ sub process_command_line {
     push @defaults, "perl-syntax-check-flags=-c -T";
 
     #---------------------------------------------------------------
-    # set the defaults by passing the above list through GetOptions
-    #---------------------------------------------------------------
-    my %Opts = ();
-    {
-        local @ARGV;
-        my $i;
-
-        for $i (@defaults) { push @ARGV, "--" . $i }
-
-	# Patch to save users Getopt::Long configuration
-        # and set to Getopt::Long defaults.  Use eval to avoid
-        # breaking old versions of Perl without these routines.
-        my $glc;
-        eval { $glc = Getopt::Long::Configure() };
-        unless ($@) {
-            eval { Getopt::Long::ConfigDefaults() };
-        }
-        else { $glc = undef }
-
-        if ( !GetOptions( \%Opts, @option_string ) ) {
-            die "Programming Bug: error in setting default options";
-        }
-
-        # Patch to put the previous Getopt::Long configuration back
-        eval {Getopt::Long::Configure( $glc )} if defined $glc;
-    }
-
-    #---------------------------------------------------------------
     # Define abbreviations which will be expanded into the above primitives.
     # These may be defined recursively.
     #---------------------------------------------------------------
@@ -1395,15 +1414,11 @@ sub process_command_line {
         'notr'                  => [qw(nopr nohbr nosbr)],
         'noopening-token-right' => [qw(nopr nohbr nosbr)],
 
-        # TESTING: STACK OPENING TOKEN
-        # WARNING: these could change in the future
         'sot'                    => [qw(sop sohb sosb)],
         'nsot'                   => [qw(nsop nsohb nsosb)],
         'stack-opening-tokens'   => [qw(sop sohb sosb)],
         'nostack-opening-tokens' => [qw(nsop nsohb nsosb)],
 
-        # TESTING: STACK CLOSING TOKEN
-        # WARNING: these could change in the future
         'sct'                    => [qw(scp schb scsb)],
         'stack-closing-tokens'   => => [qw(scp schb scsb)],
         'nsct'                   => [qw(nscp nschb nscsb)],
@@ -1480,6 +1495,52 @@ sub process_command_line {
 
     # Uncomment next line to dump all expansions for debugging:
     # dump_short_names(\%expansion);
+    return ( \@option_string, \@defaults, \%expansion );
+
+}  # end of generate_options
+
+sub process_command_line {
+
+    my (
+        $perltidyrc_stream,  $is_Windows, $Windows_type,
+        $rpending_complaint, $options_dump_type
+    ) = @_;
+
+    use Getopt::Long;
+
+    my ( $roption_string, $rdefaults, $rexpansion ) = generate_options();
+
+
+    #---------------------------------------------------------------
+    # set the defaults by passing the above list through GetOptions
+    #---------------------------------------------------------------
+    my %Opts = ();
+    {
+        local @ARGV;
+        my $i;
+
+        # do not load the defaults if we are just dumping perltidyrc
+        unless ($options_dump_type eq 'perltidyrc') {
+            for $i (@$rdefaults) { push @ARGV, "--" . $i }
+        }
+
+	# Patch to save users Getopt::Long configuration
+        # and set to Getopt::Long defaults.  Use eval to avoid
+        # breaking old versions of Perl without these routines.
+        my $glc;
+        eval { $glc = Getopt::Long::Configure() };
+        unless ($@) {
+            eval { Getopt::Long::ConfigDefaults() };
+        }
+        else { $glc = undef }
+
+        if ( !GetOptions( \%Opts, @$roption_string ) ) {
+            die "Programming Bug: error in setting default options";
+        }
+
+        # Patch to put the previous Getopt::Long configuration back
+        eval {Getopt::Long::Configure( $glc )} if defined $glc;
+    }
 
     my $word;
     my @raw_options        = ();
@@ -1531,15 +1592,15 @@ sub process_command_line {
             exit 1;
         }
         elsif ( $i =~ /^-(dump-defaults|ddf)$/ ) {
-            dump_defaults(@defaults);
+            dump_defaults(@$rdefaults);
             exit 1;
         }
         elsif ( $i =~ /^-(dump-long-names|dln)$/ ) {
-            dump_long_names(@option_string);
+            dump_long_names(@$roption_string);
             exit 1;
         }
         elsif ( $i =~ /^-(dump-short-names|dsn)$/ ) {
-            dump_short_names( \%expansion );
+            dump_short_names( $rexpansion );
             exit 1;
         }
         elsif ( $i =~ /^-(dump-token-types|dtt)$/ ) {
@@ -1604,18 +1665,19 @@ EOM
 
         if ($fh_config) {
 
-            my $rconfig_list =
-              read_config_file( $fh_config, $config_file, \%expansion );
+            my ($rconfig_list, $death_message) =
+              read_config_file( $fh_config, $config_file, $rexpansion );
+            die $death_message if ($death_message); 
 
             # process any .perltidyrc parameters right now so we can
             # localize errors
             if (@$rconfig_list) {
                 local @ARGV = @$rconfig_list;
 
-                expand_command_abbreviations( \%expansion, \@raw_options,
+                expand_command_abbreviations( $rexpansion, \@raw_options,
                     $config_file );
 
-                if ( !GetOptions( \%Opts, @option_string ) ) {
+                if ( !GetOptions( \%Opts, @$roption_string ) ) {
                     die
 "Error in this config file: $config_file  \nUse -npro to ignore this file, -h for help'\n";
                 }
@@ -1651,20 +1713,29 @@ EOM
     #---------------------------------------------------------------
     # now process the command line parameters
     #---------------------------------------------------------------
-    expand_command_abbreviations( \%expansion, \@raw_options, $config_file );
+    expand_command_abbreviations( $rexpansion, \@raw_options, $config_file );
 
-    if ( !GetOptions( \%Opts, @option_string ) ) {
+    if ( !GetOptions( \%Opts, @$roption_string ) ) {
         die "Error on command line; for help try 'perltidy -h'\n";
     }
 
-    if ( $Opts{'dump-options'} ) {
-        dump_options( \%Opts );
-        exit 1;
-    }
+    return ( \%Opts, $config_file, \@raw_options, $saw_extrude );
+
+}  # end of process_command_line
+
+sub check_options {
+
+    my ( $rOpts, $is_Windows, $Windows_type, $rpending_complaint ) =
+      @_;
 
     #---------------------------------------------------------------
-    # Now we have to handle any interactions among the options..
+    # check and handle any interactions among the basic options..
     #---------------------------------------------------------------
+
+    if ( $rOpts->{'dump-options'} ) {
+        dump_options( \%$rOpts );
+        exit 1;
+    }
 
     # Since -vt, -vtc, and -cti are abbreviations, but under
     # msdos, an unquoted input parameter like vtc=1 will be
@@ -1672,149 +1743,147 @@ EOM
     # won't be seen.  Therefore, we will catch them here if
     # they get through.
 
-    if ( defined $Opts{'vertical-tightness'} ) {
-        my $vt = $Opts{'vertical-tightness'};
-        $Opts{'paren-vertical-tightness'}          = $vt;
-        $Opts{'square-bracket-vertical-tightness'} = $vt;
-        $Opts{'brace-vertical-tightness'}          = $vt;
+    if ( defined $rOpts->{'vertical-tightness'} ) {
+        my $vt = $rOpts->{'vertical-tightness'};
+        $rOpts->{'paren-vertical-tightness'}          = $vt;
+        $rOpts->{'square-bracket-vertical-tightness'} = $vt;
+        $rOpts->{'brace-vertical-tightness'}          = $vt;
     }
 
-    if ( defined $Opts{'vertical-tightness-closing'} ) {
-        my $vtc = $Opts{'vertical-tightness-closing'};
-        $Opts{'paren-vertical-tightness-closing'}          = $vtc;
-        $Opts{'square-bracket-vertical-tightness-closing'} = $vtc;
-        $Opts{'brace-vertical-tightness-closing'}          = $vtc;
+    if ( defined $rOpts->{'vertical-tightness-closing'} ) {
+        my $vtc = $rOpts->{'vertical-tightness-closing'};
+        $rOpts->{'paren-vertical-tightness-closing'}          = $vtc;
+        $rOpts->{'square-bracket-vertical-tightness-closing'} = $vtc;
+        $rOpts->{'brace-vertical-tightness-closing'}          = $vtc;
     }
 
-    if ( defined $Opts{'closing-token-indentation'} ) {
-        my $cti = $Opts{'closing-token-indentation'};
-        $Opts{'closing-square-bracket-indentation'} = $cti;
-        $Opts{'closing-brace-indentation'}          = $cti;
-        $Opts{'closing-paren-indentation'}          = $cti;
+    if ( defined $rOpts->{'closing-token-indentation'} ) {
+        my $cti = $rOpts->{'closing-token-indentation'};
+        $rOpts->{'closing-square-bracket-indentation'} = $cti;
+        $rOpts->{'closing-brace-indentation'}          = $cti;
+        $rOpts->{'closing-paren-indentation'}          = $cti;
     }
 
     # In quiet mode, there is no log file and hence no way to report
     # results of syntax check, so don't do it.
-    if ( $Opts{'quiet'} ) {
-        $Opts{'check-syntax'} = 0;
+    if ( $rOpts->{'quiet'} ) {
+        $rOpts->{'check-syntax'} = 0;
     }
 
     # can't check syntax if no output
-    if ( $Opts{'format'} ne 'tidy' ) {
-        $Opts{'check-syntax'} = 0;
+    if ( $rOpts->{'format'} ne 'tidy' ) {
+        $rOpts->{'check-syntax'} = 0;
     }
 
     # Never let Windows 9x/Me systems run syntax check -- this will prevent a
     # wide variety of nasty problems on these systems, because they cannot
     # reliably run backticks.  Don't even think about changing this!
-    if (   $Opts{'check-syntax'}
+    if (   $rOpts->{'check-syntax'}
         && $is_Windows
         && ( !$Windows_type || $Windows_type =~ /^(9|Me)/ ) )
     {
-        $Opts{'check-syntax'} = 0;
+        $rOpts->{'check-syntax'} = 0;
     }
 
     # It's really a bad idea to check syntax as root unless you wrote
     # the script yourself.  FIXME: not sure if this works with VMS
     unless ($is_Windows) {
 
-        if ( $< == 0 && $Opts{'check-syntax'} ) {
-            $Opts{'check-syntax'} = 0;
+        if ( $< == 0 && $rOpts->{'check-syntax'} ) {
+            $rOpts->{'check-syntax'} = 0;
             $$rpending_complaint .=
 "Syntax check deactivated for safety; you shouldn't run this as root\n";
         }
     }
 
     # see if user set a non-negative logfile-gap
-    if ( defined( $Opts{'logfile-gap'} ) && $Opts{'logfile-gap'} >= 0 ) {
+    if ( defined( $rOpts->{'logfile-gap'} ) && $rOpts->{'logfile-gap'} >= 0 ) {
 
         # a zero gap will be taken as a 1
-        if ( $Opts{'logfile-gap'} == 0 ) {
-            $Opts{'logfile-gap'} = 1;
+        if ( $rOpts->{'logfile-gap'} == 0 ) {
+            $rOpts->{'logfile-gap'} = 1;
         }
 
         # setting a non-negative logfile gap causes logfile to be saved
-        $Opts{'logfile'} = 1;
+        $rOpts->{'logfile'} = 1;
     }
 
     # not setting logfile gap, or setting it negative, causes default of 50
     else {
-        $Opts{'logfile-gap'} = 50;
+        $rOpts->{'logfile-gap'} = 50;
     }
 
     # set short-cut flag when only indentation is to be done.
     # Note that the user may or may not have already set the
     # indent-only flag.
-    if (   !$Opts{'add-whitespace'}
-        && !$Opts{'delete-old-whitespace'}
-        && !$Opts{'add-newlines'}
-        && !$Opts{'delete-old-newlines'} )
+    if (   !$rOpts->{'add-whitespace'}
+        && !$rOpts->{'delete-old-whitespace'}
+        && !$rOpts->{'add-newlines'}
+        && !$rOpts->{'delete-old-newlines'} )
     {
-        $Opts{'indent-only'} = 1;
+        $rOpts->{'indent-only'} = 1;
     }
 
     # -isbc implies -ibc
-    if ( $Opts{'indent-spaced-block-comments'} ) {
-        $Opts{'indent-block-comments'} = 1;
+    if ( $rOpts->{'indent-spaced-block-comments'} ) {
+        $rOpts->{'indent-block-comments'} = 1;
     }
 
     # -bli flag implies -bl
-    if ( $Opts{'brace-left-and-indent'} ) {
-        $Opts{'opening-brace-on-new-line'} = 1;
+    if ( $rOpts->{'brace-left-and-indent'} ) {
+        $rOpts->{'opening-brace-on-new-line'} = 1;
     }
 
-    if (   $Opts{'opening-brace-always-on-right'}
-        && $Opts{'opening-brace-on-new-line'} )
+    if (   $rOpts->{'opening-brace-always-on-right'}
+        && $rOpts->{'opening-brace-on-new-line'} )
     {
         warn <<EOM;
  Conflict: you specified both 'opening-brace-always-on-right' (-bar) and 
   'opening-brace-on-new-line' (-bl).  Ignoring -bl. 
 EOM
-        $Opts{'opening-brace-on-new-line'} = 0;
+        $rOpts->{'opening-brace-on-new-line'} = 0;
     }
 
     # it simplifies things if -bl is 0 rather than undefined
-    if ( !defined( $Opts{'opening-brace-on-new-line'} ) ) {
-        $Opts{'opening-brace-on-new-line'} = 0;
+    if ( !defined( $rOpts->{'opening-brace-on-new-line'} ) ) {
+        $rOpts->{'opening-brace-on-new-line'} = 0;
     }
 
     # -sbl defaults to -bl if not defined
-    if ( !defined( $Opts{'opening-sub-brace-on-new-line'} ) ) {
-        $Opts{'opening-sub-brace-on-new-line'} =
-          $Opts{'opening-brace-on-new-line'};
+    if ( !defined( $rOpts->{'opening-sub-brace-on-new-line'} ) ) {
+        $rOpts->{'opening-sub-brace-on-new-line'} =
+          $rOpts->{'opening-brace-on-new-line'};
     }
 
     # set shortcut flag if no blanks to be written
-    unless ( $Opts{'maximum-consecutive-blank-lines'} ) {
-        $Opts{'swallow-optional-blank-lines'} = 1;
+    unless ( $rOpts->{'maximum-consecutive-blank-lines'} ) {
+        $rOpts->{'swallow-optional-blank-lines'} = 1;
     }
 
-    if ( $Opts{'entab-leading-whitespace'} ) {
-        if ( $Opts{'entab-leading-whitespace'} < 0 ) {
+    if ( $rOpts->{'entab-leading-whitespace'} ) {
+        if ( $rOpts->{'entab-leading-whitespace'} < 0 ) {
             warn "-et=n must use a positive integer; ignoring -et\n";
-            $Opts{'entab-leading-whitespace'} = undef;
+            $rOpts->{'entab-leading-whitespace'} = undef;
         }
 
         # entab leading whitespace has priority over the older 'tabs' option
-        if ( $Opts{'tabs'} ) { $Opts{'tabs'} = 0; }
+        if ( $rOpts->{'tabs'} ) { $rOpts->{'tabs'} = 0; }
     }
 
-    if ( $Opts{'output-line-ending'} ) {
+    if ( $rOpts->{'output-line-ending'} ) {
         unless ( is_unix() ) {
             warn "ignoring -ole; only works under unix\n";
-            $Opts{'output-line-ending'} = undef;
+            $rOpts->{'output-line-ending'} = undef;
         }
     }
-    if ( $Opts{'preserve-line-endings'} ) {
+    if ( $rOpts->{'preserve-line-endings'} ) {
         unless ( is_unix() ) {
             warn "ignoring -ple; only works under unix\n";
-            $Opts{'preserve-line-endings'} = undef;
+            $rOpts->{'preserve-line-endings'} = undef;
         }
     }
 
-    return ( \%Opts, $config_file, \@raw_options, $saw_extrude );
-
-}    # end of process_command_line
+}
 
 sub expand_command_abbreviations {
 
@@ -2200,13 +2269,17 @@ sub read_config_file {
     my ( $fh, $config_file, $rexpansion ) = @_;
     my @config_list = ();
 
+    # file is bad if non-empty $death_message is returned
+    my $death_message="";
+
     my $name = undef;
     my $line_no;
     while ( $_ = $fh->getline() ) {
         $line_no++;
         chomp;
         next if /^\s*#/;    # skip full-line comment
-        $_ = strip_comment( $_, $config_file, $line_no );
+        ($_,$death_message) = strip_comment( $_, $config_file, $line_no );
+        last if ($death_message); 
         s/^\s*(.*?)\s*$/$1/;    # trim both ends
         next unless $_;
 
@@ -2221,17 +2294,19 @@ sub read_config_file {
             # handle a new alias definition
             if ($newname) {
                 if ($name) {
-                    die
+                    $death_message=
 "No '}' seen after $name and before $newname in config file $config_file line $.\n";
+                    last;
                 }
                 $name = $newname;
 
                 if ( ${$rexpansion}{$name} ) {
                     local $" = ')(';
                     my @names = sort keys %$rexpansion;
-                    print "Here is a list of all installed aliases\n(@names)\n";
-                    die
-"Attempting to redefine alias ($name) in config file $config_file line $.\n";
+                    $death_message =
+                        "Here is a list of all installed aliases\n(@names)\n"
+                      . "Attempting to redefine alias ($name) in config file $config_file line $.\n";
+                    last;
                 }
                 ${$rexpansion}{$name} = [];
             }
@@ -2241,11 +2316,12 @@ sub read_config_file {
 
                 my ( $rbody_parts, $msg ) = parse_args($body);
                 if ($msg) {
-                    die <<EOM;
+                    $death_message=<<EOM;
 Error reading file $config_file at line number $line_no.
 $msg
 Please fix this line or use -npro to avoid reading this file
 EOM
+                    last;
                 }
 
                 if ($name) {
@@ -2262,30 +2338,32 @@ EOM
 
             if ($curly) {
                 unless ($name) {
-                    die
+                    $death_message=
 "Unexpected '}' seen in config file $config_file line $.\n";
+                    last;
                 }
                 $name = undef;
             }
         }
     }
     eval { $fh->close() };
-    return ( \@config_list );
+    return ( \@config_list, $death_message );
 }
 
 sub strip_comment {
 
     my ( $instr, $config_file, $line_no ) = @_;
+    my $msg="";
 
     # nothing to do if no comments
     if ( $instr !~ /#/ ) {
-        return $instr;
+        return ($instr,$msg);
     }
 
     # use simple method of no quotes
     elsif ( $instr !~ /['"]/ ) {
         $instr =~ s/\s*\#.*$//;    # simple trim
-        return $instr;
+        return ($instr,$msg);
     }
 
     # handle comments and quotes
@@ -2305,7 +2383,7 @@ sub strip_comment {
 
             # error..we reached the end without seeing the ending quote char
             else {
-                die <<EOM;
+                $msg=<<EOM;
 Error reading file $config_file at line number $line_no.
 Did not see ending quote character <$quote_char> in this text:
 $instr
@@ -2332,7 +2410,7 @@ EOM
             }
         }
     }
-    return $outstr;
+    return ($outstr,$msg);
 }
 
 sub parse_args {
@@ -6836,14 +6914,12 @@ EOM
         '[' => $rOpts->{'opening-square-bracket-right'},
     );
 
-    # TESTING: STACK OPENING TOKEN
     %stack_opening_token = (
         '(' => $rOpts->{'stack-opening-paren'},
         '{' => $rOpts->{'stack-opening-hash-brace'},
         '[' => $rOpts->{'stack-opening-square-bracket'},
     );
 
-    # TESTING: STACK CLOSING TOKEN
     %stack_closing_token = (
         ')' => $rOpts->{'stack-closing-paren'},
         '}' => $rOpts->{'stack-closing-hash-brace'},
@@ -8114,7 +8190,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.47 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.48 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -10765,6 +10841,9 @@ sub lookup_opening_indentation {
         my $is_semicolon_terminated = $terminal_type eq ';'
           && $nesting_depth_to_go[$iend] < $nesting_depth_to_go[$ibeg];
 
+        ##########################################################
+        # Section 1: set a flag and a default indentation
+        #
         # Most lines are indented according to the initial token.
         # But it is common to outdent to the level just after the
         # terminal token in certain cases...
@@ -10773,6 +10852,7 @@ sub lookup_opening_indentation {
         #       1 - outdent
         #       2 - vertically align with opening token
         #       3 - indent
+        ##########################################################
         my $adjust_indentation         = 0;
         my $default_adjust_indentation = $adjust_indentation;
 
@@ -10893,12 +10973,15 @@ sub lookup_opening_indentation {
             }
         }
 
-        # Handle variation in indentation styles...
+        ##########################################################
+        # Section 2: set indentation according to flag set above
+        #
         # Select the indentation object to define leading
         # whitespace.  If we are outdenting something like '} } );'
         # then we want to use one level below the last token
         # ($i_terminal) in order to get it to fully outdent through
         # all levels.
+        ##########################################################
         my $indentation;
         my $lev;
         my $level_end = $levels_to_go[$iend];
@@ -10922,20 +11005,20 @@ sub lookup_opening_indentation {
             my $space_count =
               get_SPACES($opening_indentation) + $opening_offset;
 
-          # Indent less than the previous line.
-          #
-          # Problem: For -lp we don't exactly know what it was if there were
-          # recoverable spaces sent to the aligner.  A good solution would be to
-          # force a flush of the vertical alignment buffer, so that we would
-          # know.  For now, this rule is used for -lp:
-          #
-          # When the last line did not start with a closing token we will be
-          # optimistic that the aligner will recover everything wanted.
-          #
-          # This rule will prevent us from breaking a hierarchy of closing
-          # tokens, and in a worst case will leave a closing paren too far
-          # indented, but this is better than frequently leaving it not indented
-          # enough.
+              # Indent less than the previous line.
+              #
+              # Problem: For -lp we don't exactly know what it was if there
+              # were recoverable spaces sent to the aligner.  A good solution
+              # would be to force a flush of the vertical alignment buffer, so
+              # that we would know.  For now, this rule is used for -lp:
+              #
+              # When the last line did not start with a closing token we will
+              # be optimistic that the aligner will recover everything wanted.
+              #
+              # This rule will prevent us from breaking a hierarchy of closing
+              # tokens, and in a worst case will leave a closing paren too far
+              # indented, but this is better than frequently leaving it not
+              # indented enough.
             my $last_spaces = get_SPACES($last_indentation_written);
             if ( $last_leading_token !~ /^[\}\]\)]$/ ) {
                 $last_spaces +=
@@ -10972,20 +11055,56 @@ sub lookup_opening_indentation {
         # Full indentaion of closing tokens (-icb and -icp or -cti=2)
         else {
 
-            # There are two ways to handle -icb and -icp...
-            # One way is to use the indentation of the previous line:
-            # $indentation = $last_indentation_written;
-
-            # The other way is to use the indentation that the previous line
-            # would have had if it hadn't been adjusted:
-            $indentation = $last_unadjusted_indentation;
-
-          # Current method: use the minimum of the two. This avoids inconsistent
-          # indentation.
-            if ( get_SPACES($last_indentation_written) <
-                get_SPACES($indentation) )
+            # handle -icb (indented closing code block braces) 
+            # Updated method for indented block braces: indent one full level if
+            # there is no continuation indentation.  This will occur for major
+            # structures such as sub, if, else, but not for things like map
+            # blocks.  
+            #
+            # Note: only code blocks without continuation indentation are
+            # handled here (if, else, unless, ..). In the following snippet,
+            # the terminal brace of the sort block will have continuation
+            # indentation as shown so it will not be handled by the coding
+            # here.  We would have to undo the continuation indentation to do
+            # this, but it probably looks ok as is.  This is a possible future
+            # update for semicolon terminated lines.
+            #
+            #     if ($sortby eq 'date' or $sortby eq 'size') {
+            #         @files = sort {
+            #             $file_data{$a}{$sortby} <=> $file_data{$b}{$sortby}
+            #                 or $a cmp $b
+            #                 } @files;
+            #         }
+            #
+            if (   $block_type_to_go[$ibeg]
+                && $ci_levels_to_go[$i_terminal] == 0 )
             {
-                $indentation = $last_indentation_written;
+                my $spaces = get_SPACES( $leading_spaces_to_go[$i_terminal] );
+                $indentation = $spaces + $rOpts_indent_columns;
+
+                # NOTE: for -lp we could create a new indentation object, but
+                # there is probably no need to do it
+            }
+
+            # handle -icp and any -icb block braces which fall through above
+            # test such as the 'sort' block mentioned above.
+            else {
+
+                # There are currently two ways to handle -icp...
+                # One way is to use the indentation of the previous line:
+                # $indentation = $last_indentation_written;
+
+                # The other way is to use the indentation that the previous line
+                # would have had if it hadn't been adjusted:
+                $indentation = $last_unadjusted_indentation;
+
+                # Current method: use the minimum of the two. This avoids
+                # inconsistent indentation.
+                if ( get_SPACES($last_indentation_written) <
+                    get_SPACES($indentation) )
+                {
+                    $indentation = $last_indentation_written;
+                }
             }
 
             # use previous indentation but use own level
@@ -10995,7 +11114,8 @@ sub lookup_opening_indentation {
 
         # remember indentation except for multi-line quotes, which get
         # no indentation
-        unless ( $types_to_go[$ibeg] eq 'Q' && $lev == 0 ) {
+        ##BUG: unless ( $types_to_go[$ibeg] eq 'Q' && $lev == 0 ) {
+        unless ( $ibeg==0 && $starting_in_quote) {
             $last_indentation_written    = $indentation;
             $last_unadjusted_indentation = $leading_spaces_to_go[$ibeg];
             $last_leading_token          = $tokens_to_go[$ibeg];
@@ -14829,7 +14949,7 @@ sub recombine_breakpoints {
                       );
 
                     # override breakpoint 
-                    $forced_breakpoint_to_go[$imid] = 0;
+                    ##$forced_breakpoint_to_go[$imid] = 0;
                 }
 
                 # handle leading "if" and "unless"
@@ -14847,8 +14967,7 @@ sub recombine_breakpoints {
                       );
 
                     # override breakpoint 
-                    $forced_breakpoint_to_go[$imid] = 0;
-
+                    ##$forced_breakpoint_to_go[$imid] = 0;
 
                     #if ($depth_increase>0);
                 }
@@ -14867,6 +14986,8 @@ sub recombine_breakpoints {
             }
 
             # similar treatment of && and || as above for 'and' and 'or':
+            # NOTE: This block of code is currently bypassed because
+            # of a previous block but is retained for possible future use.
             elsif ( $types_to_go[$imidr] =~ /^(&&|\|\|)$/ ) {
 
                 # maybe looking at something like:
@@ -14883,7 +15004,7 @@ sub recombine_breakpoints {
                   );
 
                 # override breakpoint
-                $forced_breakpoint_to_go[$imid] = 0;
+                ##$forced_breakpoint_to_go[$imid] = 0;
             }
 
             #----------------------------------------------------------
@@ -25078,14 +25199,16 @@ Perl::Tidy - Parses and beautifies perl source
     use Perl::Tidy;
 
     Perl::Tidy::perltidy(
-        source      => $source,
-        destination => $destination,
-        stderr      => $stderr,
-        argv        => $argv,
-        perltidyrc  => $perltidyrc,
-        logfile     => $logfile,
-        errorfile   => $errorfile,
-        formatter   => $formatter,  # callback object (see below)
+        source            => $source,
+        destination       => $destination,
+        stderr            => $stderr,
+        argv              => $argv,
+        perltidyrc        => $perltidyrc,
+        logfile           => $logfile,
+        errorfile         => $errorfile,
+        formatter         => $formatter,           # callback object (see below)
+        options_dump      => $options_dump,
+        options_dump_type => $options_dump_type,
     );
 
 =head1 DESCRIPTION
@@ -25105,12 +25228,14 @@ The following list of parameters may be any of a the following: a
 filename, an ARRAY reference, a SCALAR reference, or an object with
 either a B<getline> or B<print> method, as appropriate.
 
-        source          - the source of the script to be formatted
-        destination     - the destination of the formatted output
-        stderr          - standard error output
-        perltidyrc      - the .perltidyrc file
-        logfile         - the .LOG file stream, if any 
-        errorfile       - the .ERR file stream, if any
+        source            - the source of the script to be formatted
+        destination       - the destination of the formatted output
+        stderr            - standard error output
+        perltidyrc        - the .perltidyrc file
+        logfile           - the .LOG file stream, if any 
+        errorfile         - the .ERR file stream, if any
+        options_dump      - ref to a hash to receive parameters (see below), 
+        options_dump_type - controls contents of options_dump
 
 The following chart illustrates the logic used to decide how to
 treat a parameter.
@@ -25154,6 +25279,25 @@ B<@ARGV> array.  The B<argv> parameter may be a string, a reference to a
 string, or a reference to an array.  If it is a string or reference to a
 string, it will be parsed into an array of items just as if it were a
 command line string.
+
+=item options_dump
+
+If the B<options_dump> parameter is given, it must be the reference to a hash.
+In this case, the parameters contained in any perltidyrc configuration file
+will be placed in this hash and perltidy will return immediately.  This is
+analogous to running perltidy with --dump-options, except that the perameters
+are returned in a hash rather than dumped to standard output.  Also, by default
+only the parameters in the perltidyrc file are returned, but this can be
+changed with the next parameter.  This parameter provides a convenient method
+for external programs to read a perltidyrc file.  An example program
+using this feature is included in the distribution.
+
+=item options_dump_type
+
+This parameter is a string which can be used to control the parameters placed
+in the hash reference supplied by B<options_dump>.  The possible values are
+'perltidyrc' (default) and 'full'.  The 'full' parameter causes both the
+default options plus any options found in a perltidyrc file to be returned.
 
 =back
 
