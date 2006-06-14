@@ -22,6 +22,12 @@
 		<li><a href="#enable_ole_under_windows">enable -ole under Windows</a></li>
 		<li><a href="#documentation">Documentation</a></li>
 		<li><a href="#html_writer">HTML writer</a></li>
+		<li><a href="#automatic_style_detection">Automatic style detection</a></li>
+	</ul>
+
+	<li><a href="#things_which_have_been_suggested_but_will_not_be_done">Things which have been suggested but will not be done</a></li>
+	<ul>
+
 		<li><a href="#recursive_file_processing">Recursive file processing</a></li>
 	</ul>
 
@@ -64,7 +70,9 @@ the following statement to be indented more than the if:</p>
 <p>
 </p>
 <h2><a name="enable_ole_under_windows">enable -ole under Windows</a></h2>
-<p>This only works reliably under unix at present.</p>
+<p>This only works under unix (or cygwin) at present.  It doesn't work for Windows
+versions, such as Active State, because they change line endings that they
+don't like.</p>
 <p>
 </p>
 <h2><a name="documentation">Documentation</a></h2>
@@ -81,8 +89,18 @@ multi-line quotes.  Then code needs to be written to scan for and markup
 identifiers.</p>
 <p>
 </p>
+<h2><a name="automatic_style_detection">Automatic style detection</a></h2>
+<p>It would be nice to write a program to read a sample of perl code
+and write an approximate .perltidyrc file for that style.</p>
+<p>
+</p>
+<hr />
+<h1><a name="things_which_have_been_suggested_but_will_not_be_done">Things which have been suggested but will not be done</a></h1>
+<p>
+</p>
 <h2><a name="recursive_file_processing">Recursive file processing</a></h2>
-<p>A -r flag might be nice.</p>
+<p>A -r flag might be nice, but this is probably best handled by
+an exterior shell script.</p>
 
 </body>
 

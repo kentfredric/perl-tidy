@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "PERLTIDY 1"
-.TH PERLTIDY 1 "2006-06-08" "perl v5.8.7" "User Contributed Perl Documentation"
+.TH PERLTIDY 1 "2006-06-11" "perl v5.8.7" "User Contributed Perl Documentation"
 .SH "NAME"
 perltidy \- a perl script indenter and reformatter
 .SH "SYNOPSIS"
@@ -624,12 +624,13 @@ hierarchical lists, and these flags may prevent that.
 The \fB\-cti=n\fR flag controls the indentation of a line beginning with 
 a \f(CW\*(C`)\*(C'\fR, \f(CW\*(C`]\*(C'\fR, or a non-block \f(CW\*(C`}\*(C'\fR.  Such a line receives:
 .Sp
-.Vb 5
+.Vb 6
 \& \-cti = 0 no extra indentation (default)
 \& \-cti = 1 extra indentation such that the closing token
 \&        aligns with its opening token.
 \& \-cti = 2 one extra indentation level if the line looks like:
 \&        );  or  ];  or  };
+\& \-cti = 3 one extra indentation level always
 .Ve
 .Sp
 The flags \fB\-cti=1\fR and \fB\-cti=2\fR work well with the \fB\-lp\fR flag (previous
@@ -1760,8 +1761,8 @@ For example:
 The \fB\-sct\fR flag is somewhat similar to the \fB\-vtc\fR flags, and in some
 cases it can give a similar result.  The difference is that the \fB\-vtc\fR
 flags try to avoid lines with leading opening tokens by \*(L"hiding\*(R" them at
-the end of a previous line, whereas the \fB\-sot\fR flag merely tries to
-reduce the number of lines with isolated opening tokens by stacking them
+the end of a previous line, whereas the \fB\-sct\fR flag merely tries to
+reduce the number of lines with isolated closing tokens by stacking them
 but does not try to hide them.  For example:
 .Sp
 .Vb 6
@@ -2629,12 +2630,13 @@ dot is added, and the backup file will be \fIsomefile.pl~\fR  .
 The following list shows all short parameter names which allow a prefix
 \&'n' to produce the negated form:
 .PP
-.Vb 5
-\&    D anl asc aws b bbb bbc bbs bli boc bok bol bot syn ce csc 
-\&    dac dbc dcsc dnl dws dp dpro dsm dsc ddf dln dop dsn dtt dwls dwrs 
-\&    f fll frm hsc html ibc icb icp iob isbc lp log lal x lsl ple pod bl 
-\&    sbl okw ola oll ple pvl q opt sbc sfs ssc sts se st sob 
-\&    t tac tbc toc tp tsc tqw w
+.Vb 6
+\& D    anl asc  aws  b    bbb bbc bbs  bl   bli  boc bok  bol  bot  ce
+\& csc  dac dbc  dcsc ddf  dln dnl dop  dp   dpro dsc dsm  dsn  dtt  dwls
+\& dwrs dws f    fll  frm  fs  hsc html ibc  icb  icp iob  isbc lal  log
+\& lp   lsl ohbr okw  ola  oll opr opt  osbr otr  ple ple  pod  pvl  q
+\& sbc  sbl schb scp  scsb sct se  sfp  sfs  skp  sob sohb sop  sosb sot
+\& ssc  st  sts  syn  t    tac tbc toc  tp   tqw  tsc w    x
 .Ve
 .PP
 Equivalently, the prefix 'no' or 'no\-' on the corresponding long names may be

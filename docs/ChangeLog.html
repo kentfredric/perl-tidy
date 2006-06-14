@@ -66,11 +66,27 @@
  -Updated to recognize the defined or operator, //, to be released in Perl 10.
  Thanks to Sebastien Aperghis-Tramoni.</pre>
 <pre>
+ -A useful utility perltidyrc_dump.pl is included in the examples section.  It
+ will read any perltidyrc file and write it back out in a standard format
+ (though comments are lost).</pre>
+<pre>
  -Added option to have perltidy read and return a hash with the contents of a
- perltidyrc file.  This may be used by Leif Eriksen's tidyview code.</pre>
+ perltidyrc file.  This may be used by Leif Eriksen's tidyview code.  This
+ feature is used by the demonstration program 'perltidyrc_dump.pl' in the
+ examples directory.</pre>
+<pre>
+ -Improved error checking in perltidyrc files.  Unknown bare words were not
+ being caught.</pre>
+<pre>
+ -The --dump-options parameter now dumps parameters in the format required by a
+ perltidyrc file.</pre>
 <pre>
  -V-Strings with underscores are now recognized.
  For example: $v = v1.2_3;</pre>
+<pre>
+ -cti=3 option added which gives one extra indentation level to closing 
+ tokens always.  This provides more predictable closing token placement
+ than cti=2.  If you are using cti=2 you might want to try cti=3.</pre>
 <pre>
  -To identify all left-adjusted comments as static block comments, use C&lt;-sbcp='^#'&gt;.</pre>
 <pre>

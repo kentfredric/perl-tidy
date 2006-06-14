@@ -63,7 +63,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.48 2006/06/09 04:18:00 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.49 2006/06/14 01:56:24 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 sub streamhandle {
@@ -319,22 +319,27 @@ sub make_temporary_filename {
     sub perltidy {
 
         my %defaults = (
-            argv              => undef,
-            destination       => undef,
-            formatter         => undef,
-            logfile           => undef,
-            errorfile         => undef,
-            perltidyrc        => undef,
-            source            => undef,
-            stderr            => undef,
-            options_dump      => undef,
-            options_dump_type => undef,
+            argv                  => undef,
+            destination           => undef,
+            formatter             => undef,
+            logfile               => undef,
+            errorfile             => undef,
+            perltidyrc            => undef,
+            source                => undef,
+            stderr                => undef,
+            dump_options          => undef,
+            dump_options_type     => undef,
+            dump_getopt_flags     => undef,
+            dump_options_category => undef,
+            dump_options_range    => undef,
+            dump_abbreviations    => undef,
         );
 
         # don't overwrite callers ARGV
         local @ARGV = @ARGV;
 
         my %input_hash = @_;
+
         if ( my @bad_keys = grep { !exists $defaults{$_} } keys %input_hash ) {
             local $" = ')(';
             my @good_keys = sort keys %defaults;
@@ -348,6 +353,25 @@ perltidy only understands : (@good_keys)
 EOM
         }
 
+        my $get_hash_ref = sub {
+            my ($key) = @_;
+            my $hash_ref = $input_hash{$key};
+            if ( defined($hash_ref) ) {
+                unless ( ref($hash_ref) eq 'HASH' ) {
+                    my $what   = ref($hash_ref);
+                    my $but_is =
+                      $what ? "but is ref to $what" : "but is not a reference";
+                    croak <<EOM;
+------------------------------------------------------------------------
+error in call to perltidy:
+-$key must be reference to HASH $but_is
+------------------------------------------------------------------------
+EOM
+                }
+            }
+            return $hash_ref;
+        };
+
         %input_hash = ( %defaults, %input_hash );
         my $argv               = $input_hash{'argv'};
         my $destination_stream = $input_hash{'destination'};
@@ -357,27 +381,25 @@ EOM
         my $source_stream      = $input_hash{'source'};
         my $stderr_stream      = $input_hash{'stderr'};
         my $user_formatter     = $input_hash{'formatter'};
-        my $options_dump       = $input_hash{'options_dump'};
-        my $options_dump_type  = $input_hash{'options_dump_type'};
 
-        # validate options_dump and options_dump_type
-        if (defined($options_dump)) {
-            unless (ref($options_dump) eq 'HASH') {
-                    croak <<EOM;
-------------------------------------------------------------------------
-error in call to perltidy:
--options_dump must be reference to HASH
-------------------------------------------------------------------------
-EOM
+        # various dump parameters
+        my $dump_options_type     = $input_hash{'dump_options_type'};
+        my $dump_options          = $get_hash_ref->('dump_options');
+        my $dump_getopt_flags     = $get_hash_ref->('dump_getopt_flags');
+        my $dump_options_category = $get_hash_ref->('dump_options_category');
+        my $dump_abbreviations    = $get_hash_ref->('dump_abbreviations');
+        my $dump_options_range    = $get_hash_ref->('dump_options_range');
+
+        # validate dump_options_type
+        if ( defined($dump_options) ) {
+            unless ( defined($dump_options_type) ) {
+                $dump_options_type = 'perltidyrc';
             }
-            unless(defined($options_dump_type) ){
-                $options_dump_type='perltidyrc';
-            }
-            unless ($options_dump_type=~/^(perltidyrc|full)$/) {
-                    croak <<EOM;
+            unless ( $dump_options_type =~ /^(perltidyrc|full)$/ ) {
+                croak <<EOM;
 ------------------------------------------------------------------------
-Please check value of -options_dump_type in call to perltidy;
-saw: '$options_dump_type' 
+Please check value of -dump_options_type in call to perltidy;
+saw: '$dump_options_type' 
 expecting: 'perltidyrc' or 'full'
 ------------------------------------------------------------------------
 EOM
@@ -385,16 +407,7 @@ EOM
             }
         }
         else {
-            if ( $options_dump_type ) {
-                croak <<EOM;
-------------------------------------------------------------------------
-Error in call to perltidy: 
-Saw -options_dump_type='$options_dump_type' but -options_dump is undefined or
-is not a hash ref.  
-------------------------------------------------------------------------
-EOM
-            }
-            $options_dump_type="";
+            $dump_options_type = "";
         }
 
         if ($user_formatter) {
@@ -475,18 +488,60 @@ EOM
         }
 
         # handle command line options
-        my ( $rOpts, $config_file, $rraw_options, $saw_extrude ) =
-          process_command_line(
-            $perltidyrc_stream, $is_Windows,
-            $Windows_type,      $rpending_complaint, $options_dump_type,
+        my ( $rOpts, $config_file, $rraw_options, $saw_extrude, $roption_string,
+            $rexpansion, $roption_category, $roption_range )
+          = process_command_line(
+            $perltidyrc_stream,  $is_Windows, $Windows_type,
+            $rpending_complaint, $dump_options_type,
           );
 
-        if (defined($options_dump)) {
-            %{$options_dump}=%{$rOpts};
-            return;
+        # return or exit immediately after all dumps
+        my $quit_now = 0;
+
+        # Getopt parameters and their flags
+        if ( defined($dump_getopt_flags) ) {
+            $quit_now = 1;
+            foreach my $op ( @{$roption_string} ) {
+                my $opt  = $op;
+                my $flag = "";
+                if ( $opt =~ /(.*)(!|=.*|:.*)$/ ) {
+                    $opt  = $1;
+                    $flag = $2;
+                }
+                $dump_getopt_flags->{$opt} = $flag;
+            }
         }
 
-        check_options ($rOpts, $is_Windows, $Windows_type, $rpending_complaint);
+        if ( defined($dump_options_category) ) {
+            $quit_now = 1;
+            %{$dump_options_category} = %{$roption_category};
+        }
+
+        if ( defined($dump_options_range) ) {
+            $quit_now = 1;
+            %{$dump_options_range} = %{$roption_range};
+        }
+
+        if ( defined($dump_abbreviations) ) {
+            $quit_now = 1;
+            %{$dump_abbreviations} = %{$rexpansion};
+        }
+
+        if ( defined($dump_options) ) {
+            $quit_now = 1;
+            %{$dump_options} = %{$rOpts};
+        }
+
+        return if ($quit_now);
+
+        # dump from command line
+        if ( $rOpts->{'dump-options'} ) {
+            dump_options( $rOpts, $roption_string );
+            exit 1;
+        }
+
+        check_options( $rOpts, $is_Windows, $Windows_type,
+            $rpending_complaint );
 
         if ($user_formatter) {
             $rOpts->{'format'} = 'user';
@@ -1026,10 +1081,12 @@ sub write_logfile_header {
 sub generate_options {
 
     ######################################################################
-    # Generate and return references to: 
+    # Generate and return references to:
     #  @option_string - the list of options to be passed to Getopt::Long
     #  @defaults - the list of default options
     #  %expansion - a hash showing how all abbreviations are expanded
+    #  %category - a hash giving the general category of each option
+    #  %option_range - a hash giving the valid ranges of certain options
 
     # Note: a few options are not documented in the man page and usage
     # message. This is because these are experimental or debug options and
@@ -1062,9 +1119,30 @@ sub generate_options {
     # Define the option string passed to GetOptions.
     #---------------------------------------------------------------
 
-    my @option_string = ();
-    my %expansion     = ();
-    my $rexpansion    = \%expansion;
+    my @option_string   = ();
+    my %expansion       = ();
+    my %option_category = ();
+    my %option_range    = ();
+    my $rexpansion      = \%expansion;
+
+    # names of categories in manual
+    # leading integers will allow sorting
+    my @category_name = (
+        '0. I/O control',
+        '1. Basic formatting options',
+        '2. Code indentation control',
+        '3. Whitespace control',
+        '4. Comment controls',
+        '5. Linebreak controls',
+        '6. Controlling list formatting',
+        '7. Retaining or ignoring existing line breaks',
+        '8. Blank line control',
+        '9. Other controls',
+        '10. HTML options',
+        '11. pod2html options',
+        '12. Controlling HTML properties',
+        '13. Debugging',
+    );
 
     #  These options are parsed directly by perltidy:
     #    help h
@@ -1081,10 +1159,21 @@ sub generate_options {
       recombine!
     );
 
+    my $category = 13;    # Debugging
+    foreach (@option_string) {
+        my $opt = $_;     # must avoid changing the actual flag
+        $opt =~ s/!$//;
+        $option_category{$opt} = $category_name[$category];
+    }
+
+    $category = 11;                                       # HTML
+    $option_category{html} = $category_name[$category];
+
     # routine to install and check options
     my $add_option = sub {
         my ( $long_name, $short_name, $flag ) = @_;
         push @option_string, $long_name . $flag;
+        $option_category{$long_name} = $category_name[$category];
         if ($short_name) {
             if ( $expansion{$short_name} ) {
                 my $existing_name = $expansion{$short_name}[0];
@@ -1107,163 +1196,260 @@ sub generate_options {
 
     # Install long option names which have a simple abbreviation.
     # Options with code '!' get standard negation ('no' for long names,
-    # 'n' for abbreviations)
-    $add_option->( 'DEBUG',                               'D',     '!' );
-    $add_option->( 'DIAGNOSTICS',                         'I',     '!' );
-    $add_option->( 'add-newlines',                        'anl',   '!' );
-    $add_option->( 'add-semicolons',                      'asc',   '!' );
-    $add_option->( 'add-whitespace',                      'aws',   '!' );
-    $add_option->( 'backup-and-modify-in-place',          'b',     '!' );
-    $add_option->( 'backup-file-extension',               'bext',  '=s' );
-    $add_option->( 'blanks-before-blocks',                'bbb',   '!' );
-    $add_option->( 'blanks-before-comments',              'bbc',   '!' );
-    $add_option->( 'blanks-before-subs',                  'bbs',   '!' );
-    $add_option->( 'block-brace-tightness',               'bbt',   '=i' );
-    $add_option->( 'block-brace-vertical-tightness',      'bbvt',  '=i' );
-    $add_option->( 'block-brace-vertical-tightness-list', 'bbvtl', '=s' );
-    $add_option->( 'brace-left-and-indent',               'bli',   '!' );
-    $add_option->( 'brace-left-and-indent-list',          'blil',  '=s' );
-    $add_option->( 'brace-tightness',                     'bt',    '=i' );
-    $add_option->( 'brace-vertical-tightness',            'bvt',   '=i' );
-    $add_option->( 'brace-vertical-tightness-closing',    'bvtc',  '=i' );
-    $add_option->( 'break-at-old-comma-breakpoints',      'boc',   '!' );
-    $add_option->( 'break-at-old-keyword-breakpoints',    'bok',   '!' );
-    $add_option->( 'break-at-old-logical-breakpoints',    'bol',   '!' );
-    $add_option->( 'break-at-old-trinary-breakpoints',    'bot',   '!' );
-    $add_option->( 'check-multiline-quotes',              'chk',   '!' );
-    $add_option->( 'check-syntax',                        'syn',   '!' );
-    $add_option->( 'closing-side-comment-else-flag',      'csce',  '=i' );
-    $add_option->( 'closing-side-comment-interval',       'csci',  '=i' );
-    $add_option->( 'closing-side-comment-list',           'cscl',  '=s' );
-    $add_option->( 'closing-side-comment-maximum-text',   'csct',  '=i' );
-    $add_option->( 'closing-side-comment-prefix',         'cscp',  '=s' );
-    $add_option->( 'closing-side-comment-warnings',       'cscw',  '!' );
-    $add_option->( 'closing-side-comments',               'csc',   '!' );
-    $add_option->( 'closing-token-indentation',           'cti',   '=i' );
-    $add_option->( 'closing-paren-indentation',           'cpi',   '=i' );
-    $add_option->( 'closing-brace-indentation',           'cbi',   '=i' );
-    $add_option->( 'closing-square-bracket-indentation',  'csbi',  '=i' );
-    $add_option->( 'continuation-indentation',            'ci',    '=i' );
-    $add_option->( 'comma-arrow-breakpoints',             'cab',   '=i' );
-    $add_option->( 'cuddled-else',                        'ce',    '!' );
-    $add_option->( 'delete-block-comments',               'dbc',   '!' );
-    $add_option->( 'delete-closing-side-comments',        'dcsc',  '!' );
-    $add_option->( 'delete-old-newlines',                 'dnl',   '!' );
-    $add_option->( 'delete-old-whitespace',               'dws',   '!' );
-    $add_option->( 'delete-pod',                          'dp',    '!' );
-    $add_option->( 'delete-semicolons',                   'dsm',   '!' );
-    $add_option->( 'delete-side-comments',                'dsc',   '!' );
-    $add_option->( 'dump-defaults',                       'ddf',   '!' );
-    $add_option->( 'dump-long-names',                     'dln',   '!' );
-    $add_option->( 'dump-options',                        'dop',   '!' );
-    $add_option->( 'dump-profile',                        'dpro',  '!' );
-    $add_option->( 'dump-short-names',                    'dsn',   '!' );
-    $add_option->( 'dump-token-types',                    'dtt',   '!' );
-    $add_option->( 'dump-want-left-space',                'dwls',  '!' );
-    $add_option->( 'dump-want-right-space',               'dwrs',  '!' );
-    $add_option->( 'entab-leading-whitespace',            'et',    '=i' );
-    $add_option->( 'force-read-binary',                   'f',     '!' );
-    $add_option->( 'format',                              'fmt',   '=s' );
-    $add_option->( 'format-skipping',                     'fs',    '!' );
-    $add_option->( 'format-skipping-begin',               'fsb',   '=s' );
-    $add_option->( 'format-skipping-end',                 'fse',   '=s' );
-    $add_option->( 'fuzzy-line-length',                   'fll',   '!' );
-    $add_option->( 'hanging-side-comments',               'hsc',   '!' );
-    $add_option->( 'help',                                'h',     '' );
-    $add_option->( 'ignore-old-line-breaks',              'iob',   '!' );
-    $add_option->( 'indent-block-comments',               'ibc',   '!' );
-    $add_option->( 'indent-closing-brace',                'icb',   '!' );
-    $add_option->( 'indent-columns',                      'i',     '=i' );
-    $add_option->( 'indent-spaced-block-comments',        'isbc',  '!' );
-    $add_option->( 'line-up-parentheses',                 'lp',    '!' );
-    $add_option->( 'logfile',                             'log',   '!' );
-    $add_option->( 'logfile-gap',                         'g',     ':i' );
-    $add_option->( 'long-block-line-count',               'lbl',   '=i' );
-    $add_option->( 'look-for-autoloader',                 'lal',   '!' );
-    $add_option->( 'look-for-hash-bang',                  'x',     '!' );
-    $add_option->( 'look-for-selfloader',                 'lsl',   '!' );
-    $add_option->( 'maximum-consecutive-blank-lines',     'mbl',   '=i' );
-    $add_option->( 'maximum-fields-per-table',            'mft',   '=i' );
-    $add_option->( 'maximum-line-length',                 'l',     '=i' );
-    $add_option->( 'minimum-space-to-comment',            'msc',   '=i' );
-    $add_option->( 'nowant-left-space',                   'nwls',  '=s' );
-    $add_option->( 'nowant-right-space',                  'nwrs',  '=s' );
-    $add_option->( 'nospace-after-keyword',               'nsak',  '=s' );
-    $add_option->( 'opening-brace-always-on-right',       'bar',   '' );
-    $add_option->( 'opening-brace-on-new-line',           'bl',    '!' );
-    $add_option->( 'opening-sub-brace-on-new-line',       'sbl',   '!' );
+    # 'n' for abbreviations).  Categories follow the manual.
 
-    $add_option->( 'opening-token-right',          'otr',  '!' );
-    $add_option->( 'opening-paren-right',          'opr',  '!' );
-    $add_option->( 'opening-hash-brace-right',     'ohbr', '!' );
-    $add_option->( 'opening-square-bracket-right', 'osbr', '!' );
+    ###########################
+    $category = 0;    # I/O_Control
+    ###########################
+    $add_option->( 'backup-and-modify-in-place', 'b',     '!' );
+    $add_option->( 'backup-file-extension',      'bext',  '=s' );
+    $add_option->( 'force-read-binary',          'f',     '!' );
+    $add_option->( 'format',                     'fmt',   '=s' );
+    $add_option->( 'logfile',                    'log',   '!' );
+    $add_option->( 'logfile-gap',                'g',     ':i' );
+    $add_option->( 'outfile',                    'o',     '=s' );
+    $add_option->( 'output-file-extension',      'oext',  '=s' );
+    $add_option->( 'output-path',                'opath', '=s' );
+    $add_option->( 'profile',                    'pro',   '=s' );
+    $add_option->( 'quiet',                      'q',     '!' );
+    $add_option->( 'standard-error-output',      'se',    '!' );
+    $add_option->( 'standard-output',            'st',    '!' );
+    $add_option->( 'warning-output',             'w',     '!' );
 
-    $add_option->( 'stack-closing-tokens',         'sct',  '!' );
-    $add_option->( 'stack-closing-paren',          'scp',  '!' );
-    $add_option->( 'stack-closing-hash-brace',     'schb', '!' );
-    $add_option->( 'stack-closing-square-bracket', 'scsb', '!' );
-    $add_option->( 'stack-closing-block-brace',    'scbb', '!' );  # not
-                                                                   # implemented
+    ########################################
+    $category = 1;    # Basic formatting options
+    ########################################
+    $add_option->( 'check-syntax',             'syn',  '!' );
+    $add_option->( 'entab-leading-whitespace', 'et',   '=i' );
+    $add_option->( 'indent-columns',           'i',    '=i' );
+    $add_option->( 'maximum-line-length',      'l',    '=i' );
+    $add_option->( 'output-line-ending',       'ole',  '=s' );
+    $add_option->( 'perl-syntax-check-flags',  'pscf', '=s' );
+    $add_option->( 'preserve-line-endings',    'ple',  '!' );
+    $add_option->( 'tabs',                     't',    '!' );
 
-    $add_option->( 'stack-opening-tokens',         'sot',  '!' );
-    $add_option->( 'stack-opening-paren',          'sop',  '!' );
-    $add_option->( 'stack-opening-hash-brace',     'sohb', '!' );
-    $add_option->( 'stack-opening-square-bracket', 'sosb', '!' );
-    $add_option->( 'stack-opening-block-brace',    'sobb', '!' );   # not
-                                                                    #implemented
+    ########################################
+    $category = 2;    # Code indentation control
+    ########################################
+    $add_option->( 'continuation-indentation',           'ci',   '=i' );
+    $add_option->( 'starting-indentation-level',         'sil',  '=i' );
+    $add_option->( 'line-up-parentheses',                'lp',   '!' );
+    $add_option->( 'outdent-keyword-list',               'okwl', '=s' );
+    $add_option->( 'outdent-keywords',                   'okw',  '!' );
+    $add_option->( 'outdent-labels',                     'ola',  '!' );
+    $add_option->( 'outdent-long-quotes',                'olq',  '!' );
+    $add_option->( 'indent-closing-brace',               'icb',  '!' );
+    $add_option->( 'closing-token-indentation',          'cti',  '=i' );
+    $add_option->( 'closing-paren-indentation',          'cpi',  '=i' );
+    $add_option->( 'closing-brace-indentation',          'cbi',  '=i' );
+    $add_option->( 'closing-square-bracket-indentation', 'csbi', '=i' );
+    $add_option->( 'brace-left-and-indent',              'bli',  '!' );
+    $add_option->( 'brace-left-and-indent-list',         'blil', '=s' );
 
-    $add_option->( 'outdent-keyword-list',                      'okwl',  '=s' );
-    $add_option->( 'outdent-keywords',                          'okw',   '!' );
-    $add_option->( 'outdent-labels',                            'ola',   '!' );
-    $add_option->( 'outdent-long-comments',                     'olc',   '!' );
-    $add_option->( 'outdent-long-quotes',                       'olq',   '!' );
-    $add_option->( 'outdent-static-block-comments',             'osbc',  '!' );
-    $add_option->( 'outfile',                                   'o',     '=s' );
-    $add_option->( 'output-file-extension',                     'oext',  '=s' );
-    $add_option->( 'output-line-ending',                        'ole',   '=s' );
-    $add_option->( 'output-path',                               'opath', '=s' );
+    ########################################
+    $category = 3;    # Whitespace control
+    ########################################
+    $add_option->( 'add-semicolons',                            'asc',   '!' );
+    $add_option->( 'add-whitespace',                            'aws',   '!' );
+    $add_option->( 'block-brace-tightness',                     'bbt',   '=i' );
+    $add_option->( 'brace-tightness',                           'bt',    '=i' );
+    $add_option->( 'delete-old-whitespace',                     'dws',   '!' );
+    $add_option->( 'delete-semicolons',                         'dsm',   '!' );
+    $add_option->( 'nospace-after-keyword',                     'nsak',  '=s' );
+    $add_option->( 'nowant-left-space',                         'nwls',  '=s' );
+    $add_option->( 'nowant-right-space',                        'nwrs',  '=s' );
     $add_option->( 'paren-tightness',                           'pt',    '=i' );
-    $add_option->( 'paren-vertical-tightness',                  'pvt',   '=i' );
-    $add_option->( 'paren-vertical-tightness-closing',          'pvtc',  '=i' );
-    $add_option->( 'pass-version-line',                         'pvl',   '!' );
-    $add_option->( 'perl-syntax-check-flags',                   'pscf',  '=s' );
-    $add_option->( 'preserve-line-endings',                     'ple',   '!' );
-    $add_option->( 'profile',                                   'pro',   '=s' );
-    $add_option->( 'quiet',                                     'q',     '!' );
-    $add_option->( 'short-concatenation-item-length',           'scl',   '=i' );
-    $add_option->( 'show-options',                              'opt',   '!' );
     $add_option->( 'space-after-keyword',                       'sak',   '=s' );
     $add_option->( 'space-for-semicolon',                       'sfs',   '!' );
-    $add_option->( 'space-keyword-paren',                       'skp',   '!' );
     $add_option->( 'space-function-paren',                      'sfp',   '!' );
+    $add_option->( 'space-keyword-paren',                       'skp',   '!' );
     $add_option->( 'space-terminal-semicolon',                  'sts',   '!' );
     $add_option->( 'square-bracket-tightness',                  'sbt',   '=i' );
     $add_option->( 'square-bracket-vertical-tightness',         'sbvt',  '=i' );
     $add_option->( 'square-bracket-vertical-tightness-closing', 'sbvtc', '=i' );
-    $add_option->( 'standard-error-output',                     'se',    '!' );
-    $add_option->( 'standard-output',                           'st',    '!' );
-    $add_option->( 'starting-indentation-level',                'sil',   '=i' );
-    $add_option->( 'static-block-comment-prefix',               'sbcp',  '=s' );
-    $add_option->( 'static-block-comments',                     'sbc',   '!' );
-    $add_option->( 'static-side-comment-prefix',                'sscp',  '=s' );
-    $add_option->( 'static-side-comments',                      'ssc',   '!' );
-    $add_option->( 'swallow-optional-blank-lines',              'sob',   '!' );
-    $add_option->( 'tabs',                                      't',     '!' );
-    $add_option->( 'tee-block-comments',                        'tbc',   '!' );
-    $add_option->( 'tee-pod',                                   'tp',    '!' );
-    $add_option->( 'tee-side-comments',                         'tsc',   '!' );
     $add_option->( 'trim-qw',                                   'tqw',   '!' );
-    $add_option->( 'version',                                   'v',     '' );
-    $add_option->( 'vertical-tightness',                        'vt',    '=i' );
-    $add_option->( 'vertical-tightness-closing',                'vtc',   '=i' );
-    $add_option->( 'want-break-after',                          'wba',   '=s' );
-    $add_option->( 'want-break-before',                         'wbb',   '=s' );
     $add_option->( 'want-left-space',                           'wls',   '=s' );
     $add_option->( 'want-right-space',                          'wrs',   '=s' );
-    $add_option->( 'warning-output',                            'w',     '!' );
+
+    ########################################
+    $category = 4;    # Comment controls
+    ########################################
+    $add_option->( 'closing-side-comment-else-flag',    'csce', '=i' );
+    $add_option->( 'closing-side-comment-interval',     'csci', '=i' );
+    $add_option->( 'closing-side-comment-list',         'cscl', '=s' );
+    $add_option->( 'closing-side-comment-maximum-text', 'csct', '=i' );
+    $add_option->( 'closing-side-comment-prefix',       'cscp', '=s' );
+    $add_option->( 'closing-side-comment-warnings',     'cscw', '!' );
+    $add_option->( 'closing-side-comments',             'csc',  '!' );
+    $add_option->( 'format-skipping',                   'fs',   '!' );
+    $add_option->( 'format-skipping-begin',             'fsb',  '=s' );
+    $add_option->( 'format-skipping-end',               'fse',  '=s' );
+    $add_option->( 'hanging-side-comments',             'hsc',  '!' );
+    $add_option->( 'indent-block-comments',             'ibc',  '!' );
+    $add_option->( 'indent-spaced-block-comments',      'isbc', '!' );
+    $add_option->( 'minimum-space-to-comment',          'msc',  '=i' );
+    $add_option->( 'outdent-long-comments',             'olc',  '!' );
+    $add_option->( 'outdent-static-block-comments',     'osbc', '!' );
+    $add_option->( 'static-block-comment-prefix',       'sbcp', '=s' );
+    $add_option->( 'static-block-comments',             'sbc',  '!' );
+    $add_option->( 'static-side-comment-prefix',        'sscp', '=s' );
+    $add_option->( 'static-side-comments',              'ssc',  '!' );
+
+    ########################################
+    $category = 5;    # Linebreak controls
+    ########################################
+    $add_option->( 'add-newlines',                        'anl',   '!' );
+    $add_option->( 'block-brace-vertical-tightness',      'bbvt',  '=i' );
+    $add_option->( 'block-brace-vertical-tightness-list', 'bbvtl', '=s' );
+    $add_option->( 'brace-vertical-tightness',            'bvt',   '=i' );
+    $add_option->( 'brace-vertical-tightness-closing',    'bvtc',  '=i' );
+    $add_option->( 'cuddled-else',                        'ce',    '!' );
+    $add_option->( 'delete-old-newlines',                 'dnl',   '!' );
+    $add_option->( 'opening-brace-always-on-right',       'bar',   '' );
+    $add_option->( 'opening-brace-on-new-line',           'bl',    '!' );
+    $add_option->( 'opening-hash-brace-right',            'ohbr',  '!' );
+    $add_option->( 'opening-paren-right',                 'opr',   '!' );
+    $add_option->( 'opening-square-bracket-right',        'osbr',  '!' );
+    $add_option->( 'opening-sub-brace-on-new-line',       'sbl',   '!' );
+    $add_option->( 'paren-vertical-tightness',            'pvt',   '=i' );
+    $add_option->( 'paren-vertical-tightness-closing',    'pvtc',  '=i' );
+    $add_option->( 'stack-closing-hash-brace',            'schb',  '!' );
+    $add_option->( 'stack-closing-paren',                 'scp',   '!' );
+    $add_option->( 'stack-closing-square-bracket',        'scsb',  '!' );
+    $add_option->( 'stack-opening-hash-brace',            'sohb',  '!' );
+    $add_option->( 'stack-opening-paren',                 'sop',   '!' );
+    $add_option->( 'stack-opening-square-bracket',        'sosb',  '!' );
+    $add_option->( 'vertical-tightness',                  'vt',    '=i' );
+    $add_option->( 'vertical-tightness-closing',          'vtc',   '=i' );
+    $add_option->( 'want-break-after',                    'wba',   '=s' );
+    $add_option->( 'want-break-before',                   'wbb',   '=s' );
+
+    ########################################
+    $category = 6;    # Controlling list formatting
+    ########################################
+    $add_option->( 'break-at-old-comma-breakpoints', 'boc', '!' );
+    $add_option->( 'comma-arrow-breakpoints',        'cab', '=i' );
+    $add_option->( 'maximum-fields-per-table',       'mft', '=i' );
+
+    ########################################
+    $category = 7;    # Retaining or ignoring existing line breaks
+    ########################################
+    $add_option->( 'break-at-old-keyword-breakpoints', 'bok', '!' );
+    $add_option->( 'break-at-old-logical-breakpoints', 'bol', '!' );
+    $add_option->( 'break-at-old-trinary-breakpoints', 'bot', '!' );
+    $add_option->( 'ignore-old-breakpoints',           'iob', '!' );
+
+    ########################################
+    $category = 8;    # Blank line control
+    ########################################
+    $add_option->( 'blanks-before-blocks',            'bbb', '!' );
+    $add_option->( 'blanks-before-comments',          'bbc', '!' );
+    $add_option->( 'blanks-before-subs',              'bbs', '!' );
+    $add_option->( 'long-block-line-count',           'lbl', '=i' );
+    $add_option->( 'maximum-consecutive-blank-lines', 'mbl', '=i' );
+    $add_option->( 'swallow-optional-blank-lines',    'sob', '!' );
+
+    ########################################
+    $category = 9;    # Other controls
+    ########################################
+    $add_option->( 'delete-block-comments',        'dbc',  '!' );
+    $add_option->( 'delete-closing-side-comments', 'dcsc', '!' );
+    $add_option->( 'delete-pod',                   'dp',   '!' );
+    $add_option->( 'delete-side-comments',         'dsc',  '!' );
+    $add_option->( 'tee-block-comments',           'tbc',  '!' );
+    $add_option->( 'tee-pod',                      'tp',   '!' );
+    $add_option->( 'tee-side-comments',            'tsc',  '!' );
+    $add_option->( 'look-for-autoloader',          'lal',  '!' );
+    $add_option->( 'look-for-hash-bang',           'x',    '!' );
+    $add_option->( 'look-for-selfloader',          'lsl',  '!' );
+    $add_option->( 'pass-version-line',            'pvl',  '!' );
+
+    ########################################
+    $category = 13;    # Debugging
+    ########################################
+    $add_option->( 'DEBUG',                           'D',    '!' );
+    $add_option->( 'DIAGNOSTICS',                     'I',    '!' );
+    $add_option->( 'check-multiline-quotes',          'chk',  '!' );
+    $add_option->( 'dump-defaults',                   'ddf',  '!' );
+    $add_option->( 'dump-long-names',                 'dln',  '!' );
+    $add_option->( 'dump-options',                    'dop',  '!' );
+    $add_option->( 'dump-profile',                    'dpro', '!' );
+    $add_option->( 'dump-short-names',                'dsn',  '!' );
+    $add_option->( 'dump-token-types',                'dtt',  '!' );
+    $add_option->( 'dump-want-left-space',            'dwls', '!' );
+    $add_option->( 'dump-want-right-space',           'dwrs', '!' );
+    $add_option->( 'fuzzy-line-length',               'fll',  '!' );
+    $add_option->( 'help',                            'h',    '' );
+    $add_option->( 'short-concatenation-item-length', 'scl',  '=i' );
+    $add_option->( 'show-options',                    'opt',  '!' );
+    $add_option->( 'version',                         'v',    '' );
+
+    #---------------------------------------------------------------------
 
     # The Perl::Tidy::HtmlWriter will add its own options to the string
     Perl::Tidy::HtmlWriter->make_getopt_long_names( \@option_string );
+
+    ########################################
+    # Set categories 10, 11, 12
+    ########################################
+    # Based on their known order
+    $category = 12;    # HTML properties
+    foreach my $opt (@option_string) {
+        my $long_name = $opt;
+        $long_name =~ s/(!|=.*|:.*)$//;
+        unless ( defined( $option_category{$long_name} ) ) {
+            if ( $long_name =~ /^html-linked/ ) {
+                $category = 10;    # HTML options
+            }
+            elsif ( $long_name =~ /^pod2html/ ) {
+                $category = 11;    # Pod2html
+            }
+            $option_category{$long_name} = $category_name[$category];
+        }
+    }
+
+    #---------------------------------------------------------------
+    # Assign valid ranges to certain options
+    #---------------------------------------------------------------
+    # In the future, these may be used to make preliminary checks
+    # hash keys are long names
+    # If key or value is undefined:
+    #   strings may have any value
+    #   integer ranges are >=0
+    # If value is defined:
+    #   value is [qw(any valid words)] for strings
+    #   value is [min, max] for integers
+    #   if min is undefined, there is no lower limit
+    #   if max is undefined, there is no upper limit
+    # Parameters not listed here have defaults
+    $option_range{'format'}             = [qw(tidy html user)];
+    $option_range{'output-line-ending'} = [qw(dos win mac unix)];
+
+    $option_range{'block-brace-tightness'}    = [ 0, 2 ];
+    $option_range{'brace-tightness'}          = [ 0, 2 ];
+    $option_range{'paren-tightness'}          = [ 0, 2 ];
+    $option_range{'square-bracket-tightness'} = [ 0, 2 ];
+
+    $option_range{'block-brace-vertical-tightness'}            = [ 0, 2 ];
+    $option_range{'brace-vertical-tightness'}                  = [ 0, 2 ];
+    $option_range{'brace-vertical-tightness-closing'}          = [ 0, 2 ];
+    $option_range{'paren-vertical-tightness'}                  = [ 0, 2 ];
+    $option_range{'paren-vertical-tightness-closing'}          = [ 0, 2 ];
+    $option_range{'square-bracket-vertical-tightness'}         = [ 0, 2 ];
+    $option_range{'square-bracket-vertical-tightness-closing'} = [ 0, 2 ];
+    $option_range{'vertical-tightness'}                        = [ 0, 2 ];
+    $option_range{'vertical-tightness-closing'}                = [ 0, 2 ];
+
+    $option_range{'closing-brace-indentation'}          = [ 0, 3 ];
+    $option_range{'closing-paren-indentation'}          = [ 0, 3 ];
+    $option_range{'closing-square-bracket-indentation'} = [ 0, 3 ];
+    $option_range{'closing-token-indentation'}          = [ 0, 3 ];
+
+    $option_range{'closing-side-comment-else-flag'} = [ 0, 2 ];
+    $option_range{'comma-arrow-breakpoints'}        = [ 0, 3 ];
+
+# Note: we could actually allow negative ci if someone really wants it:
+# $option_range{'continuation-indentation'}                  = [ undef, undef ];
 
     #---------------------------------------------------------------
     # Assign default values to the above options here, except
@@ -1411,6 +1597,7 @@ sub generate_options {
         'vertical-tightness-closing=2' => [qw(pvtc=2 bvtc=2 sbvtc=2)],
 
         'otr'                   => [qw(opr ohbr osbr)],
+        'opening-token-right'   => [qw(opr ohbr osbr)],
         'notr'                  => [qw(nopr nohbr nosbr)],
         'noopening-token-right' => [qw(nopr nohbr nosbr)],
 
@@ -1495,21 +1682,26 @@ sub generate_options {
 
     # Uncomment next line to dump all expansions for debugging:
     # dump_short_names(\%expansion);
-    return ( \@option_string, \@defaults, \%expansion );
+    return (
+        \@option_string,   \@defaults, \%expansion,
+        \%option_category, \%option_range
+    );
 
-}  # end of generate_options
+}    # end of generate_options
 
 sub process_command_line {
 
     my (
         $perltidyrc_stream,  $is_Windows, $Windows_type,
-        $rpending_complaint, $options_dump_type
+        $rpending_complaint, $dump_options_type
     ) = @_;
 
     use Getopt::Long;
 
-    my ( $roption_string, $rdefaults, $rexpansion ) = generate_options();
-
+    my (
+        $roption_string,   $rdefaults, $rexpansion,
+        $roption_category, $roption_range
+    ) = generate_options();
 
     #---------------------------------------------------------------
     # set the defaults by passing the above list through GetOptions
@@ -1520,11 +1712,11 @@ sub process_command_line {
         my $i;
 
         # do not load the defaults if we are just dumping perltidyrc
-        unless ($options_dump_type eq 'perltidyrc') {
+        unless ( $dump_options_type eq 'perltidyrc' ) {
             for $i (@$rdefaults) { push @ARGV, "--" . $i }
         }
 
-	# Patch to save users Getopt::Long configuration
+        # Patch to save users Getopt::Long configuration
         # and set to Getopt::Long defaults.  Use eval to avoid
         # breaking old versions of Perl without these routines.
         my $glc;
@@ -1539,7 +1731,7 @@ sub process_command_line {
         }
 
         # Patch to put the previous Getopt::Long configuration back
-        eval {Getopt::Long::Configure( $glc )} if defined $glc;
+        eval { Getopt::Long::Configure($glc) } if defined $glc;
     }
 
     my $word;
@@ -1600,7 +1792,7 @@ sub process_command_line {
             exit 1;
         }
         elsif ( $i =~ /^-(dump-short-names|dsn)$/ ) {
-            dump_short_names( $rexpansion );
+            dump_short_names($rexpansion);
             exit 1;
         }
         elsif ( $i =~ /^-(dump-token-types|dtt)$/ ) {
@@ -1665,9 +1857,9 @@ EOM
 
         if ($fh_config) {
 
-            my ($rconfig_list, $death_message) =
+            my ( $rconfig_list, $death_message ) =
               read_config_file( $fh_config, $config_file, $rexpansion );
-            die $death_message if ($death_message); 
+            die $death_message if ($death_message);
 
             # process any .perltidyrc parameters right now so we can
             # localize errors
@@ -1680,6 +1872,30 @@ EOM
                 if ( !GetOptions( \%Opts, @$roption_string ) ) {
                     die
 "Error in this config file: $config_file  \nUse -npro to ignore this file, -h for help'\n";
+                }
+
+                # Anything left in this local @ARGV is an error and must be
+                # invalid bare words from the configuration file.  We cannot
+                # check this earlier because bare words may have been valid
+                # values for parameters.  We had to wait for GetOptions to have
+                # a look at @ARGV.
+                if (@ARGV) {
+                    my $count = @ARGV;
+                    my $str   = "\'" . pop(@ARGV) . "\'";
+                    while ( my $param = pop(@ARGV) ) {
+                        if ( length($str) < 70 ) {
+                            $str .= ", '$param'";
+                        }
+                        else {
+                            $str .= ", ...";
+                            last;
+                        }
+                    }
+                    die <<EOM;
+There are $count unrecognized values in the configuration file '$config_file':
+$str
+Use leading dashes for parameters.  Use -npro to ignore this file.
+EOM
                 }
 
                 # Undo any options which cause premature exit.  They are not
@@ -1719,23 +1935,17 @@ EOM
         die "Error on command line; for help try 'perltidy -h'\n";
     }
 
-    return ( \%Opts, $config_file, \@raw_options, $saw_extrude );
-
-}  # end of process_command_line
+    return ( \%Opts, $config_file, \@raw_options, $saw_extrude, $roption_string,
+        $rexpansion, $roption_category, $roption_range );
+}    # end of process_command_line
 
 sub check_options {
 
-    my ( $rOpts, $is_Windows, $Windows_type, $rpending_complaint ) =
-      @_;
+    my ( $rOpts, $is_Windows, $Windows_type, $rpending_complaint ) = @_;
 
     #---------------------------------------------------------------
     # check and handle any interactions among the basic options..
     #---------------------------------------------------------------
-
-    if ( $rOpts->{'dump-options'} ) {
-        dump_options( \%$rOpts );
-        exit 1;
-    }
 
     # Since -vt, -vtc, and -cti are abbreviations, but under
     # msdos, an unquoted input parameter like vtc=1 will be
@@ -2054,7 +2264,7 @@ sub Win_OS_Type {
 
     # Systems built from Perl source may not have Win32.pm
     # But probably have Win32::GetOSVersion() anyway so the
-    # following line is not 'required': 
+    # following line is not 'required':
     # return $os unless eval('require Win32');
 
     # Use the standard API call to determine the version
@@ -2270,7 +2480,7 @@ sub read_config_file {
     my @config_list = ();
 
     # file is bad if non-empty $death_message is returned
-    my $death_message="";
+    my $death_message = "";
 
     my $name = undef;
     my $line_no;
@@ -2278,8 +2488,8 @@ sub read_config_file {
         $line_no++;
         chomp;
         next if /^\s*#/;    # skip full-line comment
-        ($_,$death_message) = strip_comment( $_, $config_file, $line_no );
-        last if ($death_message); 
+        ( $_, $death_message ) = strip_comment( $_, $config_file, $line_no );
+        last if ($death_message);
         s/^\s*(.*?)\s*$/$1/;    # trim both ends
         next unless $_;
 
@@ -2294,7 +2504,7 @@ sub read_config_file {
             # handle a new alias definition
             if ($newname) {
                 if ($name) {
-                    $death_message=
+                    $death_message =
 "No '}' seen after $name and before $newname in config file $config_file line $.\n";
                     last;
                 }
@@ -2316,8 +2526,8 @@ sub read_config_file {
 
                 my ( $rbody_parts, $msg ) = parse_args($body);
                 if ($msg) {
-                    $death_message=<<EOM;
-Error reading file $config_file at line number $line_no.
+                    $death_message = <<EOM;
+Error reading file '$config_file' at line number $line_no.
 $msg
 Please fix this line or use -npro to avoid reading this file
 EOM
@@ -2330,7 +2540,6 @@ EOM
                     foreach (@$rbody_parts) { s/^\-+//; }
                     push @{ ${$rexpansion}{$name} }, @$rbody_parts;
                 }
-
                 else {
                     push( @config_list, @$rbody_parts );
                 }
@@ -2338,7 +2547,7 @@ EOM
 
             if ($curly) {
                 unless ($name) {
-                    $death_message=
+                    $death_message =
 "Unexpected '}' seen in config file $config_file line $.\n";
                     last;
                 }
@@ -2353,17 +2562,17 @@ EOM
 sub strip_comment {
 
     my ( $instr, $config_file, $line_no ) = @_;
-    my $msg="";
+    my $msg = "";
 
     # nothing to do if no comments
     if ( $instr !~ /#/ ) {
-        return ($instr,$msg);
+        return ( $instr, $msg );
     }
 
     # use simple method of no quotes
     elsif ( $instr !~ /['"]/ ) {
         $instr =~ s/\s*\#.*$//;    # simple trim
-        return ($instr,$msg);
+        return ( $instr, $msg );
     }
 
     # handle comments and quotes
@@ -2383,7 +2592,7 @@ sub strip_comment {
 
             # error..we reached the end without seeing the ending quote char
             else {
-                $msg=<<EOM;
+                $msg = <<EOM;
 Error reading file $config_file at line number $line_no.
 Did not see ending quote character <$quote_char> in this text:
 $instr
@@ -2410,7 +2619,7 @@ EOM
             }
         }
     }
-    return ($outstr,$msg);
+    return ( $outstr, $msg );
 }
 
 sub parse_args {
@@ -2500,11 +2709,43 @@ sub dump_defaults {
 }
 
 sub dump_options {
-    my ($rOpts) = @_;
-    local $" = "\n";
-    print STDOUT "Final parameter set for this run\n";
-    foreach ( sort keys %{$rOpts} ) {
-        print STDOUT "$_=$rOpts->{$_}\n";
+
+    # write the options back out as a valid .perltidyrc file
+    my ( $rOpts, $roption_string ) = @_;
+    my %Getopt_flags;
+    my $rGetopt_flags = \%Getopt_flags;
+    foreach my $opt ( @{$roption_string} ) {
+        my $flag = "";
+        if ( $opt =~ /(.*)(!|=.*)$/ ) {
+            $opt  = $1;
+            $flag = $2;
+        }
+        if ( defined( $rOpts->{$opt} ) ) {
+            $rGetopt_flags->{$opt} = $flag;
+        }
+    }
+    print STDOUT "# Final parameter set for this run:\n";
+    foreach my $key ( sort keys %{$rOpts} ) {
+        my $flag   = $rGetopt_flags->{$key};
+        my $value  = $rOpts->{$key};
+        my $prefix = '--';
+        my $suffix = "";
+        if ($flag) {
+            if ( $flag =~ /^=/ ) {
+                if ( $value !~ /^\d+$/ ) { $value = '"' . $value . '"' }
+                $suffix = "=" . $value;
+            }
+            elsif ( $flag =~ /^!/ ) {
+                $prefix .= "no" unless ($value);
+            }
+            else {
+
+                # shouldn't happen
+                print
+                  "# ERROR in dump_options: unrecognized flag $flag for $key\n";
+            }
+        }
+        print STDOUT $prefix . $key . $suffix . "\n";
     }
 }
 
@@ -4629,8 +4870,7 @@ sub write_frame_html {
     my (
         $title,        $frame_filename, $top_basename,
         $toc_basename, $src_basename,   $src_frame_name
-      )
-      = @_;
+    ) = @_;
 
     my $fh = IO::File->new( $frame_filename, 'w' )
       or die "Cannot open $toc_basename:$!\n";
@@ -5312,7 +5552,7 @@ use vars qw{
   $rOpts_maximum_line_length
   $rOpts_short_concatenation_item_length
   $rOpts_swallow_optional_blank_lines
-  $rOpts_ignore_old_line_breaks
+  $rOpts_ignore_old_breakpoints
   $rOpts_format_skipping
   $rOpts_space_function_paren
   $rOpts_space_keyword_paren
@@ -6735,7 +6975,9 @@ EOM
     # make note if breaks are before certain key types
     %want_break_before = ();
 
-    foreach my $tok ( '.', ',', ':', '?', '&&', '||', 'and', 'or', 'err', 'xor' ) {
+    foreach
+      my $tok ( '.', ',', ':', '?', '&&', '||', 'and', 'or', 'err', 'xor' )
+    {
         $want_break_before{$tok} =
           $left_bond_strength{$tok} < $right_bond_strength{$tok};
     }
@@ -6874,7 +7116,7 @@ EOM
       $rOpts->{'short-concatenation-item-length'};
     $rOpts_swallow_optional_blank_lines =
       $rOpts->{'swallow-optional-blank-lines'};
-    $rOpts_ignore_old_line_breaks = $rOpts->{'ignore-old-line-breaks'};
+    $rOpts_ignore_old_breakpoints = $rOpts->{'ignore-old-breakpoints'};
     $rOpts_format_skipping        = $rOpts->{'format-skipping'};
     $rOpts_space_function_paren   = $rOpts->{'space-function-paren'};
     $rOpts_space_keyword_paren    = $rOpts->{'space-keyword-paren'};
@@ -6939,7 +7181,7 @@ sub make_static_block_comment_pattern {
         my $pattern = $prefix;
 
         # user may give leading caret to force matching left comments only
-        if ($prefix !~ /^\^#/) {
+        if ( $prefix !~ /^\^#/ ) {
             if ( $prefix !~ /^#/ ) {
                 die
 "ERROR: the -sbcp prefix is '$prefix' but must begin with '#' or '^#'\n";
@@ -6986,12 +7228,8 @@ sub make_closing_side_comment_list_pattern {
 
 sub make_bli_pattern {
 
-    if (
-        defined(
-                 $rOpts->{'brace-left-and-indent-list'}
-              && $rOpts->{'brace-left-and-indent-list'}
-        )
-      )
+    if ( defined( $rOpts->{'brace-left-and-indent-list'} )
+        && $rOpts->{'brace-left-and-indent-list'} )
     {
         $bli_list_string = $rOpts->{'brace-left-and-indent-list'};
     }
@@ -7005,12 +7243,8 @@ sub make_block_brace_vertical_tightness_pattern {
     $block_brace_vertical_tightness_pattern =
       '^((if|else|elsif|unless|while|for|foreach|do|\w+:)$|sub)';
 
-    if (
-        defined(
-                 $rOpts->{'block-brace-vertical-tightness-list'}
-              && $rOpts->{'block-brace-vertical-tightness-list'}
-        )
-      )
+    if ( defined( $rOpts->{'block-brace-vertical-tightness-list'} )
+        && $rOpts->{'block-brace-vertical-tightness-list'} )
     {
         $block_brace_vertical_tightness_pattern =
           make_block_pattern( '-bbvtl',
@@ -7627,10 +7861,10 @@ sub set_white_space_flag {
             # 'w' and 'i' checks for something like:
             #   myfun(    &myfun(   ->myfun(
             # -----------------------------------------------------
-            elsif (   ( $last_type =~ /^[wU]$/ )
+            elsif (( $last_type =~ /^[wU]$/ )
                 || ( $last_type =~ /^[wi]$/ && $last_token =~ /^(\&|->)/ ) )
             {
-                $ws = WS_NO unless ($rOpts_space_function_paren); 
+                $ws = WS_NO unless ($rOpts_space_function_paren);
             }
 
             # space between something like $i and ( in
@@ -7846,8 +8080,7 @@ sub set_white_space_flag {
                 $nesting_blocks,        $no_internal_newlines,
                 $slevel,                $token,
                 $type,                  $type_sequence,
-              )
-              = @saved_token;
+            ) = @saved_token;
         }
     }
 
@@ -7992,12 +8225,12 @@ sub set_white_space_flag {
         my $next_nonblank_token_type;
         my $rwhite_space_flag;
 
-        $jmax                  = @$rtokens - 1;
-        $block_type            = "";
-        $container_type        = "";
-        $container_environment = "";
-        $type_sequence         = "";
-        $no_internal_newlines  = 1 - $rOpts_add_newlines;
+        $jmax                    = @$rtokens - 1;
+        $block_type              = "";
+        $container_type          = "";
+        $container_environment   = "";
+        $type_sequence           = "";
+        $no_internal_newlines    = 1 - $rOpts_add_newlines;
         $is_static_block_comment = 0;
 
         # Handle a continued quote..
@@ -8085,7 +8318,7 @@ sub set_white_space_flag {
         {
             $is_static_block_comment                       = 1;
             $is_static_block_comment_without_leading_space =
-              substr($input_line,0,1) eq '#';
+              substr( $input_line, 0, 1 ) eq '#';
         }
 
         # create a hanging side comment if appropriate
@@ -8190,7 +8423,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.48 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.49 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -8872,7 +9105,7 @@ sub set_white_space_flag {
         }
 
         # mark old line breakpoints in current output stream
-        if ( $max_index_to_go >= 0 && !$rOpts_ignore_old_line_breaks ) {
+        if ( $max_index_to_go >= 0 && !$rOpts_ignore_old_breakpoints ) {
             $old_breakpoint_to_go[$max_index_to_go] = 1;
         }
     }
@@ -10926,7 +11159,7 @@ sub lookup_opening_indentation {
             # But don't do special indentation to something like ')->pack('
             if ( !$block_type_to_go[$ibeg] ) {
                 my $cti = $closing_token_indentation{ $tokens_to_go[$ibeg] };
-                if ( $cti == 1) {
+                if ( $cti == 1 ) {
                     if (   $i_terminal <= $ibeg + 1
                         || $is_semicolon_terminated )
                     {
@@ -10936,13 +11169,16 @@ sub lookup_opening_indentation {
                         $adjust_indentation = 0;
                     }
                 }
-                elsif ($cti == 2) {
+                elsif ( $cti == 2 ) {
                     if ($is_semicolon_terminated) {
                         $adjust_indentation = 3;
                     }
                     else {
                         $adjust_indentation = 0;
                     }
+                }
+                elsif ( $cti == 3 ) {
+                    $adjust_indentation = 3;
                 }
             }
 
@@ -11005,20 +11241,20 @@ sub lookup_opening_indentation {
             my $space_count =
               get_SPACES($opening_indentation) + $opening_offset;
 
-              # Indent less than the previous line.
-              #
-              # Problem: For -lp we don't exactly know what it was if there
-              # were recoverable spaces sent to the aligner.  A good solution
-              # would be to force a flush of the vertical alignment buffer, so
-              # that we would know.  For now, this rule is used for -lp:
-              #
-              # When the last line did not start with a closing token we will
-              # be optimistic that the aligner will recover everything wanted.
-              #
-              # This rule will prevent us from breaking a hierarchy of closing
-              # tokens, and in a worst case will leave a closing paren too far
-              # indented, but this is better than frequently leaving it not
-              # indented enough.
+            # Indent less than the previous line.
+            #
+            # Problem: For -lp we don't exactly know what it was if there
+            # were recoverable spaces sent to the aligner.  A good solution
+            # would be to force a flush of the vertical alignment buffer, so
+            # that we would know.  For now, this rule is used for -lp:
+            #
+            # When the last line did not start with a closing token we will
+            # be optimistic that the aligner will recover everything wanted.
+            #
+            # This rule will prevent us from breaking a hierarchy of closing
+            # tokens, and in a worst case will leave a closing paren too far
+            # indented, but this is better than frequently leaving it not
+            # indented enough.
             my $last_spaces = get_SPACES($last_indentation_written);
             if ( $last_leading_token !~ /^[\}\]\)]$/ ) {
                 $last_spaces +=
@@ -11055,11 +11291,11 @@ sub lookup_opening_indentation {
         # Full indentaion of closing tokens (-icb and -icp or -cti=2)
         else {
 
-            # handle -icb (indented closing code block braces) 
+            # handle -icb (indented closing code block braces)
             # Updated method for indented block braces: indent one full level if
             # there is no continuation indentation.  This will occur for major
             # structures such as sub, if, else, but not for things like map
-            # blocks.  
+            # blocks.
             #
             # Note: only code blocks without continuation indentation are
             # handled here (if, else, unless, ..). In the following snippet,
@@ -11114,8 +11350,7 @@ sub lookup_opening_indentation {
 
         # remember indentation except for multi-line quotes, which get
         # no indentation
-        ##BUG: unless ( $types_to_go[$ibeg] eq 'Q' && $lev == 0 ) {
-        unless ( $ibeg==0 && $starting_in_quote) {
+        unless ( $ibeg == 0 && $starting_in_quote ) {
             $last_indentation_written    = $indentation;
             $last_unadjusted_indentation = $leading_spaces_to_go[$ibeg];
             $last_leading_token          = $tokens_to_go[$ibeg];
@@ -11166,7 +11401,7 @@ sub lookup_opening_indentation {
                 # or static block comments if requested
                 || (   $types_to_go[$ibeg] eq '#'
                     && $rOpts->{'outdent-static-block-comments'}
-                    && $is_static_block_comment) 
+                    && $is_static_block_comment )
             )
           )
 
@@ -11321,7 +11556,7 @@ sub set_vertical_tightness_flags {
             }
         }
 
-        # TESTING: OPENING TOKEN RIGHT
+        # Opening Token Right
         # If requested, move an isolated trailing opening token to the end of
         # the previous line which ended in a comma.  We could do this
         # in sub recombine_breakpoints but that would cause problems
@@ -11330,7 +11565,6 @@ sub set_vertical_tightness_flags {
         # doing it after indentation has been set, we avoid changes
         # to the indentation.  Actual movement of the token takes place
         # in sub write_leader_and_string.
-        #
         if (
             $opening_token_right{ $tokens_to_go[$ibeg_next] }
 
@@ -11358,22 +11592,28 @@ sub set_vertical_tightness_flags {
               ( 2, $spaces, $type_sequence_to_go[$ibeg_next], $valid_flag, );
         }
 
-        # TESTING STACKING OF CLOSING TOKENS
+        # Stacking of opening and closing tokens
         my $stackable;
-        my $token_beg = $tokens_to_go[$ibeg_next];
-        if ( $is_closing_token{$token_end} && $is_closing_token{$token_beg} ) {
-            $stackable =
-                $block_type_to_go[$ibeg_next]
-              ? $rOpts->{'stack-closing-block-brace'}
-              : $stack_closing_token{$token_beg}
+        my $token_beg_next = $tokens_to_go[$ibeg_next];
 
+        # patch to make something like 'qw(' behave like an opening paren
+        # (aran.t)
+        if ( $types_to_go[$ibeg_next] eq 'q' ) {
+            if ( $token_beg_next =~ /^q.([\[\(\{])$/ ) {
+                $token_beg_next = $1; 
+            }
         }
-        elsif ( $is_opening_token{$token_end} && $is_opening_token{$token_beg} )
+
+        if ( $is_closing_token{$token_end} && $is_closing_token{$token_beg_next} ) {
+            $stackable = $stack_closing_token{$token_beg_next}
+              unless ( $block_type_to_go[$ibeg_next] )
+              ;    # shouldn't happen; just checking
+        }
+        elsif ( $is_opening_token{$token_end} && $is_opening_token{$token_beg_next} )
         {
-            $stackable =
-                $block_type_to_go[$ibeg_next]
-              ? $rOpts->{'stack-opening-block-brace'}
-              : $stack_opening_token{$token_beg};
+            $stackable = $stack_opening_token{$token_beg_next}
+              unless ( $block_type_to_go[$ibeg_next] )
+              ;    # shouldn't happen; just checking
         }
 
         if ($stackable) {
@@ -11818,7 +12058,7 @@ sub terminal_type {
             $left_bond_strength{'xor'}  = NOMINAL;
             $right_bond_strength{'and'} = NOMINAL;
             $right_bond_strength{'or'}  = NOMINAL;
-            $right_bond_strength{'err'}  = NOMINAL;
+            $right_bond_strength{'err'} = NOMINAL;
             $right_bond_strength{'xor'} = STRONG;
         }
 
@@ -12249,18 +12489,18 @@ sub terminal_type {
                     ##if ( $next_next_type ne '=>' ) {
                     # these are ok: '->xxx', '=>', '('
 
-                  # We'll check for an old breakpoint and keep a leading
-                  # bareword if it was that way in the input file.  Presumably
-                  # it was ok that way.  For example, the following would remain
-                  # unchanged:
-                  #
-                  # @months = (
-                  #   January,   February, March,    April,
-                  #   May,       June,     July,     August,
-                  #   September, October,  November, December,
-                  # );
-                  #
-                  # This should be sufficient:
+                    # We'll check for an old breakpoint and keep a leading
+                    # bareword if it was that way in the input file.
+                    # Presumably it was ok that way.  For example, the
+                    # following would remain unchanged:
+                    #
+                    # @months = (
+                    #   January,   February, March,    April,
+                    #   May,       June,     July,     August,
+                    #   September, October,  November, December,
+                    # );
+                    #
+                    # This should be sufficient:
                     if ( !$old_breakpoint_to_go[$i]
                         && ( $next_next_type eq ',' || $next_next_type eq '}' )
                       )
@@ -12282,9 +12522,10 @@ sub terminal_type {
                 }
             }
 
-          # in fact, use strict hates bare words on any new line.  For example,
-          # a break before the underscore here provokes the wrath of use strict:
-          #    if ( -r $fn && ( -s _ || $AllowZeroFilesize)) {
+            # in fact, use strict hates bare words on any new line.  For
+            # example, a break before the underscore here provokes the
+            # wrath of use strict: 
+            # if ( -r $fn && ( -s _ || $AllowZeroFilesize)) {
             elsif ( $type eq 'F' ) {
                 $bond_str = NO_BREAK;
             }
@@ -12298,8 +12539,9 @@ sub terminal_type {
                 }
             }
 
-        # Do not break between a possible filehandle and a ? or /
-        # and do not introduce a break after it if there is no blank (extrude.t)
+            # Do not break between a possible filehandle and a ? or / and do
+            # not introduce a break after it if there is no blank
+            # (extrude.t)
             elsif ( $type eq 'Z' ) {
 
                 # dont break..
@@ -13480,8 +13722,7 @@ sub find_token_starting_list {
             $item_count,          $identifier_count, $rcomma_index,
             $next_nonblank_type,  $list_type,        $interrupted,
             $rdo_not_break_apart, $must_break_open,
-          )
-          = @_;
+        ) = @_;
 
         # nothing to do if no commas seen
         return if ( $item_count < 1 );
@@ -14592,8 +14833,8 @@ sub recombine_breakpoints {
         }
         $nmax_last  = $nmax;
         $more_to_do = 0;
-        my $previous_outdentable_closing_paren; 
-        my $leading_amp_count=0;
+        my $previous_outdentable_closing_paren;
+        my $leading_amp_count = 0;
         my $this_line_is_semicolon_terminated;
 
         # loop over all remaining lines in this batch
@@ -14603,15 +14844,15 @@ sub recombine_breakpoints {
             # If we join the current pair of lines,
             # line $n-1 will become the left part of the joined line
             # line $n will become the right part of the joined line
-            # 
+            #
             # Here are Indexes of the endpoint tokens of the two lines:
             #
             #  ---left---- | ---right---
             #  $if   $imid | $imidr   $il
             #
             # We want to decide if we should join tokens $imid to $imidr
-            # 
-            # We will apply a number of ad-hoc tests to see if joining 
+            #
+            # We will apply a number of ad-hoc tests to see if joining
             # here will look ok.  The code will just issue a 'next'
             # command if the join doesn't look good.  If we get through
             # the gauntlet of tests, the lines will be recombined.
@@ -14620,8 +14861,9 @@ sub recombine_breakpoints {
             my $il    = $$ri_last[$n];
             my $imid  = $$ri_last[ $n - 1 ];
             my $imidr = $$ri_first[$n];
-            my $depth_increase=( $nesting_depth_to_go[$imidr] -
-                    $nesting_depth_to_go[$if] );
+
+            #my $depth_increase=( $nesting_depth_to_go[$imidr] -
+            #        $nesting_depth_to_go[$if] );
 
 ##print "RECOMBINE: n=$n imid=$imid if=$if type=$types_to_go[$if] =$tokens_to_go[$if] next_type=$types_to_go[$imidr] next_tok=$tokens_to_go[$imidr]\n";
 
@@ -14630,7 +14872,7 @@ sub recombine_breakpoints {
             if ( $n == $nmax ) {
 
                 # a terminal '{' should stay where it is
-                next if $types_to_go[$imidr] eq '{' ;
+                next if $types_to_go[$imidr] eq '{';
 
                 # set flag if statement $n ends in ';'
                 $this_line_is_semicolon_terminated = $types_to_go[$il] eq ';'
@@ -14658,7 +14900,7 @@ sub recombine_breakpoints {
                 #  (
                 #      $dev,  $ino,   $mode,  $nlink, $uid,     $gid, $rdev,
                 #      $size, $atime, $mtime, $ctime, $blksize, $blocks
-                #    ) 
+                #    )
                 #    = stat($file);
                 #
                 # to get:
@@ -14667,7 +14909,7 @@ sub recombine_breakpoints {
                 #      $size, $atime, $mtime, $ctime, $blksize, $blocks
                 #  ) = stat($file);
                 #
-                # which makes the parens line up. 
+                # which makes the parens line up.
                 #
                 # Another example, from Joe Matarazzo, probably looks best
                 # with the 'or' clause appended to the trailing paren:
@@ -14698,7 +14940,7 @@ sub recombine_breakpoints {
 
                 next
                   unless (
-                    $previous_outdentable_closing_paren 
+                    $previous_outdentable_closing_paren
 
                     # handle '.' and '?' specially below
                     || ( $types_to_go[$imidr] =~ /^[\.\?]$/ )
@@ -14719,11 +14961,9 @@ sub recombine_breakpoints {
                     && $types_to_go[$imidr] eq 'i' )
                 {
                     next
-                      unless (
-                           ( $if == ( $imid - 1 ) )
+                      unless ( ( $if == ( $imid - 1 ) )
                         && ( $il == ( $imidr + 1 ) )
-                        && $this_line_is_semicolon_terminated
-                      );
+                        && $this_line_is_semicolon_terminated );
 
                     # override breakpoint
                     $forced_breakpoint_to_go[$imid] = 0;
@@ -14880,16 +15120,16 @@ sub recombine_breakpoints {
                 next
                   unless (
 
-                    # ... unless there is just one and we can reduce
-                    # this to two lines if we do.  For example, this
-                    # 
-                    #
-                    #  $bodyA .=
-                    #    '($dummy, $pat) = &get_next_tex_cmd;' . '$args .= $pat;'
-                    #
-                    #  looks better than this:
-                    #  $bodyA .= '($dummy, $pat) = &get_next_tex_cmd;'
-                    #    . '$args .= $pat;'
+                   # ... unless there is just one and we can reduce
+                   # this to two lines if we do.  For example, this
+                   #
+                   #
+                   #  $bodyA .=
+                   #    '($dummy, $pat) = &get_next_tex_cmd;' . '$args .= $pat;'
+                   #
+                   #  looks better than this:
+                   #  $bodyA .= '($dummy, $pat) = &get_next_tex_cmd;'
+                   #    . '$args .= $pat;'
 
                     (
                            $n == 2
@@ -14948,7 +15188,7 @@ sub recombine_breakpoints {
                         )
                       );
 
-                    # override breakpoint 
+                    # override breakpoint
                     ##$forced_breakpoint_to_go[$imid] = 0;
                 }
 
@@ -14958,18 +15198,17 @@ sub recombine_breakpoints {
                     # FIXME: This is still experimental..may not be too useful
                     next
                       unless (
-                         $this_line_is_semicolon_terminated
+                        $this_line_is_semicolon_terminated
 
-                        #  previous line begins with 'and' or 'or' 
+                        #  previous line begins with 'and' or 'or'
                         && $types_to_go[$if] eq 'k'
                         && $is_and_or{ $tokens_to_go[$if] }
 
                       );
 
-                    # override breakpoint 
+                    # override breakpoint
                     ##$forced_breakpoint_to_go[$imid] = 0;
 
-                    #if ($depth_increase>0);
                 }
 
                 # handle all other leading keywords
@@ -14998,7 +15237,7 @@ sub recombine_breakpoints {
                     $this_line_is_semicolon_terminated
 
                     # previous line begins with an 'if' or 'unless' keyword
-                    && $types_to_go[$if] eq 'k'    
+                    && $types_to_go[$if] eq 'k'
                     && $is_if_unless{ $tokens_to_go[$if] }
 
                   );
@@ -15008,7 +15247,7 @@ sub recombine_breakpoints {
             }
 
             #----------------------------------------------------------
-            # Section 3: 
+            # Section 3:
             # Combine the lines if we arrive here and it is possible
             #----------------------------------------------------------
 
@@ -15637,8 +15876,7 @@ sub new {
         $ci_level,            $available_spaces, $index,
         $gnu_sequence_number, $align_paren,      $stack_depth,
         $starting_index,
-      )
-      = @_;
+    ) = @_;
     my $closed            = -1;
     my $arrow_count       = 0;
     my $comma_count       = 0;
@@ -16227,11 +16465,11 @@ sub initialize {
     $side_comment_history[2] = [ -100, 0 ];
 
     # write_leader_and_string cache:
-    $cached_line_text  = "";
-    $cached_line_type  = 0;
-    $cached_line_flag  = 0;
-    $cached_seqno      = 0;
-    $cached_line_valid = 0;
+    $cached_line_text                = "";
+    $cached_line_type                = 0;
+    $cached_line_flag                = 0;
+    $cached_seqno                    = 0;
+    $cached_line_valid               = 0;
     $cached_line_leading_space_count = 0;
 
     # frequently used parameters
@@ -16419,8 +16657,7 @@ sub append_line {
         $is_forced_break,           $outdent_long_lines,
         $is_terminal_statement,     $do_not_pad,
         $rvertical_tightness_flags, $level_jump,
-      )
-      = @_;
+    ) = @_;
 
     # number of fields is $jmax
     # number of tokens between fields is $jmax-1
@@ -17754,7 +17991,7 @@ sub write_leader_and_string {
           length($str) - $side_comment_length + $leading_space_count -
           $rOpts_maximum_line_length;
         if ( $excess > 0 ) {
-            $leading_space_count = 0;
+            $leading_space_count    = 0;
             $last_outdented_line_at =
               $file_writer_object->get_output_line_number();
 
@@ -17788,7 +18025,7 @@ sub write_leader_and_string {
 
     # handle any cached line ..
     # either append this line to it or write it out
-    if (length($cached_line_text)) {
+    if ( length($cached_line_text) ) {
 
         if ( !$cached_line_valid ) {
             entab_and_output( $cached_line_text,
@@ -17809,7 +18046,7 @@ sub write_leader_and_string {
             }
 
             if ( $gap >= 0 ) {
-                $leading_string = $cached_line_text . ' ' x $gap;
+                $leading_string      = $cached_line_text . ' ' x $gap;
                 $leading_space_count = $cached_line_leading_space_count;
             }
             else {
@@ -17824,9 +18061,9 @@ sub write_leader_and_string {
             my $test_line = $cached_line_text . ' ' x $cached_line_flag . $str;
 
             if ( length($test_line) <= $rOpts_maximum_line_length ) {
-                $str            = $test_line;
-                $leading_string = "";
-                $leading_space_count=$cached_line_leading_space_count;
+                $str                 = $test_line;
+                $leading_string      = "";
+                $leading_space_count = $cached_line_leading_space_count;
             }
             else {
                 entab_and_output( $cached_line_text,
@@ -17846,11 +18083,11 @@ sub write_leader_and_string {
         entab_and_output( $line, $leading_space_count, $group_level );
     }
     else {
-        $cached_line_text  = $line;
-        $cached_line_type  = $open_or_close;
-        $cached_line_flag  = $tightness_flag;
-        $cached_seqno      = $seqno;
-        $cached_line_valid = $valid;
+        $cached_line_text                = $line;
+        $cached_line_type                = $open_or_close;
+        $cached_line_flag                = $tightness_flag;
+        $cached_seqno                    = $seqno;
+        $cached_line_valid               = $valid;
         $cached_line_leading_space_count = $leading_space_count;
     }
 
@@ -17876,8 +18113,9 @@ sub entab_and_output {
 
         # Handle entab option
         elsif ($rOpts_entab_leading_whitespace) {
-            my $space_count = $leading_space_count % $rOpts_entab_leading_whitespace;
-            my $tab_count   =
+            my $space_count =
+              $leading_space_count % $rOpts_entab_leading_whitespace;
+            my $tab_count =
               int( $leading_space_count / $rOpts_entab_leading_whitespace );
             my $leading_string = "\t" x $tab_count . ' ' x $space_count;
             if ( $line =~ /^\s{$leading_space_count,$leading_space_count}/ ) {
@@ -17914,6 +18152,7 @@ sub entab_and_output {
                 substr( $line, 0, $leading_space_count ) = $leading_string;
             }
             else {
+
                 # REMOVE AFTER TESTING
                 # shouldn't happen - program error counting whitespace
                 # we'll skip entabbing
@@ -19016,7 +19255,9 @@ sub get_line {
             $tokenizer_self->{_in_pod} = 0;
         }
         if ( $input_line =~ /^\#\!.*perl\b/ ) {
-            warning("Hash-bang in pod can cause older versions of perl to fail! \n");
+            warning(
+                "Hash-bang in pod can cause older versions of perl to fail! \n"
+            );
         }
 
         return $line_of_tokens;
@@ -19955,7 +20196,7 @@ sub reset_indentation_level {
             }
 
             # patch for operator_expected: note if we are in the list (use.t)
-            if ($statement_type eq 'use') {$statement_type='_use'}
+            if ( $statement_type eq 'use' ) { $statement_type = '_use' }
 ##                FIXME: need to move this elsewhere, perhaps check after a '('
 ##                elsif ($last_nonblank_token eq '(') {
 ##                    warning("Leading ','s illegal in some versions of perl\n");
@@ -20469,7 +20710,7 @@ sub reset_indentation_level {
 
             # patch for operator_expected: note if we are in the list (use.t)
             # TODO: make version numbers a new token type
-            if ($statement_type eq 'use') {$statement_type='_use'}
+            if ( $statement_type eq 'use' ) { $statement_type = '_use' }
         },
 
         # type = 'mm' for pre-decrement, '--' for post-decrement
@@ -22399,7 +22640,7 @@ sub operator_expected {
     my ( $prev_type, $tok, $next_type ) = @_;
     my $op_expected = UNKNOWN;
 
-    #print "tok=$tok last type=$last_nonblank_type last tok=$last_nonblank_token\n";
+#print "tok=$tok last type=$last_nonblank_type last tok=$last_nonblank_token\n";
 
 # Note: function prototype is available for token type 'U' for future
 # program development.  It contains the leading and trailing parens,
@@ -22477,7 +22718,7 @@ sub operator_expected {
         # mark them as unknown for now (use.t)
         # TODO: it would be much nicer to create a new token V for VERSION
         # number in a use statement.  Then this could be a check on type V
-        # and related patches which change $statement_type for '=>' 
+        # and related patches which change $statement_type for '=>'
         # and ',' could be removed.  Further, it would clean things up to
         # scan the 'use' statement with a separate subroutine.
         if (   ( $statement_type eq 'use' )
@@ -22490,8 +22731,8 @@ sub operator_expected {
     # no operator after many keywords, such as "die", "warn", etc
     elsif ( $expecting_term_token{$last_nonblank_token} ) {
 
-        # patch for dor.t (defined or). 
-        # perl functions which may be unary operators 
+        # patch for dor.t (defined or).
+        # perl functions which may be unary operators
         # TODO: This list is incomplete, and these should be put
         # into a hash.
         if (   $tok eq '/'
@@ -22533,7 +22774,7 @@ sub operator_expected {
     # $last_nonblank_token).
     elsif ( $last_nonblank_type eq '}' ) {
 
-        # patch for dor.t (defined or). 
+        # patch for dor.t (defined or).
         if (   $tok eq '/'
             && $next_type           eq '/'
             && $last_nonblank_token eq ']' )
@@ -25207,8 +25448,8 @@ Perl::Tidy - Parses and beautifies perl source
         logfile           => $logfile,
         errorfile         => $errorfile,
         formatter         => $formatter,           # callback object (see below)
-        options_dump      => $options_dump,
-        options_dump_type => $options_dump_type,
+        dump_options      => $dump_options,
+        dump_options_type => $dump_options_type,
     );
 
 =head1 DESCRIPTION
@@ -25234,8 +25475,11 @@ either a B<getline> or B<print> method, as appropriate.
         perltidyrc        - the .perltidyrc file
         logfile           - the .LOG file stream, if any 
         errorfile         - the .ERR file stream, if any
-        options_dump      - ref to a hash to receive parameters (see below), 
-        options_dump_type - controls contents of options_dump
+        dump_options      - ref to a hash to receive parameters (see below), 
+        dump_options_type - controls contents of dump_options
+        dump_getopt_flags - ref to a hash to receive Getopt flags
+        dump_options_category - ref to a hash giving category of options
+        dump_abbreviations    - ref to a hash giving all abbreviations
 
 The following chart illustrates the logic used to decide how to
 treat a parameter.
@@ -25280,24 +25524,48 @@ string, or a reference to an array.  If it is a string or reference to a
 string, it will be parsed into an array of items just as if it were a
 command line string.
 
-=item options_dump
+=item dump_options
 
-If the B<options_dump> parameter is given, it must be the reference to a hash.
+If the B<dump_options> parameter is given, it must be the reference to a hash.
 In this case, the parameters contained in any perltidyrc configuration file
 will be placed in this hash and perltidy will return immediately.  This is
-analogous to running perltidy with --dump-options, except that the perameters
+equivalent to running perltidy with --dump-options, except that the perameters
 are returned in a hash rather than dumped to standard output.  Also, by default
 only the parameters in the perltidyrc file are returned, but this can be
-changed with the next parameter.  This parameter provides a convenient method
-for external programs to read a perltidyrc file.  An example program
-using this feature is included in the distribution.
+changed (see the next parameter).  This parameter provides a convenient method
+for external programs to read a perltidyrc file.  An example program using
+this feature, F<perltidyrc_dump.pl>, is included in the distribution.
 
-=item options_dump_type
+Any combination of the B<dump_> parameters may be used together.
+
+=item dump_options_type
 
 This parameter is a string which can be used to control the parameters placed
-in the hash reference supplied by B<options_dump>.  The possible values are
+in the hash reference supplied by B<dump_options>.  The possible values are
 'perltidyrc' (default) and 'full'.  The 'full' parameter causes both the
 default options plus any options found in a perltidyrc file to be returned.
+
+=item dump_getopt_flags
+
+If the B<dump_getopt_flags> parameter is given, it must be the reference to a
+hash.  This hash will receive all of the parameters that perltidy understands
+and flags that are passed to Getopt::Long.  This parameter may be
+used alone or with the B<dump_options> flag.  Perltidy will
+exit immediately after filling this hash.  See the demo program
+F<perltidyrc_dump.pl> for example usage.
+
+=item dump_options_category
+
+If the B<dump_options_category> parameter is given, it must be the reference to a
+hash.  This hash will receive a hash with keys equal to all long parameter names
+and values equal to the title of the corresponding section of the perltidy manual.
+See the demo program F<perltidyrc_dump.pl> for example usage.
+
+=item dump_abbreviations
+
+If the B<dump_abbreviations> parameter is given, it must be the reference to a
+hash.  This hash will receive all abbreviations used by Perl::Tidy.  See the
+demo program F<perltidyrc_dump.pl> for example usage.
 
 =back
 

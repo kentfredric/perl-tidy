@@ -455,6 +455,7 @@ FORMATTING OPTIONS
                 aligns with its opening token.
          -cti = 2 one extra indentation level if the line looks like:
                 );  or  ];  or  };
+         -cti = 3 one extra indentation level always
 
         The flags -cti=1 and -cti=2 work well with the -lp flag (previous
         section).
@@ -1461,8 +1462,8 @@ FORMATTING OPTIONS
         The -sct flag is somewhat similar to the -vtc flags, and in some
         cases it can give a similar result. The difference is that the -vtc
         flags try to avoid lines with leading opening tokens by "hiding"
-        them at the end of a previous line, whereas the -sot flag merely
-        tries to reduce the number of lines with isolated opening tokens by
+        them at the end of a previous line, whereas the -sct flag merely
+        tries to reduce the number of lines with isolated closing tokens by
         stacking them but does not try to hide them. For example:
 
             # -vtc=2
@@ -2269,11 +2270,12 @@ SWITCHES WHICH MAY BE NEGATED
     The following list shows all short parameter names which allow a prefix
     'n' to produce the negated form:
 
-        D anl asc aws b bbb bbc bbs bli boc bok bol bot syn ce csc 
-        dac dbc dcsc dnl dws dp dpro dsm dsc ddf dln dop dsn dtt dwls dwrs 
-        f fll frm hsc html ibc icb icp iob isbc lp log lal x lsl ple pod bl 
-        sbl okw ola oll ple pvl q opt sbc sfs ssc sts se st sob 
-        t tac tbc toc tp tsc tqw w
+     D    anl asc  aws  b    bbb bbc bbs  bl   bli  boc bok  bol  bot  ce
+     csc  dac dbc  dcsc ddf  dln dnl dop  dp   dpro dsc dsm  dsn  dtt  dwls
+     dwrs dws f    fll  frm  fs  hsc html ibc  icb  icp iob  isbc lal  log
+     lp   lsl ohbr okw  ola  oll opr opt  osbr otr  ple ple  pod  pvl  q
+     sbc  sbl schb scp  scsb sct se  sfp  sfs  skp  sob sohb sop  sosb sot
+     ssc  st  sts  syn  t    tac tbc toc  tp   tqw  tsc w    x
 
     Equivalently, the prefix 'no' or 'no-' on the corresponding long names
     may be used.

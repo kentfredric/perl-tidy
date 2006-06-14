@@ -26,7 +26,9 @@ Perltidy TODO List
           and $location->status ne 'neutral';
 
   enable -ole under Windows
-    This only works reliably under unix at present.
+    This only works under unix (or cygwin) at present. It doesn't work for
+    Windows versions, such as Active State, because they change line endings
+    that they don't like.
 
   Documentation
     A FAQ is needed to explain some of the more subtle formatting issues,
@@ -41,6 +43,12 @@ Perltidy TODO List
     multi-line quotes. Then code needs to be written to scan for and markup
     identifiers.
 
+  Automatic style detection
+    It would be nice to write a program to read a sample of perl code and
+    write an approximate .perltidyrc file for that style.
+
+Things which have been suggested but will not be done
   Recursive file processing
-    A -r flag might be nice.
+    A -r flag might be nice, but this is probably best handled by an
+    exterior shell script.
 
