@@ -63,7 +63,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.49 2006/06/14 01:56:24 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.50 2006/06/18 23:15:05 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 sub streamhandle {
@@ -5429,6 +5429,7 @@ use vars qw{
   $last_last_nonblank_token_to_go
   @nonblank_lines_at_depth
   $starting_in_quote
+  $ending_in_quote
 
   $in_format_skipping_section
   $format_skipping_pattern_begin
@@ -6152,17 +6153,39 @@ sub set_leading_whitespace {
             # find the position if we break at the '='
             my $i_test = $last_equals;
             if ( $types_to_go[ $i_test + 1 ] eq 'b' ) { $i_test++ }
+
+            # TESTING
+            ##my $too_close = ($i_test==$max_index_to_go-1); 
+
             my $test_position = total_line_length( $i_test, $max_index_to_go );
 
             if (
 
+                # the equals is not just before an open paren (testing)
+                ##!$too_close &&
+
                 # if we are beyond the midpoint
                 $gnu_position_predictor > $half_maximum_line_length
 
-                # or if we can save some space by breaking at the '='
-                # without obscuring the second line by the first
-                || ( $test_position > 1 +
-                    total_line_length( $line_start_index_to_go, $last_equals ) )
+                # or we are beyont the 1/4 point and there was an old
+                # break at the equals
+                || (
+                    $gnu_position_predictor > $half_maximum_line_length / 2
+                    && (
+                        $old_breakpoint_to_go[$last_equals]
+                        || (   $last_equals > 0
+                            && $old_breakpoint_to_go[ $last_equals - 1 ] )
+                        || (   $last_equals > 1
+                            && $types_to_go[ $last_equals - 1 ] eq 'b'
+                            && $old_breakpoint_to_go[ $last_equals - 2 ] )
+                    )
+                )
+
+                # Old logic:
+##                # or if we can save some space by breaking at the '='
+##                # without obscuring the second line by the first
+##                || ( $test_position > 1 +
+##                    total_line_length( $line_start_index_to_go, $last_equals ) )
               )
             {
 
@@ -8215,6 +8238,7 @@ sub set_white_space_flag {
         $in_continued_quote = $starting_in_quote =
           $line_of_tokens->{_starting_in_quote};
         $in_quote                 = $line_of_tokens->{_ending_in_quote};
+        $ending_in_quote=$in_quote;
         $python_indentation_level =
           $line_of_tokens->{_python_indentation_level};
 
@@ -8423,7 +8447,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.49 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.50 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -8442,10 +8466,11 @@ sub set_white_space_flag {
         }
 
         # take care of indentation-only
-        # also write a line which is entirely a 'qw' list
-        if ( $rOpts->{'indent-only'}
-            || ( ( $jmax == 0 ) && ( $$rtoken_type[0] eq 'q' ) ) )
-        {
+        # NOTE: In previous versions we sent all qw lines out immediately here.
+        # No longer doing this: also write a line which is entirely a 'qw' list
+        # to allow stacking of opening and closing tokens.  Note that interior
+        # qw lines will still go out at the end of this routine.
+        if ( $rOpts->{'indent-only'} ) {
             flush();
             $input_line =~ s/^\s*//;    # trim left end
             $input_line =~ s/\s*$//;    # trim right end
@@ -9087,7 +9112,9 @@ sub set_white_space_flag {
             # if there is a side comment
             ( ( $type eq '#' ) && !$rOpts->{'delete-side-comments'} )
 
-            # if this line which ends in a quote
+            # if this line ends in a quote
+            # NOTE: This is critically important for insuring that quoted lines
+            # do not get processed by things like -sot and -sct
             || $in_quote
 
             # if this is a VERSION statement
@@ -11454,7 +11481,7 @@ sub set_vertical_tightness_flags {
     # These flags are used by sub set_leading_whitespace in
     # the vertical aligner
 
-    my $rvertical_tightness_flags;
+    my $rvertical_tightness_flags = [ 0, 0, 0, 0, 0, 0 ];
 
     # For non-BLOCK tokens, we will need to examine the next line
     # too, so we won't consider the last line.
@@ -11599,17 +11626,20 @@ sub set_vertical_tightness_flags {
         # patch to make something like 'qw(' behave like an opening paren
         # (aran.t)
         if ( $types_to_go[$ibeg_next] eq 'q' ) {
-            if ( $token_beg_next =~ /^q.([\[\(\{])$/ ) {
-                $token_beg_next = $1; 
+            if ( $token_beg_next =~ /^qw\s*([\[\(\{])$/ ) {
+                $token_beg_next = $1;
             }
         }
 
-        if ( $is_closing_token{$token_end} && $is_closing_token{$token_beg_next} ) {
+        if (   $is_closing_token{$token_end}
+            && $is_closing_token{$token_beg_next} )
+        {
             $stackable = $stack_closing_token{$token_beg_next}
               unless ( $block_type_to_go[$ibeg_next] )
               ;    # shouldn't happen; just checking
         }
-        elsif ( $is_opening_token{$token_end} && $is_opening_token{$token_beg_next} )
+        elsif ($is_opening_token{$token_end}
+            && $is_opening_token{$token_beg_next} )
         {
             $stackable = $stack_opening_token{$token_beg_next}
               unless ( $block_type_to_go[$ibeg_next] )
@@ -11658,7 +11688,32 @@ sub set_vertical_tightness_flags {
           ( 3, $rOpts_block_brace_vertical_tightness, 0, 1 );
     }
 
+    # pack in the sequence numbers of the ends of this line 
+    $rvertical_tightness_flags->[4]=get_seqno($ibeg);
+    $rvertical_tightness_flags->[5]=get_seqno($iend); 
     return $rvertical_tightness_flags;
+}
+
+sub get_seqno {
+
+    # get opening and closing sequence numbers of a token for the vertical
+    # aligner.  Assign qw quotes a value to allow qw opening and closing tokens
+    # to be treated somewhat like opening and closing tokens for stacking
+    # tokens by the vertical aligner. 
+    my ($ii) = @_;
+    my $seqno = $type_sequence_to_go[$ii];
+    if ( $types_to_go[$ii] eq 'q' ) {
+        my $SEQ_QW = -1;
+        if ( $ii > 0 ) {
+            $seqno = $SEQ_QW if ( $tokens_to_go[$ii] =~ /^qw\s*[\(\{\[]/ );
+        }
+        else {
+            if ( !$ending_in_quote ) {
+                $seqno = $SEQ_QW if ( $tokens_to_go[$ii] =~ /[\)\}\]]$/ );
+            }
+        }
+    }
+    return ($seqno);
 }
 
 {
@@ -12524,7 +12579,7 @@ sub terminal_type {
 
             # in fact, use strict hates bare words on any new line.  For
             # example, a break before the underscore here provokes the
-            # wrath of use strict: 
+            # wrath of use strict:
             # if ( -r $fn && ( -s _ || $AllowZeroFilesize)) {
             elsif ( $type eq 'F' ) {
                 $bond_str = NO_BREAK;
@@ -13409,6 +13464,11 @@ sub pad_array_to_go {
                     if ( $rOpts_line_up_parentheses && $saw_opening_structure )
                     {
                         my $item = $leading_spaces_to_go[ $i_opening + 1 ];
+                        if (   $i_opening + 1 < $max_index_to_go
+                            && $types_to_go[ $i_opening + 1 ] eq 'b' )
+                        {
+                            $item = $leading_spaces_to_go[ $i_opening + 2 ];
+                        }
                         if ( defined($item) ) {
                             my $i_start_2 = $item->get_STARTING_INDEX();
                             if (
@@ -16418,6 +16478,10 @@ use vars qw(
   $cached_seqno
   $cached_line_valid
   $cached_line_leading_space_count
+  $cached_seqno_string
+
+  $seqno_string
+  $last_nonblank_seqno_string
 
   $rOpts
 
@@ -16471,6 +16535,11 @@ sub initialize {
     $cached_seqno                    = 0;
     $cached_line_valid               = 0;
     $cached_line_leading_space_count = 0;
+    $cached_seqno_string            = "";
+
+    # string of sequence numbers joined together
+    $seqno_string                   = "";  
+    $last_nonblank_seqno_string     = "";
 
     # frequently used parameters
     $rOpts_indent_columns           = $rOpts->{'indent-columns'};
@@ -16689,6 +16758,8 @@ sub append_line {
     if ($rvertical_tightness_flags) {
         if (   $maximum_line_index <= 0
             && $cached_line_type
+            && $cached_seqno
+            && $rvertical_tightness_flags->[2] 
             && $rvertical_tightness_flags->[2] == $cached_seqno )
         {
             $rvertical_tightness_flags->[3] ||= 1;
@@ -17517,11 +17588,13 @@ sub flush {
 
     if ( $maximum_line_index < 0 ) {
         if ($cached_line_type) {
+            $seqno_string=$cached_seqno_string;
             entab_and_output( $cached_line_text,
                 $cached_line_leading_space_count,
                 $last_group_level_written );
             $cached_line_type = 0;
             $cached_line_text = "";
+            $cached_seqno_string = "";
         }
     }
     else {
@@ -18017,11 +18090,16 @@ sub write_leader_and_string {
     #   [2] sequence number of container
     #   [3] valid flag: do not append if this flag is false
     #
-    my ( $open_or_close, $tightness_flag, $seqno, $valid );
+    my ( $open_or_close, $tightness_flag, $seqno, $valid, $seqno_beg,
+        $seqno_end );
     if ($rvertical_tightness_flags) {
-        ( $open_or_close, $tightness_flag, $seqno, $valid ) =
-          @{$rvertical_tightness_flags};
+        (
+            $open_or_close, $tightness_flag, $seqno, $valid, $seqno_beg,
+            $seqno_end
+        ) = @{$rvertical_tightness_flags};
     }
+
+    $seqno_string=$seqno_end;
 
     # handle any cached line ..
     # either append this line to it or write it out
@@ -18048,6 +18126,7 @@ sub write_leader_and_string {
             if ( $gap >= 0 ) {
                 $leading_string      = $cached_line_text . ' ' x $gap;
                 $leading_space_count = $cached_line_leading_space_count;
+                $seqno_string = $cached_seqno_string . ':' . $seqno_beg;
             }
             else {
                 entab_and_output( $cached_line_text,
@@ -18061,6 +18140,87 @@ sub write_leader_and_string {
             my $test_line = $cached_line_text . ' ' x $cached_line_flag . $str;
 
             if ( length($test_line) <= $rOpts_maximum_line_length ) {
+
+                $seqno_string = $cached_seqno_string . ':' . $seqno_beg;
+
+                # Patch to outdent closing tokens ending # in ');'
+                # If we are joining a line like ');' to a previous stacked
+                # set of closing tokens, then decide if we may outdent the
+                # combined stack to the indentation of the ');'.  Since we
+                # should not normally outdent any of the other tokens more than
+                # the indentation of the lines that contained them, we will
+                # only do this if all of the corresponding opening
+                # tokens were on the same line.  This can happen with 
+                # -sot and -sct.  For example, it is ok here:
+                #   __PACKAGE__->load_components( qw(
+                #         PK::Auto
+                #         Core
+                #   ));
+                #
+                #   But, for example, we do not outdent in this example because
+                #   that would put the closing sub brace out farther than the
+                #   opening sub brace:
+                #
+                #   perltidy -sot -sct
+                #   $c->Tk::bind(
+                #       '<Control-f>' => sub {
+                #           my ($c) = @_;
+                #           my $e = $c->XEvent;
+                #           itemsUnderArea $c;
+                #       } );
+                # 
+                if ( $str =~ /^\);/  && $cached_line_text=~/^[\)\}\]\s]*$/) {
+
+                    # The way to tell this is if the stacked sequence numbers
+                    # of this output line are the reverse of the stacked
+                    # sequence numbers of the previous non-blank line of
+                    # sequence numbers.  So we can join if the previous
+                    # nonblank string of tokens is the mirror image.  For
+                    # example if stack )}] is 13:8:6 then we are looking for a
+                    # leading stack like [{( which is 6:8:13 We only need to
+                    # check the two ends, because the intermediate tokens must
+                    # fall in order.  Note on speed: having to split on colons
+                    # and eliminate multiple colons might appear to be slow,
+                    # but it's not an issue because we almost never come
+                    # through here.  In a typical file we don't.
+                    $seqno_string               =~ s/^:+//;
+                    $last_nonblank_seqno_string =~ s/^:+//;
+                    $seqno_string               =~ s/:+/:/g;
+                    $last_nonblank_seqno_string =~ s/:+/:/g;
+
+                    # how many spaces can we outdent?
+                    my $diff = $cached_line_leading_space_count -
+                          $leading_space_count;
+                    if (   $diff > 0
+                        && length($seqno_string)
+                        && length($last_nonblank_seqno_string) ==
+                        length($seqno_string) )
+                    {
+                        my @seqno_last =
+                          ( split ':', $last_nonblank_seqno_string );
+                        my @seqno_now = ( split ':', $seqno_string );
+                        if (   $seqno_now[-1] == $seqno_last[0]
+                            && $seqno_now[0] == $seqno_last[-1] )
+                        {
+
+                            # OK to outdent ..
+                            # for absolute safety, be sure we only remove
+                            # whitespace
+                            my $ws = substr( $test_line, 0, $diff );
+                            if ( ( length($ws) == $diff ) && $ws =~ /^\s+$/ ) {
+
+                                $test_line = substr( $test_line, $diff );
+                                $cached_line_leading_space_count -= $diff;
+                            }
+
+                            # shouldn't happen, and not critical:
+                            ##else {
+                            ## ERROR transferring indentation here
+                            ##}
+                        }
+                    }
+                }
+
                 $str                 = $test_line;
                 $leading_string      = "";
                 $leading_space_count = $cached_line_leading_space_count;
@@ -18079,7 +18239,7 @@ sub write_leader_and_string {
     my $line = $leading_string . $str;
 
     # write or cache this line
-    if ( !$rvertical_tightness_flags || $side_comment_length > 0 ) {
+    if ( !$open_or_close || $side_comment_length > 0 ) {
         entab_and_output( $line, $leading_space_count, $group_level );
     }
     else {
@@ -18089,6 +18249,7 @@ sub write_leader_and_string {
         $cached_seqno                    = $seqno;
         $cached_line_valid               = $valid;
         $cached_line_leading_space_count = $leading_space_count;
+        $cached_seqno_string             = $seqno_string;
     }
 
     $last_group_level_written = $group_level;
@@ -18163,6 +18324,9 @@ sub entab_and_output {
         }
     }
     $file_writer_object->write_code_line( $line . "\n" );
+    if ($seqno_string) {
+        $last_nonblank_seqno_string = $seqno_string; 
+    }
 }
 
 {    # begin get_leading_string
@@ -25742,7 +25906,7 @@ to perltidy.
 
 =head1 VERSION
 
-This man page documents Perl::Tidy version 20031021.
+This man page documents Perl::Tidy version 20060614.
 
 =head1 AUTHOR
 

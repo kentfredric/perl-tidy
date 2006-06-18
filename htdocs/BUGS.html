@@ -1,46 +1,71 @@
-<HTML>
-<HEAD>
-<TITLE>Perltidy open BUGS</TITLE>
-<LINK REV="made" HREF="mailto:perl@packages.debian.org">
-</HEAD>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>Perltidy open BUGS</title>
+<link rev="made" href="mailto:root@localhost" />
+</head>
 
-<BODY>
+<body style="background-color: white">
 
-<A NAME="__index__"></A>
+<p><a name="__index__"></a></p>
 <!-- INDEX BEGIN -->
 
-<UL>
+<ul>
 
-	<LI><A HREF="#perltidy open bugs">Perltidy open BUGS</A></LI>
-	<UL>
+	<li><a href="#perltidy_open_bugs">Perltidy open BUGS</a></li>
+	<ul>
 
-		<LI><A HREF="#a heredoc invoked through an 'e' modifier on a pattern replacement text is not recognized">A here-doc invoked through an 'e' modifier on a pattern replacement text is not recognized</A></LI>
-	</UL>
+		<li><a href="#a_heredoc_invoked_through_an__e__modifier_on_a_pattern_replacement_text_is_not_recognized">A here-doc invoked through an 'e' modifier on a pattern replacement text is not recognized</a></li>
+		<li><a href="#the_extrude_option_can_occasionally_produce_code_with_syntax_errors">The -extrude option can occasionally produce code with syntax errors</a></li>
+	</ul>
 
-</UL>
+</ul>
 <!-- INDEX END -->
 
-<HR>
-<P>
-<H1><A NAME="perltidy open bugs">Perltidy open BUGS</A></H1>
-<PRE>
+<hr />
+<p>
+</p>
+<h1><a name="perltidy_open_bugs">Perltidy open BUGS</a></h1>
+<pre>
  You can help perltidy evolve into a better program.  If you think you
  have hit a bug or weird behavior, or have a suggested improvement,
- please send a note to perltidy at users.sourceforge.net.</PRE>
-<PRE>
+ please send a note to perltidy at users.sourceforge.net.</pre>
+<pre>
  This file only lists open bugs.  For bugs which have been fixed, 
- see the ChangeLog.</PRE>
-<P>
-<H2><A NAME="a heredoc invoked through an 'e' modifier on a pattern replacement text is not recognized">A here-doc invoked through an 'e' modifier on a pattern replacement text is not recognized</A></H2>
-<P>For example, the output of perltidy for this script has a syntax error:</P>
-<PRE>
+ see the ChangeLog.</pre>
+<p>
+</p>
+<h2><a name="a_heredoc_invoked_through_an__e__modifier_on_a_pattern_replacement_text_is_not_recognized">A here-doc invoked through an 'e' modifier on a pattern replacement text is not recognized</a></h2>
+<p>For example, the output of perltidy for this script has a syntax error:</p>
+<pre>
         my $text=&quot;Hello World!\n&quot;;
         $text =~ s@Hello@&lt;&lt;'END'@e;
         Goodbye 
         Cruel
         END
-        print &quot;$text\n&quot;;</PRE>
+        print &quot;$text\n&quot;;</pre>
+<p>A workaround is to put the here-doc in a temporary string and then do the
+substitution:</p>
+<pre>
+        my $text=&quot;Hello World!\n&quot;;
+        my $str=&lt;&lt;'END';
+        Goodbye 
+        Cruel
+        END
+        $text =~ s@Hello@$str@e;
+        print &quot;$text\n&quot;;</pre>
+<p>
+</p>
+<h2><a name="the_extrude_option_can_occasionally_produce_code_with_syntax_errors">The --extrude option can occasionally produce code with syntax errors</a></h2>
+<p>The --extrude tries to put as many newlines in the formatted code as possible.
+This option is of limited use for formatting, but it has been helpful for
+debugging purposes.  Occasionally it will produce code which Perl considers to
+have a syntax error.  These problems usually involve code where Perl is having
+to guess the tokenization.  For example, --extrude will currently cause a
+syntax error in the following line:</p>
+<pre>
+ utime $inc+0 ? ($mtime, $ntime) : ($atime, $atime), $file;</pre>
 
-</BODY>
+</body>
 
-</HTML>
+</html>

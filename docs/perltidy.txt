@@ -2332,7 +2332,7 @@ SEE ALSO
     perlstyle(1), Perl::Tidy(3)
 
 VERSION
-    This man page documents perltidy version 20060606.
+    This man page documents perltidy version 20060614.
 
 CREDITS
     Michael Cartmell supplied code for adaptation to VMS and helped with

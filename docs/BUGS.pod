@@ -40,7 +40,3 @@ syntax error in the following line:
 
  utime $inc+0 ? ($mtime, $ntime) : ($atime, $atime), $file;
 
-=head2 UTF variables are not recognized
-
-For example the test file jperl.t distributed with perl 5.8 is not
-parsed correctly.

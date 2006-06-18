@@ -4,7 +4,7 @@ Perltidy Change Log
      please send a note to perltidy at users.sourceforge.net.  All
      suggestions are welcome.
 
-  2006 06 06
+  2006 06 14
      -Attribute argument lists are now correctly treated as quoted strings
      and not formatted.  This is the most important update in this version.
      Thanks to Borris Zentner, Greg Ferguson, Steve Kirkup.

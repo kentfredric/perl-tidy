@@ -37,7 +37,3 @@ Perltidy open BUGS
 
      utime $inc+0 ? ($mtime, $ntime) : ($atime, $atime), $file;
 
-  UTF variables are not recognized
-    For example the test file jperl.t distributed with perl 5.8 is not
-    parsed correctly.
-
