@@ -1,3 +1,10 @@
+croak( "can't create " . $this->name )
+  if $pdl->isnull and !$this->{FlagCreat};
+
+return 'equal'
+  if @seen_twice == keys %$set1
+  and @seen_twice == keys %$set2;
+
 # recombination logic is used to keep this as a sequence
     (/^$/) ? $filecol
       : (s/^\+//) ? $filecol + $_

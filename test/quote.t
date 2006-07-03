@@ -1,3 +1,14 @@
+# This line has been nicely formatted by the user.  It should
+# retain the whitespace and remain nice.
+$src_line =~ s{ _ref \s* (?= [\{[(] ) }  # If _ref precedes opening bracket...
+              {_ref->}gxms;    # ...insert an arrow
+
+# same line with long comment will no longer be aligned after a break:
+{
+$src_line =~ s{ _ref \s* (?= [\{[(] ) }  # If _ref precedes opening bracket...
+              {_ref->}gxms;    # ...insert an arrow
+}
+
 # this file illustrates how the q* operators allow comments
 # a space after qw causes the # to become a comment!
 my @str = qw # Hi!

@@ -157,3 +157,14 @@ print "a=$a";
 pp_addhdr(<<"EOD") if defined $Config{'o_nonblock'} && $Config{'o_nonblock'} ne 'O_NONBLOCK';
 #define O_NONBLOCK $Config{'o_nonblock'}
 EOD
+
+# quote modifier 'e' test cases:
+$what
+    =~ s{([\xC0-\xDF])([\x80-\xBF])}{chr(ord($1)<<6&0xC0|ord($2)&0x3F)}eg; #};
+
+$html =~ s@(<h4>ActivePerl Documentation</h4>)@"$1\n".<<'JAVA_SCRIPT'@e;
+    xxx
+JAVA_SCRIPT
+$html =~ s@(</html>|$)@<<'PERL_SCRIPT'."\n$1"@e;
+    bubba
+PERL_SCRIPT

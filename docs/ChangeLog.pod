@@ -7,6 +7,18 @@
 
 =head2 2006 06 18
 
+ -Eliminated bug where a here-doc invoked through an 'e' modifier on a pattern
+ replacement text was not recognized.  The tokenizer now recursively scans
+ replacement text (but does not reformat it).
+
+ -Added flag -pbp (--perl-best-practices) as an abbreviation for parameters
+ suggested in Damian Conway's Perl Best Practices.
+
+ -pbp is the same as:
+    -l=78 -i=4 -ci=4 -st -se -vt=2 -cti=0 -pt=1 -bt=1 -sbt=1 -bbt=1 -nsfs -nolq
+    -wbb="% + - * / x != == >= <= =~ !~ < > | & >= < = 
+          **= += *= &= <<= &&= -= /= |= >>= ||= .= %= ^= x="
+
  -Eliminated some needless breaks at equals signs in -lp indentation.
 
     OLD:
@@ -39,6 +51,9 @@
           Core
     ) );
   Thanks to Aran Deltac
+
+ -Corrected a problem with -mangle in which a space would be removed
+ between a keyword and variable beginning with ::.
 
 =head2 2006 06 14
 

@@ -1970,6 +1970,18 @@ style overrides the default style with the following parameters:
 
     -lp -bl -noll -pt=2 -bt=2 -sbt=2 -icp
 
+=item B<-pbp>, B<--perl-best-practices>
+
+B<-pbp> is an abbreviation for the parameters in the book B<Perl Best Practices>
+by Damian Conway:
+
+    -l=78 -i=4 -ci=4 -st -se -vt=2 -cti=0 -pt=1 -bt=1 -sbt=1 -bbt=1 -nsfs -nolq
+    -wbb="% + - * / x != == >= <= =~ !~ < > | & >= < = 
+          **= += *= &= <<= &&= -= /= |= >>= ||= .= %= ^= x="
+
+Note that the -st and -se flags make perltidy act as a filter on one file only.  
+These can be overridden with -nst and -nse if necessary.
+
 =back
 
 =head2 Other Controls

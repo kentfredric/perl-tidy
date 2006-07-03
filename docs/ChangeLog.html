@@ -15,6 +15,7 @@
 	<li><a href="#perltidy_change_log">Perltidy Change Log</a></li>
 	<ul>
 
+		<li><a href="#2006_06_18">2006 06 18</a></li>
 		<li><a href="#2006_06_14">2006 06 14</a></li>
 		<li><a href="#2003_10_21">2003 10 21</a></li>
 		<li><a href="#2003_07_26">2003 07 26</a></li>
@@ -55,6 +56,42 @@
  bug, unusual behavior, annoyance, or have a suggested improvement,
  please send a note to perltidy at users.sourceforge.net.  All
  suggestions are welcome.</pre>
+<p>
+</p>
+<h2><a name="2006_06_18">2006 06 18</a></h2>
+<pre>
+ -Eliminated some needless breaks at equals signs in -lp indentation.</pre>
+<pre>
+    OLD:
+        $c =
+          Math::Complex-&gt;make(LEFT + $x * (RIGHT - LEFT) / SIZE,
+                              TOP + $y * (BOTTOM - TOP) / SIZE);
+    NEW:
+        $c = Math::Complex-&gt;make(LEFT + $x * (RIGHT - LEFT) / SIZE,
+                                 TOP + $y * (BOTTOM - TOP) / SIZE);</pre>
+<pre>
+ A break at an equals is sometimes useful for preventing complex statements 
+ from hitting the line length limit.  The decision to do this was 
+ over-eager in some cases and has been improved.  Thanks to Royce Reece.</pre>
+<pre>
+ -qw quotes contained in braces, square brackets, and parens are being
+ treated more like those containers as far as stacking of tokens.  Also
+ stack of closing tokens ending ');' will outdent to where the ');' would
+ have outdented if the closing stack is matched with a similar opening stack.</pre>
+<pre>
+  OLD: perltidy -soc -sct
+    __PACKAGE__-&gt;load_components(
+        qw(
+          PK::Auto
+          Core
+          )
+    );
+  NEW: perltidy -soc -sct
+    __PACKAGE__-&gt;load_components( qw(
+          PK::Auto
+          Core
+    ) );
+  Thanks to Aran Deltac</pre>
 <p>
 </p>
 <h2><a name="2006_06_14">2006 06 14</a></h2>
