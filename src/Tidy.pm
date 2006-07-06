@@ -63,7 +63,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.51 2006/07/03 14:05:28 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.52 2006/07/06 03:18:17 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 sub streamhandle {
@@ -7925,7 +7925,7 @@ sub set_white_space_flag {
 
         # patch for SWITCH/CASE: make space at ']{' optional
         # since the '{' might begin a case or when block
-        elsif ( $token eq '{' && $last_token eq ']' ) {
+        elsif ( ($token eq '{' && $type ne 'L') && $last_token eq ']' ) {
             $ws = WS_OPTIONAL;
         }
 
@@ -8466,7 +8466,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.51 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.52 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -11025,6 +11025,13 @@ sub get_opening_indentation {
         if ($seqno) {
             if ( $saved_opening_indentation{$seqno} ) {
                 ( $indent, $offset ) = @{ $saved_opening_indentation{$seqno} };
+            }
+
+            # some kind of serious error
+            # (example is badfile.t)
+            else {
+                $indent = 0;
+                $offset = 0;
             }
         }
 
@@ -20158,8 +20165,8 @@ sub prepare_for_a_new_file {
     # ------------------------------------------------------------
     sub scan_replacement_text {
 
-        # check for here-docs in substitution replacement text invoked with
-        # executable modifier 'e'.
+        # check for here-docs in replacement text invoked by
+        # a substitution operator with executable modifier 'e'.
         # 
         # given:
         #  $replacement_text 
@@ -20168,8 +20175,7 @@ sub prepare_for_a_new_file {
         my ( $replacement_text ) = @_;
 
         # quick check
-        ## BUBBA TESTING
-        ##return undef unless ( $replacement_text =~ /<</ );
+        return undef unless ( $replacement_text =~ /<</ );
 
         write_logfile_entry("scanning replacement text for here-doc targets\n");
 
@@ -25286,17 +25292,10 @@ sub follow_quoted_string {
             }
             elsif ( $tok eq '\\' ) {
 
-                # retain backslash unless it hides the end token
-                $quoted_string .= $tok unless ($$rtokens[$i+1] eq $end_tok);
-                $tok = $$rtokens[ ++$i ] 
-
-##                # swallow backslash if it hides the end token
-##                if ($$rtokens[$i] eq $end_tok) {
-##                    $tok = $$rtokens[ $i ] 
-##                }
-##                else {
-##                    $tok .= $$rtokens[ $i ] 
-##                }
+                # retain backslash unless it hides the beginning or end token
+                $tok = $$rtokens[ ++$i ];
+                $quoted_string .= '\\'
+                  unless ( $tok eq $end_tok || $tok eq $beginning_tok );
             }
             $quoted_string .= $tok;
         }
@@ -25902,7 +25901,7 @@ BEGIN {
 
     # these token TYPES expect trailing operator but not a term
     # note: ++ and -- are post-increment and decrement, 'C' = constant
-    my @operator_requestor_types = qw( ++ -- C );
+    my @operator_requestor_types = qw( ++ -- C <> q );
     @expecting_operator_types{@operator_requestor_types} =
       (1) x scalar(@operator_requestor_types);
 
@@ -25913,7 +25912,7 @@ BEGIN {
       L { ( [ ~ !~ =~ ; . .. ... A : && ! || // = + - x
       **= += -= .= /= *= %= x= &= |= ^= <<= >>= &&= ||= //=
       <= >= == != => \ > < % * / ? & | ** <=>
-      f F pp mm Y p m U J G
+      f F pp mm Y p m U J G j >> << ^ t
       #;
     push( @value_requestor_type, ',' )
       ;    # (perl doesn't like a ',' in a qw block)
