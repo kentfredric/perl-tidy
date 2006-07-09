@@ -63,7 +63,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.52 2006/07/06 03:18:17 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.53 2006/07/09 18:43:52 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 sub streamhandle {
@@ -308,8 +308,8 @@ sub make_temporary_filename {
         }
         if ($input_file) {
 
-            if ( ref $input_file ) { print STDERR " of reference to:" }
-            else { print STDERR " of file:" }
+            if   ( ref $input_file ) { print STDERR " of reference to:" }
+            else                     { print STDERR " of file:" }
             print STDERR " $input_file";
         }
         print STDERR "\n";
@@ -1683,7 +1683,7 @@ sub generate_options {
         'perl-best-practices' => [
             qw(l=78 i=4 ci=4 st se vt=2 cti=0 pt=1 bt=1 sbt=1 bbt=1 nsfs nolq),
 q(wbb=% + - * / x != == >= <= =~ !~ < > | & >= < = **= += *= &= <<= &&= -= /= |= >>= ||= .= %= ^= x=)
-          ],
+        ],
 
         # Additional styles can be added here
     );
@@ -7925,7 +7925,7 @@ sub set_white_space_flag {
 
         # patch for SWITCH/CASE: make space at ']{' optional
         # since the '{' might begin a case or when block
-        elsif ( ($token eq '{' && $type ne 'L') && $last_token eq ']' ) {
+        elsif ( ( $token eq '{' && $type ne 'L' ) && $last_token eq ']' ) {
             $ws = WS_OPTIONAL;
         }
 
@@ -8466,7 +8466,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.52 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.53 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -9285,8 +9285,8 @@ sub starting_one_line_block {
     for ( $i = $j + 1 ; $i <= $jmax ; $i++ ) {
 
         # old whitespace could be arbitrarily large, so don't use it
-        if ( $$rtoken_type[$i] eq 'b' ) { $pos += 1 }
-        else { $pos += length( $$rtokens[$i] ) }
+        if   ( $$rtoken_type[$i] eq 'b' ) { $pos += 1 }
+        else                              { $pos += length( $$rtokens[$i] ) }
 
         # Return false result if we exceed the maximum line length,
         if ( $pos > $rOpts_maximum_line_length ) {
@@ -10519,6 +10519,13 @@ sub add_closing_side_comment {
         && $block_type_to_go[$i_terminal] =~
         /$closing_side_comment_list_pattern/o
 
+        # .. but not an anonymous sub
+        # These are not normally of interest, and their closing braces are
+        # often followed by commas or semicolons anyway.  This also avoids
+        # possible erratic output due to line numbering inconsistencies
+        # in the cases where their closing braces terminate a line.
+        && $block_type_to_go[$i_terminal] ne 'sub'
+
         # ..and the corresponding opening brace must is not in this batch
         # (because we do not need to tag one-line blocks, although this
         # should also be caught with a positive -csci value)
@@ -10681,6 +10688,9 @@ sub send_lines_to_vertical_aligner {
 
     my $rindentation_list = [0];    # ref to indentations for each line
 
+    # define the array @matching_token_to_go for the output tokens
+    # which will be non-blank for each special token (such as =>)
+    # for which alignment is required.
     set_vertical_alignment_markers( $ri_first, $ri_last );
 
     # flush if necessary to avoid unwanted alignment
@@ -11760,9 +11770,11 @@ sub get_seqno {
 
     sub set_vertical_alignment_markers {
 
-        # Look at the tokens in this output batch and define the array
-        # 'matching_token_to_go' which marks tokens at which we would
-        # accept vertical alignment.
+        # Define the array 'matching_token_to_go' for this output batch:
+        #
+        # We look at each token $i in this output batch and set
+        # $matching_token_to_go[$i] to be non-blank for tokens at which we
+        # would accept vertical alignment.
 
         # nothing to do if we aren't allowed to change whitespace
         if ( !$rOpts_add_whitespace ) {
@@ -16861,6 +16873,17 @@ sub append_line {
     }
 
     # --------------------------------------------------------------------
+    # add dummy fields for else statement
+    # --------------------------------------------------------------------
+    if (   $rfields->[0] =~ /^else\s*$/
+        && $current_line
+        && $level_jump == 0 )
+    {
+        fix_terminal_else( $rfields, $rtokens, $rpatterns );
+        $jmax = @{$rfields} - 1;
+    }
+
+    # --------------------------------------------------------------------
     # Step 1. Handle simple line of code with no fields to match.
     # --------------------------------------------------------------------
     if ( $jmax <= 0 ) {
@@ -16988,6 +17011,16 @@ sub append_line {
         eliminate_new_fields( $new_line, $current_line );
 
         # --------------------------------------------------------------------
+        # add dummy fields for else statement
+        # --------------------------------------------------------------------
+        ##fix_terminal_else( $new_line, $current_line, $level_jump);
+
+        # --------------------------------------------------------------------
+        # add dummy fields for terminal trinary statement
+        # --------------------------------------------------------------------
+        ##fix_terminal_trinary( $new_line, $current_line, $level_jump);
+
+        # --------------------------------------------------------------------
         # Flush previous group unless all common tokens and patterns match..
         # --------------------------------------------------------------------
         check_match( $new_line, $current_line );
@@ -17007,6 +17040,8 @@ sub append_line {
 
     # Future update to allow this to vary:
     $current_line = $new_line if ( $maximum_line_index == 0 );
+
+    my_flush() if ( $group_type eq "TERMINAL" );
 
     # --------------------------------------------------------------------
     # Step 8. Some old debugging stuff
@@ -17291,6 +17326,66 @@ sub eliminate_new_fields {
         $jmax                                 = $maximum_field_index;
     }
     $new_line->set_jmax($jmax);
+}
+
+sub fix_terminal_else {
+
+    # Add empty fields as necessary to align a balanced terminal
+    # else block to a previous if/elsif/unless block,
+    # like this:
+    #
+    #  if   ( 1 || $x ) { print "ok 13\n"; }
+    #  else             { print "not ok 13\n"; }
+    #
+    my ( $rfields, $rtokens, $rpatterns ) = @_;
+    my $jmax = @{$rfields} - 1;
+    my $jadd;
+
+    # check for balanced else block following if/elsif/unless
+    my $rfields_old = $current_line->get_rfields();
+
+    # TBD: add handling for 'case' 
+    return unless ( $rfields_old->[0] =~ /^(if|elsif|unless)\s*$/ );
+
+    # look for the opening brace after the else, and extrace the depth
+    my $tok_brace = $rtokens->[0];
+    my $depth_brace;
+    if ( $tok_brace =~ /^\{(\d+)$/ ) { $depth_brace = $1 }
+    else { return }    # shouldn't happen
+
+    my $rpatterns_old       = $current_line->get_rpatterns();
+    my $rtokens_old         = $current_line->get_rtokens();
+    my $maximum_field_index = $current_line->get_jmax();
+
+    # be sure the previous if/elsif is followed by an opening paren
+    my $jparen    = 0;
+    my $tok_paren = '(' . $depth_brace;
+    my $tok_test  = $rtokens_old->[$jparen];
+    return unless ( $tok_test eq $tok_paren );    # shouldn't happen
+
+    # Now find the opening block brace
+    my ($jbrace);
+    for ( my $j = 1 ; $j < $maximum_field_index ; $j++ ) {
+        my $tok = $rtokens_old->[$j];
+        if ( $tok eq $tok_brace ) {
+            $jbrace = $j;
+            last;
+        }
+    }
+    return unless ( defined($jbrace) );           # shouldn't happen
+
+    # Now splice the tokens and patterns of the previous line
+    # into the else line to insure a match.  Add empty fields
+    # as necessary.
+    $jadd = $jbrace - $jparen;
+    splice( @{$rtokens},   0, 0, @{$rtokens_old}[ $jparen .. $jbrace - 1 ] );
+    splice( @{$rpatterns}, 1, 0, @{$rpatterns_old}[ $jparen + 1 .. $jbrace ] );
+    splice( @{$rfields}, 1, 0, ('') x $jadd );
+
+    # force a flush if this is not a case
+    $group_type = "TERMINAL"
+      unless ( $rfields_old->[0] =~ /^case\s*$/ );
+    return;
 }
 
 sub check_match {
@@ -17721,6 +17816,7 @@ sub decide_if_aligned {
 
     # Do not try to align two lines which are not really similar
     return unless $maximum_line_index == 1;
+    return if ( $group_type eq "TERMINAL" );
 
     my $group_list_type = $group_lines[0]->get_list_type();
 
@@ -17972,6 +18068,9 @@ sub write_vertically_aligned_line {
             $str .= ' ' x $total_pad_count;
             $total_pad_count = 0;
             $str .= $$rfields[$j];
+        }
+        else {
+            $total_pad_count = 0;
         }
 
         # update side comment history buffer
@@ -18948,17 +19047,17 @@ sub new {
     # Note: 'tabs' and 'indent_columns' are temporary and should be
     # removed asap
     my %defaults = (
-        source_object       => undef,
-        debugger_object     => undef,
-        diagnostics_object  => undef,
-        logger_object       => undef,
-        starting_level      => undef,
-        indent_columns      => 4,
-        tabs                => 0,
-        look_for_hash_bang  => 0,
-        trim_qw             => 1,
-        look_for_autoloader => 1,
-        look_for_selfloader => 1,
+        source_object        => undef,
+        debugger_object      => undef,
+        diagnostics_object   => undef,
+        logger_object        => undef,
+        starting_level       => undef,
+        indent_columns       => 4,
+        tabs                 => 0,
+        look_for_hash_bang   => 0,
+        trim_qw              => 1,
+        look_for_autoloader  => 1,
+        look_for_selfloader  => 1,
         starting_line_number => 1,
     );
     my %args = ( %defaults, @_ );
@@ -19013,7 +19112,7 @@ sub new {
         _trim_qw                            => $args{trim_qw},
         _input_tabstr                       => "",
         _know_input_tabstr                  => -1,
-        _last_line_number                   => $args{starting_line_number}-1,
+        _last_line_number                   => $args{starting_line_number} - 1,
         _saw_perl_dash_P                    => 0,
         _saw_perl_dash_w                    => 0,
         _saw_use_strict                     => 0,
@@ -19225,7 +19324,8 @@ sub report_tokenization_errors {
     # it is suggested that lables have at least one upper case character
     # for legibility and to avoid code breakage as new keywords are introduced
     if ( $tokenizer_self->{_rlower_case_labels_at} ) {
-        my @lower_case_labels_at=@{$tokenizer_self->{_rlower_case_labels_at}};
+        my @lower_case_labels_at =
+          @{ $tokenizer_self->{_rlower_case_labels_at} };
         write_logfile_entry(
             "Suggest using upper case characters in label(s)\n");
         local $" = ')(';
@@ -19898,20 +19998,20 @@ sub prepare_for_a_new_file {
     $last_nonblank_block_type = '';
 
     # scalars for remembering statement types across multiple lines
-    $statement_type    = '';                # '' or 'use' or 'sub..' or 'case..'
+    $statement_type    = '';            # '' or 'use' or 'sub..' or 'case..'
     $in_attribute_list = 0;
 
     # scalars for remembering where we are in the file
-    $current_package   = "main";
-    $context           = UNKNOWN_CONTEXT;
+    $current_package = "main";
+    $context         = UNKNOWN_CONTEXT;
 
     # hashes used to remember function information
-    %is_constant                      = ();             # user-defined constants
-    %is_user_function                 = ();             # user-defined functions
-    %user_function_prototype          = ();             # their prototypes
-    %is_block_function                = ();
-    %is_block_list_function           = ();
-    %saw_function_definition          = ();
+    %is_constant             = ();      # user-defined constants
+    %is_user_function        = ();      # user-defined functions
+    %user_function_prototype = ();      # their prototypes
+    %is_block_function       = ();
+    %is_block_list_function  = ();
+    %saw_function_definition = ();
 
     # variables used to track depths of various containers
     # and report nesting errors
@@ -19922,10 +20022,10 @@ sub prepare_for_a_new_file {
       (0) x scalar @closing_brace_names;
     @nesting_sequence_number[ 0 .. $#closing_brace_names ] =
       ( 0 .. $#closing_brace_names );
-    @current_sequence_number = ();
+    @current_sequence_number             = ();
     $paren_type[$paren_depth]            = '';
     $paren_semicolon_count[$paren_depth] = 0;
-    $paren_structural_type[$brace_depth]                   = '';
+    $paren_structural_type[$brace_depth] = '';
     $brace_type[$brace_depth] = ';';    # identify opening brace as code block
     $brace_structural_type[$brace_depth]                   = '';
     $brace_statement_type[$brace_depth]                    = "";
@@ -19937,7 +20037,7 @@ sub prepare_for_a_new_file {
     initialize_tokenizer_state();
 }
 
-{    # begin tokenize_this_line
+{                                       # begin tokenize_this_line
 
     use constant BRACE          => 0;
     use constant SQUARE_BRACKET => 1;
@@ -20071,7 +20171,7 @@ sub prepare_for_a_new_file {
 
         my $rTV4 = [ $id_scan_state, $identifier, $want_paren, ];
 
-        my $rTV5 =[
+        my $rTV5 = [
             $nesting_token_string,      $nesting_type_string,
             $nesting_block_string,      $nesting_block_flag,
             $nesting_list_string,       $nesting_list_flag,
@@ -20090,11 +20190,11 @@ sub prepare_for_a_new_file {
             $last_last_nonblank_type_sequence,
             $last_nonblank_prototype,
         ];
-        return  [ $rTV1, $rTV2, $rTV3, $rTV4, $rTV5, $rTV6 ];
+        return [ $rTV1, $rTV2, $rTV3, $rTV4, $rTV5, $rTV6 ];
     }
 
     sub restore_tokenizer_state {
-        my ($rstate)=@_;
+        my ($rstate) = @_;
         my ( $rTV1, $rTV2, $rTV3, $rTV4, $rTV5, $rTV6 ) = @{$rstate};
         (
             $block_type,        $container_type,    $expecting,
@@ -20113,10 +20213,8 @@ sub prepare_for_a_new_file {
         ) = @{$rTV2};
 
         (
-            $in_quote,        $quote_type,
-            $quote_character, $quote_pos,
-            $quote_depth,     $quoted_string_1,
-            $quoted_string_2, $allowed_quote_modifiers,
+            $in_quote, $quote_type, $quote_character, $quote_pos, $quote_depth,
+            $quoted_string_1, $quoted_string_2, $allowed_quote_modifiers,
         ) = @{$rTV3};
 
         ( $id_scan_state, $identifier, $want_paren, ) = @{$rTV4};
@@ -20167,12 +20265,12 @@ sub prepare_for_a_new_file {
 
         # check for here-docs in replacement text invoked by
         # a substitution operator with executable modifier 'e'.
-        # 
+        #
         # given:
-        #  $replacement_text 
+        #  $replacement_text
         # return:
         #  $rht = reference to any here-doc targets
-        my ( $replacement_text ) = @_;
+        my ($replacement_text) = @_;
 
         # quick check
         return undef unless ( $replacement_text =~ /<</ );
@@ -20203,10 +20301,10 @@ sub prepare_for_a_new_file {
         );
 
         # save all lexical variables
-        my $rstate=save_tokenizer_state();
-        _decrement_count();  # avoid error check for multiple tokenizers
+        my $rstate = save_tokenizer_state();
+        _decrement_count();    # avoid error check for multiple tokenizers
 
-        # make a new tokenizer 
+        # make a new tokenizer
         my $rOpts = {};
         my $rpending_logfile_message;
         my $source_object =
@@ -20219,20 +20317,19 @@ sub prepare_for_a_new_file {
         );
 
         # scan the replacement text
-        1 while ( $tokenizer->get_line() ); 
+        1 while ( $tokenizer->get_line() );
 
         # remove any here doc targets
         my $rht = undef;
         if ( $tokenizer_self->{_in_here_doc} ) {
-            $rht=[];
+            $rht = [];
             push @{$rht},
               [
                 $tokenizer_self->{_here_doc_target},
                 $tokenizer_self->{_here_quote_character}
               ];
             if ( $tokenizer_self->{_rhere_target_list} ) {
-                push @{$rht},
-                  @{ $tokenizer_self->{_rhere_target_list} };
+                push @{$rht}, @{ $tokenizer_self->{_rhere_target_list} };
                 $tokenizer_self->{_rhere_target_list} = undef;
             }
             $tokenizer_self->{_in_here_doc} = undef;
@@ -21001,9 +21098,13 @@ sub prepare_for_a_new_file {
               ;          # here-doc not possible if end of line
 
             if ( $expecting != OPERATOR ) {
-                my ( $found_target, $here_doc_target, $here_quote_character, $saw_error );
-                ( $found_target, $here_doc_target, $here_quote_character, $i, $saw_error ) =
-                  find_here_doc( $expecting, $i, $rtokens, $rtoken_map,
+                my ( $found_target, $here_doc_target, $here_quote_character,
+                    $saw_error );
+                (
+                    $found_target, $here_doc_target, $here_quote_character, $i,
+                    $saw_error
+                  )
+                  = find_here_doc( $expecting, $i, $rtokens, $rtoken_map,
                     $max_token_index );
 
                 if ($found_target) {
@@ -21022,6 +21123,7 @@ sub prepare_for_a_new_file {
                 }
                 elsif ( $expecting == TERM ) {
                     unless ($saw_error) {
+
                         # shouldn't happen..
                         warning("Program bug; didn't find here doc target\n");
                         report_definite_bug();
@@ -21414,14 +21516,14 @@ sub prepare_for_a_new_file {
                         # text for here-doc targets.
                         if ($saw_modifier_e) {
 
-                            my $rht = scan_replacement_text( $qs1 );
+                            my $rht = scan_replacement_text($qs1);
 
                             # Change type from 'Q' to 'h' for quotes with
                             # here-doc targets so that the formatter (see sub
                             # print_line_of_tokens) will not make any line
                             # breaks after this point.
                             if ($rht) {
-                                push @{ $rhere_target_list}, @{$rht};
+                                push @{$rhere_target_list}, @{$rht};
                                 $type = 'h';
                                 if ( $i_tok < 0 ) {
                                     my $ilast = $routput_token_list->[-1];
@@ -22213,7 +22315,7 @@ EOM
                 # there are intervening non-structural nesting types between
                 # this '{' and the previous unclosed '{'
                 my $intervening_secondary_structure = 0;
-                if (@{$rslevel_stack}) {
+                if ( @{$rslevel_stack} ) {
                     $intervening_secondary_structure =
                       $slevel_in_tokenizer - $rslevel_stack->[-1];
                 }
@@ -22339,7 +22441,7 @@ EOM
             elsif ( $type eq '}' || $type eq 'R' ) {
 
                 # only a nesting error in the script would prevent popping here
-                if ( @{$rslevel_stack} > 1 ) { pop(@{$rslevel_stack}); }
+                if ( @{$rslevel_stack} > 1 ) { pop( @{$rslevel_stack} ); }
 
                 $level_i = --$level_in_tokenizer;
 
@@ -22794,7 +22896,6 @@ sub operator_expected {
     };
     return $op_expected;
 }
-
 
 sub new_statement_ok {
 
@@ -24194,8 +24295,8 @@ sub scan_identifier_do {
                     #  $a = ${$:};
 
                     $i = $i_save;
-                    if ( $tok eq '{' ) { $type = 't' }
-                    else { $type = 'i' }
+                    if   ( $tok eq '{' ) { $type = 't' }
+                    else                 { $type = 'i' }
                 }
                 elsif ( $identifier eq '->' ) {
                     $i = $i_save;
@@ -24992,7 +25093,7 @@ sub find_here_doc {
     my $found_target         = 0;
     my $here_doc_target      = '';
     my $here_quote_character = '';
-    my $saw_error = 0;
+    my $saw_error            = 0;
     my ( $next_nonblank_token, $i_next_nonblank, $next_token );
     $next_token = $$rtokens[ $i + 1 ];
 
@@ -25026,7 +25127,7 @@ sub find_here_doc {
                 warning(
 "Did not find here-doc string terminator ($here_quote_character) before end of line \n"
                 );
-                $saw_error=1;
+                $saw_error = 1;
             }
         }
         else {              # found ending quote
@@ -25085,7 +25186,8 @@ sub find_here_doc {
     # patch to neglect any prepended backslash
     if ( $found_target && $backslash ) { $i++ }
 
-    return ( $found_target, $here_doc_target, $here_quote_character, $i, $saw_error );
+    return ( $found_target, $here_doc_target, $here_quote_character, $i,
+        $saw_error );
 }
 
 sub do_quote {
@@ -25239,7 +25341,8 @@ sub follow_quoted_string {
                 if ( $tok eq '\\' ) {
 
                     # retain backslash unless it hides the end token
-                    $quoted_string .= $tok unless $$rtokens[$i+1] eq $end_tok;
+                    $quoted_string .= $tok
+                      unless $$rtokens[ $i + 1 ] eq $end_tok;
                     $quote_pos++;
                     last if ( $i >= $max_token_index );
                     $tok = $$rtokens[ ++$i ];
@@ -25918,6 +26021,11 @@ BEGIN {
       ;    # (perl doesn't like a ',' in a qw block)
     @expecting_term_types{@value_requestor_type} =
       (1) x scalar(@value_requestor_type);
+
+    # Note: the following valid token types are not assigned here to
+    # hashes requesting to be followed by values or terms, but are
+    # instead currently hard-coded into sub operator_expected:
+    # ) -> :: Q R Z ] b h i k n v w } #
 
     # For simple syntax checking, it is nice to have a list of operators which
     # will really be unhappy if not followed by a term.  This includes most
