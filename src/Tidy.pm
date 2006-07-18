@@ -63,7 +63,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.54 2006/07/13 14:22:07 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.55 2006/07/18 13:59:44 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 sub streamhandle {
@@ -7515,7 +7515,11 @@ EOM
 
           # retain any space after possible filehandle
           # (testfiles prnterr1.t with --extrude and mangle.t with --mangle)
-          || ( $typel eq 'Z' || $typell eq 'Z' )
+          || ( $typel eq 'Z' )
+
+          # Perl is sensitive to whitespace after the + here:
+          #  $b = xvals $a + 0.1 * yvals $a;
+          || ( $typell eq 'Z' && $typel =~ /^[\/\?\+\-\*]$/ )
 
           # keep paren separate in 'use Foo::Bar ()'
           || ( $tokenr eq '('
@@ -8462,7 +8466,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.54 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.55 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -9500,7 +9504,7 @@ sub set_logical_padding {
                     # we might pad token $ibeg, so be sure that it
                     # is at the same depth as the next line.
                     next
-                      if ( $nesting_depth_to_go[ $ibeg + 1 ] !=
+                      if ( $nesting_depth_to_go[$ibeg] !=
                         $nesting_depth_to_go[$ibeg_next] );
 
                     # We can pad on line 1 of a statement if at least 3
@@ -9974,6 +9978,37 @@ sub output_line_to_go {
     # any unfinished items in its stack
     finish_lp_batch();
 
+    # if this line ends in a code block brace,
+    # set forced breaks at any previous closing code block braces
+    # to breakup a chain of code blocks on one line.
+    # For example we might be looking at this:
+    #   BOOL { $server_data{uptime} > 0; } NUM { $server_data{load}; } STR {
+    my $saw_good_break = 0;
+    if (
+        $block_type_to_go[$max_index_to_go]
+        && (   $tokens_to_go[$max_index_to_go] eq '{'
+            || $tokens_to_go[$max_index_to_go] eq '}' )
+      )
+    {
+        my $lev = $nesting_depth_to_go[$max_index_to_go];
+
+        # walk backwards from the end
+        for ( my $i = $max_index_to_go - 1 ; $i >= 0 ; $i-- ) {
+            last if ( $levels_to_go[$i] < $lev );
+            next if ( $levels_to_go[$i] > $lev );
+            if ( $block_type_to_go[$i] ) {
+                if ( $tokens_to_go[$i] eq '}' ) {
+                    set_forced_breakpoint($i);
+                    $saw_good_break = 1;
+                }
+            }
+
+            # we must quit at any comma, equals, or similar, so
+            # quit if we see anything other than words, function, blanks
+            elsif ( $types_to_go[$i] !~ /^[\(\)Gwib]$/ ) { last }
+        }
+    }
+
     my $imin = 0;
     my $imax = $max_index_to_go;
 
@@ -10070,7 +10105,6 @@ sub output_line_to_go {
         pad_array_to_go();
 
         # set all forced breakpoints for good list formatting
-        my $saw_good_break = 0;
         my $is_long_line = excess_line_length( $imin, $max_index_to_go ) > 0;
 
         if (
@@ -10087,7 +10121,7 @@ sub output_line_to_go {
             )
           )
         {
-            $saw_good_break = scan_list();
+            $saw_good_break ||= scan_list();
         }
 
         # let $ri_first and $ri_last be references to lists of
@@ -15527,7 +15561,6 @@ sub set_continuation_breaks {
 
                 # There is an implied forced break at a terminal opening brace
                 || ( ( $type eq '{' ) && ( $i_test == $imax ) )
-
               )
             {
 
@@ -22691,8 +22724,9 @@ EOM
                             $in_statement_continuation = 0;
                         }
 
-                        # ..nor user function with block prototype
+                        # user function with block prototype
                         else {
+                            $in_statement_continuation = 0;
                         }
                     }
 
@@ -24449,6 +24483,16 @@ sub scan_identifier_do {
                 if ( $identifier =~ /^[\$\*\@\%]$/ ) {
                     $identifier .= $tok;
                     $id_scan_state = 'A';
+
+                    # Perl accepts '$^]' or '@^]', but
+                    # there must not be a space before the ']'.
+                    my $next1 = $$rtokens[ $i + 1 ];
+                    if ( $next1 eq ']' ) {
+                        $i++;
+                        $identifier .= $next1;
+                        $id_scan_state = "";
+                        last;
+                    }
                 }
                 else {
                     $id_scan_state = '';
