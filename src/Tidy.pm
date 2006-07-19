@@ -63,7 +63,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.55 2006/07/18 13:59:44 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.56 2006/07/19 23:13:33 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 sub streamhandle {
@@ -5510,6 +5510,7 @@ use vars qw{
   %is_assignment
   %is_chain_operator
   %is_if_unless_and_or_last_next_redo_return
+  %is_until_while_for_if_elsif_else
 
   @has_broken_sublist
   @dont_align
@@ -5625,6 +5626,10 @@ BEGIN {
 
     @_ = qw(is if unless and or err last next redo return);
     @is_if_unless_and_or_last_next_redo_return{@_} = (1) x scalar(@_);
+
+    # always break after a closing curly of these block types:
+    @_ = qw(until while for if elsif else);
+    @is_until_while_for_if_elsif_else{@_} = (1) x scalar(@_);
 
     @_ = qw(last next redo return);
     @is_last_next_redo_return{@_} = (1) x scalar(@_);
@@ -8207,16 +8212,6 @@ sub set_white_space_flag {
         return;
     }
 
-    my %is_until_while_for_if_elsif_else;
-
-    BEGIN {
-
-        # always break after a closing curly of these block types:
-        @_ = qw(until while for if elsif else);
-        @is_until_while_for_if_elsif_else{@_} = (1) x scalar(@_);
-
-    }
-
     sub print_line_of_tokens {
 
         my $line_of_tokens = shift;
@@ -8466,7 +8461,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.55 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.56 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -8919,7 +8914,14 @@ sub set_white_space_flag {
                     #
                     # But make a line break if the curly ends a
                     # significant block:
-                    if ( $is_until_while_for_if_elsif_else{$block_type} ) {
+                    ##if ( $is_until_while_for_if_elsif_else{$block_type} ) {
+                    if (
+                        $is_block_without_semicolon{$block_type}
+
+                        # if needless semicolon follows we handle it later
+                        && $next_nonblank_token ne ';'
+                      )
+                    {
                         output_line_to_go() unless ($no_internal_newlines);
                     }
                 }
@@ -9945,11 +9947,10 @@ sub flush {
     Perl::Tidy::VerticalAligner::flush();
 }
 
-# output_line_to_go sends one logical line of tokens on down the
+# sub output_line_to_go sends one logical line of tokens on down the
 # pipeline to the VerticalAligner package, breaking the line into continuation
 # lines as necessary.  The line of tokens is ready to go in the "to_go"
 # arrays.
-
 sub output_line_to_go {
 
     # debug stuff; this routine can be called from many points
@@ -9978,24 +9979,32 @@ sub output_line_to_go {
     # any unfinished items in its stack
     finish_lp_batch();
 
-    # if this line ends in a code block brace,
-    # set forced breaks at any previous closing code block braces
-    # to breakup a chain of code blocks on one line.
-    # For example we might be looking at this:
-    #   BOOL { $server_data{uptime} > 0; } NUM { $server_data{load}; } STR {
-    my $saw_good_break = 0;
+    # If this line ends in a code block brace, set breaks at any
+    # previous closing code block braces to breakup a chain of code
+    # blocks on one line.  This is very rare but can happen for
+    # user-defined subs.  For example we might be looking at this:
+    #  BOOL { $server_data{uptime} > 0; } NUM { $server_data{load}; } STR {
+    my $saw_good_break = 0;    # flag to force breaks even if short line
     if (
+
+        # looking for opening or closing block brace
         $block_type_to_go[$max_index_to_go]
-        && (   $tokens_to_go[$max_index_to_go] eq '{'
-            || $tokens_to_go[$max_index_to_go] eq '}' )
+
+        # but not one of these which are never duplicated on a line:
+        ##&& !$is_until_while_for_if_elsif_else{ $block_type_to_go
+        ##      [$max_index_to_go] }
+        && !$is_block_without_semicolon{ $block_type_to_go[$max_index_to_go] }
       )
     {
         my $lev = $nesting_depth_to_go[$max_index_to_go];
 
-        # walk backwards from the end
+        # Walk backwards from the end and
+        # set break at any closing block braces at the same level.
+        # But quit if we are not in a chain of blocks.
         for ( my $i = $max_index_to_go - 1 ; $i >= 0 ; $i-- ) {
-            last if ( $levels_to_go[$i] < $lev );
-            next if ( $levels_to_go[$i] > $lev );
+            last if ( $levels_to_go[$i] < $lev );    # stop at a lower level
+            next if ( $levels_to_go[$i] > $lev );    # skip past higher level
+
             if ( $block_type_to_go[$i] ) {
                 if ( $tokens_to_go[$i] eq '}' ) {
                     set_forced_breakpoint($i);
@@ -10003,8 +10012,8 @@ sub output_line_to_go {
                 }
             }
 
-            # we must quit at any comma, equals, or similar, so
-            # quit if we see anything other than words, function, blanks
+            # quit if we see anything besides words, function, blanks
+            # at this level
             elsif ( $types_to_go[$i] !~ /^[\(\)Gwib]$/ ) { last }
         }
     }
@@ -10039,7 +10048,9 @@ sub output_line_to_go {
 
             # break before all package declarations
             # MCONVERSION LOCATION - for tokenizaton change
-            elsif ( $leading_token =~ /^(package\s)/ && $leading_type eq 'i' ) {
+            elsif ($leading_token =~ /^(package\s)/
+                && $leading_type eq 'i' )
+            {
                 $want_blank = ( $rOpts->{'blanks-before-subs'} );
             }
 
@@ -10052,8 +10063,9 @@ sub output_line_to_go {
                   );
             }
 
-            # Break before certain block types if we haven't had a break at this
-            # level for a while.  This is the difficult decision..
+            # Break before certain block types if we haven't had a
+            # break at this level for a while.  This is the
+            # difficult decision..
             elsif ($leading_token =~ /^(unless|if|while|until|for|foreach)$/
                 && $leading_type eq 'k' )
             {
@@ -16524,6 +16536,7 @@ BEGIN {
 
     use constant VALIGN_DEBUG_FLAG_APPEND  => 0;
     use constant VALIGN_DEBUG_FLAG_APPEND0 => 0;
+    use constant VALIGN_DEBUG_FLAG_TERNARY => 0;
 
     my $debug_warning = sub {
         print "VALIGN_DEBUGGING with key $_[0]\n";
@@ -17400,19 +17413,9 @@ sub fix_terminal_ternary {
     my $old_line    = $group_lines[$maximum_line_index];
     my $rfields_old = $old_line->get_rfields();
 
-    my $DEBUG = 0;
-    local $" = '><';
-    if ($DEBUG) {
-        print "CURRENT FIELDS=<@{$rfields_old}>\n";
-    }
-
     my $rpatterns_old       = $old_line->get_rpatterns();
     my $rtokens_old         = $old_line->get_rtokens();
     my $maximum_field_index = $old_line->get_jmax();
-    if ($DEBUG) {
-        print "CURRENT TOKENS=<@{$rtokens_old}>\n";
-        print "CURRENT PATTERNS=<@{$rpatterns_old}>\n";
-    }
 
     # look for the question mark after the :
     my ($jquestion);
@@ -17449,11 +17452,15 @@ sub fix_terminal_ternary {
     my @patterns = @{$rpatterns};
     my @tokens   = @{$rtokens};
 
-    if ($DEBUG) {
+    VALIGN_DEBUG_FLAG_TERNARY && do {
+        local $" = '><';
+        print "CURRENT FIELDS=<@{$rfields_old}>\n";
+        print "CURRENT TOKENS=<@{$rtokens_old}>\n";
+        print "CURRENT PATTERNS=<@{$rpatterns_old}>\n";
         print "UNMODIFIED FIELDS=<@{$rfields}>\n";
         print "UNMODIFIED TOKENS=<@{$rtokens}>\n";
         print "UNMODIFIED PATTERNS=<@{$rpatterns}>\n";
-    }
+    };
 
     # handle cases of leading colon on this line
     if ( $fields[0] =~ /^(:\s*)(.*)$/ ) {
@@ -17525,11 +17532,12 @@ sub fix_terminal_ternary {
         splice( @fields, 0, 0, ('') x $jadd ) if $jadd;
     }
 
-    if ($DEBUG) {
+    VALIGN_DEBUG_FLAG_TERNARY && do {
+        local $" = '><';
         print "MODIFIED TOKENS=<@tokens>\n";
         print "MODIFIED PATTERNS=<@patterns>\n";
         print "MODIFIED FIELDS=<@fields>\n";
-    }
+    };
 
     # all ok .. update the arrays
     @{$rfields}   = @fields;
@@ -26713,7 +26721,7 @@ to perltidy.
 
 =head1 VERSION
 
-This man page documents Perl::Tidy version 20060614.
+This man page documents Perl::Tidy version 20060719.
 
 =head1 AUTHOR
 
