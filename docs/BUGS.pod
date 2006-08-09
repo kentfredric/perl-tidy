@@ -1,24 +1,18 @@
 =head1 Perltidy open BUGS
 
- You can help perltidy evolve into a better program.  If you think you
- have hit a bug or weird behavior, or have a suggested improvement,
- please send a note to perltidy at users.sourceforge.net.
+You can help perltidy evolve into a better program.  If you think you
+have hit a bug or weird behavior, or have a suggested improvement,
+please send a note to perltidy at users.sourceforge.net.
 
- This file only lists open bugs.  For bugs which have been fixed, 
- see the ChangeLog.  
+This file only lists open bugs.  For bugs which have been fixed, 
+see the ChangeLog.  
 
-=head2 The --extrude option can occasionally produce code with syntax errors
+=head2 The --extrude option can produce code with syntax errors
 
 The --extrude tries to put as many newlines in the formatted code as possible.
-This option is of very limited use for actual formatting and is mainly included
-for debugging purposes.  Occasionally it will produce code which Perl considers
-to have a syntax error.  These problems often involve code where Perl is
-having to guess the tokenization based on whitespace.  For example, --extrude
-will currently cause a syntax error in the following line:
-
- utime $inc+0 ? ($mtime, $ntime) : ($atime, $atime), $file;
-
-(The problem is that +0 goes out on a new line and utime then guesses that its
-first argument is $inc alone).
-
-Another example is when a module such as Switch.pm parses the script.
+This option is very useful for testing perltidy but not for actual formatting.
+Occasionally it will produce code which Perl considers to have a syntax error.
+These problems usually involve code where Perl is having to guess the
+tokenization based on whitespace.  Since the --extrude option is typically only
+used for testing perltidy, this type of error should not normally occur in
+practice.

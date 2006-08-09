@@ -1,10 +1,51 @@
 Perltidy Change Log
-     You can help Perltidy evolve into a better program.  If you have hit a
-     bug, unusual behavior, annoyance, or have a suggested improvement,
-     please send a note to perltidy at users.sourceforge.net.  All
-     suggestions are welcome.
+  2006 07 19
+     -Eliminated bug where a here-doc invoked through an 'e' modifier on a pattern
+     replacement text was not recognized.  The tokenizer now recursively scans
+     replacement text (but does not reformat it).
 
-  2006 06 18
+     -Improved vertical alignment of terminal else blocks and ternary statements.
+      Thanks to Chris for the suggestion. 
+
+      OLD:
+        if    ( IsBitmap() ) { return GetBitmap(); }
+        elsif ( IsFiles() )  { return GetFiles(); }
+        else { return GetText(); }
+
+      NEW:
+        if    ( IsBitmap() ) { return GetBitmap(); }
+        elsif ( IsFiles() )  { return GetFiles(); }
+        else                 { return GetText(); }
+
+      OLD:
+        $which_search =
+            $opts{"t"} ? 'title'
+          : $opts{"s"} ? 'subject'
+          : $opts{"a"} ? 'author'
+          : 'title';
+
+      NEW:
+        $which_search =
+            $opts{"t"} ? 'title'
+          : $opts{"s"} ? 'subject'
+          : $opts{"a"} ? 'author'
+          :              'title';
+
+     -improved indentation of try/catch blocks and other externally defined
+     functions accepting a block argument.  Thanks to jae.
+
+     -Added support for Perl 5.10 features say and smartmatch.
+
+     -Added flag -pbp (--perl-best-practices) as an abbreviation for parameters
+     suggested in Damian Conway's "Perl Best Practices".  -pbp is the same as:
+
+        -l=78 -i=4 -ci=4 -st -se -vt=2 -cti=0 -pt=1 -bt=1 -sbt=1 -bbt=1 -nsfs -nolq
+        -wbb="% + - * / x != == >= <= =~ !~ < > | & >= < = 
+              **= += *= &= <<= &&= -= /= |= >>= ||= .= %= ^= x="
+
+      Please note that the -st here restricts input to standard input; use
+      -nst if necessary to override.
+
      -Eliminated some needless breaks at equals signs in -lp indentation.
 
         OLD:
@@ -37,6 +78,21 @@ Perltidy Change Log
               Core
         ) );
       Thanks to Aran Deltac
+
+     -Eliminated some undesirable or marginally desirable vertical alignments.
+     These include terminal colons, opening braces, and equals, and particularly
+     when just two lines would be aligned.
+
+     OLD:
+        my $accurate_timestamps = $Stamps{lnk};
+        my $has_link            = 
+            ...
+     NEW:
+        my $accurate_timestamps = $Stamps{lnk};
+        my $has_link =
+
+     -Corrected a problem with -mangle in which a space would be removed
+     between a keyword and variable beginning with ::.
 
   2006 06 14
      -Attribute argument lists are now correctly treated as quoted strings

@@ -1,7 +1,9 @@
+<?xml version="1.0" ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <title>perltidy - a perl script indenter and reformatter</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
 
@@ -189,28 +191,28 @@ For example, instead of <strong>--dump-token-types</strong>, it would be suffici
 <h2><a name="i_o_control">I/O control</a></h2>
 <p>The following parameters concern the files which are read and written.</p>
 <dl>
-<dt><strong><a name="item__2dh_2c__2d_2dhelp"><strong>-h</strong>,    <strong>--help</strong></a></strong><br />
-</dt>
+<dt><strong><a name="item__2dh_2c__2d_2dhelp"><strong>-h</strong>,    <strong>--help</strong></a></strong>
+
 <dd>
-Show summary of usage and exit.
+<p>Show summary of usage and exit.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2do_3dfilename_2c__2d_2doutfile_3dfilename"><strong>-o</strong>=filename,    <strong>--outfile</strong>=filename</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2do_3dfilename_2c__2d_2doutfile_3dfilename"><strong>-o</strong>=filename,    <strong>--outfile</strong>=filename</a></strong>
+
 <dd>
-Name of the output file (only if a single input file is being
+<p>Name of the output file (only if a single input file is being
 processed).  If no output file is specified, and output is not
-redirected to the standard output, the output will go to <em>filename.tdy</em>.
+redirected to the standard output, the output will go to <em>filename.tdy</em>.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dst_2c__2d_2dstandard_2doutput"><strong>-st</strong>,    <strong>--standard-output</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dst_2c__2d_2dstandard_2doutput"><strong>-st</strong>,    <strong>--standard-output</strong></a></strong>
+
 <dd>
-Perltidy must be able to operate on an arbitrarily large number of files
+<p>Perltidy must be able to operate on an arbitrarily large number of files
 in a single run, with each output being directed to a different output
 file.  Obviously this would conflict with outputting to the single
 standard output device, so a special flag, <strong>-st</strong>, is required to
-request outputting to the standard output.  For example,
+request outputting to the standard output.  For example,</p>
 </dd>
 <dd>
 <pre>
@@ -220,32 +222,32 @@ request outputting to the standard output.  For example,
 <p>This option may only be used if there is just a single input file.  
 The default is <strong>-nst</strong> or <strong>--nostandard-output</strong>.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dse_2c__2d_2dstandard_2derror_2doutput"><strong>-se</strong>,    <strong>--standard-error-output</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dse_2c__2d_2dstandard_2derror_2doutput"><strong>-se</strong>,    <strong>--standard-error-output</strong></a></strong>
+
 <dd>
-If perltidy detects an error when processing file <em>somefile.pl</em>, its
+<p>If perltidy detects an error when processing file <em>somefile.pl</em>, its
 default behavior is to write error messages to file <em>somefile.pl.ERR</em>.
 Use <strong>-se</strong> to cause all error messages to be sent to the standard error
 output stream instead.  This directive may be negated with <strong>-nse</strong>.
 Thus, you may place <strong>-se</strong> in a <em>.perltidyrc</em> and override it when
-desired with <strong>-nse</strong> on the command line.
+desired with <strong>-nse</strong> on the command line.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2doext_3dext_2c__2d_2doutput_2dfile_2dextension_3"><strong>-oext</strong>=ext,    <strong>--output-file-extension</strong>=ext</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2doext_3dext_2c__2d_2doutput_2dfile_2dextension_3"><strong>-oext</strong>=ext,    <strong>--output-file-extension</strong>=ext</a></strong>
+
 <dd>
-Change the extension of the output file to be <em>ext</em> instead of the
+<p>Change the extension of the output file to be <em>ext</em> instead of the
 default <em>tdy</em> (or <em>html</em> in case the -<strong>-html</strong> option is used).
-See <a href="#specifying_file_extensions">Specifying File Extensions</a>.
+See <a href="#specifying_file_extensions">Specifying File Extensions</a>.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dopath_3dpath_2c__2d_2doutput_2dpath_3dpath"><strong>-opath</strong>=path,    <strong>--output-path</strong>=path</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dopath_3dpath_2c__2d_2doutput_2dpath_3dpath"><strong>-opath</strong>=path,    <strong>--output-path</strong>=path</a></strong>
+
 <dd>
-When perltidy creates a filename for an output file, by default it merely
+<p>When perltidy creates a filename for an output file, by default it merely
 appends an extension to the path and basename of the input file.  This
-parameter causes the path to be changed to <em>path</em> instead.
+parameter causes the path to be changed to <em>path</em> instead.</p>
 </dd>
 <dd>
 <p>The path should end in a valid path separator character, but perltidy will try
@@ -271,41 +273,41 @@ appear in whatever directory contains <em>somefile.pl</em>.</p>
 <p>This parameter will be ignored if output is being directed to standard output,
 or if it is being specified explicitly with the <strong>-o=s</strong> parameter.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2db_2c__2d_2dbackup_2dand_2dmodify_2din_2dplace"><strong>-b</strong>,    <strong>--backup-and-modify-in-place</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2db_2c__2d_2dbackup_2dand_2dmodify_2din_2dplace"><strong>-b</strong>,    <strong>--backup-and-modify-in-place</strong></a></strong>
+
 <dd>
-Modify the input file or files in-place and save the original with the
+<p>Modify the input file or files in-place and save the original with the
 extension <em>.bak</em>.  Any existing <em>.bak</em> file will be deleted.  See next item
-for changing the default backup extension.
+for changing the default backup extension.</p>
 </dd>
 <dd>
 <p>A <strong>-b</strong> flag will be ignored if input is from standard input, or
 if the <strong>-html</strong> flag is set.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dbext_3dext_2c__2d_2dbackup_2dfile_2dextension_3"><strong>-bext</strong>=ext,    <strong>--backup-file-extension</strong>=ext</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dbext_3dext_2c__2d_2dbackup_2dfile_2dextension_3"><strong>-bext</strong>=ext,    <strong>--backup-file-extension</strong>=ext</a></strong>
+
 <dd>
-Change the extension of the backup file to be something other than the
-default <em>.bak</em>.  See <a href="#specifying_file_extensions">Specifying File Extensions</a>.
+<p>Change the extension of the backup file to be something other than the
+default <em>.bak</em>.  See <a href="#specifying_file_extensions">Specifying File Extensions</a>.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dw_2c__2d_2dwarning_2doutput"><strong>-w</strong>,    <strong>--warning-output</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dw_2c__2d_2dwarning_2doutput"><strong>-w</strong>,    <strong>--warning-output</strong></a></strong>
+
 <dd>
-Setting <strong>-w</strong> causes any non-critical warning
+<p>Setting <strong>-w</strong> causes any non-critical warning
 messages to be reported as errors.  These include messages
 about possible pod problems, possibly bad starting indentation level,
 and cautions about indirect object usage.  The default, <strong>-nw</strong> or
-<strong>--nowarning-output</strong>, is not to include these warnings.
+<strong>--nowarning-output</strong>, is not to include these warnings.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dq_2c__2d_2dquiet"><strong>-q</strong>,    <strong>--quiet</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dq_2c__2d_2dquiet"><strong>-q</strong>,    <strong>--quiet</strong></a></strong>
+
 <dd>
-Deactivate error messages and syntax checking (for running under
-an editor).
+<p>Deactivate error messages and syntax checking (for running under
+an editor).</p>
 </dd>
 <dd>
 <p>For example, if you use a vi-style editor, such as vim, you may execute
@@ -320,23 +322,23 @@ perltidy as a filter from within the editor using something like</p>
 any error message may mess up your screen, so be prepared to use your
 ``undo'' key.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dlog_2c__2d_2dlogfile"><strong>-log</strong>,    <strong>--logfile</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dlog_2c__2d_2dlogfile"><strong>-log</strong>,    <strong>--logfile</strong></a></strong>
+
 <dd>
-Save the <em>.LOG</em> file, which has many useful diagnostics.  Perltidy always
+<p>Save the <em>.LOG</em> file, which has many useful diagnostics.  Perltidy always
 creates a <em>.LOG</em> file, but by default it is deleted unless a program bug is
-suspected.  Setting the <strong>-log</strong> flag forces the log file to be saved.
+suspected.  Setting the <strong>-log</strong> flag forces the log file to be saved.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dg_3dn_2c__2d_2dlogfile_2dgap_3dn"><strong>-g=n</strong>, <strong>--logfile-gap=n</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dg_3dn_2c__2d_2dlogfile_2dgap_3dn"><strong>-g=n</strong>, <strong>--logfile-gap=n</strong></a></strong>
+
 <dd>
-Set maximum interval between input code lines in the logfile.  This purpose of
+<p>Set maximum interval between input code lines in the logfile.  This purpose of
 this flag is to assist in debugging nesting errors.  The value of <code>n</code> is
 optional.  If you set the flag <strong>-g</strong> without the value of <code>n</code>, it will be
 taken to be 1, meaning that every line will be written to the log file.  This
-can be helpful if you are looking for a brace, paren, or bracket nesting error.
+can be helpful if you are looking for a brace, paren, or bracket nesting error.</p>
 </dd>
 <dd>
 <p>Setting <strong>-g</strong> also causes the logfile to be saved, so it is not necessary to
@@ -350,28 +352,28 @@ excessively long log files.</p>
 <dd>
 <p>Setting a negative value of <code>n</code> is the same as not setting <strong>-g</strong> at all.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dnpro__2d_2dnoprofile"><strong>-npro</strong>  <strong>--noprofile</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dnpro__2d_2dnoprofile"><strong>-npro</strong>  <strong>--noprofile</strong></a></strong>
+
 <dd>
-Ignore any <em>.perltidyrc</em> command file.  Normally, perltidy looks first in
+<p>Ignore any <em>.perltidyrc</em> command file.  Normally, perltidy looks first in
 your current directory for a <em>.perltidyrc</em> file of parameters.  (The format
 is described below).  If it finds one, it applies those options to the
 initial default values, and then it applies any that have been defined
 on the command line.  If no <em>.perltidyrc</em> file is found, it looks for one
-in your home directory.
+in your home directory.</p>
 </dd>
 <dd>
 <p>If you set the <strong>-npro</strong> flag, perltidy will not look for this file.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dpro_3dfilename_or__2d_2dprofile_3dfilename"><strong>-pro=filename</strong> or  <strong>--profile=filename</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dpro_3dfilename_or__2d_2dprofile_3dfilename"><strong>-pro=filename</strong> or  <strong>--profile=filename</strong></a></strong>
+
 <dd>
-To simplify testing and switching .perltidyrc files, this command may be
+<p>To simplify testing and switching .perltidyrc files, this command may be
 used to specify a configuration file which will override the default
 name of .perltidyrc.  There must not be a space on either side of the
-'=' sign.  For example, the line
+'=' sign.  For example, the line</p>
 </dd>
 <dd>
 <pre>
@@ -381,23 +383,24 @@ name of .perltidyrc.  There must not be a space on either side of the
 <p>would cause file <em>testcfg</em> to be used instead of the 
 default <em>.perltidyrc</em>.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dopt_2c__2d_2dshow_2doptions"><strong>-opt</strong>,   <strong>--show-options</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dopt_2c__2d_2dshow_2doptions"><strong>-opt</strong>,   <strong>--show-options</strong></a></strong>
+
 <dd>
-Write a list of all options used to the <em>.LOG</em> file.  
-Please see <strong>--dump-options</strong> for a simpler way to do this.
+<p>Write a list of all options used to the <em>.LOG</em> file.  
+Please see <strong>--dump-options</strong> for a simpler way to do this.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2df_2c__2d_2dforce_2dread_2dbinary"><strong>-f</strong>,   <strong>--force-read-binary</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2df_2c__2d_2dforce_2dread_2dbinary"><strong>-f</strong>,   <strong>--force-read-binary</strong></a></strong>
+
 <dd>
-Force perltidy to process binary files.  To avoid producing excessive
+<p>Force perltidy to process binary files.  To avoid producing excessive
 error messages, perltidy skips files identified by the system as non-text.
 However, valid perl scripts containing binary data may sometimes be identified
-as non-text, and this flag forces perltidy to process them.
+as non-text, and this flag forces perltidy to process them.</p>
 </dd>
-<p></p></dl>
+</li>
+</dl>
 <p>
 </p>
 <hr />
@@ -406,28 +409,28 @@ as non-text, and this flag forces perltidy to process them.
 </p>
 <h2><a name="basic_options">Basic Options</a></h2>
 <dl>
-<dt><strong><a name="item__2dl_3dn_2c__2d_2dmaximum_2dline_2dlength_3dn"><strong>-l=n</strong>, <strong>--maximum-line-length=n</strong></a></strong><br />
-</dt>
+<dt><strong><a name="item__2dl_3dn_2c__2d_2dmaximum_2dline_2dlength_3dn"><strong>-l=n</strong>, <strong>--maximum-line-length=n</strong></a></strong>
+
 <dd>
-The default maximum line length is n=80 characters.  Perltidy will try
+<p>The default maximum line length is n=80 characters.  Perltidy will try
 to find line break points to keep lines below this length. However, long
 quotes and side comments may cause lines to exceed this length. 
-Setting <strong>-l=0</strong> is equivalent to setting <strong>-l=(a large number)</strong>.
+Setting <strong>-l=0</strong> is equivalent to setting <strong>-l=(a large number)</strong>.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2di_3dn_2c__2d_2dindent_2dcolumns_3dn"><strong>-i=n</strong>,  <strong>--indent-columns=n</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2di_3dn_2c__2d_2dindent_2dcolumns_3dn"><strong>-i=n</strong>,  <strong>--indent-columns=n</strong></a></strong>
+
 <dd>
-Use n columns per indentation level (default n=4).
+<p>Use n columns per indentation level (default n=4).</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_tabs">tabs</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_tabs">tabs</a></strong>
+
 <dd>
-Using tab characters will almost certainly lead to future portability
+<p>Using tab characters will almost certainly lead to future portability
 and maintenance problems, so the default and recommendation is not to
 use them.  For those who prefer tabs, however, there are two different
-options.
+options.</p>
 </dd>
 <dd>
 <p>Except for possibly introducing tab indentation characters, as outlined
@@ -437,34 +440,35 @@ with <strong>-fws</strong>).  If you have any tabs in your comments, quotes, or
 here-documents, they will remain.</p>
 </dd>
 <dl>
-<dt><strong><a name="item__2det_3dn_2c__2d_2dentab_2dleading_2dwhitespace"><strong>-et=n</strong>,   <strong>--entab-leading-whitespace</strong></a></strong><br />
-</dt>
+<dt><strong><a name="item__2det_3dn_2c__2d_2dentab_2dleading_2dwhitespace"><strong>-et=n</strong>,   <strong>--entab-leading-whitespace</strong></a></strong>
+
 <dd>
-This flag causes each <strong>n</strong> initial space characters to be replaced by
+<p>This flag causes each <strong>n</strong> initial space characters to be replaced by
 one tab character.  Note that the integer <strong>n</strong> is completely independent
-of the integer specified for indentation parameter, <strong>-i=n</strong>.
+of the integer specified for indentation parameter, <strong>-i=n</strong>.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dt_2c__2d_2dtabs"><strong>-t</strong>,   <strong>--tabs</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dt_2c__2d_2dtabs"><strong>-t</strong>,   <strong>--tabs</strong></a></strong>
+
 <dd>
-This flag causes one leading tab character to be inserted for each level
+<p>This flag causes one leading tab character to be inserted for each level
 of indentation.  Certain other features are incompatible with this
 option, and if these options are also given, then a warning message will
 be issued and this flag will be unset.  One example is the <strong>-lp</strong>
-option.
+option.</p>
 </dd>
-<p></p></dl>
-<dt><strong><a name="item__2dsyn_2c__2d_2dcheck_2dsyntax"><strong>-syn</strong>,   <strong>--check-syntax</strong></a></strong><br />
-</dt>
+</li>
+</dl>
+<dt><strong><a name="item__2dsyn_2c__2d_2dcheck_2dsyntax"><strong>-syn</strong>,   <strong>--check-syntax</strong></a></strong>
+
 <dd>
-This flag causes perltidy to run <code>perl -c -T</code> to check syntax of input
+<p>This flag causes perltidy to run <code>perl -c -T</code> to check syntax of input
 and output.  (To change the flags passed to perl, see the next
 item, <strong>-pscf</strong>).  The results are written to the <em>.LOG</em> file, which
 will be saved if an error is detected in the output script.  The output
 script is not checked if the input script has a syntax error.  Perltidy
 does its own checking, but this option employs perl to get a ``second
-opinion''.
+opinion''.</p>
 </dd>
 <dd>
 <p>If perl reports errors in the input file, they will not be reported in
@@ -477,73 +481,74 @@ is that it causes all code in BEGIN blocks to be executed, for all
 modules being used, and this opens the door to security issues and
 infinite loops when running perltidy.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dpscf_3ds_2c__2dperl_2dsyntax_2dcheck_2dflags_3d"><strong>-pscf=s</strong>, <strong>-perl-syntax-check-flags=s</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dpscf_3ds_2c__2dperl_2dsyntax_2dcheck_2dflags_3d"><strong>-pscf=s</strong>, <strong>-perl-syntax-check-flags=s</strong></a></strong>
+
 <dd>
-When perl is invoked to check syntax, the normal flags are <code>-c -T</code>.  In
+<p>When perl is invoked to check syntax, the normal flags are <code>-c -T</code>.  In
 addition, if the <strong>-x</strong> flag is given to perltidy, then perl will also be
 passed a <strong>-x</strong> flag.  It should not normally be necessary to change
 these flags, but it can be done with the <strong>-pscf=s</strong> flag.  For example,
 if the taint flag, <code>-T</code>, is not wanted, the flag could be set to be just
-<strong>-pscf=-c</strong>.
+<strong>-pscf=-c</strong>.</p>
 </dd>
 <dd>
 <p>Perltidy will pass your string to perl with the exception that it will
 add a <strong>-c</strong> and <strong>-x</strong> if appropriate.  The <em>.LOG</em> file will show
 exactly what flags were passed to perl.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dio_2c__2d_2dindent_2donly"><strong>-io</strong>,   <strong>--indent-only</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dio_2c__2d_2dindent_2donly"><strong>-io</strong>,   <strong>--indent-only</strong></a></strong>
+
 <dd>
-This flag is used to deactivate all formatting and line break changes.
+<p>This flag is used to deactivate all formatting and line break changes.
 When it is in effect, the only change to the script will be indentation.
 And any flags controlling whitespace and newlines will be ignored.  You
 might want to use this if you are perfectly happy with your whitespace
 and line breaks, and merely want perltidy to handle the indentation.
 (This also speeds up perltidy by well over a factor of two, so it might be
 useful when perltidy is merely being used to help find a brace error in
-a large script).
+a large script).</p>
 </dd>
 <dd>
 <p>Setting this flag is equivalent to setting <strong>--freeze-newlines</strong> and
 <strong>--freeze-whitespace</strong>.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dole_3ds_2c__2d_2doutput_2dline_2dending_3ds"><strong>-ole=s</strong>,  <strong>--output-line-ending=s</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dole_3ds_2c__2d_2doutput_2dline_2dending_3ds"><strong>-ole=s</strong>,  <strong>--output-line-ending=s</strong></a></strong>
+
 <dd>
-where s=<code>win</code>, <code>dos</code>, <code>unix</code>, or <code>mac</code>.  This flag tells perltidy
+<p>where s=<code>win</code>, <code>dos</code>, <code>unix</code>, or <code>mac</code>.  This flag tells perltidy
 to output line endings for a specific system.  Normally,
 perltidy writes files with the line separator character of the host
 system.  The <code>win</code> and <code>dos</code> flags have an identical result.
 <strong>NOTE</strong>: This only works under unix-like systems and is ignored under
-other systems.
+other systems.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dple_2c__2d_2dpreserve_2dline_2dendings"><strong>-ple</strong>,  <strong>--preserve-line-endings</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dple_2c__2d_2dpreserve_2dline_2dendings"><strong>-ple</strong>,  <strong>--preserve-line-endings</strong></a></strong>
+
 <dd>
-This flag tells perltidy to write its output files with the same line
+<p>This flag tells perltidy to write its output files with the same line
 endings as the input file, if possible.  It should work for
 <strong>dos</strong>, <strong>unix</strong>, and <strong>mac</strong> line endings.  It will only work if perltidy
 input comes from a filename (rather than stdin, for example).  If
 perltidy has trouble determining the input file line ending, it will
 revert to the default behavior of using the line ending of the host system.
 <strong>NOTE</strong>: This only works under unix-like systems and is ignored under
-other systems.
+other systems.</p>
 </dd>
-<p></p></dl>
+</li>
+</dl>
 <p>
 </p>
 <h2><a name="code_indentation_control">Code Indentation Control</a></h2>
 <dl>
-<dt><strong><a name="item__2dci_3dn_2c__2d_2dcontinuation_2dindentation_3dn"><strong>-ci=n</strong>, <strong>--continuation-indentation=n</strong></a></strong><br />
-</dt>
+<dt><strong><a name="item__2dci_3dn_2c__2d_2dcontinuation_2dindentation_3dn"><strong>-ci=n</strong>, <strong>--continuation-indentation=n</strong></a></strong>
+
 <dd>
-Continuation indentation is extra indentation spaces applied when
-a long line is broken.  The default is n=2, illustrated here:
+<p>Continuation indentation is extra indentation spaces applied when
+a long line is broken.  The default is n=2, illustrated here:</p>
 </dd>
 <dd>
 <pre>
@@ -568,22 +573,22 @@ space is required.  Examples are commands for outdenting labels,
 given with <strong>-ci=n</strong> be no more than about one-half of the number of
 spaces assigned to a full indentation level on the <strong>-i=n</strong> command.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dsil_3dn__2d_2dstarting_2dindentation_2dlevel_3d"><strong>-sil=n</strong> <strong>--starting-indentation-level=n</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dsil_3dn__2d_2dstarting_2dindentation_2dlevel_3d"><strong>-sil=n</strong> <strong>--starting-indentation-level=n</strong></a></strong>
+
 <dd>
-By default, perltidy examines the input file and tries to determine the
+<p>By default, perltidy examines the input file and tries to determine the
 starting indentation level.  While it is often zero, it may not be
 zero for a code snippet being sent from an editing session.  If the
 default method does not work correctly, or you want to change the
-starting level, use <strong>-sil=n</strong>, to force the starting level to be n.
+starting level, use <strong>-sil=n</strong>, to force the starting level to be n.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_list_indentation_using__2dlp_2c__2d_2dline_2dup_2d">List indentation using <strong>-lp</strong>, <strong>--line-up-parentheses</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_list_indentation_using__2dlp_2c__2d_2dline_2dup_2d">List indentation using <strong>-lp</strong>, <strong>--line-up-parentheses</strong></a></strong>
+
 <dd>
-By default, perltidy indents lists with 4 spaces, or whatever value
-is specified with <strong>-i=n</strong>.  Here is a small list formatted in this way:
+<p>By default, perltidy indents lists with 4 spaces, or whatever value
+is specified with <strong>-i=n</strong>.  Here is a small list formatted in this way:</p>
 </dd>
 <dd>
 <pre>
@@ -631,12 +636,12 @@ perltidy to choose newlines will conflict with <strong>-lp</strong> and will cau
 the careful coordination of an arbitrary number of break points in
 hierarchical lists, and these flags may prevent that.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dcti_3dn_2c__2d_2dclosing_2dtoken_2dindentation"><strong>-cti=n</strong>, <strong>--closing-token-indentation</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dcti_3dn_2c__2d_2dclosing_2dtoken_2dindentation"><strong>-cti=n</strong>, <strong>--closing-token-indentation</strong></a></strong>
+
 <dd>
-The <strong>-cti=n</strong> flag controls the indentation of a line beginning with 
-a <code>)</code>, <code>]</code>, or a non-block <code>}</code>.  Such a line receives:
+<p>The <strong>-cti=n</strong> flag controls the indentation of a line beginning with 
+a <code>)</code>, <code>]</code>, or a non-block <code>}</code>.  Such a line receives:</p>
 </dd>
 <dd>
 <pre>
@@ -682,20 +687,20 @@ abbreviation for <strong>-cpi=n -csbi=n -cbi=n</strong>, where:
 <strong>-csbi</strong> or <strong>--closing-square-bracket-indentation</strong> controls <strong>]</strong>'s, 
 <strong>-cbi</strong> or <strong>--closing-brace-indentation</strong> controls non-block <strong>}</strong>'s.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dicp_2c__2d_2dindent_2dclosing_2dparen"><strong>-icp</strong>, <strong>--indent-closing-paren</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dicp_2c__2d_2dindent_2dclosing_2dparen"><strong>-icp</strong>, <strong>--indent-closing-paren</strong></a></strong>
+
 <dd>
-The <strong>-icp</strong> flag is equivalent to
+<p>The <strong>-icp</strong> flag is equivalent to
 <strong>-cti=2</strong>, described in the previous section.  The <strong>-nicp</strong> flag is
-equivalent <strong>-cti=0</strong>.  They are included for backwards compatability.
+equivalent <strong>-cti=0</strong>.  They are included for backwards compatability.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dicb_2c__2d_2dindent_2dclosing_2dbrace"><strong>-icb</strong>, <strong>--indent-closing-brace</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dicb_2c__2d_2dindent_2dclosing_2dbrace"><strong>-icb</strong>, <strong>--indent-closing-brace</strong></a></strong>
+
 <dd>
-The <strong>-icb</strong> option gives one extra level of indentation to a brace which
-terminates a code block .  For example,
+<p>The <strong>-icb</strong> option gives one extra level of indentation to a brace which
+terminates a code block .  For example,</p>
 </dd>
 <dd>
 <pre>
@@ -709,30 +714,30 @@ terminates a code block .  For example,
 <dd>
 <p>The default is not to do this, indicated by <strong>-nicb</strong>.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dolq_2c__2d_2doutdent_2dlong_2dquotes"><strong>-olq</strong>, <strong>--outdent-long-quotes</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dolq_2c__2d_2doutdent_2dlong_2dquotes"><strong>-olq</strong>, <strong>--outdent-long-quotes</strong></a></strong>
+
 <dd>
-When <strong>-olq</strong> is set, lines which is a quoted string longer than the
+<p>When <strong>-olq</strong> is set, lines which is a quoted string longer than the
 value <strong>maximum-line-length</strong> will have their indentation removed to make
 them more readable.  This is the default.  To prevent such out-denting,
-use <strong>-nolq</strong> or <strong>--nooutdent-long-lines</strong>.
+use <strong>-nolq</strong> or <strong>--nooutdent-long-lines</strong>.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2doll_2c__2d_2doutdent_2dlong_2dlines"><strong>-oll</strong>, <strong>--outdent-long-lines</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2doll_2c__2d_2doutdent_2dlong_2dlines"><strong>-oll</strong>, <strong>--outdent-long-lines</strong></a></strong>
+
 <dd>
-This command is equivalent to <strong>--outdent-long-quotes</strong> and
+<p>This command is equivalent to <strong>--outdent-long-quotes</strong> and
 <strong>--outdent-long-comments</strong>, and it is included for compatibility with previous
 versions of perltidy.  The negation of this also works, <strong>-noll</strong> or
-<strong>--nooutdent-long-lines</strong>, and is equivalent to setting <strong>-nolq</strong> and <strong>-nolc</strong>.
+<strong>--nooutdent-long-lines</strong>, and is equivalent to setting <strong>-nolq</strong> and <strong>-nolc</strong>.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_outdenting_labels_3a__2dola_2c__2d_2doutdent_2dlab">Outdenting Labels: <strong>-ola</strong>,  <strong>--outdent-labels</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_outdenting_labels_3a__2dola_2c__2d_2doutdent_2dlab">Outdenting Labels: <strong>-ola</strong>,  <strong>--outdent-labels</strong></a></strong>
+
 <dd>
-This command will cause labels to be outdented by 2 spaces (or whatever <strong>-ci</strong>
-has been set to), if possible.  This is the default.  For example:
+<p>This command will cause labels to be outdented by 2 spaces (or whatever <strong>-ci</strong>
+has been set to), if possible.  This is the default.  For example:</p>
 </dd>
 <dd>
 <pre>
@@ -746,19 +751,19 @@ has been set to), if possible.  This is the default.  For example:
 <dd>
 <p>Use <strong>-nola</strong> to not outdent labels.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_outdenting_keywords">Outdenting Keywords</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_outdenting_keywords">Outdenting Keywords</a></strong>
+
 <dl>
-<dt><strong><a name="item__2dokw_2c__2d_2doutdent_2dkeywords"><strong>-okw</strong>,  <strong>--outdent-keywords</strong></a></strong><br />
-</dt>
+<dt><strong><a name="item__2dokw_2c__2d_2doutdent_2dkeywords"><strong>-okw</strong>,  <strong>--outdent-keywords</strong></a></strong>
+
 <dd>
-The command <strong>-okw</strong> will will cause certain leading control keywords to
+<p>The command <strong>-okw</strong> will will cause certain leading control keywords to
 be outdented by 2 spaces (or whatever <strong>-ci</strong> has been set to), if
 possible.  By default, these keywords are <code>redo</code>, <code>next</code>, <code>last</code>,
 <code>goto</code>, and <code>return</code>.  The intention is to make these control keywords
 easier to see.  To change this list of keywords being outdented, see
-the next section.
+the next section.</p>
 </dd>
 <dd>
 <p>For example, using <code>perltidy -okw</code> on the previous example gives:</p>
@@ -775,22 +780,23 @@ the next section.
 <dd>
 <p>The default is not to do this.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_specifying_outdented_keywords_3a__2dokwl_3dstring_">Specifying Outdented Keywords: <strong>-okwl=string</strong>,  <strong>--outdent-keyword-list=string</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_specifying_outdented_keywords_3a__2dokwl_3dstring_">Specifying Outdented Keywords: <strong>-okwl=string</strong>,  <strong>--outdent-keyword-list=string</strong></a></strong>
+
 <dd>
-This command can be used to change the keywords which are outdented with
+<p>This command can be used to change the keywords which are outdented with
 the <strong>-okw</strong> command.  The parameter <strong>string</strong> is a required list of perl
 keywords, which should be placed in quotes if there are more than one.
 By itself, it does not cause any outdenting to occur, so the <strong>-okw</strong>
-command is still required.
+command is still required.</p>
 </dd>
 <dd>
 <p>For example, the commands <code>-okwl=&quot;next last redo goto&quot; -okw</code> will cause
 those four keywords to be outdented.  It is probably simplest to place
 any <strong>-okwl</strong> command in a <em>.perltidyrc</em> file.</p>
 </dd>
-<p></p></dl>
+</li>
+</dl>
 </dl>
 <p>
 </p>
@@ -798,24 +804,24 @@ any <strong>-okwl</strong> command in a <em>.perltidyrc</em> file.</p>
 <p>Whitespace refers to the blank space between variables, operators,
 and other code tokens.</p>
 <dl>
-<dt><strong><a name="item__2dfws_2c__2d_2dfreeze_2dwhitespace"><strong>-fws</strong>,  <strong>--freeze-whitespace</strong></a></strong><br />
-</dt>
+<dt><strong><a name="item__2dfws_2c__2d_2dfreeze_2dwhitespace"><strong>-fws</strong>,  <strong>--freeze-whitespace</strong></a></strong>
+
 <dd>
-This flag causes your original whitespace to remain unchanged, and
+<p>This flag causes your original whitespace to remain unchanged, and
 causes the rest of the whitespace commands in this section, the
 Code Indentation section, and
-the Comment Control section to be ignored.
+the Comment Control section to be ignored.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_tightness_of_curly_braces_2c_parentheses_2c_and_sq">Tightness of curly braces, parentheses, and square brackets.</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_tightness_of_curly_braces_2c_parentheses_2c_and_sq">Tightness of curly braces, parentheses, and square brackets.</a></strong>
+
 <dd>
-Here the term ``tightness'' will mean the closeness with which
+<p>Here the term ``tightness'' will mean the closeness with which
 pairs of enclosing tokens, such as parentheses, contain the quantities
 within.  A numerical value of 0, 1, or 2 defines the tightness, with
 0 being least tight and 2 being most tight.  Spaces within containers
 are always symmetric, so if there is a space after a <code>(</code> then there
-will be a space before the corresponding <code>)</code>.
+will be a space before the corresponding <code>)</code>.</p>
 </dd>
 <dd>
 <p>The <strong>-pt=n</strong> or <strong>--paren-tightness=n</strong> parameter controls the space within
@@ -865,76 +871,76 @@ example below.</p>
  %bf = map { $_ =&gt; -M $_ } grep {/\.deb$/} dirents '.';   # -bbt=1
  %bf = map {$_ =&gt; -M $_} grep {/\.deb$/} dirents '.';     # -bbt=2</pre>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dsts_2c__2d_2dspace_2dterminal_2dsemicolon"><strong>-sts</strong>,   <strong>--space-terminal-semicolon</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dsts_2c__2d_2dspace_2dterminal_2dsemicolon"><strong>-sts</strong>,   <strong>--space-terminal-semicolon</strong></a></strong>
+
 <dd>
-Some programmers prefer a space before all terminal semicolons.  The
+<p>Some programmers prefer a space before all terminal semicolons.  The
 default is for no such space, and is indicated with <strong>-nsts</strong> or
-<strong>--nospace-terminal-semicolon</strong>.
+<strong>--nospace-terminal-semicolon</strong>.</p>
 </dd>
 <dd>
 <pre>
         $i = 1 ;     #  -sts
         $i = 1;      #  -nsts   (default)</pre>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dsfs_2c__2d_2dspace_2dfor_2dsemicolon"><strong>-sfs</strong>,   <strong>--space-for-semicolon</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dsfs_2c__2d_2dspace_2dfor_2dsemicolon"><strong>-sfs</strong>,   <strong>--space-for-semicolon</strong></a></strong>
+
 <dd>
-Semicolons within <strong>for</strong> loops may sometimes be hard to see,
+<p>Semicolons within <strong>for</strong> loops may sometimes be hard to see,
 particularly when commas are also present.  This option places spaces on
 both sides of these special semicolons, and is the default.  Use
-<strong>-nsfs</strong> or <strong>--nospace-for-semicolon</strong> to deactivate it.
+<strong>-nsfs</strong> or <strong>--nospace-for-semicolon</strong> to deactivate it.</p>
 </dd>
 <dd>
 <pre>
  for ( @a = @$ap, $u = shift @a ; @a ; $u = $v ) {  # -sfs (default)
  for ( @a = @$ap, $u = shift @a; @a; $u = $v ) {    # -nsfs</pre>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dasc_2c__2d_2dadd_2dsemicolons"><strong>-asc</strong>,  <strong>--add-semicolons</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dasc_2c__2d_2dadd_2dsemicolons"><strong>-asc</strong>,  <strong>--add-semicolons</strong></a></strong>
+
 <dd>
-Setting <strong>-asc</strong> allows perltidy to add any missing optional semicolon at the end 
+<p>Setting <strong>-asc</strong> allows perltidy to add any missing optional semicolon at the end 
 of a line which is followed by a closing curly brace on the next line.  This
-is the default, and may be deactivated with <strong>-nasc</strong> or <strong>--noadd-semicolons</strong>.
+is the default, and may be deactivated with <strong>-nasc</strong> or <strong>--noadd-semicolons</strong>.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2ddsm_2c__2d_2ddelete_2dsemicolons"><strong>-dsm</strong>,  <strong>--delete-semicolons</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2ddsm_2c__2d_2ddelete_2dsemicolons"><strong>-dsm</strong>,  <strong>--delete-semicolons</strong></a></strong>
+
 <dd>
-Setting <strong>-dsm</strong> allows perltidy to delete extra semicolons which are
+<p>Setting <strong>-dsm</strong> allows perltidy to delete extra semicolons which are
 simply empty statements.  This is the default, and may be deactivated
 with <strong>-ndsm</strong> or <strong>--nodelete-semicolons</strong>.  (Such semicolons are not
 deleted, however, if they would promote a side comment to a block
-comment).
+comment).</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2daws_2c__2d_2dadd_2dwhitespace"><strong>-aws</strong>,  <strong>--add-whitespace</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2daws_2c__2d_2dadd_2dwhitespace"><strong>-aws</strong>,  <strong>--add-whitespace</strong></a></strong>
+
 <dd>
-Setting this option allows perltidy to add certain whitespace improve
+<p>Setting this option allows perltidy to add certain whitespace improve
 code readability.  This is the default. If you do not want any
 whitespace added, but are willing to have some whitespace deleted, use
-<strong>-naws</strong>.  (Use <strong>-fws</strong> to leave whitespace completely unchanged).
+<strong>-naws</strong>.  (Use <strong>-fws</strong> to leave whitespace completely unchanged).</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2ddws_2c__2d_2ddelete_2dold_2dwhitespace"><strong>-dws</strong>,  <strong>--delete-old-whitespace</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2ddws_2c__2d_2ddelete_2dold_2dwhitespace"><strong>-dws</strong>,  <strong>--delete-old-whitespace</strong></a></strong>
+
 <dd>
-Setting this option allows perltidy to remove some old whitespace
+<p>Setting this option allows perltidy to remove some old whitespace
 between characters, if necessary.  This is the default.  If you
 do not want any old whitespace removed, use <strong>-ndws</strong> or
-<strong>--nodelete-old-whitespace</strong>.
+<strong>--nodelete-old-whitespace</strong>.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_detailed_whitespace_controls_around_tokens">Detailed whitespace controls around tokens</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_detailed_whitespace_controls_around_tokens">Detailed whitespace controls around tokens</a></strong>
+
 <dd>
-For those who want more detailed control over the whitespace around
+<p>For those who want more detailed control over the whitespace around
 tokens, there are four parameters which can directly modify the default
-whitespace rules built into perltidy for any token.  They are:
+whitespace rules built into perltidy for any token.  They are:</p>
 </dd>
 <dd>
 <p><strong>-wls=s</strong> or <strong>--want-left-space=s</strong>,</p>
@@ -996,12 +1002,12 @@ and look at the .DEBUG file to see the tokenization.</p>
 <p><strong>WARNING</strong> Be sure to put these tokens in quotes to avoid having them
 misinterpreted by your command shell.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_space_between_specific_keywords_and_opening_paren">Space between specific keywords and opening paren</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_space_between_specific_keywords_and_opening_paren">Space between specific keywords and opening paren</a></strong>
+
 <dd>
-When an opening paren follows a Perl keyword, no space is introduced after the
-keyword, unless it is (by default) one of these:
+<p>When an opening paren follows a Perl keyword, no space is introduced after the
+keyword, unless it is (by default) one of these:</p>
 </dd>
 <dd>
 <pre>
@@ -1028,14 +1034,14 @@ keyword, unless it is (by default) one of these:
 <dd>
 <p>To put a space after all keywords, see the next item.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_space_between_all_keywords_and_opening_parens">Space between all keywords and opening parens</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_space_between_all_keywords_and_opening_parens">Space between all keywords and opening parens</a></strong>
+
 <dd>
-When an opening paren follows a function or keyword, no space is introduced
+<p>When an opening paren follows a function or keyword, no space is introduced
 after the keyword except for the keywords noted in the previous item.  To
 always put a space between a function or keyword and its opening paren,
-use the command:
+use the command:</p>
 </dd>
 <dd>
 <p><strong>-skp</strong>  or <strong>--space-keyword-paren</strong></p>
@@ -1043,12 +1049,12 @@ use the command:
 <dd>
 <p>You will probably also want to use the flag <strong>-sfp</strong> (next item) too.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_space_between_all_function_names_and_opening_paren">Space between all function names and opening parens</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_space_between_all_function_names_and_opening_paren">Space between all function names and opening parens</a></strong>
+
 <dd>
-When an opening paren follows a function the default is not to introduce
-a space.  To cause a space to be introduced use:
+<p>When an opening paren follows a function the default is not to introduce
+a space.  To cause a space to be introduced use:</p>
 </dd>
 <dd>
 <p><strong>-sfp</strong>  or <strong>--space-function-paren</strong></p>
@@ -1061,12 +1067,12 @@ a space.  To cause a space to be introduced use:
 <dd>
 <p>You will probably also want to use the flag <strong>-skp</strong> (previous item) too.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_trimming_whitespace_around_qw_quotes">Trimming whitespace around <code>qw</code> quotes</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_trimming_whitespace_around_qw_quotes">Trimming whitespace around <code>qw</code> quotes</a></strong>
+
 <dd>
-<strong>-tqw</strong> or <strong>--trim-qw</strong> provide the default behavior of trimming
-spaces around multi-line <code>qw</code> quotes and indenting them appropriately.
+<p><strong>-tqw</strong> or <strong>--trim-qw</strong> provide the default behavior of trimming
+spaces around multi-line <code>qw</code> quotes and indenting them appropriately.</p>
 </dd>
 <dd>
 <p><strong>-ntqw</strong> or <strong>--notrim-qw</strong> cause leading and trailing whitespace around
@@ -1074,7 +1080,8 @@ multi-line <code>qw</code> quotes to be left unchanged.  This option will not
 normally be necessary, but was added for testing purposes, because in
 some versions of perl, trimming <code>qw</code> quotes changes the syntax tree.</p>
 </dd>
-<p></p></dl>
+</li>
+</dl>
 <p>
 </p>
 <h2><a name="comment_controls">Comment Controls</a></h2>
@@ -1083,13 +1090,13 @@ and side comments.  The term <strong>block comment</strong> here refers to a ful
 comment, whereas <strong>side comment</strong> will refer to a comment which appears on a
 line to the right of some code.</p>
 <dl>
-<dt><strong><a name="item__2dibc_2c__2d_2dindent_2dblock_2dcomments"><strong>-ibc</strong>,  <strong>--indent-block-comments</strong></a></strong><br />
-</dt>
+<dt><strong><a name="item__2dibc_2c__2d_2dindent_2dblock_2dcomments"><strong>-ibc</strong>,  <strong>--indent-block-comments</strong></a></strong>
+
 <dd>
-Block comments normally look best when they are indented to the same
+<p>Block comments normally look best when they are indented to the same
 level as the code which follows them.  This is the default behavior, but
 you may use <strong>-nibc</strong> to keep block comments left-justified.  Here is an
-example:
+example:</p>
 </dd>
 <dd>
 <pre>
@@ -1108,38 +1115,38 @@ example:
 <p>See also the next item, <strong>-isbc</strong>, as well as <strong>-sbc</strong>, for other ways to
 have some indented and some outdented block comments.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2disbc_2c__2d_2dindent_2dspaced_2dblock_2dcomment"><strong>-isbc</strong>,  <strong>--indent-spaced-block-comments</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2disbc_2c__2d_2dindent_2dspaced_2dblock_2dcomment"><strong>-isbc</strong>,  <strong>--indent-spaced-block-comments</strong></a></strong>
+
 <dd>
-If there is no leading space on the line, then the comment will not be
-indented, and otherwise it may be.
+<p>If there is no leading space on the line, then the comment will not be
+indented, and otherwise it may be.</p>
 </dd>
 <dd>
 <p>If both <strong>-ibc</strong> and <strong>-isbc</strong> are set, then <strong>-isbc</strong> takes priority.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dolc_2c__2d_2doutdent_2dlong_2dcomments"><strong>-olc</strong>, <strong>--outdent-long-comments</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dolc_2c__2d_2doutdent_2dlong_2dcomments"><strong>-olc</strong>, <strong>--outdent-long-comments</strong></a></strong>
+
 <dd>
-When <strong>-olc</strong> is set, lines which are full-line (block) comments longer
+<p>When <strong>-olc</strong> is set, lines which are full-line (block) comments longer
 than the value <strong>maximum-line-length</strong> will have their indentation
-removed.  This is the default; use <strong>-nolc</strong> to prevent outdenting.
+removed.  This is the default; use <strong>-nolc</strong> to prevent outdenting.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dmsc_3dn_2c__2d_2dminimum_2dspace_2dto_2dcomment"><strong>-msc=n</strong>,  <strong>--minimum-space-to-comment=n</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dmsc_3dn_2c__2d_2dminimum_2dspace_2dto_2dcomment"><strong>-msc=n</strong>,  <strong>--minimum-space-to-comment=n</strong></a></strong>
+
 <dd>
-Side comments look best when lined up several spaces to the right of
+<p>Side comments look best when lined up several spaces to the right of
 code.  Perltidy will try to keep comments at least n spaces to the
-right.  The default is n=4 spaces.
+right.  The default is n=4 spaces.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dhsc_2c__2d_2dhanging_2dside_2dcomments"><strong>-hsc</strong>, <strong>--hanging-side-comments</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dhsc_2c__2d_2dhanging_2dside_2dcomments"><strong>-hsc</strong>, <strong>--hanging-side-comments</strong></a></strong>
+
 <dd>
-By default, perltidy tries to identify and align ``hanging side
-comments'', which are something like this:
+<p>By default, perltidy tries to identify and align ``hanging side
+comments'', which are something like this:</p>
 </dd>
 <dd>
 <pre>
@@ -1155,15 +1162,15 @@ To deactivate this feature, use <strong>-nhsc</strong> or <strong>--nohanging-si
 If block comments are preceded by a blank line, or have no leading
 whitespace, they will not be mistaken as hanging side comments.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_closing_side_comments">Closing Side Comments</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_closing_side_comments">Closing Side Comments</a></strong>
+
 <dd>
-A closing side comment is a special comment which perltidy can
+<p>A closing side comment is a special comment which perltidy can
 automatically create and place after the closing brace of a code block.
 They can be useful for code maintenance and debugging.  The command
 <strong>-csc</strong> (or <strong>--closing-side-comments</strong>) adds or updates closing side
-comments.  For example, here is a small code snippet
+comments.  For example, here is a small code snippet</p>
 </dd>
 <dd>
 <pre>
@@ -1205,12 +1212,12 @@ process and removes these comments.</p>
 commands, <strong>-csc</strong> and <strong>-dcsc</strong>:</p>
 </dd>
 <dl>
-<dt><strong><a name="item__2dcsci_3dn_2c_or__2d_2dclosing_2dside_2dcomment_2"><strong>-csci=n</strong>, or <strong>--closing-side-comment-interval=n</strong></a></strong><br />
-</dt>
+<dt><strong><a name="item__2dcsci_3dn_2c_or__2d_2dclosing_2dside_2dcomment_2"><strong>-csci=n</strong>, or <strong>--closing-side-comment-interval=n</strong></a></strong>
+
 <dd>
-where <code>n</code> is the minimum number of lines that a block must have in
+<p>where <code>n</code> is the minimum number of lines that a block must have in
 order for a closing side comment to be added.  The default value is
-<code>n=6</code>.  To illustrate:
+<code>n=6</code>.  To illustrate:</p>
 </dd>
 <dd>
 <pre>
@@ -1228,39 +1235,39 @@ order for a closing side comment to be added.  The default value is
 <p>Now the <code>if</code> and <code>else</code> blocks are commented.  However, now this has
 become very cluttered.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dcscp_3dstring_2c_or__2d_2dclosing_2dside_2dcomm"><strong>-cscp=string</strong>, or <strong>--closing-side-comment-prefix=string</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dcscp_3dstring_2c_or__2d_2dclosing_2dside_2dcomm"><strong>-cscp=string</strong>, or <strong>--closing-side-comment-prefix=string</strong></a></strong>
+
 <dd>
-where string is the prefix used before the name of the block type.  The
+<p>where string is the prefix used before the name of the block type.  The
 default prefix, shown above, is <code>## end</code>.  This string will be added to
 closing side comments, and it will also be used to recognize them in
 order to update, delete, and format them.  Any comment identified as a
 closing side comment will be placed just a single space to the right of
-its closing brace.
+its closing brace.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dcscl_3dstring_2c_or__2d_2dclosing_2dside_2dcomm"><strong>-cscl=string</strong>, or <strong>--closing-side-comment-list-string</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dcscl_3dstring_2c_or__2d_2dclosing_2dside_2dcomm"><strong>-cscl=string</strong>, or <strong>--closing-side-comment-list-string</strong></a></strong>
+
 <dd>
-where <code>string</code> is a list of block types to be tagged with closing side
+<p>where <code>string</code> is a list of block types to be tagged with closing side
 comments.  By default, all code block types preceded by a keyword or
 label (such as <code>if</code>, <code>sub</code>, and so on) will be tagged.  The <strong>-cscl</strong>
 command changes the default list to be any selected block types; see
 <a href="#specifying_block_types">Specifying Block Types</a>.
 For example, the following command
 requests that only <code>sub</code>'s, labels, <code>BEGIN</code>, and <code>END</code> blocks be
-affected by any <strong>-csc</strong> or <strong>-dcsc</strong> operation:
+affected by any <strong>-csc</strong> or <strong>-dcsc</strong> operation:</p>
 </dd>
 <dd>
 <pre>
    -cscl=&quot;sub : BEGIN END&quot;</pre>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dcsct_3dn_2c_or__2d_2dclosing_2dside_2dcomment_2"><strong>-csct=n</strong>, or <strong>--closing-side-comment-maximum-text=n</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dcsct_3dn_2c_or__2d_2dclosing_2dside_2dcomment_2"><strong>-csct=n</strong>, or <strong>--closing-side-comment-maximum-text=n</strong></a></strong>
+
 <dd>
-The text appended to certain block types, such as an <code>if</code> block, is
+<p>The text appended to certain block types, such as an <code>if</code> block, is
 whatever lies between the keyword introducing the block, such as <code>if</code>,
 and the opening brace.  Since this might be too much text for a side
 comment, there needs to be a limit, and that is the purpose of this
@@ -1270,14 +1277,14 @@ characters.  Omitted text is indicated with <code>...</code>.  (Tokens, includin
 sub names, are never truncated, however, so actual lengths may exceed
 this).  To illustrate, in the above example, the appended text of the
 first block is <code> ( !defined( $_[0] )...</code>.  The existing limit of
-<code>n=20</code> caused this text to be truncated, as indicated by the <code>...</code>.
+<code>n=20</code> caused this text to be truncated, as indicated by the <code>...</code>.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dcsce_3dn_2c_or__2d_2dclosing_2dside_2dcomment_2"><strong>-csce=n</strong>, or <strong>--closing-side-comment-else-flag=n</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dcsce_3dn_2c_or__2d_2dclosing_2dside_2dcomment_2"><strong>-csce=n</strong>, or <strong>--closing-side-comment-else-flag=n</strong></a></strong>
+
 <dd>
-The default, <strong>n=0</strong>, places the text of the opening <code>if</code> statement after any
-terminal <code>else</code>.
+<p>The default, <strong>n=0</strong>, places the text of the opening <code>if</code> statement after any
+terminal <code>else</code>.</p>
 </dd>
 <dd>
 <p>If <strong>n=2</strong> is used, then each <code>elsif</code> is also given the text of the opening
@@ -1289,92 +1296,95 @@ side comments.</p>
 <p>If <strong>n=1</strong> is used, the results will be the same as <strong>n=2</strong> whenever the
 resulting line length is less than the maximum allowed.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dcscw_2c_or__2d_2dclosing_2dside_2dcomment_2dwar"><strong>-cscw</strong>, or <strong>--closing-side-comment-warnings</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dcscw_2c_or__2d_2dclosing_2dside_2dcomment_2dwar"><strong>-cscw</strong>, or <strong>--closing-side-comment-warnings</strong></a></strong>
+
 <dd>
-This parameter is intended to help make the initial transition to the use of
+<p>This parameter is intended to help make the initial transition to the use of
 closing side comments.  
 It causes two
 things to happen if a closing side comment replaces an existing, different
 closing side comment:  first, an error message will be issued, and second, the
 original side comment will be placed alone on a new specially marked comment
-line for later attention.
+line for later attention.</p>
 </dd>
 <dd>
 <p>The intent is to avoid clobbering existing hand-written side comments
 which happen to match the pattern of closing side comments. This flag
 should only be needed on the first run with <strong>-csc</strong>.</p>
 </dd>
-<p></p></dl>
+</li>
+</dl>
 <p><strong>Important Notes on Closing Side Comments:</strong></p>
 <ul>
-<li></li>
-Closing side comments are only placed on lines terminated with a closing
+<li>
+<p>Closing side comments are only placed on lines terminated with a closing
 brace.  Certain closing styles, such as the use of cuddled elses
-(<strong>-ce</strong>), preclude the generation of some closing side comments.
-<p></p>
-<li></li>
-Please note that adding or deleting of closing side comments takes
+(<strong>-ce</strong>), preclude the generation of some closing side comments.</p>
+</li>
+<li>
+<p>Please note that adding or deleting of closing side comments takes
 place only through the commands <strong>-csc</strong> or <strong>-dcsc</strong>.  The other commands,
-if used, merely modify the behavior of these two commands.
-<p></p>
-<li></li>
-It is recommended that the <strong>-cscw</strong> flag be used along with <strong>-csc</strong> on
+if used, merely modify the behavior of these two commands.</p>
+</li>
+<li>
+<p>It is recommended that the <strong>-cscw</strong> flag be used along with <strong>-csc</strong> on
 the first use of perltidy on a given file.  This will prevent loss of
-any existing side comment data which happens to have the csc prefix.
-<p></p>
-<li></li>
-Once you use <strong>-csc</strong>, you should continue to use it so that any
+any existing side comment data which happens to have the csc prefix.</p>
+</li>
+<li>
+<p>Once you use <strong>-csc</strong>, you should continue to use it so that any
 closing side comments remain correct as code changes.  Otherwise, these
-comments will become incorrect as the code is updated.
-<p></p>
-<li></li>
-If you edit the closing side comments generated by perltidy, you must also
+comments will become incorrect as the code is updated.</p>
+</li>
+<li>
+<p>If you edit the closing side comments generated by perltidy, you must also
 change the prefix to be different from the closing side comment prefix.
 Otherwise, your edits will be lost when you rerun perltidy with <strong>-csc</strong>.   For
 example, you could simply change <code>## end</code> to be <code>## End</code>, since the test is
 case sensitive.  You may also want to use the <strong>-ssc</strong> flag to keep these
-modified closing side comments spaced the same as actual closing side comments.
-<p></p>
-<li></li>
-Temporarily generating closing side comments is a useful technique for
+modified closing side comments spaced the same as actual closing side comments.</p>
+</li>
+<li>
+<p>Temporarily generating closing side comments is a useful technique for
 exploring and/or debugging a perl script, especially one written by someone
-else.  You can always remove them with <strong>-dcsc</strong>.
-<p></p></ul>
-<dt><strong><a name="item_static_block_comments">Static Block Comments</a></strong><br />
-</dt>
+else.  You can always remove them with <strong>-dcsc</strong>.</p>
+</li>
+</ul>
+<dt><strong><a name="item_static_block_comments">Static Block Comments</a></strong>
+
 <dd>
-Static block comments are block comments with a special leading pattern,
+<p>Static block comments are block comments with a special leading pattern,
 <code>##</code> by default, which will be treated slightly differently from other
 block comments.  They effectively behave as if they had glue along their
 left and top edges, because they stick to the left edge and previous line
 when there is no blank spaces in those places.  This option is
-particularly useful for controlling how commented code is displayed.
+particularly useful for controlling how commented code is displayed.</p>
 </dd>
 <dl>
-<dt><strong><a name="item__2dsbc_2c__2d_2dstatic_2dblock_2dcomments"><strong>-sbc</strong>, <strong>--static-block-comments</strong></a></strong><br />
-</dt>
+<dt><strong><a name="item__2dsbc_2c__2d_2dstatic_2dblock_2dcomments"><strong>-sbc</strong>, <strong>--static-block-comments</strong></a></strong>
+
 <dd>
-When <strong>-sbc</strong> is used, a block comment with a special leading pattern, <code>##</code> by
-default, will be treated specially.
+<p>When <strong>-sbc</strong> is used, a block comment with a special leading pattern, <code>##</code> by
+default, will be treated specially.</p>
 </dd>
 <dd>
 <p>Comments so identified  are treated as follows:</p>
 </dd>
 <ul>
-<li></li>
-If there is no leading space on the line, then the comment will not
-be indented, and otherwise it may be,
-<p></p>
-<li></li>
-no new blank line will be
-inserted before such a comment, and
-<p></p>
-<li></li>
-such a comment will never become
-a hanging side comment.
-<p></p></ul>
+<li>
+<p>If there is no leading space on the line, then the comment will not
+be indented, and otherwise it may be,</p>
+</li>
+<li>
+<p>no new blank line will be
+inserted before such a comment, and</p>
+</li>
+<li>
+<p>such a comment will never become
+a hanging side comment.</p>
+</li>
+</ul>
 <p>For example, assuming <code>@month_of_year</code> is
 left-adjusted:</p>
 <pre>
@@ -1392,10 +1402,10 @@ left-adjusted:</p>
     );</pre>
 <p>which is not as clear.
 The default is to use <strong>-sbc</strong>.  This may be deactivated with <strong>-nsbc</strong>.</p>
-<dt><strong><a name="item__2dsbcp_3dstring_2c__2d_2dstatic_2dblock_2dcomment"><strong>-sbcp=string</strong>, <strong>--static-block-comment-prefix=string</strong></a></strong><br />
-</dt>
+<dt><strong><a name="item__2dsbcp_3dstring_2c__2d_2dstatic_2dblock_2dcomment"><strong>-sbcp=string</strong>, <strong>--static-block-comment-prefix=string</strong></a></strong>
+
 <dd>
-This parameter defines the prefix used to identify static block comments
+<p>This parameter defines the prefix used to identify static block comments
 when the <strong>-sbc</strong> parameter is set.  The default prefix is <code>##</code>,
 corresponding to <code>-sbcp=##</code>.  The prefix is actually part of a perl 
 pattern used to match lines and it must either begin with <code>#</code> or <code>^#</code>.  
@@ -1403,7 +1413,7 @@ In the first case a prefix ^\s* will be added to match any leading
 whitespace, while in the second case the pattern will match only
 comments with no leading whitespace.  For example, to
 identify all comments as static block comments, one would use <code>-sbcp=#</code>.
-To identify all left-adjusted comments as static block comments, use <code>-sbcp='^#'</code>.
+To identify all left-adjusted comments as static block comments, use <code>-sbcp='^#'</code>.</p>
 </dd>
 <dd>
 <p>Please note that <strong>-sbcp</strong> merely defines the pattern used to identify static
@@ -1412,39 +1422,40 @@ please be aware that since this string is used in a perl regular expression
 which identifies these comments, it must enable a valid regular expression to
 be formed.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dosbc_2c__2d_2doutdent_2dstatic_2dblock_2dcommen"><strong>-osbc</strong>, <strong>--outdent-static-block-comments</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dosbc_2c__2d_2doutdent_2dstatic_2dblock_2dcommen"><strong>-osbc</strong>, <strong>--outdent-static-block-comments</strong></a></strong>
+
 <dd>
-The command <strong>-osbc</strong> will will cause static block comments to be outdented by 2
-spaces (or whatever <strong>-ci=n</strong> has been set to), if possible.
+<p>The command <strong>-osbc</strong> will will cause static block comments to be outdented by 2
+spaces (or whatever <strong>-ci=n</strong> has been set to), if possible.</p>
 </dd>
-<p></p></dl>
-<dt><strong><a name="item_static_side_comments">Static Side Comments</a></strong><br />
-</dt>
+</li>
+</dl>
+<dt><strong><a name="item_static_side_comments">Static Side Comments</a></strong>
+
 <dd>
-Static side comments are side comments with a special leading pattern.
+<p>Static side comments are side comments with a special leading pattern.
 This option can be useful for controlling how commented code is displayed
-when it is a side comment.
+when it is a side comment.</p>
 </dd>
 <dl>
-<dt><strong><a name="item__2dssc_2c__2d_2dstatic_2dside_2dcomments"><strong>-ssc</strong>, <strong>--static-side-comments</strong></a></strong><br />
-</dt>
+<dt><strong><a name="item__2dssc_2c__2d_2dstatic_2dside_2dcomments"><strong>-ssc</strong>, <strong>--static-side-comments</strong></a></strong>
+
 <dd>
-When <strong>-ssc</strong> is used, a side comment with a static leading pattern, which is
+<p>When <strong>-ssc</strong> is used, a side comment with a static leading pattern, which is
 <code>##</code> by default, will be be spaced only a single space from previous
-character, and it will not be vertically aligned with other side comments.
+character, and it will not be vertically aligned with other side comments.</p>
 </dd>
 <dd>
 <p>The default is <strong>-nssc</strong>.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dsscp_3dstring_2c__2d_2dstatic_2dside_2dcomment_"><strong>-sscp=string</strong>, <strong>--static-side-comment-prefix=string</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dsscp_3dstring_2c__2d_2dstatic_2dside_2dcomment_"><strong>-sscp=string</strong>, <strong>--static-side-comment-prefix=string</strong></a></strong>
+
 <dd>
-This parameter defines the prefix used to identify static side comments
+<p>This parameter defines the prefix used to identify static side comments
 when the <strong>-ssc</strong> parameter is set.  The default prefix is <code>##</code>,
-corresponding to <code>-sscp=##</code>.
+corresponding to <code>-sscp=##</code>.</p>
 </dd>
 <dd>
 <p>Please note that <strong>-sscp</strong> merely defines the pattern used to identify
@@ -1453,7 +1464,8 @@ set.  Also, note that this string is used in a perl regular expression
 which identifies these comments, so it must enable a valid regular
 expression to be formed.</p>
 </dd>
-<p></p></dl>
+</li>
+</dl>
 </dl>
 <p>
 </p>
@@ -1467,16 +1479,16 @@ the indentation of old commented code unchanged, keeping indentation of
 long blocks of aligned comments unchanged, keeping certain list
 formatting unchanged, or working around a glitch in perltidy.</p>
 <dl>
-<dt><strong><a name="item__2dfs_2c__2d_2dformat_2dskipping"><strong>-fs</strong>,  <strong>--format-skipping</strong></a></strong><br />
-</dt>
+<dt><strong><a name="item__2dfs_2c__2d_2dformat_2dskipping"><strong>-fs</strong>,  <strong>--format-skipping</strong></a></strong>
+
 <dd>
-This flag, which is enabled by default, causes any code between
+<p>This flag, which is enabled by default, causes any code between
 special beginning and ending comment markers to be passed to the
 output without formatting.  The default beginning marker is #&lt;&lt;&lt;
 and the default ending marker is #&gt;&gt;&gt; but they
 may be changed (see next items below).  Additional text may appear on
 these special comment lines provided that it is separated from the
-marker by at least one space.  For example
+marker by at least one space.  For example</p>
 </dd>
 <dd>
 <pre>
@@ -1493,16 +1505,16 @@ marker by at least one space.  For example
 appear.  If they do not appear to be working, use the -log flag and examine the
 <em>.LOG</em> file.  Use <strong>-nfs</strong> to disable this feature.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dfsb_3dstring_2c__2d_2dformat_2dskipping_2dbegin"><strong>-fsb=string</strong>,  <strong>--format-skipping-begin=string</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dfsb_3dstring_2c__2d_2dformat_2dskipping_2dbegin"><strong>-fsb=string</strong>,  <strong>--format-skipping-begin=string</strong></a></strong>
+
 <dd>
-The <strong>-fsb=string</strong> parameter may be used to change the beginning marker for
+<p>The <strong>-fsb=string</strong> parameter may be used to change the beginning marker for
 format skipping.  The default is equivalent to -fsb='#&lt;&lt;&lt;'.  The string that
 you enter must begin with a # and should be in quotes as necessary to get past
 the command shell of your system.  It is actually the leading text of a pattern
 that is constructed by appending a '\s', so you must also include backslashes
-for characters to be taken literally rather than as patterns.
+for characters to be taken literally rather than as patterns.</p>
 </dd>
 <dd>
 <p>Some examples show how example strings become patterns:</p>
@@ -1513,39 +1525,40 @@ for characters to be taken literally rather than as patterns.
  -fsb='#\*\*'   becomes /^#\*\*\s/    which matches  #** but not #***
  -fsb='#\*{2,}' becomes /^#\*{2,}\s/  which matches  #** and #*****</pre>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dfse_3dstring_2c__2d_2dformat_2dskipping_2dend_3"><strong>-fse=string</strong>,  <strong>--format-skipping-end=string</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dfse_3dstring_2c__2d_2dformat_2dskipping_2dend_3"><strong>-fse=string</strong>,  <strong>--format-skipping-end=string</strong></a></strong>
+
 <dd>
-The <strong>-fsb=string</strong> is the corresponding parameter used to change the
+<p>The <strong>-fsb=string</strong> is the corresponding parameter used to change the
 ending marker for format skipping.  The default is equivalent to
--fse='#&lt;&lt;&lt;'.
+-fse='#&lt;&lt;&lt;'.</p>
 </dd>
-<p></p></dl>
+</li>
+</dl>
 <p>
 </p>
 <h2><a name="line_break_control">Line Break Control</a></h2>
 <dl>
-<dt><strong><a name="item__2dfnl_2c__2d_2dfreeze_2dnewlines"><strong>-fnl</strong>,  <strong>--freeze-newlines</strong></a></strong><br />
-</dt>
+<dt><strong><a name="item__2dfnl_2c__2d_2dfreeze_2dnewlines"><strong>-fnl</strong>,  <strong>--freeze-newlines</strong></a></strong>
+
 <dd>
-If you do not want any changes to the line breaks in your script, set
+<p>If you do not want any changes to the line breaks in your script, set
 <strong>-fnl</strong>, and they will remain fixed, and the rest of the commands in
 this section and sections 
 <a href="#controlling_list_formatting">Controlling List Formatting</a>,
 <a href="#retaining_or_ignoring_existing_line_breaks">Retaining or Ignoring Existing Line Breaks</a>, and
 <a href="#blank_line_control">Blank Line Control</a> will be ignored.  You may want to use <strong>-noll</strong>
-with this.
+with this.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dce_2c__2d_2dcuddled_2delse"><strong>-ce</strong>,   <strong>--cuddled-else</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dce_2c__2d_2dcuddled_2delse"><strong>-ce</strong>,   <strong>--cuddled-else</strong></a></strong>
+
 <dd>
-Enable the ``cuddled else'' style, in which <code>else</code> and <code>elsif</code> are
+<p>Enable the ``cuddled else'' style, in which <code>else</code> and <code>elsif</code> are
 follow immediately after the curly brace closing the previous block.
 The default is not to use cuddled elses, and is indicated with the flag
 <strong>-nce</strong> or <strong>--nocuddled-else</strong>.  Here is a comparison of the
-alternatives:
+alternatives:</p>
 </dd>
 <dd>
 <pre>
@@ -1564,11 +1577,11 @@ alternatives:
         zzz();
   }</pre>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dbl_2c__2d_2dopening_2dbrace_2don_2dnew_2dline"><strong>-bl</strong>,    <strong>--opening-brace-on-new-line</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dbl_2c__2d_2dopening_2dbrace_2don_2dnew_2dline"><strong>-bl</strong>,    <strong>--opening-brace-on-new-line</strong></a></strong>
+
 <dd>
-Use the flag <strong>-bl</strong> to place the opening brace on a new line:
+<p>Use the flag <strong>-bl</strong> to place the opening brace on a new line:</p>
 </dd>
 <dd>
 <pre>
@@ -1589,12 +1602,12 @@ the keyword introducing it.  For example,</p>
 <pre>
   if ( $input_file eq '-' ) {   # -nbl (default)</pre>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dsbl_2c__2d_2dopening_2dsub_2dbrace_2don_2dnew_2"><strong>-sbl</strong>,    <strong>--opening-sub-brace-on-new-line</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dsbl_2c__2d_2dopening_2dsub_2dbrace_2don_2dnew_2"><strong>-sbl</strong>,    <strong>--opening-sub-brace-on-new-line</strong></a></strong>
+
 <dd>
-The flag <strong>-sbl</strong> can be used to override the value of <strong>-bl</strong> for
-opening sub braces.  For example,
+<p>The flag <strong>-sbl</strong> can be used to override the value of <strong>-bl</strong> for
+opening sub braces.  For example,</p>
 </dd>
 <dd>
 <pre>
@@ -1619,13 +1632,13 @@ opening sub braces.  For example,
 <p>This flag is negated with <strong>-nsbl</strong>.  If <strong>-sbl</strong> is not specified,
 the value of <strong>-bl</strong> is used.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dbli_2c__2d_2dbrace_2dleft_2dand_2dindent"><strong>-bli</strong>,    <strong>--brace-left-and-indent</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dbli_2c__2d_2dbrace_2dleft_2dand_2dindent"><strong>-bli</strong>,    <strong>--brace-left-and-indent</strong></a></strong>
+
 <dd>
-The flag <strong>-bli</strong> is the same as <strong>-bl</strong> but in addition it causes one 
+<p>The flag <strong>-bli</strong> is the same as <strong>-bl</strong> but in addition it causes one 
 unit of continuation indentation ( see <strong>-ci</strong> ) to be placed before 
-an opening and closing block braces.
+an opening and closing block braces.</p>
 </dd>
 <dd>
 <p>For example,</p>
@@ -1643,21 +1656,21 @@ an opening and closing block braces.
 <strong>while</strong>, <strong>until</strong>, and also with a preceding label.  The next item
 shows how to change this.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dblil_3ds_2c__2d_2dbrace_2dleft_2dand_2dindent_2"><strong>-blil=s</strong>,    <strong>--brace-left-and-indent-list=s</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dblil_3ds_2c__2d_2dbrace_2dleft_2dand_2dindent_2"><strong>-blil=s</strong>,    <strong>--brace-left-and-indent-list=s</strong></a></strong>
+
 <dd>
-Use this parameter to change the types of block braces for which the
+<p>Use this parameter to change the types of block braces for which the
 <strong>-bli</strong> flag applies; see <a href="#specifying_block_types">Specifying Block Types</a>.  For example,
-<strong>-blil='if elsif else'</strong> would apply it to only <code>if/elsif/else</code> blocks.
+<strong>-blil='if elsif else'</strong> would apply it to only <code>if/elsif/else</code> blocks.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dbar_2c__2d_2dopening_2dbrace_2dalways_2don_2dri"><strong>-bar</strong>,    <strong>--opening-brace-always-on-right</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dbar_2c__2d_2dopening_2dbrace_2dalways_2don_2dri"><strong>-bar</strong>,    <strong>--opening-brace-always-on-right</strong></a></strong>
+
 <dd>
-The default style, <strong>-nbl</strong> places the opening code block brace on a new
+<p>The default style, <strong>-nbl</strong> places the opening code block brace on a new
 line if it does not fit on the same line as the opening keyword, like
-this:
+this:</p>
 </dd>
 <dd>
 <pre>
@@ -1681,12 +1694,12 @@ flag.  In this case, the above example becomes</p>
 <dd>
 <p>A conflict occurs if both <strong>-bl</strong> and <strong>-bar</strong> are specified.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dotr_2c__2d_2dopening_2dtoken_2dright_and_relate"><strong>-otr</strong>,  <strong>--opening-token-right</strong> and related flags</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dotr_2c__2d_2dopening_2dtoken_2dright_and_relate"><strong>-otr</strong>,  <strong>--opening-token-right</strong> and related flags</a></strong>
+
 <dd>
-The <strong>-otr</strong> flag is a hint that perltidy should not place a break between a
-comma and an opening token.  For example:
+<p>The <strong>-otr</strong> flag is a hint that perltidy should not place a break between a
+comma and an opening token.  For example:</p>
 </dd>
 <dd>
 <pre>
@@ -1716,30 +1729,30 @@ separately if desired:</p>
   -ohbr or --opening-hash-brace-right
   -osbr or --opening-square-bracket-right</pre>
 </dd>
-<p></p>
-<dt><strong><a name="item_vertical_tightness_of_non_2dblock_curly_braces_2c_">Vertical tightness of non-block curly braces, parentheses, and square brackets.</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_vertical_tightness_of_non_2dblock_curly_braces_2c_">Vertical tightness of non-block curly braces, parentheses, and square brackets.</a></strong>
+
 <dd>
-These parameters control what shall be called vertical tightness.  Here are the
-main points:
+<p>These parameters control what shall be called vertical tightness.  Here are the
+main points:</p>
 </dd>
 <ul>
-<li></li>
-Opening tokens (except for block braces) are controlled by <strong>-vt=n</strong>, or
-<strong>--vertical-tightness=n</strong>, where
+<li>
+<p>Opening tokens (except for block braces) are controlled by <strong>-vt=n</strong>, or
+<strong>--vertical-tightness=n</strong>, where</p>
 <pre>
  -vt=0 always break a line after opening token (default). 
  -vt=1 do not break unless this would produce more than one 
          step in indentation in a line.
  -vt=2 never break a line after opening token</pre>
-<p></p>
-<li></li>
-You must also use the <strong>-lp</strong> flag when you use the <strong>-vt</strong> flag; the
-reason is explained below.
-<p></p>
-<li></li>
-Closing tokens (except for block braces) are controlled by <strong>-vtc=n</strong>, or
-<strong>--vertical-tightness-closing=n</strong>, where
+</li>
+<li>
+<p>You must also use the <strong>-lp</strong> flag when you use the <strong>-vt</strong> flag; the
+reason is explained below.</p>
+</li>
+<li>
+<p>Closing tokens (except for block braces) are controlled by <strong>-vtc=n</strong>, or
+<strong>--vertical-tightness-closing=n</strong>, where</p>
 <pre>
  -vtc=0 always break a line before a closing token (default), 
  -vtc=1 do not break before a closing token which is followed 
@@ -1748,19 +1761,20 @@ Closing tokens (except for block braces) are controlled by <strong>-vtc=n</stron
  -vtc=2 never break before a closing token.</pre>
 <p>The rules for <strong>-vtc=1</strong> are designed to maintain a reasonable balance
 between tightness and readability in complex lists.</p>
-<p></p>
-<li></li>
-Different controls may be applied to to different token types,
-and it is also possible to control block braces; see below.
-<p></p>
-<li></li>
-Finally, please note that these vertical tightness flags are merely
+</li>
+<li>
+<p>Different controls may be applied to to different token types,
+and it is also possible to control block braces; see below.</p>
+</li>
+<li>
+<p>Finally, please note that these vertical tightness flags are merely
 hints to the formatter, and it cannot always follow them.  Things which
 make it difficult or impossible include comments, blank lines, blocks of
 code within a list, and possibly the lack of the <strong>-lp</strong> parameter.
 Also, these flags may be ignored for very small lists (2 or 3 lines in
-length).
-<p></p></ul>
+length).</p>
+</li>
+</ul>
 <p>Here are some examples:</p>
 <pre>
     # perltidy -lp -vt=0 -vtc=0
@@ -1828,11 +1842,11 @@ independently to each of the closing container token types.</p>
 <p>In fact, the parameter <strong>-vt=n</strong> is actually just an abbreviation for
 <strong>-pvt=n -bvt=n sbvt=n</strong>, and likewise <strong>-vtc=n</strong> is an abbreviation
 for <strong>-pvtc=n -bvtc=n sbvtc=n</strong>.</p>
-<dt><strong><a name="item__2dbbvt_3dn_or__2d_2dblock_2dbrace_2dvertical_2dti"><strong>-bbvt=n</strong> or <strong>--block-brace-vertical-tightness=n</strong></a></strong><br />
-</dt>
+<dt><strong><a name="item__2dbbvt_3dn_or__2d_2dblock_2dbrace_2dvertical_2dti"><strong>-bbvt=n</strong> or <strong>--block-brace-vertical-tightness=n</strong></a></strong>
+
 <dd>
-The <strong>-bbvt=n</strong> flag is just like the <strong>-vt=n</strong> flag but applies
-to opening code block braces.
+<p>The <strong>-bbvt=n</strong> flag is just like the <strong>-vt=n</strong> flag but applies
+to opening code block braces.</p>
 </dd>
 <dd>
 <pre>
@@ -1890,12 +1904,12 @@ possible values of this string, see <a href="#specifying_block_types">Specifying
 the exception of one-line blocks, they will normally remain on a 
 separate line.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dsot_2c__2d_2dstack_2dopening_2dtoken_and_relate"><strong>-sot</strong>,  <strong>--stack-opening-token</strong> and related flags</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dsot_2c__2d_2dstack_2dopening_2dtoken_and_relate"><strong>-sot</strong>,  <strong>--stack-opening-token</strong> and related flags</a></strong>
+
 <dd>
-The <strong>-sot</strong> flag tells perltidy to ``stack'' opening tokens
-when possible to avoid lines with isolated opening tokens.
+<p>The <strong>-sot</strong> flag tells perltidy to ``stack'' opening tokens
+when possible to avoid lines with isolated opening tokens.</p>
 </dd>
 <dd>
 <p>For example:</p>
@@ -1934,12 +1948,12 @@ controls can be used:</p>
 <dd>
 <p>The flag <strong>-sot</strong> is a synonym for <strong>-sop -sohb -sosb</strong>.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dsct_2c__2d_2dstack_2dclosing_2dtoken_and_relate"><strong>-sct</strong>,  <strong>--stack-closing-token</strong> and related flags</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dsct_2c__2d_2dstack_2dclosing_2dtoken_and_relate"><strong>-sct</strong>,  <strong>--stack-closing-token</strong> and related flags</a></strong>
+
 <dd>
-The <strong>-sct</strong> flag tells perltidy to ``stack'' closing tokens
-when possible to avoid lines with isolated closing tokens.
+<p>The <strong>-sct</strong> flag tells perltidy to ``stack'' closing tokens
+when possible to avoid lines with isolated closing tokens.</p>
 </dd>
 <dd>
 <p>For example:</p>
@@ -1995,34 +2009,34 @@ following controls can be used:</p>
 <dd>
 <p>The flag <strong>-sct</strong> is a synonym for <strong>-scp -schb -scsb</strong>.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2ddnl_2c__2d_2ddelete_2dold_2dnewlines"><strong>-dnl</strong>,  <strong>--delete-old-newlines</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2ddnl_2c__2d_2ddelete_2dold_2dnewlines"><strong>-dnl</strong>,  <strong>--delete-old-newlines</strong></a></strong>
+
 <dd>
-By default, perltidy first deletes all old line break locations, and then it
+<p>By default, perltidy first deletes all old line break locations, and then it
 looks for good break points to match the desired line length.  Use <strong>-ndnl</strong>
 or  <strong>--nodelete-old-newlines</strong> to force perltidy to retain all old line break
-points.
+points.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2danl_2c__2d_2dadd_2dnewlines"><strong>-anl</strong>,  <strong>--add-newlines</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2danl_2c__2d_2dadd_2dnewlines"><strong>-anl</strong>,  <strong>--add-newlines</strong></a></strong>
+
 <dd>
-By default, perltidy will add line breaks when necessary to create
+<p>By default, perltidy will add line breaks when necessary to create
 continuations of long lines and to improve the script appearance.  Use
-<strong>-nanl</strong> or <strong>--noadd-newlines</strong> to prevent any new line breaks.
+<strong>-nanl</strong> or <strong>--noadd-newlines</strong> to prevent any new line breaks.</p>
 </dd>
 <dd>
 <p>This flag does not prevent perltidy from eliminating existing line
 breaks; see <strong>--freeze-newlines</strong> to completely prevent changes to line
 break points.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_controlling_whether_perltidy_breaks_before_or_afte">Controlling whether perltidy breaks before or after operators</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_controlling_whether_perltidy_breaks_before_or_afte">Controlling whether perltidy breaks before or after operators</a></strong>
+
 <dd>
-Two command line parameters provide some control over whether
-a line break should be before or after specific token types.
+<p>Two command line parameters provide some control over whether
+a line break should be before or after specific token types.</p>
 </dd>
 <dd>
 <p><strong>-wba=s</strong> or <strong>--want-break-after=s</strong>, and</p>
@@ -2074,7 +2088,8 @@ with the parameter <strong>bl</strong> provided for that purpose.</p>
 <p><strong>WARNING</strong> Be sure to put these tokens in quotes to avoid having them
 misinterpreted by your command shell.</p>
 </dd>
-<p></p></dl>
+</li>
+</dl>
 <p>
 </p>
 <h2><a name="controlling_list_formatting">Controlling List Formatting</a></h2>
@@ -2083,13 +2098,13 @@ which look good.  Its default algorithms usually work well, and they
 have been improving with each release, but several parameters are
 available to control list formatting.</p>
 <dl>
-<dt><strong><a name="item__2dboc_2c__2d_2dbreak_2dat_2dold_2dcomma_2dbreakpo"><strong>-boc</strong>,  <strong>--break-at-old-comma-breakpoints</strong></a></strong><br />
-</dt>
+<dt><strong><a name="item__2dboc_2c__2d_2dbreak_2dat_2dold_2dcomma_2dbreakpo"><strong>-boc</strong>,  <strong>--break-at-old-comma-breakpoints</strong></a></strong>
+
 <dd>
-This flag tells perltidy to try to break at all old commas.  This is not
+<p>This flag tells perltidy to try to break at all old commas.  This is not
 the default.  Normally, perltidy makes a best guess at list formatting,
 and seldom uses old comma breakpoints.  Usually this works well,
-but consider:
+but consider:</p>
 </dd>
 <dd>
 <pre>
@@ -2125,18 +2140,18 @@ to retain the original style, yields</p>
 must already be nicely formatted.  For another possibility see
 the -fs flag in <a href="#skipping_selected_sections_of_code">Skipping Selected Sections of Code</a>.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dmft_3dn_2c__2d_2dmaximum_2dfields_2dper_2dtable"><strong>-mft=n</strong>,  <strong>--maximum-fields-per-table=n</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dmft_3dn_2c__2d_2dmaximum_2dfields_2dper_2dtable"><strong>-mft=n</strong>,  <strong>--maximum-fields-per-table=n</strong></a></strong>
+
 <dd>
-If the computed number of fields for any table exceeds <strong>n</strong>, then it
+<p>If the computed number of fields for any table exceeds <strong>n</strong>, then it
 will be reduced to <strong>n</strong>.  The default value for <strong>n</strong> is a large number,
 40.  While this value should probably be left unchanged as a general
 rule, it might be used on a small section of code to force a list to
 have a particular number of fields per line, and then either the <strong>-boc</strong>
 flag could be used to retain this formatting, or a single comment could
 be introduced somewhere to freeze the formatting in future applications
-of perltidy.
+of perltidy.</p>
 </dd>
 <dd>
 <pre>
@@ -2150,15 +2165,15 @@ of perltidy.
         'Nov', 'Dec'
     );</pre>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dcab_3dn_2c__2d_2dcomma_2darrow_2dbreakpoints_3d"><strong>-cab=n</strong>,  <strong>--comma-arrow-breakpoints=n</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dcab_3dn_2c__2d_2dcomma_2darrow_2dbreakpoints_3d"><strong>-cab=n</strong>,  <strong>--comma-arrow-breakpoints=n</strong></a></strong>
+
 <dd>
-A comma which follows a comma arrow, '=&gt;', requires special
+<p>A comma which follows a comma arrow, '=&gt;', requires special
 consideration.  In a long list, it is common to break at all such
 commas.  This parameter can be used to control how perltidy breaks at
 these commas.  (However, it will have no effect if old comma breaks are
-being forced because <strong>-boc</strong> is used).  The possible values of <strong>n</strong> are:
+being forced because <strong>-boc</strong> is used).  The possible values of <strong>n</strong> are:</p>
 </dd>
 <dd>
 <pre>
@@ -2213,7 +2228,8 @@ Here is an example.
         &quot;09&quot; =&gt; 30, &quot;10&quot; =&gt; 31, &quot;11&quot; =&gt; 30, &quot;12&quot; =&gt; 31
     );</pre>
 </dd>
-<p></p></dl>
+</li>
+</dl>
 <p>
 </p>
 <h2><a name="retaining_or_ignoring_existing_line_breaks">Retaining or Ignoring Existing Line Breaks</a></h2>
@@ -2229,41 +2245,42 @@ container lengths.  The opposite effect, of converting long container
 lengths to shorter lengths, can be obtained by temporarily using a short
 maximum line length.</p>
 <dl>
-<dt><strong><a name="item__2dbol_2c__2d_2dbreak_2dat_2dold_2dlogical_2dbreak"><strong>-bol</strong>,  <strong>--break-at-old-logical-breakpoints</strong></a></strong><br />
-</dt>
+<dt><strong><a name="item__2dbol_2c__2d_2dbreak_2dat_2dold_2dlogical_2dbreak"><strong>-bol</strong>,  <strong>--break-at-old-logical-breakpoints</strong></a></strong>
+
 <dd>
-By default, if a logical expression is broken at a <code>&amp;&amp;</code>, <code>||</code>, <code>and</code>,
+<p>By default, if a logical expression is broken at a <code>&amp;&amp;</code>, <code>||</code>, <code>and</code>,
 or <code>or</code>, then the container will remain broken.  Also, breaks
 at internal keywords <code>if</code> and <code>unless</code> will normally be retained.
-To prevent this, and thus form longer lines, use <strong>-nbol</strong>.
+To prevent this, and thus form longer lines, use <strong>-nbol</strong>.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dbok_2c__2d_2dbreak_2dat_2dold_2dkeyword_2dbreak"><strong>-bok</strong>,  <strong>--break-at-old-keyword-breakpoints</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dbok_2c__2d_2dbreak_2dat_2dold_2dkeyword_2dbreak"><strong>-bok</strong>,  <strong>--break-at-old-keyword-breakpoints</strong></a></strong>
+
 <dd>
-By default, perltidy will retain a breakpoint before keywords which may
+<p>By default, perltidy will retain a breakpoint before keywords which may
 return lists, such as <code>sort</code> and &lt;map&gt;.  This allows chains of these
 operators to be displayed one per line.  Use <strong>-nbok</strong> to prevent
-retaining these breakpoints.
+retaining these breakpoints.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dbot_2c__2d_2dbreak_2dat_2dold_2dtrinary_2dbreak"><strong>-bot</strong>,  <strong>--break-at-old-trinary-breakpoints</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dbot_2c__2d_2dbreak_2dat_2dold_2dternary_2dbreak"><strong>-bot</strong>,  <strong>--break-at-old-ternary-breakpoints</strong></a></strong>
+
 <dd>
-By default, if a conditional (trinary) operator is broken at a <code>:</code>,
+<p>By default, if a conditional (ternary) operator is broken at a <code>:</code>,
 then it will remain broken.  To prevent this, and thereby
-form longer lines, use <strong>-nbot</strong>.
+form longer lines, use <strong>-nbot</strong>.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2diob_2c__2d_2dignore_2dold_2dbreakpoints"><strong>-iob</strong>,  <strong>--ignore-old-breakpoints</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2diob_2c__2d_2dignore_2dold_2dbreakpoints"><strong>-iob</strong>,  <strong>--ignore-old-breakpoints</strong></a></strong>
+
 <dd>
-Use this flag to tell perltidy to ignore existing line breaks to the
+<p>Use this flag to tell perltidy to ignore existing line breaks to the
 maximum extent possible.  This will tend to produce the longest possible
 containers, regardless of type, which do not exceed the line length
-limit.
+limit.</p>
 </dd>
-<p></p></dl>
+</li>
+</dl>
 <p>
 </p>
 <h2><a name="blank_line_control">Blank Line Control</a></h2>
@@ -2271,108 +2288,128 @@ limit.
 placed.  Perltidy has several commands for controlling the insertion,
 retention, and removal of blank lines.</p>
 <dl>
-<dt><strong><a name="item__2dbbc_2c__2d_2dblanks_2dbefore_2dcomments"><strong>-bbc</strong>,  <strong>--blanks-before-comments</strong></a></strong><br />
-</dt>
+<dt><strong><a name="item__2dbbc_2c__2d_2dblanks_2dbefore_2dcomments"><strong>-bbc</strong>,  <strong>--blanks-before-comments</strong></a></strong>
+
 <dd>
-A blank line will be introduced before a full-line comment.  This is the
+<p>A blank line will be introduced before a full-line comment.  This is the
 default.  Use <strong>-nbbc</strong> or  <strong>--noblanks-before-comments</strong> to prevent
-such blank lines from being introduced.
+such blank lines from being introduced.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dbbs_2c__2d_2dblanks_2dbefore_2dsubs"><strong>-bbs</strong>,  <strong>--blanks-before-subs</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dbbs_2c__2d_2dblanks_2dbefore_2dsubs"><strong>-bbs</strong>,  <strong>--blanks-before-subs</strong></a></strong>
+
 <dd>
-A blank line will be introduced before a <strong>sub</strong> definition, unless it is a
+<p>A blank line will be introduced before a <strong>sub</strong> definition, unless it is a
 one-liner or preceded by a comment.  A blank line will also be introduced
 before a <strong>package</strong> statement and a <strong>BEGIN</strong> and <strong>END</strong> block.  This is the
 default.  The intention is to help display the structure of a program by
 setting off certain key sections of code.  This is negated with <strong>-nbbs</strong> or
-<strong>--noblanks-before-subs</strong>.
+<strong>--noblanks-before-subs</strong>.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dbbb_2c__2d_2dblanks_2dbefore_2dblocks"><strong>-bbb</strong>,  <strong>--blanks-before-blocks</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dbbb_2c__2d_2dblanks_2dbefore_2dblocks"><strong>-bbb</strong>,  <strong>--blanks-before-blocks</strong></a></strong>
+
 <dd>
-A blank line will be introduced before blocks of coding delimited by
+<p>A blank line will be introduced before blocks of coding delimited by
 <strong>for</strong>, <strong>foreach</strong>, <strong>while</strong>, <strong>until</strong>, and <strong>if</strong>, <strong>unless</strong>, in the following
-circumstances:
+circumstances:</p>
 </dd>
 <ul>
-<li></li>
-The block is not preceded by a comment.
-<p></p>
-<li></li>
-The block is not a one-line block.
-<p></p>
-<li></li>
-The number of consecutive non-blank lines at the current indentation depth is at least <strong>-lbl</strong>
-(see next section).
-<p></p></ul>
+<li>
+<p>The block is not preceded by a comment.</p>
+</li>
+<li>
+<p>The block is not a one-line block.</p>
+</li>
+<li>
+<p>The number of consecutive non-blank lines at the current indentation depth is at least <strong>-lbl</strong>
+(see next section).</p>
+</li>
+</ul>
 <p>This is the default.  The intention of this option is to introduce
 some space within dense coding.
 This is negated with <strong>-nbbb</strong> or  <strong>--noblanks-before-blocks</strong>.</p>
-<dt><strong><a name="item__2dlbl_3dn__2d_2dlong_2dblock_2dline_2dcount_3dn"><strong>-lbl=n</strong> <strong>--long-block-line-count=n</strong></a></strong><br />
-</dt>
+<dt><strong><a name="item__2dlbl_3dn__2d_2dlong_2dblock_2dline_2dcount_3dn"><strong>-lbl=n</strong> <strong>--long-block-line-count=n</strong></a></strong>
+
 <dd>
-This controls how often perltidy is allowed to add blank lines before 
+<p>This controls how often perltidy is allowed to add blank lines before 
 certain block types (see previous section).  The default is 8.  Entering
-a value of <strong>0</strong> is equivalent to entering a very large number.
+a value of <strong>0</strong> is equivalent to entering a very large number.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dmbl_3dn__2d_2dmaximum_2dconsecutive_2dblank_2dl"><strong>-mbl=n</strong> <strong>--maximum-consecutive-blank-lines=n</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dmbl_3dn__2d_2dmaximum_2dconsecutive_2dblank_2dl"><strong>-mbl=n</strong> <strong>--maximum-consecutive-blank-lines=n</strong></a></strong>
+
 <dd>
-This parameter specifies the maximum number of consecutive blank lines
+<p>This parameter specifies the maximum number of consecutive blank lines
 in the output script.  The default is n=1.  If the input file has more
 than n consecutive blank lines, the number will be reduced to n.
-(This obviously does not apply to pod sections, here-documents, and quotes).
+(This obviously does not apply to pod sections, here-documents, and quotes).</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dsob_2c__2d_2dswallow_2doptional_2dblank_2dlines"><strong>-sob</strong>,  <strong>--swallow-optional-blank-lines</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dsob_2c__2d_2dswallow_2doptional_2dblank_2dlines"><strong>-sob</strong>,  <strong>--swallow-optional-blank-lines</strong></a></strong>
+
 <dd>
-All blank lines not required by the above flags, <strong>-bbb</strong>, <strong>-bbs</strong>, and <strong>-bbc</strong>,
+<p>All blank lines not required by the above flags, <strong>-bbb</strong>, <strong>-bbs</strong>, and <strong>-bbc</strong>,
 will be deleted.  (But essential blank lines above pod documents will be
-retained).  This is NOT the default.
+retained).  This is NOT the default.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dnsob_2c__2d_2dnoswallow_2doptional_2dblank_2dli"><strong>-nsob</strong>,  <strong>--noswallow-optional-blank-lines</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dnsob_2c__2d_2dnoswallow_2doptional_2dblank_2dli"><strong>-nsob</strong>,  <strong>--noswallow-optional-blank-lines</strong></a></strong>
+
 <dd>
-Retain blank lines, including those which do not corresponding to flags
+<p>Retain blank lines, including those which do not corresponding to flags
 <strong>-bbb</strong>, <strong>-bbs</strong>, and <strong>-bbc</strong>.  This is the default.  The number of
 blanks retained is subject to the limit imposed by
-<strong>--maximum-consecutive-blank-lines</strong>, however.
+<strong>--maximum-consecutive-blank-lines</strong>, however.</p>
 </dd>
-<p></p></dl>
+</li>
+</dl>
 <p>
 </p>
 <h2><a name="styles">Styles</a></h2>
 <p>A style refers to a convenient collection of existing parameters.</p>
 <dl>
-<dt><strong><a name="item__2dgnu_2c__2d_2dgnu_2dstyle"><strong>-gnu</strong>, <strong>--gnu-style</strong></a></strong><br />
-</dt>
+<dt><strong><a name="item__2dgnu_2c__2d_2dgnu_2dstyle"><strong>-gnu</strong>, <strong>--gnu-style</strong></a></strong>
+
 <dd>
-<strong>-gnu</strong> gives an approximation to the GNU Coding Standards (which do
+<p><strong>-gnu</strong> gives an approximation to the GNU Coding Standards (which do
 not apply to perl) as they are sometimes implemented.  At present, this
-style overrides the default style with the following parameters:
+style overrides the default style with the following parameters:</p>
 </dd>
 <dd>
 <pre>
     -lp -bl -noll -pt=2 -bt=2 -sbt=2 -icp</pre>
 </dd>
-<p></p></dl>
+</li>
+<dt><strong><a name="item__2dpbp_2c__2d_2dperl_2dbest_2dpractices"><strong>-pbp</strong>, <strong>--perl-best-practices</strong></a></strong>
+
+<dd>
+<p><strong>-pbp</strong> is an abbreviation for the parameters in the book <strong>Perl Best Practices</strong>
+by Damian Conway:</p>
+</dd>
+<dd>
+<pre>
+    -l=78 -i=4 -ci=4 -st -se -vt=2 -cti=0 -pt=1 -bt=1 -sbt=1 -bbt=1 -nsfs -nolq
+    -wbb=&quot;% + - * / x != == &gt;= &lt;= =~ !~ &lt; &gt; | &amp; &gt;= &lt; = 
+          **= += *= &amp;= &lt;&lt;= &amp;&amp;= -= /= |= &gt;&gt;= ||= .= %= ^= x=&quot;</pre>
+</dd>
+<dd>
+<p>Note that the -st and -se flags make perltidy act as a filter on one file only.  
+These can be overridden with -nst and -nse if necessary.</p>
+</dd>
+</li>
+</dl>
 <p>
 </p>
 <h2><a name="other_controls">Other Controls</a></h2>
 <dl>
-<dt><strong><a name="item_deleting_selected_text">Deleting selected text</a></strong><br />
-</dt>
+<dt><strong><a name="item_deleting_selected_text">Deleting selected text</a></strong>
+
 <dd>
-Perltidy can selectively delete comments and/or pod documentation.  The
+<p>Perltidy can selectively delete comments and/or pod documentation.  The
 command <strong>-dac</strong> or  <strong>--delete-all-comments</strong> will delete all comments
 <strong>and</strong> all pod documentation, leaving just code and any leading system
-control lines.
+control lines.</p>
 </dd>
 <dd>
 <p>The command <strong>-dp</strong> or <strong>--delete-pod</strong> will remove all pod documentation
@@ -2389,13 +2426,13 @@ block comments are deleted, any leading 'hash-bang' will be retained.
 Also, if the <strong>-x</strong> flag is used, any system commands before a leading
 hash-bang will be retained (even if they are in the form of comments).</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_writing_selected_text_to_a_file">Writing selected text to a file</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_writing_selected_text_to_a_file">Writing selected text to a file</a></strong>
+
 <dd>
-When perltidy writes a formatted text file, it has the ability to also
+<p>When perltidy writes a formatted text file, it has the ability to also
 send selected text to a file with a <em>.TEE</em> extension.  This text can
-include comments and pod documentation.
+include comments and pod documentation.</p>
 </dd>
 <dd>
 <p>The command <strong>-tac</strong> or  <strong>--tee-all-comments</strong> will write all comments
@@ -2413,15 +2450,15 @@ not comments).</p>
 <dd>
 <p>The negatives of these commands also work, and are the defaults.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_using_a__2eperltidyrc_command_file">Using a <em>.perltidyrc</em> command file</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_using_a__2eperltidyrc_command_file">Using a <em>.perltidyrc</em> command file</a></strong>
+
 <dd>
-If you use perltidy frequently, you probably won't be happy until you
+<p>If you use perltidy frequently, you probably won't be happy until you
 create a <em>.perltidyrc</em> file to avoid typing commonly-used parameters.
 Perltidy will first look in your current directory for a command file
 named <em>.perltidyrc</em>.  If it does not find one, it will continue looking
-for one in other standard locations.
+for one in other standard locations.</p>
 </dd>
 <dd>
 <p>These other locations are system-dependent, and may be displayed with
@@ -2470,37 +2507,38 @@ file which would cause some kind of dump and an exit.  These are:</p>
 file:</p>
 </dd>
 <ul>
-<li></li>
-A very helpful command is <strong>--dump-profile</strong> or <strong>-dpro</strong>.  It writes a
+<li>
+<p>A very helpful command is <strong>--dump-profile</strong> or <strong>-dpro</strong>.  It writes a
 list of all configuration filenames tested to standard output, and 
 if a file is found, it dumps the content to standard output before
 exiting.  So, to find out where perltidy looks for its configuration
-files, and which one if any it selects, just enter
+files, and which one if any it selects, just enter</p>
 <pre>
   perltidy -dpro</pre>
-<p></p>
-<li></li>
-It may be simplest to develop and test configuration files with
+</li>
+<li>
+<p>It may be simplest to develop and test configuration files with
 alternative names, and invoke them with <strong>-pro=filename</strong> on the command
-line.  Then rename the desired file to <em>.perltidyrc</em> when finished.
-<p></p>
-<li></li>
-The parameters in the <em>.perltidyrc</em> file can be switched off with 
-the <strong>-npro</strong> option.
-<p></p>
-<li></li>
-The commands <strong>--dump-options</strong>, <strong>--dump-defaults</strong>, <strong>--dump-long-names</strong>,
-and <strong>--dump-short-names</strong>, all described below, may all be helpful.
-<p></p></ul>
-<dt><strong><a name="item_creating_a_new_abbreviation">Creating a new abbreviation</a></strong><br />
-</dt>
+line.  Then rename the desired file to <em>.perltidyrc</em> when finished.</p>
+</li>
+<li>
+<p>The parameters in the <em>.perltidyrc</em> file can be switched off with 
+the <strong>-npro</strong> option.</p>
+</li>
+<li>
+<p>The commands <strong>--dump-options</strong>, <strong>--dump-defaults</strong>, <strong>--dump-long-names</strong>,
+and <strong>--dump-short-names</strong>, all described below, may all be helpful.</p>
+</li>
+</ul>
+<dt><strong><a name="item_creating_a_new_abbreviation">Creating a new abbreviation</a></strong>
+
 <dd>
-A special notation is available for use in a <em>.perltidyrc</em> file
+<p>A special notation is available for use in a <em>.perltidyrc</em> file
 for creating an abbreviation for a group
 of options.  This can be used to create a
 shorthand for one or more styles which are frequently, but not always,
 used.  The notation is to group the options within curly braces which
-are preceded by the name of the alias (without leading dashes), like this:
+are preceded by the name of the alias (without leading dashes), like this:</p>
 </dd>
 <dd>
 <pre>
@@ -2531,24 +2569,24 @@ specific example, the following line</p>
 <dd>
 <p>(Either <code>-airy</code> or <code>--airy</code> may be used).</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_skipping_leading_non_2dperl_commands_with__2dx_or_">Skipping leading non-perl commands with <strong>-x</strong> or <strong>--look-for-hash-bang</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_skipping_leading_non_2dperl_commands_with__2dx_or_">Skipping leading non-perl commands with <strong>-x</strong> or <strong>--look-for-hash-bang</strong></a></strong>
+
 <dd>
-If your script has leading lines of system commands or other text which
+<p>If your script has leading lines of system commands or other text which
 are not valid perl code, and which are separated from the start of the
 perl code by a ``hash-bang'' line, ( a line of the form <code>#!...perl</code> ),
 you must use the <strong>-x</strong> flag to tell perltidy not to parse and format any
 lines before the ``hash-bang'' line.  This option also invokes perl with a
 -x flag when checking the syntax.  This option was originally added to
 allow perltidy to parse interactive VMS scripts, but it should be used
-for any script which is normally invoked with <code>perl -x</code>.
+for any script which is normally invoked with <code>perl -x</code>.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_making_a_file_unreadable">Making a file unreadable</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_making_a_file_unreadable">Making a file unreadable</a></strong>
+
 <dd>
-The goal of perltidy is to improve the readability of files, but there
+<p>The goal of perltidy is to improve the readability of files, but there
 are two commands which have the opposite effect, <strong>--mangle</strong> and
 <strong>--extrude</strong>.  They are actually
 merely aliases for combinations of other parameters.  Both of these
@@ -2560,7 +2598,7 @@ Note that these options do not provided any meaningful obfuscation, because
 perltidy can be used to reformat the files.  They were originally
 developed to help test the tokenization logic of perltidy, but they
 have other uses.
-One use for <strong>--mangle</strong> is the following:
+One use for <strong>--mangle</strong> is the following:</p>
 </dd>
 <dd>
 <pre>
@@ -2578,12 +2616,12 @@ to make the minimum number of one-line blocks.</p>
 <p>Another use for <strong>--mangle</strong> is to combine it with <strong>-dac</strong> to reduce
 the file size of a perl script.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_one_2dline_blocks">One-line blocks</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_one_2dline_blocks">One-line blocks</a></strong>
+
 <dd>
-There are a few points to note regarding one-line blocks.  A one-line
-block is something like this,
+<p>There are a few points to note regarding one-line blocks.  A one-line
+block is something like this,</p>
 </dd>
 <dd>
 <pre>
@@ -2622,11 +2660,11 @@ available line length, the formatting will violate the requested brace style.
 If this happens, reformatting the script a second time should correct
 the problem.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_debugging">Debugging</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_debugging">Debugging</a></strong>
+
 <dd>
-The following flags are available for debugging:
+<p>The following flags are available for debugging:</p>
 </dd>
 <dd>
 <p><strong>--dump-defaults</strong> or <strong>-ddf</strong> will write the default option set to standard output and quit</p>
@@ -2665,13 +2703,13 @@ around tokens.</p>
 <p><strong>-DEBUG</strong>  will write a file with extension <em>.DEBUG</em> for each input file 
 showing the tokenization of all lines of code.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_working_with_makemaker_2c_autoloader_and_selfloade">Working with MakeMaker, AutoLoader and SelfLoader</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_working_with_makemaker_2c_autoloader_and_selfloade">Working with MakeMaker, AutoLoader and SelfLoader</a></strong>
+
 <dd>
-The first $VERSION line of a file which might be eval'd by MakeMaker
+<p>The first $VERSION line of a file which might be eval'd by MakeMaker
 is passed through unchanged except for indentation.  
-Use <strong>--nopass-version-line</strong>, or <strong>-npvl</strong>, to deactivate this feature.
+Use <strong>--nopass-version-line</strong>, or <strong>-npvl</strong>, to deactivate this feature.</p>
 </dd>
 <dd>
 <p>If the AutoLoader module is used, perltidy will continue formatting
@@ -2683,30 +2721,31 @@ Use <strong>--nolook-for-autoloader</strong>, or <strong>-nlal</strong>, to deac
 code after seeing a __DATA__ line.
 Use <strong>--nolook-for-selfloader</strong>, or <strong>-nlsl</strong>, to deactivate this feature.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_working_around_problems_with_older_version_of_perl">Working around problems with older version of Perl</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_working_around_problems_with_older_version_of_perl">Working around problems with older version of Perl</a></strong>
+
 <dd>
-Perltidy contains a number of rules which help avoid known subtleties
+<p>Perltidy contains a number of rules which help avoid known subtleties
 and problems with older versions of perl, and these rules always
 take priority over whatever formatting flags have been set.  For example,
 perltidy will usually avoid starting a new line with a bareword, because
-this might cause problems if <code>use strict</code> is active.
+this might cause problems if <code>use strict</code> is active.</p>
 </dd>
 <dd>
 <p>There is no way to override these rules.</p>
 </dd>
-<p></p></dl>
+</li>
+</dl>
 <p>
 </p>
 <hr />
 <h1><a name="html_options">HTML OPTIONS</a></h1>
 <dl>
-<dt><strong><a name="item_the__2dhtml_master_switch">The <strong>-html</strong> master switch</a></strong><br />
-</dt>
+<dt><strong><a name="item_the__2dhtml_master_switch">The <strong>-html</strong> master switch</a></strong>
+
 <dd>
-The flag <strong>-html</strong> causes perltidy to write an html file with extension
-<em>.html</em>.  So, for example, the following command
+<p>The flag <strong>-html</strong> causes perltidy to write an html file with extension
+<em>.html</em>.  So, for example, the following command</p>
 </dd>
 <dd>
 <pre>
@@ -2722,42 +2761,42 @@ input file, and it does not write a formatted file with extension
 <em>.tdy</em>.  This means that two perltidy runs are required to create a
 fully reformatted, html copy of a script.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_the__2dpre_flag_for_code_snippets">The <strong>-pre</strong> flag for code snippets</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_the__2dpre_flag_for_code_snippets">The <strong>-pre</strong> flag for code snippets</a></strong>
+
 <dd>
-When the <strong>-pre</strong> flag is given, only the pre-formatted section, within
+<p>When the <strong>-pre</strong> flag is given, only the pre-formatted section, within
 the &lt;PRE&gt; and &lt;/PRE&gt; tags, will be output.  This simplifies inclusion
 of the output in other files.  The default is to output a complete
-web page.
+web page.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_the__2dnnn_flag_for_line_numbering">The <strong>-nnn</strong> flag for line numbering</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_the__2dnnn_flag_for_line_numbering">The <strong>-nnn</strong> flag for line numbering</a></strong>
+
 <dd>
-When the <strong>-nnn</strong> flag is given, the output lines will be numbered.
+<p>When the <strong>-nnn</strong> flag is given, the output lines will be numbered.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_the__2dtoc_2c_or__2d_2dhtml_2dtable_2dof_2dcontent">The <strong>-toc</strong>, or <strong>--html-table-of-contents</strong> flag</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_the__2dtoc_2c_or__2d_2dhtml_2dtable_2dof_2dcontent">The <strong>-toc</strong>, or <strong>--html-table-of-contents</strong> flag</a></strong>
+
 <dd>
-By default, a table of contents to packages and subroutines will be
+<p>By default, a table of contents to packages and subroutines will be
 written at the start of html output.  Use <strong>-ntoc</strong> to prevent this.
 This might be useful, for example, for a pod document which contains a
 number of unrelated code snippets.  This flag only influences the code
 table of contents; it has no effect on any table of contents produced by
-pod2html (see next item).
+pod2html (see next item).</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_the__2dpod_2c_or__2d_2dpod2html_flag">The <strong>-pod</strong>, or <strong>--pod2html</strong> flag</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_the__2dpod_2c_or__2d_2dpod2html_flag">The <strong>-pod</strong>, or <strong>--pod2html</strong> flag</a></strong>
+
 <dd>
-There are two options for formatting pod documentation.  The default is
+<p>There are two options for formatting pod documentation.  The default is
 to pass the pod through the Pod::Html module (which forms the basis of
 the pod2html utility).  Any code sections are formatted by perltidy, and
 the results then merged.  Note: perltidy creates a temporary file when
 Pod::Html is used; see <a href="#files">FILES</a>.  Also, Pod::Html creates temporary
-files for its cache.
+files for its cache.</p>
 </dd>
 <dd>
 <p>NOTE: Perltidy counts the number of <code>=cut</code> lines, and either moves the
@@ -2795,16 +2834,16 @@ rather to format pod text in italics (or whatever the stylesheet
 indicates), without special html markup.  This is useful, for example,
 if pod is being used as an alternative way to write comments.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_the__2dfrm_2c_or__2d_2dframes_flag">The <strong>-frm</strong>, or <strong>--frames</strong> flag</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_the__2dfrm_2c_or__2d_2dframes_flag">The <strong>-frm</strong>, or <strong>--frames</strong> flag</a></strong>
+
 <dd>
-By default, a single html output file is produced.  This can be changed
+<p>By default, a single html output file is produced.  This can be changed
 with the <strong>-frm</strong> option, which creates a frame holding a table of
 contents in the left panel and the source code in the right side. This
 simplifies code browsing.  Assume, for example, that the input file is
 <em>MyModule.pm</em>.  Then, for default file extension choices, these three
-files will be created:
+files will be created:</p>
 </dd>
 <dd>
 <pre>
@@ -2818,38 +2857,38 @@ file (as opposed to, say, standard output).  If this is not the
 case, or if the file extension is unknown, the <strong>-frm</strong> option will be
 ignored.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_the__2dtext_3ds_2c_or__2d_2dhtml_2dtoc_2dextension">The <strong>-text=s</strong>, or <strong>--html-toc-extension</strong> flag</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_the__2dtext_3ds_2c_or__2d_2dhtml_2dtoc_2dextension">The <strong>-text=s</strong>, or <strong>--html-toc-extension</strong> flag</a></strong>
+
 <dd>
-Use this flag to specify the extra file extension of the table of contents file
+<p>Use this flag to specify the extra file extension of the table of contents file
 when html frames are used.  The default is ``toc''.
-See <a href="#specifying_file_extensions">Specifying File Extensions</a>.
+See <a href="#specifying_file_extensions">Specifying File Extensions</a>.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_the__2dsext_3ds_2c_or__2d_2dhtml_2dsrc_2dextension">The <strong>-sext=s</strong>, or <strong>--html-src-extension</strong> flag</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_the__2dsext_3ds_2c_or__2d_2dhtml_2dsrc_2dextension">The <strong>-sext=s</strong>, or <strong>--html-src-extension</strong> flag</a></strong>
+
 <dd>
-Use this flag to specify the extra file extension of the content file when html
+<p>Use this flag to specify the extra file extension of the content file when html
 frames are used.  The default is ``src''.
-See <a href="#specifying_file_extensions">Specifying File Extensions</a>.
+See <a href="#specifying_file_extensions">Specifying File Extensions</a>.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_the__2dhent_2c_or__2d_2dhtml_2dentities_flag">The <strong>-hent</strong>, or <strong>--html-entities</strong> flag</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_the__2dhent_2c_or__2d_2dhtml_2dentities_flag">The <strong>-hent</strong>, or <strong>--html-entities</strong> flag</a></strong>
+
 <dd>
-This flag controls the use of Html::Entities for html formatting.  By
+<p>This flag controls the use of Html::Entities for html formatting.  By
 default, the module Html::Entities is used to encode special symbols.
 This may not be the right thing for some browser/language
-combinations.  Use --nohtml-entities or -nhent to prevent this.
+combinations.  Use --nohtml-entities or -nhent to prevent this.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_style_sheets">Style Sheets</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_style_sheets">Style Sheets</a></strong>
+
 <dd>
-Style sheets make it very convenient to control and adjust the
+<p>Style sheets make it very convenient to control and adjust the
 appearance of html pages.  The default behavior is to write a page of
-html with an embedded style sheet.
+html with an embedded style sheet.</p>
 </dd>
 <dd>
 <p>An alternative to an embedded style sheet is to create a page with a
@@ -2882,13 +2921,13 @@ must to be sure that older browsers (roughly speaking, versions prior to
 4.0 of Netscape Navigator and Internet Explorer) can display the
 syntax-coloring of the html files.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_controlling_html_properties">Controlling HTML properties</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_controlling_html_properties">Controlling HTML properties</a></strong>
+
 <dd>
-Note: It is usually more convenient to accept the default properties
+<p>Note: It is usually more convenient to accept the default properties
 and then edit the stylesheet which is produced.  However, this section
-shows how to control the properties with flags to perltidy.
+shows how to control the properties with flags to perltidy.</p>
 </dd>
 <dd>
 <p>Syntax colors may be changed from their default values by flags of the either
@@ -3010,7 +3049,8 @@ sheet contains comments which should make this easy.</p>
 <p>3. The syntax-colored html files can be very large, so it may be best to
 split large files into smaller pieces to improve download times.</p>
 </dd>
-<p></p></dl>
+</li>
+</dl>
 <p>
 </p>
 <hr />
@@ -3065,13 +3105,13 @@ used.</p>
 <hr />
 <h1><a name="limitations">LIMITATIONS</a></h1>
 <dl>
-<dt><strong><a name="item_parsing_limitations">Parsing Limitations</a></strong><br />
-</dt>
+<dt><strong><a name="item_parsing_limitations">Parsing Limitations</a></strong>
+
 <dd>
-Perltidy should work properly on most perl scripts.  It does a lot of
+<p>Perltidy should work properly on most perl scripts.  It does a lot of
 self-checking, but still, it is possible that an error could be
 introduced and go undetected.  Therefore, it is essential to make
-careful backups and to test reformatted scripts.
+careful backups and to test reformatted scripts.</p>
 </dd>
 <dd>
 <p>The main current limitation is that perltidy does not scan modules
@@ -3083,58 +3123,60 @@ it leaves a message in the log file.</p>
 <dd>
 <p>If you encounter a bug, please report it.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_what_perltidy_does_not_parse_and_format">What perltidy does not parse and format</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_what_perltidy_does_not_parse_and_format">What perltidy does not parse and format</a></strong>
+
 <dd>
-Perltidy indents but does not reformat comments and <code>qw</code> quotes. 
+<p>Perltidy indents but does not reformat comments and <code>qw</code> quotes. 
 Perltidy does not in any way modify the contents of here documents or
 quoted text, even if they contain source code.  (You could, however,
 reformat them separately).  Perltidy does not format 'format' sections
-in any way.  And, of course, it does not modify pod documents.
+in any way.  And, of course, it does not modify pod documents.</p>
 </dd>
-<p></p></dl>
+</li>
+</dl>
 <p>
 </p>
 <hr />
 <h1><a name="files">FILES</a></h1>
 <dl>
-<dt><strong><a name="item_temporary_files">Temporary files</a></strong><br />
-</dt>
+<dt><strong><a name="item_temporary_files">Temporary files</a></strong>
+
 <dd>
-Under the -html option with the default --pod2html flag, a temporary file is
+<p>Under the -html option with the default --pod2html flag, a temporary file is
 required to pass text to Pod::Html.  Unix systems will try to use the POSIX
 <code>tmpnam()</code> function.  Otherwise the file <em>perltidy.TMP</em> will be temporarily
-created in the current working directory.
+created in the current working directory.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_special_files_when_standard_input_is_used">Special files when standard input is used</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_special_files_when_standard_input_is_used">Special files when standard input is used</a></strong>
+
 <dd>
-When standard input is used, the log file, if saved, is <em>perltidy.LOG</em>,
+<p>When standard input is used, the log file, if saved, is <em>perltidy.LOG</em>,
 and any errors are written to <em>perltidy.ERR</em> unless the <strong>-se</strong> flag is
-set.  These are saved in the current working directory.
+set.  These are saved in the current working directory.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_files_overwritten">Files overwritten</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_files_overwritten">Files overwritten</a></strong>
+
 <dd>
-The following file extensions are used by perltidy, and files with these
+<p>The following file extensions are used by perltidy, and files with these
 extensions may be overwritten or deleted: <em>.ERR</em>, <em>.LOG</em>, <em>.TEE</em>,
 and/or <em>.tdy</em>, <em>.html</em>, and <em>.bak</em>, depending on the run type and
-settings.
+settings.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_files_extensions_limitations">Files extensions limitations</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_files_extensions_limitations">Files extensions limitations</a></strong>
+
 <dd>
-Perltidy does not operate on files for which the run could produce a file with
+<p>Perltidy does not operate on files for which the run could produce a file with
 a duplicated file extension.  These extensions include <em>.LOG</em>, <em>.ERR</em>,
 <em>.TEE</em>, and perhaps <em>.tdy</em> and <em>.bak</em>, depending on the run type.  The
 purpose of this rule is to prevent generating confusing filenames such as
-<em>somefile.tdy.tdy.tdy</em>.
+<em>somefile.tdy.tdy.tdy</em>.</p>
 </dd>
-<p></p></dl>
+</li>
+</dl>
 <p>
 </p>
 <hr />
@@ -3144,7 +3186,7 @@ purpose of this rule is to prevent generating confusing filenames such as
 </p>
 <hr />
 <h1><a name="version">VERSION</a></h1>
-<p>This man page documents perltidy version 20060614.</p>
+<p>This man page documents perltidy version 20060719.</p>
 <p>
 </p>
 <hr />

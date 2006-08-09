@@ -14,3 +14,12 @@ my %hash;
 $hash{^HOWDY} = 56;
 my $result = $hash{^HOWDY};
 print "result is $result\n";
+
+# perl accepts this:
+$^] = 1;
+my @bb;
+$bb[$^]]="bubba";
+print "bb=@bb\n";
+@^] = (1,2);
+my @b=@^];
+print "@b\n";

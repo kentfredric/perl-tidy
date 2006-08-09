@@ -1863,9 +1863,9 @@ return lists, such as C<sort> and <map>.  This allows chains of these
 operators to be displayed one per line.  Use B<-nbok> to prevent
 retaining these breakpoints.
 
-=item B<-bot>,  B<--break-at-old-trinary-breakpoints>
+=item B<-bot>,  B<--break-at-old-ternary-breakpoints>
 
-By default, if a conditional (trinary) operator is broken at a C<:>,
+By default, if a conditional (ternary) operator is broken at a C<:>,
 then it will remain broken.  To prevent this, and thereby
 form longer lines, use B<-nbot>.
 
@@ -2548,7 +2548,7 @@ The following list shows all short parameter names which allow a prefix
  dwrs dws f    fll  frm  fs  hsc html ibc  icb  icp iob  isbc lal  log
  lp   lsl ohbr okw  ola  oll opr opt  osbr otr  ple ple  pod  pvl  q
  sbc  sbl schb scp  scsb sct se  sfp  sfs  skp  sob sohb sop  sosb sot
- ssc  st  sts  syn  t    tac tbc toc  tp   tqw  tsc w    x
+ ssc  st  sts  syn  t    tac tbc toc  tp   tqw  tsc w    x    bar
 
 Equivalently, the prefix 'no' or 'no-' on the corresponding long names may be
 used.

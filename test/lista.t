@@ -1,3 +1,7 @@
+# two line problem which looked strange with alignment
+$this = pack( $pat, $af_inet, 0,     0, 0, 0, 0 );
+$that = pack( $pat, $af_inet, $port, @bytes );
+
 # originally lost alignment due to '.' 
 my $a = [
     "erste",                   "zweite",

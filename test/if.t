@@ -1,3 +1,6 @@
+# that's an if, not a flag!
+warn qq/warning: -refresh ignored for ftp URLs\n/if $refresh;
+
 # Good example: 
 if (
     $USE_UTF

@@ -8,15 +8,10 @@ them.
 
 There are many opportunities for improving vertical alignment. 
 
-=head2 More options for controling placement of opening/closing tokens
-
-Many have requested even more options to control opening and closing token
-placement.  
-
 =head2 improved ?: formatting
 
 An indentation level should be associated with ?: statements.
-This will make nested ?: statements more readable.
+This would make nested ?: statements more readable.
 
 =head2 improved internal if/unless formatting
 

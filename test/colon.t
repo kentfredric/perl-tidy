@@ -1,3 +1,53 @@
+# Old Problem: A break at the first : triggers all later : breaks
+# But a break at the second colon does not trigger earlier breaks!
+    $year % 4 ? 0 
+    : $year % 100 ? 1 : $year % 400 ? 0 : 1;
+
+    $year % 4 ? 0 : $year % 100 ? 1 
+    : $year % 400 ? 0 : 1;
+
+# Old problem: a single old colon  break will not trigger all breaks at that
+# level And therefore this gets really messed up...
+        $bits = $top > 0xffff ? 32 : $top > 0xff ? 16 : $top > 1 ? 8 
+        : 1;
+
+push(
+    @opt_exclude_regex,
+    join(
+        '', '(\A|/)',
+        (
+            map {
+                (
+                    $_ eq '*' ? '.*'
+                    : (
+                        $_ eq '?' ? '.'
+                        : (
+                            $_ eq '.' ? '\.'
+                            : ( $_ =~ /^\[/ ? $_ : quotemeta($_) )
+                        )
+                    )
+                  )
+              } @a
+        ),
+        '\Z'
+    )
+);
+
+( $options_r->{'bg_color'} )
+  ? $options_r->{'bg_color'}
+  : $MIDI::Opus::BG_color;
+
+
+$self->{'can_javascript'} = (
+    $q->user_agent =~ m#(Mozilla/[4-9])#i ? 1.2
+    : (
+        $q->user_agent =~ m#(Mozilla/3)#i ? 1.1
+        : (
+            $q->user_agent =~ m#(Mozilla/2|Konqueror)#i ? 1.0
+            : 0
+        )
+    )
+);
 {
     $this->{'tracks'} =
       (defined($options_r->{'tracks'})
@@ -353,3 +403,46 @@ print(
           == -1
     ) ? "ok 7\n" : "not ok 7\n"
 );
+
+# problems with terminal indentation which work now:
+
+        ( @_ == 0 ) ? ''
+      : ( @_ == 1 ) ? $_[0]
+      : ( @_ == 2 ) ? join( " and ",     @_ )
+      :               join( "$sepchar ", @_[ 0 .. ( $#_ - 1 ) ], "and $_[-1]" );
+
+    # extra fields in last line caused alignment trouble
+    my $tempd =
+        defined $ENV{TEMP} ? $ENV{TEMP}
+      : defined $ENV{TMP}  ? $ENV{TMP}
+      :                      cdir( $fs->rootdir, $td );
+
+    # why no alignment
+    my $self =
+        @$options > 1  ? shift @$options
+      : @$options == 1 ? { %{ $options->[0] } }
+      :                  {};
+
+    $norun =
+        ( $_[0] eq 'toggle' ) ? !$norun
+      : ( $_[0] eq 'once' )   ? 'once'
+      : ( $_[0] eq 'on' )     ? 1
+      :                         0;
+
+    my $max_allowed_sparsity =
+        ( $item_count < 3 )    ? 0.1
+      : ( $packed_lines == 1 ) ? 0.15
+      : ( $packed_lines == 2 ) ? 0.4
+      :                          0.7;
+
+    # align ? here
+    $extra_space .=
+        ( $input_line_number < 10 )  ? "  "
+      : ( $input_line_number < 100 ) ? " "
+      :                                "";
+
+# Old problem no alignment of return because not enough fields
+    ( $k eq 'file0' )   ? do { $file0   = $v }
+  : ( $k eq 'file1' )   ? do { $file1   = $v }
+  : ( $k eq 'fileptr' ) ? do { $fileptr = $v }
+  :   return;

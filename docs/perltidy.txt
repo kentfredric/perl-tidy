@@ -1669,8 +1669,8 @@ FORMATTING OPTIONS
         these operators to be displayed one per line. Use -nbok to prevent
         retaining these breakpoints.
 
-    -bot, --break-at-old-trinary-breakpoints
-        By default, if a conditional (trinary) operator is broken at a ":",
+    -bot, --break-at-old-ternary-breakpoints
+        By default, if a conditional (ternary) operator is broken at a ":",
         then it will remain broken. To prevent this, and thereby form longer
         lines, use -nbot.
 
@@ -1747,6 +1747,17 @@ FORMATTING OPTIONS
         parameters:
 
             -lp -bl -noll -pt=2 -bt=2 -sbt=2 -icp
+
+    -pbp, --perl-best-practices
+        -pbp is an abbreviation for the parameters in the book Perl Best
+        Practices by Damian Conway:
+
+            -l=78 -i=4 -ci=4 -st -se -vt=2 -cti=0 -pt=1 -bt=1 -sbt=1 -bbt=1 -nsfs -nolq
+            -wbb="% + - * / x != == >= <= =~ !~ < > | & >= < = 
+                  **= += *= &= <<= &&= -= /= |= >>= ||= .= %= ^= x="
+
+        Note that the -st and -se flags make perltidy act as a filter on one
+        file only. These can be overridden with -nst and -nse if necessary.
 
   Other Controls
     Deleting selected text
@@ -2332,7 +2343,7 @@ SEE ALSO
     perlstyle(1), Perl::Tidy(3)
 
 VERSION
-    This man page documents perltidy version 20060614.
+    This man page documents perltidy version 20060719.
 
 CREDITS
     Michael Cartmell supplied code for adaptation to VMS and helped with

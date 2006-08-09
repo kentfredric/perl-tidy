@@ -6,12 +6,8 @@ Perltidy TODO List
   Improved Vertical Alignment
     There are many opportunities for improving vertical alignment.
 
-  More options for controling placement of opening/closing tokens
-    Many have requested even more options to control opening and closing
-    token placement.
-
   improved ?: formatting
-    An indentation level should be associated with ?: statements. This will
+    An indentation level should be associated with ?: statements. This would
     make nested ?: statements more readable.
 
   improved internal if/unless formatting

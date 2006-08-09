@@ -30,7 +30,7 @@ reading them, you will probably find it useful.
 
 The formatting can be controlled with command line parameters.  The default
 parameter settings approximately follow the suggestions in the
-<a href="http://www.perldoc.com/perl5.6.1/pod/perlstyle.html">
+<a href="http://www.perl.com/doc/manual/html/pod/perlstyle.html">
 Perl Style Guide</a>.
 
 Perltidy can also output html of both pod and source code.  For example, the
@@ -87,17 +87,16 @@ tested on Unix, Windows, VMS and MacPerl.
 
 <li>Please check the <a href="INSTALL.html">Installation Notes</a>
 
-<li>Download <a href="http://prdownloads.sourceforge.net/perltidy/Perl-Tidy-20060614.tar.gz">
+<li>Download <a href="http://prdownloads.sourceforge.net/perltidy/Perl-Tidy-20060719.tar.gz">
 The latest release (.tgz, Unix-style line endings)</a>
 
-<li>Download <a href="http://prdownloads.sourceforge.net/perltidy/Perl-Tidy-20060614.zip">
+<li>Download <a href="http://prdownloads.sourceforge.net/perltidy/Perl-Tidy-20060719.zip">
 The latest release (.zip, Windows-style line endings)</a>
 
-<li>Download <a href="http://download.fedora.us/fedora/redhat/9/i386/RPMS.stable/">
-rpm's from the Fedora project</a>
-
-<li>Download <a href="http://prdownloads.sourceforge.net/perltidy/perltidy_20060614-1_all.deb">
+<li>Download <a href="http://prdownloads.sourceforge.net/perltidy/perltidy_20060719-1_all.deb">
 The latest release as a .deb Debian Linux package</a>
+
+<li>Download <a href= "http://rpmfind.net/" > rpm's from Rpmfind.Net</a>
 
 <li> If these links are broken, 
 go 

@@ -1,3 +1,9 @@
+# set_vertical_alignment_markers does not make opening parens
+# an alignment token here:
+$code =
+    ( $case_matters ? $accessor    : " lc($accessor) " )
+  . ( $yesno        ? " eq "       : " ne " )
+  . ( $case_matters ? " q{$text} " : "q{\L$text}\E " );
 # -pvt=2   -pvtc=2
 if ( ( !( $from || $to || $subject || $size || ( $fieldname && $fieldval ) ) || !$ruletype ) &&
      !$dest ) {

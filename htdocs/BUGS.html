@@ -1,7 +1,9 @@
+<?xml version="1.0" ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <title>Perltidy open BUGS</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
 
@@ -15,8 +17,7 @@
 	<li><a href="#perltidy_open_bugs">Perltidy open BUGS</a></li>
 	<ul>
 
-		<li><a href="#a_heredoc_invoked_through_an__e__modifier_on_a_pattern_replacement_text_is_not_recognized">A here-doc invoked through an 'e' modifier on a pattern replacement text is not recognized</a></li>
-		<li><a href="#the_extrude_option_can_occasionally_produce_code_with_syntax_errors">The -extrude option can occasionally produce code with syntax errors</a></li>
+		<li><a href="#the_extrude_option_can_produce_code_with_syntax_errors">The -extrude option can produce code with syntax errors</a></li>
 	</ul>
 
 </ul>
@@ -26,45 +27,21 @@
 <p>
 </p>
 <h1><a name="perltidy_open_bugs">Perltidy open BUGS</a></h1>
-<pre>
- You can help perltidy evolve into a better program.  If you think you
- have hit a bug or weird behavior, or have a suggested improvement,
- please send a note to perltidy at users.sourceforge.net.</pre>
-<pre>
- This file only lists open bugs.  For bugs which have been fixed, 
- see the ChangeLog.</pre>
+<p>You can help perltidy evolve into a better program.  If you think you
+have hit a bug or weird behavior, or have a suggested improvement,
+please send a note to perltidy at users.sourceforge.net.</p>
+<p>This file only lists open bugs.  For bugs which have been fixed, 
+see the ChangeLog.</p>
 <p>
 </p>
-<h2><a name="a_heredoc_invoked_through_an__e__modifier_on_a_pattern_replacement_text_is_not_recognized">A here-doc invoked through an 'e' modifier on a pattern replacement text is not recognized</a></h2>
-<p>For example, the output of perltidy for this script has a syntax error:</p>
-<pre>
-        my $text=&quot;Hello World!\n&quot;;
-        $text =~ s@Hello@&lt;&lt;'END'@e;
-        Goodbye 
-        Cruel
-        END
-        print &quot;$text\n&quot;;</pre>
-<p>A workaround is to put the here-doc in a temporary string and then do the
-substitution:</p>
-<pre>
-        my $text=&quot;Hello World!\n&quot;;
-        my $str=&lt;&lt;'END';
-        Goodbye 
-        Cruel
-        END
-        $text =~ s@Hello@$str@e;
-        print &quot;$text\n&quot;;</pre>
-<p>
-</p>
-<h2><a name="the_extrude_option_can_occasionally_produce_code_with_syntax_errors">The --extrude option can occasionally produce code with syntax errors</a></h2>
+<h2><a name="the_extrude_option_can_produce_code_with_syntax_errors">The --extrude option can produce code with syntax errors</a></h2>
 <p>The --extrude tries to put as many newlines in the formatted code as possible.
-This option is of limited use for formatting, but it has been helpful for
-debugging purposes.  Occasionally it will produce code which Perl considers to
-have a syntax error.  These problems usually involve code where Perl is having
-to guess the tokenization.  For example, --extrude will currently cause a
-syntax error in the following line:</p>
-<pre>
- utime $inc+0 ? ($mtime, $ntime) : ($atime, $atime), $file;</pre>
+This option is very useful for testing perltidy but not for actual formatting.
+Occasionally it will produce code which Perl considers to have a syntax error.
+These problems usually involve code where Perl is having to guess the
+tokenization based on whitespace.  Since the --extrude option is typically only
+used for testing perltidy, this type of error should not normally occur in
+practice.</p>
 
 </body>
 

@@ -1,3 +1,31 @@
+{{{{
+# The parens were messed up once:
+                $contents .= join (
+                                   (
+                                    ($USING_STYLES && $image_style)
+                                    ? " CLASS=\"$image_style\""
+                                    : ''
+                                   ),
+                                   );
+}}}}
+# lots of side comments
+$gif->arc(
+          50, 50,     # Center x, y.
+          30, 30,     # Width, Height.
+          0,  360,    # Start Angle, End Angle.
+          $red
+         );     # Color.
+
+# former closing paren problem
+$self->set_displayname(
+                       $nse,
+                       sprintf("%s/%d-%d",
+                               $seq->id(), $seq->start(), $seq->end())
+                      );
+
+die sprintf("Usage: %s [ -r | -a | -f fmt ] file ...\n", ($0 =~ m|.*/(.*)|o))
+    if ($opt_h || (! @ARGV) || (($opt_a && $opt_r) || ($opt_a && $opt_f) ||
+                                ($opt_r && $opt_f)));
 until (
     bind(
         Server,
@@ -11,6 +39,26 @@ until (
 }
 
 { #------------- Level 1 ------------------
+
+    # qw gets a little too much indentation here:
+    ok(
+        defined(
+            $seqio = $gb->get_Stream_by_batch(
+                [
+                    qw(J00522 AF303112
+                      2981014)
+                ]
+            )
+        )
+      );
+
+    &PDL::_conv2d_int(
+                      $a, $kern, $c,
+                      (!(defined $opt && exists $$opt{Boundary}))
+                      ? 0
+                      : (($$opt{Boundary} eq "Reflect") + 2 *
+                         ($$opt{Boundary} eq "Truncate"))
+                     );
 
     # must indent to retain 2 fields here:
     %copyhash = (
@@ -67,6 +115,32 @@ my %pods =
 # in sub scan_list.
 
 { #------------- Level 2 ------------------
+        my $borrowers = join(
+                             ' ',
+                             (
+                              $borrower->{'title'},
+                              $borrower->{'firstname'},
+                              $borrower->{'surname'}
+                             )
+                            );
+        if (
+            (
+                 $strand == 1
+             and $self->mutation->prelabel >= $before
+             and $self->mutation->postlabel <= $after
+            )
+            or (    $strand == -1
+                and $self->mutation->prelabel <= $before
+                and $self->mutation->postlabel >= $after)
+           )
+        {
+        }
+        $msg = $listobj->check_list(
+                                    $main,          $prof,
+                                    $csdb,          $user,
+                                    $csdb->{"dbh"}, $par_values{"r_groups"},
+                                    $user_group_tab
+                                   );
 
         # This mixed list must be treated specially in set_leading_whitespace
         # to avoid breaking the first line
