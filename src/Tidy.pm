@@ -63,7 +63,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.57 2006/08/09 02:46:11 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.58 2006/08/26 15:26:36 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 sub streamhandle {
@@ -7027,7 +7027,8 @@ EOM
     %want_break_before = ();
 
     foreach
-      my $tok ( '.', ',', ':', '?', '&&', '||', 'and', 'or', 'err', 'xor' )
+      my $tok ( '.', ',', ':', '?', '&&', '||', 'and', 'or', 'err', 'xor', '+',
+        '-' )
     {
         $want_break_before{$tok} =
           $left_bond_strength{$tok} < $right_bond_strength{$tok};
@@ -8481,7 +8482,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.57 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.58 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -9626,9 +9627,10 @@ sub set_logical_padding {
           )
         {
 
-            #----------------------begin special check---------------
+            #----------------------begin special checks--------------
             #
-            # One more check is needed before we can make the pad.
+            # SPECIAL CHECK 1:
+            # A check is needed before we can make the pad.
             # If we are in a list with some long items, we want each
             # item to stand out.  So in the following example, the
             # first line begining with '$casefold->' would look good
@@ -9687,6 +9689,28 @@ sub set_logical_padding {
                       );
                 }
             }
+
+            # SPECIAL CHECK 2:
+            # a minus may introduce a quoted variable, and we will
+            # add the pad only if this line begins with a bare word,
+            # such as for the word 'Button' here:
+            #    [
+            #         Button      => "Print letter \"~$_\"",
+            #        -command     => [ sub { print "$_[0]\n" }, $_ ],
+            #        -accelerator => "Meta+$_"
+            #    ];
+            #
+            #  On the other hand, if 'Button' is quoted, it looks best
+            #  not to pad:
+            #    [
+            #        'Button'     => "Print letter \"~$_\"",
+            #        -command     => [ sub { print "$_[0]\n" }, $_ ],
+            #        -accelerator => "Meta+$_"
+            #    ];
+            if ($types_to_go[$ibeg_next] eq 'm') {
+                $ok_to_pad=0 if $types_to_go[$ibeg] eq 'Q';
+            }
+
             next unless $ok_to_pad;
 
             #----------------------end special check---------------
@@ -10186,7 +10210,6 @@ sub output_line_to_go {
 
             ( $ri_first, $ri_last ) = set_continuation_breaks($saw_good_break);
 
-            # BUBBA: TESTING
             break_all_chain_tokens( $ri_first, $ri_last); 
 
             # now we do a correction step to clean this up a bit
@@ -11714,7 +11737,7 @@ sub set_vertical_tightness_flags {
 
             # this is a line with just an opening token
             && (   $iend_next == $ibeg_next
-                || $iend_next == $ibeg_next + 1
+                || $iend_next == $ibeg_next + 2
                 && $types_to_go[$iend_next] eq '#' )
 
             # looks bad if we align vertically with the wrong container
@@ -11772,7 +11795,7 @@ sub set_vertical_tightness_flags {
             if (
                 $is_semicolon_terminated
                 || (   $iend_next == $ibeg_next
-                    || $iend_next == $ibeg_next + 1
+                    || $iend_next == $ibeg_next + 2
                     && $types_to_go[$iend_next] eq '#' )
               )
             {
@@ -15226,6 +15249,7 @@ sub recombine_breakpoints {
             }
 
             # if '=' at end of line ...
+            ## BUBBA FIXME: simplify
             elsif ( $is_assignment{ $types_to_go[$imid] } ) {
 
                 # otherwise always ok to join isolated '='
@@ -15274,11 +15298,28 @@ sub recombine_breakpoints {
 
                     #/^(last|next|redo|return)$/
                     $is_last_next_redo_return{ $tokens_to_go[$imid] }
+
+                    # but only if followed by multiple lines
+                    && $n<$nmax
                   );
 
                 if ( $is_and_or{ $tokens_to_go[$imid] } ) {
                     next unless $want_break_before{ $tokens_to_go[$imid] };
                 }
+            }
+
+            # handle trailing + and -
+            elsif (   $types_to_go[$imid] =~ /^[\+\-]$/ ) {
+                my $i_next_nonblank = $imidr; 
+                next
+                  unless (
+                       $types_to_go[$i_next_nonblank] eq 'n'
+                    && $i_next_nonblank >= $il - 2
+                    && (   $types_to_go[$il] =~ /^[\+\-]$/
+                        || $i_next_nonblank eq $il )
+                    && length( $tokens_to_go[$i_next_nonblank] ) <
+                    $rOpts_short_concatenation_item_length
+                  );
             }
 
             #----------------------------------------------------------
@@ -15464,6 +15505,41 @@ sub recombine_breakpoints {
                   );
             }
 
+            # handle leading + and -
+            elsif (   $types_to_go[$imidr] =~ /^[\+\-]$/ ) {
+                my $i_next_nonblank = $imidr + 1;
+                if ( $types_to_go[$i_next_nonblank] eq 'b' ) {
+                    $i_next_nonblank++;
+                }
+                next
+                  unless (
+
+                   # ... unless there is just one and we can reduce
+                   # this to two lines if we do.  For example, this
+                    (
+                           $n == 2
+                        && $n == $nmax
+                        && $types_to_go[$if] ne $types_to_go[$imidr]
+                    )
+                    #      ... or this would strand a short integer 
+
+                    || (   $types_to_go[$i_next_nonblank] eq 'n'
+                        && $i_next_nonblank >= $il - 1
+                        && length( $tokens_to_go[$i_next_nonblank] ) <
+                        $rOpts_short_concatenation_item_length )
+                  );
+            }
+
+            # handle line with leading = or similar
+            elsif ( $is_assignment{ $types_to_go[$imidr] } ) {
+                next
+                  unless (
+
+                      # unless we can reduce this to two lines
+                      $n == 1 && $nmax==2
+                  );
+            }
+
             #----------------------------------------------------------
             # Section 3:
             # Combine the lines if we arrive here and it is possible
@@ -15528,7 +15604,6 @@ sub recombine_breakpoints {
 
 sub break_all_chain_tokens {
 
-    # BUBBA: TESTING
     # scan the current breakpoints looking for breaks at certain "chain
     # operators" (. : && || + etc) which often occur repeatedly in a long
     # statement.  If we see a break at any one, break at all similar tokens
@@ -15552,16 +15627,18 @@ sub break_all_chain_tokens {
         my $ir     = $$ri_right[$n];
         my $typel  = $types_to_go[$il];
         my $typer  = $types_to_go[$ir];
+        $typel='+' if ($typel eq '-');  # treat + and - the same
+        $typer='+' if ($typer eq '-'); 
         my $tokenl = $tokens_to_go[$il];
         my $tokenr = $tokens_to_go[$ir];
         if ( $is_chain_operator{$tokenl} && $want_break_before{$typel} ) {
-            next unless $typel =~/^[\:\.]$/;    # PATCH FOR TESTING
+            next if ($typel eq '?');
             push @{$left_chain_type{$typel}}, $il;
             $saw_chain_type{$typel}  = 1;
             $count++;
         }
         if ( $is_chain_operator{$tokenr} && !$want_break_before{$typer} ) {
-            next unless $typer =~/^[\:\.]$/;    # PATCH FOR TESTING
+            next if ($typer eq '?');
             push @{$right_chain_type{$typer}}, $ir;
             $saw_chain_type{$typer}   = 1;
             $count++;
@@ -15576,6 +15653,7 @@ sub break_all_chain_tokens {
         my $ir = $$ri_right[$n];
         for ( my $i = $il + 1 ; $i < $ir ; $i++ ) {
             my $type = $types_to_go[$i];
+            $type='+' if ($type eq '-');
             if ( $saw_chain_type{$type} ) {
                 push @{ $interior_chain_type{$type} }, $i;
                 $count++;
@@ -15590,8 +15668,10 @@ sub break_all_chain_tokens {
     # loop over all chain types
     foreach my $type ( keys %saw_chain_type ) {
 
-        # BUBBA Testing: quit if one continuation line with leading .
-        last if ($type eq '.' && $nmax==1);
+        # quit if just ONE continuation line with leading .  For example--
+        # print LATEXFILE '\framebox{\parbox[c][' . $h . '][t]{' . $w . '}{'
+        #  . $contents;
+        last if ($nmax==1 && $type =~ /^[\.\+]$/);
 
         # loop over all interior chain tokens
         foreach my $itest ( @{ $interior_chain_type{$type} } ) {
@@ -15625,15 +15705,30 @@ sub break_all_chain_tokens {
 sub in_same_container {
 
     # check to see if tokens at i1 and i2 are in the
-    # same container, and not separated by a comma
+    # same container, and not separated by a comma, ? or :
     my ($i1,$i2)=@_;
+    my $type=$types_to_go[$i1];
     my $depth=$nesting_depth_to_go[$i1];
     return unless ($nesting_depth_to_go[$i2]==$depth);
     if ($i2<$i1) {($i1,$i2)=($i2,$i1)}
     for (my $i=$i1+1; $i<$i2; $i++) {
         next if ($nesting_depth_to_go[$i]>$depth);
         return if ($nesting_depth_to_go[$i]<$depth);
-        return if ($tokens_to_go[$i] eq ',');
+
+        my $tok=$tokens_to_go[$i];
+        $tok=',' if $tok eq '=>';  # treat => same as ,
+##?        if ($type ne ':') {
+##?
+##?            # Example: we would not want to break at any of these .'s
+##?            #  : "<A HREF=\"#item_" . htmlify( 0, $s2 ) . "\">$str</A>"
+##?            return if ($tok =~ /^[\,\:\?]$/); 
+##?        }
+        if ($type ne ':') {
+            return if ($tok =~ /^[\,\:\?]$/) || $tok eq '||' || $tok eq 'or'; 
+        }
+        else {
+            return if ($tok =~ /^[\,]$/); 
+        }
     }
     return 1;
 }

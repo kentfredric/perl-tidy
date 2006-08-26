@@ -1,13 +1,34 @@
 =head1 Perltidy Change Log
 
+=head2 2006 xx xx
+
+ -Fixed problem where -sot would not stack an opening token followed by
+ a side comment.  Thanks to Jens Schicke.
+
+ -improved breakpoints in complex math and other long statements. Example:
+ OLD:
+    return
+      log($n) + 0.577215664901532 + ( 1 / ( 2 * $n ) ) -
+      ( 1 / ( 12 * ( $n**2 ) ) ) + ( 1 / ( 120 * ( $n**4 ) ) );
+ NEW:
+    return
+      log($n) +
+      0.577215664901532 +
+      ( 1 / ( 2 * $n ) ) -
+      ( 1 / ( 12 * ( $n**2 ) ) ) +
+      ( 1 / ( 120 * ( $n**4 ) ) );
+
+ -more robust vertical alignment of complex terminal else blocks and ternary
+ statements.
+
 =head2 2006 07 19
 
  -Eliminated bug where a here-doc invoked through an 'e' modifier on a pattern
  replacement text was not recognized.  The tokenizer now recursively scans
  replacement text (but does not reformat it).
 
- -Improved vertical alignment of terminal else blocks and ternary statements.
-  Thanks to Chris for the suggestion. 
+ -improved vertical alignment of terminal else blocks and ternary statements.
+  thanks to chris for the suggestion. 
 
   OLD:
     if    ( IsBitmap() ) { return GetBitmap(); }

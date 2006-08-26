@@ -1,3 +1,12 @@
+# at one time did not break on all :'s here!! test8/vshnu.tdy with brand model
+sub bykeyorder
+{
+          ($b eq '') ? -1 : ($a eq '') ? 1
+        : (length ($a) == 1 && length ($b) != 1) ? -1
+        : (length ($a) != 1 && length ($b) == 1) ? 1
+        :                                          $a cmp $b;
+    }
+
 # Old Problem: A break at the first : triggers all later : breaks
 # But a break at the second colon does not trigger earlier breaks!
     $year % 4 ? 0 
