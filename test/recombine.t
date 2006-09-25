@@ -1,3 +1,30 @@
+{
+    # do not recombine at = here with pbp
+    my $moon_corrected_longitude
+        = $moon_mean_longitude 
+        + $moon_evection 
+        + $moon_correction_for_center
+        - $moon_annual_equation
+        - $moon_correction_2;
+# Ok to recombine if end type is 'h'
+        if $res
+        = eval <<'EOE';
+# break at ( would give better alignment
+# Note: vertical tightness could combine these two lines ok:
+EOE
+# recombine:
+    1
+      while
+      s/^([^;]*)([1-9])(0*)([^1]*\2(.)[^;]*\3(9*).*\|\?.)[^~]*~/$1$5$6$4/s;
+    ok( 103,
+        $db = tie( %h, 'DB_File', $Dfile, O_RDWR | O_CREAT, 0640, $DB_BTREE ) );
+}
+{{{{
+    # recombine the = if third line starts with ;
+                my $max = 1
+                    + 2 * ( int( 2**( $len - 1 ) ) - 1 )
+                    ;    # The max possible checksum
+}}}}
 croak( "can't create " . $this->name )
   if $pdl->isnull and !$this->{FlagCreat};
 
@@ -43,3 +70,22 @@ sub Restore {
 			# Another example
             next if ( ( $types_to_go[$imid] eq 'k' )
               && ( $tokens_to_go[$imid] =~ /^(last|next|redo|return)$/ ) );
+
+{{{
+            # do not recombine if good allignment possible!
+            $psr =
+              $F->get_attribute( 'capacity', $u, $v ) -
+              $F->get_attribute( 'flow',     $u, $v );
+
+            $delta =
+              ( $points[$i][0] - $points[ $i - 1 ][0] ) /
+              ( $points[ $i + 1 ][0] - $points[ $i - 1 ][0] );
+
+            # ok to join short " :
+                $parens[ $j - $i ][$j] = "("
+                  . $parens[ $j - $i ][$k] . "x"
+                  . $parens[ $k + 1 ][$j] . ")";
+            $Out .= "  |"
+              . Center( "Compiled on $CompileDate at $CompileTime.", $iWidth )
+              . "|\n";
+}}}

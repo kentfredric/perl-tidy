@@ -1,6 +1,19 @@
 =head1 Perltidy Change Log
 
-=head2 2006 xx xx
+=head2 2006 09 25
+
+ -Removed improper uses of $_ to avoid conflicts with external calls, giving
+ error message similar to:
+    Modification of a read-only value attempted at 
+    /usr/share/perl5/Perl/Tidy.pm line 6907.
+ Thanks to Michael Renner.
+
+ -Fixed problem when errorfile was not a plain filename or filehandle
+ in a call to Tidy.pm.  The call
+ perltidy(source => \$input, destination => \$output, errorfile => \$err);
+ gave the following error message:
+  Not a GLOB reference at /usr/share/perl5/Perl/Tidy.pm line 3827.
+ Thanks to Michael Renner.
 
  -Fixed problem where -sot would not stack an opening token followed by
  a side comment.  Thanks to Jens Schicke.
@@ -12,8 +25,7 @@
       ( 1 / ( 12 * ( $n**2 ) ) ) + ( 1 / ( 120 * ( $n**4 ) ) );
  NEW:
     return
-      log($n) +
-      0.577215664901532 +
+      log($n) + 0.577215664901532 +
       ( 1 / ( 2 * $n ) ) -
       ( 1 / ( 12 * ( $n**2 ) ) ) +
       ( 1 / ( 120 * ( $n**4 ) ) );
