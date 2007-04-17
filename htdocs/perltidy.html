@@ -2053,12 +2053,12 @@ perltidy ever sees it.</p>
 </dd>
 <dd>
 <p>By default, perltidy breaks <strong>after</strong> these token types:
-  % + - * / x != == &gt;= &lt;= =~ !~ &lt; &gt;  | &amp; &gt;= &lt;
-  = **= += *= &amp;= &lt;&lt;= &amp;&amp;= -= /= |= &gt;&gt;= ||= .= %= ^= x=</p>
+  % + - * / x != == &gt;= &lt;= =~ !~ &lt; &gt;  | &amp; 
+  = **= += *= &amp;= &lt;&lt;= &amp;&amp;= -= /= |= &gt;&gt;= ||= //= .= %= ^= x=</p>
 </dd>
 <dd>
 <p>And perltidy breaks <strong>before</strong> these token types by default:
-  . &lt;&lt; &gt;&gt; -&gt; &amp;&amp; ||</p>
+  . &lt;&lt; &gt;&gt; -&gt; &amp;&amp; || //</p>
 </dd>
 <dd>
 <p>To illustrate, to cause a break after a concatenation operator, <code>'.'</code>,
@@ -2390,8 +2390,8 @@ by Damian Conway:</p>
 <dd>
 <pre>
     -l=78 -i=4 -ci=4 -st -se -vt=2 -cti=0 -pt=1 -bt=1 -sbt=1 -bbt=1 -nsfs -nolq
-    -wbb=&quot;% + - * / x != == &gt;= &lt;= =~ !~ &lt; &gt; | &amp; &gt;= &lt; = 
-          **= += *= &amp;= &lt;&lt;= &amp;&amp;= -= /= |= &gt;&gt;= ||= .= %= ^= x=&quot;</pre>
+    -wbb=&quot;% + - * / x != == &gt;= &lt;= =~ !~ &lt; &gt; | &amp; = 
+          **= += *= &amp;= &lt;&lt;= &amp;&amp;= -= /= |= &gt;&gt;= ||= //= .= %= ^= x=&quot;</pre>
 </dd>
 <dd>
 <p>Note that the -st and -se flags make perltidy act as a filter on one file only.  
@@ -3097,7 +3097,7 @@ dot is added, and the backup file will be <em>somefile.pl~</em>  .</p>
  dwrs dws f    fll  frm  fs  hsc html ibc  icb  icp iob  isbc lal  log
  lp   lsl ohbr okw  ola  oll opr opt  osbr otr  ple ple  pod  pvl  q
  sbc  sbl schb scp  scsb sct se  sfp  sfs  skp  sob sohb sop  sosb sot
- ssc  st  sts  syn  t    tac tbc toc  tp   tqw  tsc w    x</pre>
+ ssc  st  sts  syn  t    tac tbc toc  tp   tqw  tsc w    x    bar</pre>
 <p>Equivalently, the prefix 'no' or 'no-' on the corresponding long names may be
 used.</p>
 <p>
@@ -3186,7 +3186,7 @@ purpose of this rule is to prevent generating confusing filenames such as
 </p>
 <hr />
 <h1><a name="version">VERSION</a></h1>
-<p>This man page documents perltidy version 20060719.</p>
+<p>This man page documents perltidy version 20060925.</p>
 <p>
 </p>
 <hr />

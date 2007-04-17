@@ -1,11 +1,51 @@
 Perltidy Change Log
+  2006 09 25
+     -Added a utility program 'break_long_quotes.pl' to the examples directory of
+     the distribution.  It breaks long quoted strings into a chain of concatenated
+     sub strings no longer than a selected length.  Suggested by Michael Renner as
+     a perltidy feature but was judged to be best done in a separate program.
+
+     -Updated docs to remove extra < and >= from list of tokens 
+     after which breaks are made by default.  Thanks to Bob Kleemann.
+
+     -Removed improper uses of $_ to avoid conflicts with external calls, giving
+     error message similar to:
+        Modification of a read-only value attempted at 
+        /usr/share/perl5/Perl/Tidy.pm line 6907.
+     Thanks to Michael Renner.
+
+     -Fixed problem when errorfile was not a plain filename or filehandle
+     in a call to Tidy.pm.  The call
+     perltidy(source => \$input, destination => \$output, errorfile => \$err);
+     gave the following error message:
+      Not a GLOB reference at /usr/share/perl5/Perl/Tidy.pm line 3827.
+     Thanks to Michael Renner.
+
+     -Fixed problem where -sot would not stack an opening token followed by
+     a side comment.  Thanks to Jens Schicke.
+
+     -improved breakpoints in complex math and other long statements. Example:
+     OLD:
+        return
+          log($n) + 0.577215664901532 + ( 1 / ( 2 * $n ) ) -
+          ( 1 / ( 12 * ( $n**2 ) ) ) + ( 1 / ( 120 * ( $n**4 ) ) );
+     NEW:
+        return
+          log($n) + 0.577215664901532 +
+          ( 1 / ( 2 * $n ) ) -
+          ( 1 / ( 12 * ( $n**2 ) ) ) +
+          ( 1 / ( 120 * ( $n**4 ) ) );
+
+     -more robust vertical alignment of complex terminal else blocks and ternary
+     statements.
+
   2006 07 19
      -Eliminated bug where a here-doc invoked through an 'e' modifier on a pattern
      replacement text was not recognized.  The tokenizer now recursively scans
      replacement text (but does not reformat it).
 
-     -Improved vertical alignment of terminal else blocks and ternary statements.
-      Thanks to Chris for the suggestion. 
+     -improved vertical alignment of terminal else blocks and ternary statements.
+      thanks to chris for the suggestion. 
 
       OLD:
         if    ( IsBitmap() ) { return GetBitmap(); }

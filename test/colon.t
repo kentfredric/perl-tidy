@@ -455,3 +455,24 @@ print(
   : ( $k eq 'file1' )   ? do { $file1   = $v }
   : ( $k eq 'fileptr' ) ? do { $fileptr = $v }
   :   return;
+
+{
+    $Is_VMS
+      ? $ignore{"$self->{DISTVNAME}.dir"} = 1
+      : $ignore{ $self->{DISTVNAME} } = 1;
+
+    # recombine after = here
+    @_
+      ? $obj->{_price} = shift
+      : $obj->{_price} - $obj->rebate;
+}
+
+  ( $k eq 'file0' )   ? do { $file0   = $v }
+: ( $k eq 'file1' )   ? do { $file1   = $v }
+: ( $k eq 'fileptr' ) ? do { $fileptr = $v }
+:                       return;
+
+        ( @_ == 0 ) ? ''
+      : ( @_ == 1 ) ? $_[0]
+      : ( @_ == 2 ) ? join( " and ",     @_ )
+      :               join( "$sepchar ", @_[ 0 .. ( $#_ - 1 ) ], "and $_[-1]" );

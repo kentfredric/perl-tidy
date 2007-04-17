@@ -35,8 +35,7 @@ Perl Style Guide</a>.
 
 Perltidy can also output html of both pod and source code.  For example, the
 link below is an html version of the module <b>Conf.pm</b>
-from <a name="SpamAssasin" href="http://spamassassin.taint.org/">
-SpamAssassin</a>.  
+from <a name="SpamAssasin" href="http://spamassassin.apache.org/index.html"> SpamAssassin</a>.  
 
 <blockquote><ul>
  <li><a name="Conf.pm" href="Conf.pm.html">An html example</a>
@@ -80,7 +79,6 @@ page</a> discusses how to use the Perl::Tidy module.
 
 Perltidy should run on any system with perl 5.004 or later.  It has been
 tested on Unix, Windows, VMS and MacPerl.
-
 <ul> 
 
 <li>Please check the <a href="README.html">README File</a>
@@ -96,6 +94,8 @@ The latest release (.zip, Windows-style line endings)</a>
 <li>Download <a href="http://prdownloads.sourceforge.net/perltidy/perltidy_20060719-1_all.deb">
 The latest release as a .deb Debian Linux package</a>
 
+<li>Debian users can also use: apt-get install perltidy
+
 <li>Download <a href= "http://rpmfind.net/" > rpm's from Rpmfind.Net</a>
 
 <li> If these links are broken, 
@@ -104,6 +104,14 @@ to the download area at
 <a href="http://sourceforge.net/project/?group_id=17029">
 the SourceForge Project Page </a>
 
+</ul>
+
+<hr>
+
+.h2 Links
+
+<ul>
+<li> <a href="http://sourceforge.net/projects/tidyview">Tidyview</a> is a graphical program for tweaking your .perltidyrc configuration parameters.
 </ul>
 
 <hr>

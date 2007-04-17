@@ -2,6 +2,24 @@
 
 =head2 2006 09 25
 
+ -Fixed problem of a warning issued for multiple subs for BEGIN subs
+ and other control subs. Thanks to Heiko Eissfeldt.
+ 
+ -Fixed problem where no space was introduced between a keyword or
+ bareword and a colon, such as:
+
+ ( ref($result) eq 'HASH' && !%$result ) ? undef: $result;
+
+ Thanks to Niek.
+
+ -Added a utility program 'break_long_quotes.pl' to the examples directory of
+ the distribution.  It breaks long quoted strings into a chain of concatenated
+ sub strings no longer than a selected length.  Suggested by Michael Renner as
+ a perltidy feature but was judged to be best done in a separate program.
+
+ -Updated docs to remove extra < and >= from list of tokens 
+ after which breaks are made by default.  Thanks to Bob Kleemann.
+
  -Removed improper uses of $_ to avoid conflicts with external calls, giving
  error message similar to:
     Modification of a read-only value attempted at 

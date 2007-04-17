@@ -89,3 +89,18 @@ sub Restore {
               . Center( "Compiled on $CompileDate at $CompileTime.", $iWidth )
               . "|\n";
 }}}
+
+# don't leave the '3' on single line
+$leading_block_text_line_length =
+  length($accumulating_text_for_block) +
+  length( $rOpts->{'closing-side-comment-prefix'} ) +
+  $leading_block_text_level * $rOpts_indent_columns + 3;
+
+# try -scl=12 to see '$returns' joined with the previous line
+    $format =
+        "format STDOUT =\n"
+      . &format_line('Function:       @') . '$name' . "\n"
+      . &format_line('Arguments:      @') . '$args' . "\n"
+      . &format_line('Returns:        @')
+      . '$returns' . "\n"
+      . &format_line('             ~~ ^') . '$desc' . "\n.\n";

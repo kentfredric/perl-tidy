@@ -182,3 +182,9 @@ push @allowed, $_
     {
     }
 }
+
+# the variable _
+my $file = "junk1.pl";
+if ( -e ($file) ) { print "$file exists\n"; }
+if ( -f (_) )     { print "bubba\n" }
+doit(_);

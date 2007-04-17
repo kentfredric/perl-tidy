@@ -1693,11 +1693,11 @@ command-line parameter always overwrites the previous one before
 perltidy ever sees it.
 
 By default, perltidy breaks B<after> these token types:
-  % + - * / x != == >= <= =~ !~ < >  | & >= <
-  = **= += *= &= <<= &&= -= /= |= >>= ||= .= %= ^= x=
+  % + - * / x != == >= <= =~ !~ < >  | & 
+  = **= += *= &= <<= &&= -= /= |= >>= ||= //= .= %= ^= x=
 
 And perltidy breaks B<before> these token types by default:
-  . << >> -> && ||
+  . << >> -> && || //
 
 To illustrate, to cause a break after a concatenation operator, C<'.'>,
 rather than before it, the command line would be
@@ -1976,8 +1976,8 @@ B<-pbp> is an abbreviation for the parameters in the book B<Perl Best Practices>
 by Damian Conway:
 
     -l=78 -i=4 -ci=4 -st -se -vt=2 -cti=0 -pt=1 -bt=1 -sbt=1 -bbt=1 -nsfs -nolq
-    -wbb="% + - * / x != == >= <= =~ !~ < > | & >= < = 
-          **= += *= &= <<= &&= -= /= |= >>= ||= .= %= ^= x="
+    -wbb="% + - * / x != == >= <= =~ !~ < > | & = 
+          **= += *= &= <<= &&= -= /= |= >>= ||= //= .= %= ^= x="
 
 Note that the -st and -se flags make perltidy act as a filter on one file only.  
 These can be overridden with -nst and -nse if necessary.
@@ -2622,7 +2622,7 @@ perlstyle(1), Perl::Tidy(3)
 
 =head1 VERSION
 
-This man page documents perltidy version 20060719.
+This man page documents perltidy version 20060925.
 
 =head1 CREDITS
 
