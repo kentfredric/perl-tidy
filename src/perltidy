@@ -422,8 +422,6 @@ where s=C<win>, C<dos>, C<unix>, or C<mac>.  This flag tells perltidy
 to output line endings for a specific system.  Normally,
 perltidy writes files with the line separator character of the host
 system.  The C<win> and C<dos> flags have an identical result.
-B<NOTE>: This only works under unix-like systems and is ignored under
-other systems.
 
 =item B<-ple>,  B<--preserve-line-endings>
 
@@ -433,8 +431,6 @@ B<dos>, B<unix>, and B<mac> line endings.  It will only work if perltidy
 input comes from a filename (rather than stdin, for example).  If
 perltidy has trouble determining the input file line ending, it will
 revert to the default behavior of using the line ending of the host system.
-B<NOTE>: This only works under unix-like systems and is ignored under
-other systems.
 
 =back
 
@@ -787,7 +783,7 @@ a space takes priority.
 
 It is necessary to have a list of all token types in order to create
 this type of input.  Such a list can be obtained by the command
-B<--dump-token-types>.  Also try the -D flag on a short snippet of code
+B<--dump-token-types>.  Also try the B<-D> flag on a short snippet of code
 and look at the .DEBUG file to see the tokenization. 
 
 B<WARNING> Be sure to put these tokens in quotes to avoid having them
@@ -1710,7 +1706,7 @@ math operators C<'+'>, C<'-'>, C<'/'>, and C<'*'>:
   -wbb="+ - / *"
 
 These commands should work well for most of the token types that perltidy uses
-(use B<--dump-token-types> for a list).  Also try the -D flag on a short
+(use B<--dump-token-types> for a list).  Also try the B<-D> flag on a short
 snippet of code and look at the .DEBUG file to see the tokenization.  However,
 for a few token types there may be conflicts with hardwired logic which cause
 unexpected results.  One example is curly braces, which should be controlled
@@ -2622,7 +2618,7 @@ perlstyle(1), Perl::Tidy(3)
 
 =head1 VERSION
 
-This man page documents perltidy version 20060925.
+This man page documents perltidy version 20070424.
 
 =head1 CREDITS
 

@@ -25,12 +25,6 @@ the following statement to be indented more than the if:
       and $ship->firepower >= $encounter->firepower
       and $location->status ne 'neutral';
 
-=head2 enable -ole under Windows
-
-This only works under unix (or cygwin) at present.  It doesn't work for Windows
-versions, such as Active State, because they change line endings that they
-don't like.
-
 =head2 Documentation
 
 A FAQ is needed to explain some of the more subtle formatting

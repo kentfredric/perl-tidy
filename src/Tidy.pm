@@ -35,6 +35,7 @@
 #      Yves Orton supplied coding to help detect Windows versions.
 #      Axel Rose supplied a patch for MacPerl.
 #      Sebastien Aperghis-Tramoni supplied a patch for the defined or operator.
+#      Dan Tyrell sent a patch for binary I/O.
 #      Many others have supplied key ideas, suggestions, and bug reports;
 #        see the CHANGES file.
 #
@@ -63,7 +64,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.60 2007/04/17 14:05:08 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.61 2007/04/24 13:31:15 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 sub streamhandle {
@@ -850,11 +851,17 @@ EOM
             if ( $rOpts->{'preserve-line-endings'} ) {
                 $line_separator = find_input_line_ending($input_file);
             }
-            $line_separator = "\n" unless defined($line_separator);
+
+            # Eventually all I/O may be done with binmode, but for now it is
+            # only done when a user requests a particular line separator
+            # through the -ple or -ole flags
+            my $binmode = 0;
+            if   ( defined($line_separator) ) { $binmode        = 1 }
+            else                              { $line_separator = "\n" }
 
             my $sink_object =
               Perl::Tidy::LineSink->new( $output_file, $tee_file,
-                $line_separator, $rOpts, $rpending_logfile_message );
+                $line_separator, $rOpts, $rpending_logfile_message, $binmode );
 
             #---------------------------------------------------------------
             # initialize the error logger
@@ -979,6 +986,7 @@ EOM
                 my $fout = IO::File->new("> $input_file")
                   or die
 "problem opening $input_file for write for -b option; check directory permissions: $!\n";
+                binmode $fout;
                 my $line;
                 while ( $line = $output_file->getline() ) {
                     $fout->print($line);
@@ -2106,20 +2114,6 @@ EOM
         # entab leading whitespace has priority over the older 'tabs' option
         if ( $rOpts->{'tabs'} ) { $rOpts->{'tabs'} = 0; }
     }
-
-    if ( $rOpts->{'output-line-ending'} ) {
-        unless ( is_unix() ) {
-            warn "ignoring -ole; only works under unix\n";
-            $rOpts->{'output-line-ending'} = undef;
-        }
-    }
-    if ( $rOpts->{'preserve-line-endings'} ) {
-        unless ( is_unix() ) {
-            warn "ignoring -ple; only works under unix\n";
-            $rOpts->{'preserve-line-endings'} = undef;
-        }
-    }
-
 }
 
 sub expand_command_abbreviations {
@@ -2459,7 +2453,7 @@ sub Win_Config_Locs {
     # 9x/Me box.  Contributed by: Yves Orton.
 
     my $rpending_complaint = shift;
-    my $os = (@_) ? shift: Win_OS_Type();
+    my $os = (@_) ? shift : Win_OS_Type();
     return unless $os;
 
     my $system   = "";
@@ -3370,7 +3364,7 @@ package Perl::Tidy::LineSink;
 sub new {
 
     my ( $class, $output_file, $tee_file, $line_separator, $rOpts,
-        $rpending_logfile_message )
+        $rpending_logfile_message, $binmode )
       = @_;
     my $fh               = undef;
     my $fh_copy          = undef;
@@ -3382,6 +3376,12 @@ sub new {
         ( $fh, $output_file ) = Perl::Tidy::streamhandle( $output_file, 'w' );
         unless ($fh) { die "Cannot write to output stream\n"; }
         $output_file_open = 1;
+        if ($binmode) {
+            if ( ref($fh) eq 'IO::File' ) {
+                binmode $fh;
+            }
+            if ( $output_file eq '-' ) { binmode STDOUT }
+        }
     }
 
     # in order to check output syntax when standard output is used,
@@ -3412,6 +3412,7 @@ EOM
         _tee_file         => $tee_file,
         _tee_file_opened  => 0,
         _line_separator   => $line_separator,
+        _binmode          => $binmode,
     }, $class;
 }
 
@@ -3460,6 +3461,7 @@ sub really_open_tee_file {
     my $fh_tee;
     $fh_tee = IO::File->new(">$tee_file")
       or die("couldn't open TEE file $tee_file: $!\n");
+    binmode $fh_tee if $self->{_binmode};
     $self->{_tee_file_opened} = 1;
     $self->{_fh_tee}          = $fh_tee;
 }
@@ -7015,9 +7017,6 @@ EOM
 
     # make note if breaks are before certain key types
     %want_break_before = ();
-
-    ##foreach my $tok (sort keys %left_bond_strength) {
-    ##    $want_break_before{$tok} = defined($right_bond_strength{$tok}) &&
     foreach my $tok (
         '=',  '.',   ',',   ':', '?', '&&', '||', 'and',
         'or', 'err', 'xor', '+', '-', '*',  '/',
@@ -8477,7 +8476,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.60 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.61 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -8929,7 +8928,6 @@ sub set_white_space_flag {
                     #
                     # But make a line break if the curly ends a
                     # significant block:
-                    ##if ( $is_until_while_for_if_elsif_else{$block_type} ) {
                     if (
                         $is_block_without_semicolon{$block_type}
 
@@ -9772,18 +9770,18 @@ sub set_logical_padding {
                     # lines will be aligned. Otherwise, it
                     # can look very confusing.
 
-                    # We have to be careful not to pad if there are too few
-                    # lines.  The current rule is:
-                    # (1) in general we require at least 3 consecutive lines
-                    # with the same leading chain operator token,
-                    # (2) but an exception is that we only require two lines
-                    # with leading colons if there are no more lines.  For example,
-                    # the first $i in the following snippet would get padding
-                    # by the second rule:
-                    #
-                    #   $i == 1 ? ( "First", "Color" )
-                    # : $i == 2 ? ( "Then",  "Rarity" )
-                    # :           ( "Then",  "Name" );
+                 # We have to be careful not to pad if there are too few
+                 # lines.  The current rule is:
+                 # (1) in general we require at least 3 consecutive lines
+                 # with the same leading chain operator token,
+                 # (2) but an exception is that we only require two lines
+                 # with leading colons if there are no more lines.  For example,
+                 # the first $i in the following snippet would get padding
+                 # by the second rule:
+                 #
+                 #   $i == 1 ? ( "First", "Color" )
+                 # : $i == 2 ? ( "Then",  "Rarity" )
+                 # :           ( "Then",  "Name" );
 
                     if ( $max_line > 1 ) {
                         my $leading_token = $tokens_to_go[$ibeg_next];
@@ -9798,16 +9796,18 @@ sub set_logical_padding {
 
                         my $count = 1;
                         foreach my $l ( 2 .. 3 ) {
-                            last if ($line+$l>$max_line); 
+                            last if ( $line + $l > $max_line );
                             my $ibeg_next_next = $$ri_first[ $line + $l ];
-                            if ($tokens_to_go[$ibeg_next_next] ne $leading_token) {
-                                $tokens_differ=1;
+                            if ( $tokens_to_go[$ibeg_next_next] ne
+                                $leading_token )
+                            {
+                                $tokens_differ = 1;
                                 last;
                             }
                             $count++;
                         }
                         next if ($tokens_differ);
-                        next if ($count < 3 && $leading_token ne ':');
+                        next if ( $count < 3 && $leading_token ne ':' );
                         $ipad = $ibeg;
                     }
                     else {
@@ -15383,22 +15383,19 @@ sub recombine_breakpoints {
             # handle trailing + - * /
             elsif ( $types_to_go[$imid] =~ /^[\+\-\*\/]$/ ) {
                 my $i_next_nonblank = $imidr;
-                my $i_next_next=$i_next_nonblank+1;
-                $i_next_next++ if ($types_to_go[$i_next_next] eq 'b');
+                my $i_next_next     = $i_next_nonblank + 1;
+                $i_next_next++ if ( $types_to_go[$i_next_next] eq 'b' );
 
                 # do not strand numbers
                 next
                   unless (
-                       $types_to_go[$i_next_nonblank] eq 'n'
+                    $types_to_go[$i_next_nonblank] eq 'n'
                     && (
                         $i_next_nonblank == $il
                         || (   $i_next_next == $il
                             && $types_to_go[$i_next_next] =~ /^[\+\-\*\/]$/ )
                         || $types_to_go[$i_next_next] eq ';'
                     )
-##                    && $i_next_nonblank >= $il - 2
-##                    && (   $types_to_go[$il] =~ /^[\+\-\*\/\;]$/
-##                        || $i_next_nonblank eq $il )
                   );
             }
 
@@ -15592,8 +15589,8 @@ sub recombine_breakpoints {
                     $i_next_nonblank++;
                 }
 
-                my $i_next_next=$i_next_nonblank+1;
-                $i_next_next++ if ($types_to_go[$i_next_next] eq 'b');
+                my $i_next_next = $i_next_nonblank + 1;
+                $i_next_next++ if ( $types_to_go[$i_next_next] eq 'b' );
 
                 next
                   unless (
@@ -22427,8 +22424,8 @@ EOM
 
                     # treat bare word followed by open paren like qw(
                     if ( $next_nonblank_token eq '(' ) {
-                        $in_quote                = $quote_items{q};
-                        $allowed_quote_modifiers = $quote_modifiers{q};
+                        $in_quote                = $quote_items{'q'};
+                        $allowed_quote_modifiers = $quote_modifiers{'q'};
                         $type                    = 'q';
                         $quote_type              = 'q';
                         next;
@@ -27163,7 +27160,7 @@ might run, from the command line,
 
 where F<filename> is a short script of interest.  This will produce
 F<filename.DEBUG> with interleaved lines of text and their token types.
-The -D flag has been in perltidy from the beginning for this purpose.
+The B<-D> flag has been in perltidy from the beginning for this purpose.
 If you want to see the code which creates this file, it is
 C<write_debug_entry> in Tidy.pm.
 
@@ -27178,7 +27175,7 @@ to perltidy.
 
 =head1 VERSION
 
-This man page documents Perl::Tidy version 20060719.
+This man page documents Perl::Tidy version 20070424.
 
 =head1 AUTHOR
 

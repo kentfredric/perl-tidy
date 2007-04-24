@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "PERLTIDY 1"
-.TH PERLTIDY 1 "2006-09-25" "perl v5.8.8" "User Contributed Perl Documentation"
+.TH PERLTIDY 1 "2007-04-23" "perl v5.8.8" "User Contributed Perl Documentation"
 .SH "NAME"
 perltidy \- a perl script indenter and reformatter
 .SH "SYNOPSIS"
@@ -529,8 +529,6 @@ where s=\f(CW\*(C`win\*(C'\fR, \f(CW\*(C`dos\*(C'\fR, \f(CW\*(C`unix\*(C'\fR, or
 to output line endings for a specific system.  Normally,
 perltidy writes files with the line separator character of the host
 system.  The \f(CW\*(C`win\*(C'\fR and \f(CW\*(C`dos\*(C'\fR flags have an identical result.
-\&\fB\s-1NOTE\s0\fR: This only works under unix-like systems and is ignored under
-other systems.
 .IP "\fB\-ple\fR,  \fB\-\-preserve\-line\-endings\fR" 4
 .IX Item "-ple,  --preserve-line-endings"
 This flag tells perltidy to write its output files with the same line
@@ -539,8 +537,6 @@ endings as the input file, if possible.  It should work for
 input comes from a filename (rather than stdin, for example).  If
 perltidy has trouble determining the input file line ending, it will
 revert to the default behavior of using the line ending of the host system.
-\&\fB\s-1NOTE\s0\fR: This only works under unix-like systems and is ignored under
-other systems.
 .Sh "Code Indentation Control"
 .IX Subsection "Code Indentation Control"
 .IP "\fB\-ci=n\fR, \fB\-\-continuation\-indentation=n\fR" 4
@@ -904,7 +900,7 @@ a space takes priority.
 .Sp
 It is necessary to have a list of all token types in order to create
 this type of input.  Such a list can be obtained by the command
-\&\fB\-\-dump\-token\-types\fR.  Also try the \-D flag on a short snippet of code
+\&\fB\-\-dump\-token\-types\fR.  Also try the \fB\-D\fR flag on a short snippet of code
 and look at the .DEBUG file to see the tokenization. 
 .Sp
 \&\fB\s-1WARNING\s0\fR Be sure to put these tokens in quotes to avoid having them
@@ -1836,7 +1832,7 @@ math operators \f(CW'+'\fR, \f(CW'\-'\fR, \f(CW'/'\fR, and \f(CW'*'\fR:
 .Ve
 .Sp
 These commands should work well for most of the token types that perltidy uses
-(use \fB\-\-dump\-token\-types\fR for a list).  Also try the \-D flag on a short
+(use \fB\-\-dump\-token\-types\fR for a list).  Also try the \fB\-D\fR flag on a short
 snippet of code and look at the .DEBUG file to see the tokenization.  However,
 for a few token types there may be conflicts with hardwired logic which cause
 unexpected results.  One example is curly braces, which should be controlled
@@ -2708,7 +2704,7 @@ purpose of this rule is to prevent generating confusing filenames such as
 \&\fIperlstyle\fR\|(1), \fIPerl::Tidy\fR\|(3)
 .SH "VERSION"
 .IX Header "VERSION"
-This man page documents perltidy version 20060925.
+This man page documents perltidy version 20070428.
 .SH "CREDITS"
 .IX Header "CREDITS"
 Michael Cartmell supplied code for adaptation to \s-1VMS\s0 and helped with

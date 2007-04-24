@@ -364,8 +364,7 @@ FORMATTING OPTIONS
         where s="win", "dos", "unix", or "mac". This flag tells perltidy to
         output line endings for a specific system. Normally, perltidy writes
         files with the line separator character of the host system. The
-        "win" and "dos" flags have an identical result. NOTE: This only
-        works under unix-like systems and is ignored under other systems.
+        "win" and "dos" flags have an identical result.
 
     -ple, --preserve-line-endings
         This flag tells perltidy to write its output files with the same
@@ -374,8 +373,6 @@ FORMATTING OPTIONS
         comes from a filename (rather than stdin, for example). If perltidy
         has trouble determining the input file line ending, it will revert
         to the default behavior of using the line ending of the host system.
-        NOTE: This only works under unix-like systems and is ignored under
-        other systems.
 
   Code Indentation Control
     -ci=n, --continuation-indentation=n
@@ -2343,7 +2340,7 @@ SEE ALSO
     perlstyle(1), Perl::Tidy(3)
 
 VERSION
-    This man page documents perltidy version 20060925.
+    This man page documents perltidy version 20070428.
 
 CREDITS
     Michael Cartmell supplied code for adaptation to VMS and helped with

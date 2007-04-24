@@ -21,11 +21,6 @@ Perltidy TODO List
           and $ship->firepower >= $encounter->firepower
           and $location->status ne 'neutral';
 
-  enable -ole under Windows
-    This only works under unix (or cygwin) at present. It doesn't work for
-    Windows versions, such as Active State, because they change line endings
-    that they don't like.
-
   Documentation
     A FAQ is needed to explain some of the more subtle formatting issues,
     and to give examples of different styles.
