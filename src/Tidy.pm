@@ -64,7 +64,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.62 2007/05/04 13:59:52 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.63 2007/05/04 14:51:08 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 sub streamhandle {
@@ -5996,7 +5996,7 @@ sub write_line {
     # (required by podchecker)
     if ( $last_line_type eq 'POD_END' && !$saw_END_or_DATA_ ) {
         $file_writer_object->reset_consecutive_blank_lines();
-        want_blank_line();
+        if ( $input_line !~ /^\s*$/ ) { want_blank_line() }
     }
 
     # handle line of code..
@@ -8473,7 +8473,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.62 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.63 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -27172,7 +27172,7 @@ to perltidy.
 
 =head1 VERSION
 
-This man page documents Perl::Tidy version 20070424.
+This man page documents Perl::Tidy version 20070504.
 
 =head1 AUTHOR
 
