@@ -2,7 +2,7 @@
 #
 #    perltidy - a perl script indenter and formatter
 #
-#    Copyright (c) 2000-2006 by Steve Hancock
+#    Copyright (c) 2000-2007 by Steve Hancock
 #    Distributed under the GPL license agreement; see file COPYING
 #
 #    This program is free software; you can redistribute it and/or modify
@@ -64,7 +64,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.61 2007/04/24 13:31:15 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.62 2007/05/04 13:59:52 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 sub streamhandle {
@@ -2775,7 +2775,7 @@ sub show_version {
     print <<"EOM";
 This is perltidy, v$VERSION 
 
-Copyright 2000-2006, Steve Hancock
+Copyright 2000-2007, Steve Hancock
 
 Perltidy is free software and may be copied under the terms of the GNU
 General Public License, which is included in the distribution files.
@@ -5976,8 +5976,6 @@ sub write_line {
     my $line_type  = $line_of_tokens->{_line_type};
     my $input_line = $line_of_tokens->{_line_text};
 
-    my $want_blank_line_next = 0;
-
     # _line_type codes are:
     #   SYSTEM         - system-specific code before hash-bang line
     #   CODE           - line of perl code (including comments)
@@ -5993,7 +5991,14 @@ sub write_line {
     #   END_START      - __END__ line
     #   END            - unidentified text following __END__
     #   ERROR          - we are in big trouble, probably not a perl script
-    #
+
+    # put a blank line after an =cut which comes before __END__ and __DATA__
+    # (required by podchecker)
+    if ( $last_line_type eq 'POD_END' && !$saw_END_or_DATA_ ) {
+        $file_writer_object->reset_consecutive_blank_lines();
+        want_blank_line();
+    }
+
     # handle line of code..
     if ( $line_type eq 'CODE' ) {
 
@@ -6030,13 +6035,6 @@ sub write_line {
             {
                 want_blank_line();
             }
-
-            # patch to put a blank line after =cut
-            # (required by podchecker)
-            if ( $line_type eq 'POD_END' && !$saw_END_or_DATA_ ) {
-                $file_writer_object->reset_consecutive_blank_lines();
-                $want_blank_line_next = 1;
-            }
         }
 
         # leave the blank counters in a predictable state
@@ -6050,8 +6048,7 @@ sub write_line {
         if ( !$skip_line ) {
             if ($tee_line) { $file_writer_object->tee_on() }
             write_unindented_line($input_line);
-            if ($tee_line)             { $file_writer_object->tee_off() }
-            if ($want_blank_line_next) { want_blank_line(); }
+            if ($tee_line) { $file_writer_object->tee_off() }
         }
     }
     $last_line_type = $line_type;
@@ -8476,7 +8473,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.61 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.62 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -20320,10 +20317,10 @@ sub get_line {
             if ( $tokenizer_self->{_saw_data} || $tokenizer_self->{_saw_end} ) {
                 complain("=cut while not in pod ignored\n");
                 $tokenizer_self->{_in_pod}    = 0;
-                $line_of_tokens->{_line_type} = 'POD_STOP';
+                $line_of_tokens->{_line_type} = 'POD_END';
             }
             else {
-                $line_of_tokens->{_line_type} = 'POD_END';
+                $line_of_tokens->{_line_type} = 'POD_START';
                 complain(
 "=cut starts a pod section .. this can fool pod utilities.\n"
                 );

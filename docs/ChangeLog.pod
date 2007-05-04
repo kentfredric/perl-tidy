@@ -1,5 +1,11 @@
 =head1 Perltidy Change Log
 
+=head2 2007 05 04
+
+ -Fixed problem where an extra blank line was added after an =cut when either
+ (a) the =cut started (not stopped) a POD section, or (b) -mbl > 1. 
+ Thanks to J. Robert Ray and Bill Moseley.
+
 =head2 2007 04 24
 
  -ole (--output-line-ending) and -ple (--preserve-line-endings) should

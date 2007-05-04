@@ -521,9 +521,7 @@ a large script).</p>
 <p>where s=<code>win</code>, <code>dos</code>, <code>unix</code>, or <code>mac</code>.  This flag tells perltidy
 to output line endings for a specific system.  Normally,
 perltidy writes files with the line separator character of the host
-system.  The <code>win</code> and <code>dos</code> flags have an identical result.
-<strong>NOTE</strong>: This only works under unix-like systems and is ignored under
-other systems.</p>
+system.  The <code>win</code> and <code>dos</code> flags have an identical result.</p>
 </dd>
 </li>
 <dt><strong><a name="item__2dple_2c__2d_2dpreserve_2dline_2dendings"><strong>-ple</strong>,  <strong>--preserve-line-endings</strong></a></strong>
@@ -534,9 +532,7 @@ endings as the input file, if possible.  It should work for
 <strong>dos</strong>, <strong>unix</strong>, and <strong>mac</strong> line endings.  It will only work if perltidy
 input comes from a filename (rather than stdin, for example).  If
 perltidy has trouble determining the input file line ending, it will
-revert to the default behavior of using the line ending of the host system.
-<strong>NOTE</strong>: This only works under unix-like systems and is ignored under
-other systems.</p>
+revert to the default behavior of using the line ending of the host system.</p>
 </dd>
 </li>
 </dl>
@@ -995,7 +991,7 @@ a space takes priority.</p>
 <dd>
 <p>It is necessary to have a list of all token types in order to create
 this type of input.  Such a list can be obtained by the command
-<strong>--dump-token-types</strong>.  Also try the -D flag on a short snippet of code
+<strong>--dump-token-types</strong>.  Also try the <strong>-D</strong> flag on a short snippet of code
 and look at the .DEBUG file to see the tokenization.</p>
 </dd>
 <dd>
@@ -2078,7 +2074,7 @@ math operators <code>'+'</code>, <code>'-'</code>, <code>'/'</code>, and <code>'
 </dd>
 <dd>
 <p>These commands should work well for most of the token types that perltidy uses
-(use <strong>--dump-token-types</strong> for a list).  Also try the -D flag on a short
+(use <strong>--dump-token-types</strong> for a list).  Also try the <strong>-D</strong> flag on a short
 snippet of code and look at the .DEBUG file to see the tokenization.  However,
 for a few token types there may be conflicts with hardwired logic which cause
 unexpected results.  One example is curly braces, which should be controlled
@@ -3186,7 +3182,7 @@ purpose of this rule is to prevent generating confusing filenames such as
 </p>
 <hr />
 <h1><a name="version">VERSION</a></h1>
-<p>This man page documents perltidy version 20060925.</p>
+<p>This man page documents perltidy version 20070424.</p>
 <p>
 </p>
 <hr />

@@ -17,7 +17,7 @@
 	<li><a href="#perltidy_change_log">Perltidy Change Log</a></li>
 	<ul>
 
-		<li><a href="#2006_09_25">2006 09 25</a></li>
+		<li><a href="#2007_04_24">2007 04 24</a></li>
 		<li><a href="#2006_07_19">2006 07 19</a></li>
 		<li><a href="#2006_06_14">2006 06 14</a></li>
 		<li><a href="#2003_10_21">2003 10 21</a></li>
@@ -56,7 +56,21 @@
 <h1><a name="perltidy_change_log">Perltidy Change Log</a></h1>
 <p>
 </p>
-<h2><a name="2006_09_25">2006 09 25</a></h2>
+<h2><a name="2007_04_24">2007 04 24</a></h2>
+<pre>
+ -ole (--output-line-ending) and -ple (--preserve-line-endings) should
+ now work on all systems rather than just unix systems. Thanks to Dan
+ Tyrell.</pre>
+<pre>
+ -Fixed problem of a warning issued for multiple subs for BEGIN subs
+ and other control subs. Thanks to Heiko Eissfeldt.
+ 
+ -Fixed problem where no space was introduced between a keyword or
+ bareword and a colon, such as:</pre>
+<pre>
+ ( ref($result) eq 'HASH' &amp;&amp; !%$result ) ? undef: $result;</pre>
+<pre>
+ Thanks to Niek.</pre>
 <pre>
  -Added a utility program 'break_long_quotes.pl' to the examples directory of
  the distribution.  It breaks long quoted strings into a chain of concatenated
@@ -77,7 +91,7 @@
  perltidy(source =&gt; \$input, destination =&gt; \$output, errorfile =&gt; \$err);
  gave the following error message:
   Not a GLOB reference at /usr/share/perl5/Perl/Tidy.pm line 3827.
- Thanks to Michael Renner.</pre>
+ Thanks to Michael Renner and Phillipe Bruhat.</pre>
 <pre>
  -Fixed problem where -sot would not stack an opening token followed by
  a side comment.  Thanks to Jens Schicke.</pre>

@@ -85,13 +85,13 @@ tested on Unix, Windows, VMS and MacPerl.
 
 <li>Please check the <a href="INSTALL.html">Installation Notes</a>
 
-<li>Download <a href="http://prdownloads.sourceforge.net/perltidy/Perl-Tidy-20060719.tar.gz">
+<li>Download <a href="http://prdownloads.sourceforge.net/perltidy/Perl-Tidy-20070424.tar.gz">
 The latest release (.tgz, Unix-style line endings)</a>
 
-<li>Download <a href="http://prdownloads.sourceforge.net/perltidy/Perl-Tidy-20060719.zip">
+<li>Download <a href="http://prdownloads.sourceforge.net/perltidy/Perl-Tidy-20070424.zip">
 The latest release (.zip, Windows-style line endings)</a>
 
-<li>Download <a href="http://prdownloads.sourceforge.net/perltidy/perltidy_20060719-1_all.deb">
+<li>Download <a href="http://prdownloads.sourceforge.net/perltidy/perltidy_20070424-1_all.deb">
 The latest release as a .deb Debian Linux package</a>
 
 <li>Debian users can also use: apt-get install perltidy

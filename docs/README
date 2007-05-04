@@ -6,9 +6,11 @@ Welcome to Perltidy!
     -- please see the included file "COPYING" for details.
 
 PREREQUISITES
-    Perltidy is programmed to work with versions of Perl as old as 5.004.
-    (You can find your version with "perl -v"). However, some systems this
-    old may have problems, particularly Windows versions.
+    An effort has been made to keep "perltidy" compatable with versions of
+    Perl as old as 5.004, and this release was tested on Perl version
+    5.004_04 under linux. (You can find your version with "perl -v").
+    However, some systems this old may have problems, particularly Windows
+    versions.
 
     The following modules are not required, but perltidy may use them if
     detected:
