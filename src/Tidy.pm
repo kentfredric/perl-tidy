@@ -64,7 +64,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.63 2007/05/04 14:51:08 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.64 2007/05/08 20:01:45 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 sub streamhandle {
@@ -8371,6 +8371,23 @@ sub set_white_space_flag {
               substr( $input_line, 0, 1 ) eq '#';
         }
 
+        # Check for comments which are line directives
+        # Treat exactly as static block comments without leading space
+        # reference: perlsyn, near end, section Plain Old Comments (Not!)
+        # example: '# line 42 "new_filename.plx"'
+        if (
+               $jmax == 0
+            && $$rtoken_type[0] eq '#'
+            && $input_line =~ /^\#   \s*
+                               line \s+ (\d+)   \s*
+                               (?:\s("?)([^"]+)\2)? \s*
+                               $/x
+          )
+        {
+            $is_static_block_comment                       = 1;
+            $is_static_block_comment_without_leading_space = 1;
+        }
+
         # create a hanging side comment if appropriate
         if (
                $jmax == 0
@@ -8473,7 +8490,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.63 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.64 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 

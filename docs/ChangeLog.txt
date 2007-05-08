@@ -1,4 +1,9 @@
 Perltidy Change Log
+  2007 05 04
+     -Fixed problem where an extra blank line was added after an =cut when either
+     (a) the =cut started (not stopped) a POD section, or (b) -mbl > 1. 
+     Thanks to J. Robert Ray and Bill Moseley.
+
   2007 04 24
      -ole (--output-line-ending) and -ple (--preserve-line-endings) should
      now work on all systems rather than just unix systems. Thanks to Dan
