@@ -65,7 +65,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.65 2007/07/25 18:02:26 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.66 2007/07/31 14:43:32 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 sub streamhandle {
@@ -7599,6 +7599,16 @@ EOM
           #use Mail::Internet 1.28 (); (see Entity.pm, Head.pm, Test.pm)
           || ( ( $typel eq 'n' ) && ( $tokenr eq '(' ) )
 
+          # do not remove space between ? and a quote or perl
+          # may guess that the ? begins a pattern [Loca.pm, lockarea]
+          || ( ( $typel eq '?' ) && ( $typer eq 'Q' ) )
+
+          # do not remove space between an '&' and a bare word because
+          # it may turn into a function evaluation, like here
+          # between '&' and 'O_ACCMODE', producing a syntax error [File.pm]
+          #    $opts{rdonly} = (($opts{mode} & O_ACCMODE) == O_RDONLY);
+          || ( ( $typel eq '&' ) && ( $tokenr =~ /^[a-zA-Z_]/ ) )
+
           ;    # the value of this long logic sequence is the result we want
         return $result;
     }
@@ -8509,7 +8519,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.65 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.66 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -9416,7 +9426,8 @@ sub output_line_to_go {
         # otherwise use multiple lines
         else {
 
-            ( $ri_first, $ri_last ) = set_continuation_breaks($saw_good_break);
+            ( $ri_first, $ri_last, my $colon_count ) =
+              set_continuation_breaks($saw_good_break);
 
             break_all_chain_tokens( $ri_first, $ri_last );
 
@@ -9426,6 +9437,8 @@ sub output_line_to_go {
                 ( $ri_first, $ri_last ) =
                   recombine_breakpoints( $ri_first, $ri_last );
             }
+
+            insert_final_breaks( $ri_first, $ri_last ) if $colon_count;
         }
 
         # do corrector step if -lp option is used
@@ -9752,6 +9765,7 @@ sub set_logical_padding {
                 # and ..
                 # 1. the previous line is at lesser depth, or
                 # 2. the previous line ends in an assignment
+                # 3. the previous line ends in a 'return'
                 #
                 # Example 1: previous line at lesser depth
                 #       if (   ( $Year < 1601 )      # <- we are here but
@@ -9766,11 +9780,16 @@ sub set_logical_padding {
                 #      : $year % 100 ? 1
                 #      : $year % 400 ? 0
                 #      : 1;
+
+                # be sure levels agree (do not indent after an indented 'if')
+                next if ( $levels_to_go[$ibeg] ne $levels_to_go[$ibeg_next] );
                 next
                   unless (
                     $is_assignment{ $types_to_go[$iendm] }
                     || ( $nesting_depth_to_go[$ibegm] <
                         $nesting_depth_to_go[$ibeg] )
+                    || (   $types_to_go[$iendm] eq 'k'
+                        && $tokens_to_go[$iendm] eq 'return' )
                   );
 
                 # we will add padding before the first token
@@ -12764,6 +12783,14 @@ sub terminal_type {
                     $bond_str = NO_BREAK;
                 }
 
+                # Never break between a bareword and a following paren because
+                # perl may give an error.  For example, if a break is placed
+                # between 'to_filehandle' and its '(' the following line will
+                # give a syntax error [Carp.pm]: my( $no) =fileno(
+                # to_filehandle( $in)) ;
+                if ( $next_nonblank_token eq '(' ) {
+                    $bond_str = NO_BREAK;
+                }
             }
 
            # use strict requires that bare word within braces not start new line
@@ -12898,6 +12925,14 @@ sub terminal_type {
             #
             # This is normally only a problem with the 'extrude' option
             if ( $next_nonblank_type eq 'Y' && $token eq '(' ) {
+                $bond_str = NO_BREAK;
+            }
+
+            # Breaking before a ++ can cause perl to guess wrong. For
+            # example the following line will cause a syntax error
+            # with -extrude if we break between '$i' and '++' [fixstyle2]
+            #   print( ( $i++ & 1 ) ? $_ : ( $change{$_} || $_ ) );
+            elsif ( $next_nonblank_type eq '++' ) {
                 $bond_str = NO_BREAK;
             }
 
@@ -15621,12 +15656,31 @@ sub recombine_breakpoints {
             # handle leading keyword..
             elsif ( $types_to_go[$imidr] eq 'k' ) {
 
-                # handle leading "and" and "or"
-                if ( $is_and_or{ $tokens_to_go[$imidr] } ) {
+                # handle leading "or"
+                if ( $tokens_to_go[$imidr] eq 'or' ) {
+                    next
+                      unless (
+                        $this_line_is_semicolon_terminated
+                        && (
 
-                    # Decide if we will combine a single terminal 'and' and
-                    # 'or' after an 'if' or 'unless'.  We should consider the
-                    # possible vertical alignment, and visual clutter.
+                            # following 'if' or 'unless' or 'or'
+                            $types_to_go[$if] eq 'k'
+                            && $is_if_unless{ $tokens_to_go[$if] }
+
+                            # important: only combine a very simple or
+                            # statement because the step below may have
+                            # combined a trailing 'and' with this or, and we do
+                            # not want to then combine everything together
+                            && ( $il - $imidr <= 7 )
+                        )
+                      );
+                }
+
+                # handle leading 'and'
+                elsif ( $tokens_to_go[$imidr] eq 'and' ) {
+
+                    # Decide if we will combine a single terminal 'and'
+                    # after an 'if' or 'unless'.
 
                     #     This looks best with the 'and' on the same
                     #     line as the 'if':
@@ -15640,21 +15694,15 @@ sub recombine_breakpoints {
                     #           if !$this->{Parents}{$_}
                     #           or $this->{Parents}{$_} eq $_;
                     #
-                    #     Eventually, it would be nice to look for
-                    #     similarities (such as 'this' or 'Parents'), but
-                    #     for now I'm using a simple rule that says that
-                    #     the resulting line length must not be more than
-                    #     half the maximum line length (making it 80/2 =
-                    #     40 characters by default).
                     next
                       unless (
                         $this_line_is_semicolon_terminated
                         && (
 
-                            # following 'if' or 'unless'
+                            # following 'if' or 'unless' or 'or'
                             $types_to_go[$if] eq 'k'
-                            && $is_if_unless{ $tokens_to_go[$if] }
-
+                            && (   $is_if_unless{ $tokens_to_go[$if] }
+                                || $tokens_to_go[$if] eq 'or' )
                         )
                       );
                 }
@@ -15946,6 +15994,55 @@ sub break_all_chain_tokens {
     }
 }
 
+sub insert_final_breaks {
+
+    my ( $ri_left, $ri_right ) = @_;
+
+    my $nmax = @$ri_right - 1;
+
+    # scan the left and right end tokens of all lines
+    my $count         = 0;
+    my $i_first_colon = -1;
+    for my $n ( 0 .. $nmax ) {
+        my $il    = $$ri_left[$n];
+        my $ir    = $$ri_right[$n];
+        my $typel = $types_to_go[$il];
+        my $typer = $types_to_go[$ir];
+        return if ( $typel eq '?' );
+        return if ( $typer eq '?' );
+        if    ( $typel eq ':' ) { $i_first_colon = $il; last; }
+        elsif ( $typer eq ':' ) { $i_first_colon = $ir; last; }
+    }
+
+    # For long ternary chains,
+    # if the first : we see has its # ? is in the interior
+    # of a preceding line, then see if there are any good
+    # breakpoints before the ?.
+    if ( $i_first_colon > 0 ) {
+        my $i_question = $mate_index_to_go[$i_first_colon];
+        if ( $i_question > 0 ) {
+            my @insert_list;
+            for ( my $ii = $i_question - 1 ; $ii >= 0 ; $ii -= 1 ) {
+                my $token = $tokens_to_go[$ii];
+                my $type  = $types_to_go[$ii];
+
+                # For now, a good break is either a comma or a 'return'.
+                if ( ( $type eq ',' || $type eq 'k' && $token eq 'return' )
+                    && in_same_container( $ii, $i_question ) )
+                {
+                    push @insert_list, $ii;
+                    last;
+                }
+            }
+
+            # insert any new break points
+            if (@insert_list) {
+                insert_additional_breaks( \@insert_list, $ri_left, $ri_right );
+            }
+        }
+    }
+}
+
 sub in_same_container {
 
     # check to see if tokens at i1 and i2 are in the
@@ -16030,7 +16127,8 @@ sub set_continuation_breaks {
     # see if any ?/:'s are in order
     my $colons_in_order = 1;
     my $last_tok        = "";
-    my @colon_list = grep /^[\?\:]$/, @tokens_to_go[ 0 .. $max_index_to_go ];
+    my @colon_list  = grep /^[\?\:]$/, @tokens_to_go[ 0 .. $max_index_to_go ];
+    my $colon_count = @colon_list;
     foreach (@colon_list) {
         if ( $_ eq $last_tok ) { $colons_in_order = 0; last }
         $last_tok = $_;
@@ -16428,7 +16526,7 @@ sub set_continuation_breaks {
             }
         }
     }
-    return \@i_first, \@i_last;
+    return ( \@i_first, \@i_last, $colon_count );
 }
 
 sub insert_additional_breaks {
@@ -21757,7 +21855,7 @@ sub prepare_for_a_new_file {
             if ($is_pattern) {
                 $in_quote                = 1;
                 $type                    = 'Q';
-                $allowed_quote_modifiers = '[cgimosx]';    # TBD:check this
+                $allowed_quote_modifiers = '[cgimosx]'; 
             }
             else {
                 ( $type_sequence, $indent_flag ) =
@@ -22886,10 +22984,9 @@ EOM
                         $statement_type = $tok;    # next '{' is block
                     }
 
-                    # patch to indent trailing if/unless
+                    # indent trailing if/unless/while/until
                     # outdenting will be handled by later indentation loop
-                    ##if ($tok =~ /^(if|unless)$/ && !new_statement_ok()) {
-                    if (   $tok =~ /^(if|unless)$/
+                    if (   $tok =~ /^(if|unless|while|until)$/
                         && $next_nonblank_token ne '(' )
                     {
                         $indent_flag = 1;
@@ -23142,47 +23239,51 @@ EOM
             my $forced_indentation_flag = $routput_indent_flag->[$i];
 
             # See if we should undo the $forced_indentation_flag.
-            # Forced indentation after 'if' and 'unless' expressions is
-            # optional and doesn't always look good.  It is usually okay
-            # for a trailing logical expression, but if the expression
-            # is a function call, code block, or some kind of list it
-            # puts in an unwanted extra indentation level which is hard
-            # to remove.
+            # Forced indentation after 'if', 'unless', 'while' and 'until'
+            # expressions without trailing parens is optional and doesn't
+            # always look good.  It is usually okay for a trailing logical
+            # expression, but if the expression is a function call, code block,
+            # or some kind of list it puts in an unwanted extra indentation
+            # level which is hard to remove.
             #
             # Example where extra indentation looks ok:
             # return 1
             #   if $det_a < 0 and $det_b > 0
-            #       or $det_a > 0 and $det_b < 0
-            #       or $det_a > 0 and $det_b < 0
-            #       or $det_a > 0
-            #       and $det_b < 0
+            #       or $det_a > 0 and $det_b < 0;
             #
-            # Example where extra indentation is not needed:
+            # Example where extra indentation is not needed because
+            # the eval brace also provides indentation:
             # print "not " if defined eval {
             #     reduce { die if $b > 2; $a + $b } 0, 1, 2, 3, 4;
             # };
             #
-            # There's no precise way to get this right, but
-            # following rule works fairly well:
-            # We undo the flag if this line ends in an opening container
-            # token, or the next line begins with an opening container.
-            # This will obviously depend somewhat on the input
-            # formatting, but after another pass it will be stable.
+            # The following rule works fairly well:
+            #   Undo the flag if the end of this line, or start of the next
+            #   line, is an opening container token or a comma.
+            # This almost always works, but if not after another pass it will
+            # be stable.
             if ( $forced_indentation_flag && $type eq 'k' ) {
-                my $ilast   = $routput_token_list->[-1];
+                my $ixlast  = -1;
+                my $ilast   = $routput_token_list->[$ixlast];
                 my $toklast = $routput_token_type->[$ilast];
                 if ( $toklast eq '#' ) {
-                    my $imm = $routput_token_list->[-3];
-                    $toklast = $routput_token_type->[$imm];
+                    $ixlast--;
+                    $ilast   = $routput_token_list->[$ixlast];
+                    $toklast = $routput_token_type->[$ilast];
                 }
-                if ( $toklast eq '{' ) {
+                if ( $toklast eq 'b' ) {
+                    $ixlast--;
+                    $ilast   = $routput_token_list->[$ixlast];
+                    $toklast = $routput_token_type->[$ilast];
+                }
+                if ( $toklast =~ /^[\{,]$/ ) {
                     $forced_indentation_flag = 0;
                 }
                 else {
                     ( $toklast, my $i_next ) =
                       find_next_nonblank_token( $max_token_index, $rtokens,
                         $max_token_index );
-                    if ( $toklast eq '{' ) {
+                    if ( $toklast =~ /^[\{,]$/ ) {
                         $forced_indentation_flag = 0;
                     }
                 }
@@ -23209,7 +23310,7 @@ EOM
                     if ( $level_in_tokenizer == $indented_if_level ) {
                         $indented_if_level = 0;
 
-                        # TBD: This should be a subroutine call
+                        # TBD: This could be a subroutine call
                         $level_in_tokenizer--;
                         if ( @{$rslevel_stack} > 1 ) {
                             pop( @{$rslevel_stack} );
