@@ -6,21 +6,6 @@ Perltidy TODO List
   Improved Vertical Alignment
     There are many opportunities for improving vertical alignment.
 
-  improved ?: formatting
-    An indentation level should be associated with ?: statements. This would
-    make nested ?: statements more readable.
-
-  improved internal if/unless formatting
-    Consider giving internal if/unless statements an additional level of
-    indentation. This would avoid running out of indentation levels.
-    Suggested by Jeff Armstorng. For example, we would like the 'ands' in
-    the following statement to be indented more than the if:
-
-        return $ship->chargeWeapons("phaser-canon")
-          if $encounter->description eq 'klingon'
-          and $ship->firepower >= $encounter->firepower
-          and $location->status ne 'neutral';
-
   Documentation
     A FAQ is needed to explain some of the more subtle formatting issues,
     and to give examples of different styles.

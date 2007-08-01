@@ -1,9 +1,10 @@
 =head1 Perltidy Change Log
 
-=head2 2007 xx xx
+=head2 2007 08 01
 
  -Added -fpsc option (--fixed-position-side-comment). Thanks to Ueli Hugenschmidt. 
- For example -fpsc=40 tells perltidy to put side comments in column 40 if possible.
+ For example -fpsc=40 tells perltidy to put side comments in column 40
+ if possible.  
 
  -Added -bbao and -baao options (--break-before-all-operators and
  --break-after-all-operators) to simplify command lines and configuration
@@ -11,6 +12,21 @@
  be modified with -wba and -wbb flags.  For example to break before all operators
  except an = one could use --bbao -wba='=' rather than listing every
  single perl operator (except =) on a -wbb flag.
+
+ -Added -kis option (--keep-interior-semicolons).  Use the B<-kis> flag
+ to prevent breaking at a semicolon if there was no break there in the
+ input flag.  To illustrate, consider the following input lines:
+
+    dbmclose(%verb_delim); undef %verb_delim;
+    dbmclose(%expanded); undef %expanded;
+    dbmclose(%global); undef %global;
+
+ Normally these would be broken into six lines, but 
+ perltidy -kis gives:
+
+    dbmclose(%verb_delim); undef %verb_delim;
+    dbmclose(%expanded);   undef %expanded;
+    dbmclose(%global);     undef %global;
  
  -Improved formatting of complex ternary statements, with indentation
  of nested statements.  
@@ -28,8 +44,8 @@
           : $cw->{Selected}[0]
       : undef;
 
- -Text following un-parenthesized if/unless statements get a full level of
- indentation.  Suggested by Jeff Armstorng and others. 
+ -Text following un-parenthesized if/unless/while/until statements get a
+ full level of indentation.  Suggested by Jeff Armstorng and others. 
  OLD:
     return $ship->chargeWeapons("phaser-canon")
       if $encounter->description eq 'klingon'

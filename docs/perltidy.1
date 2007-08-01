@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "PERLTIDY 1"
-.TH PERLTIDY 1 "2007-05-08" "perl v5.8.8" "User Contributed Perl Documentation"
+.TH PERLTIDY 1 "2007-07-31" "perl v5.8.8" "User Contributed Perl Documentation"
 .SH "NAME"
 perltidy \- a perl script indenter and reformatter
 .SH "SYNOPSIS"
@@ -1005,6 +1005,10 @@ removed.  This is the default; use \fB\-nolc\fR to prevent outdenting.
 Side comments look best when lined up several spaces to the right of
 code.  Perltidy will try to keep comments at least n spaces to the
 right.  The default is n=4 spaces.
+.IP "\fB\-fpsc=n\fR,  \fB\-\-fixed\-position\-side\-comment=n\fR" 4
+.IX Item "-fpsc=n,  --fixed-position-side-comment=n"
+This parameter tells perltidy to line up side comments in column number \fBn\fR
+whenever possible.  The default, n=0, is not do do this.
 .IP "\fB\-hsc\fR, \fB\-\-hanging\-side\-comments\fR" 4
 .IX Item "-hsc, --hanging-side-comments"
 By default, perltidy tries to identify and align \*(L"hanging side
@@ -1797,8 +1801,9 @@ breaks; see \fB\-\-freeze\-newlines\fR to completely prevent changes to line
 break points.
 .IP "Controlling whether perltidy breaks before or after operators" 4
 .IX Item "Controlling whether perltidy breaks before or after operators"
-Two command line parameters provide some control over whether
+Four command line parameters provide some control over whether
 a line break should be before or after specific token types.
+Two parameters give detailed control:
 .Sp
 \&\fB\-wba=s\fR or \fB\-\-want\-break\-after=s\fR, and
 .Sp
@@ -1840,6 +1845,26 @@ with the parameter \fBbl\fR provided for that purpose.
 .Sp
 \&\fB\s-1WARNING\s0\fR Be sure to put these tokens in quotes to avoid having them
 misinterpreted by your command shell.
+.Sp
+Two additional parameters are available which, though they provide no further
+capability, can simplify input are:
+.Sp
+\&\fB\-baao\fR or \fB\-\-break\-after\-all\-operators\fR,
+.Sp
+\&\fB\-bbao\fR or \fB\-\-break\-before\-all\-operators\fR.
+.Sp
+The \-baao sets the default to be to break after all of the following operators:
+.Sp
+.Vb 2
+\&    % + \- * / x != == >= <= =~ !~ < > | & 
+\&    = **= += *= &= <<= &&= \-= /= |= >>= ||= //= .= %= ^= x=
+.Ve
+.Sp
+and the \fB\-bbao\fR flag sets the default to break before all of these operators.
+These can be used to define an initial break preference which can be fine-tuned
+with the \fB\-wba\fR and \fB\-wbb\fR flags.  For example, to break before all operators
+except an \fB=\fR one could use \-\-bbao \-wba='=' rather than listing every
+single perl operator except \fB=\fR on a \-wbb flag.
 .Sh "Controlling List Formatting"
 .IX Subsection "Controlling List Formatting"
 Perltidy attempts to place comma-separated arrays of values in tables
@@ -2704,7 +2729,7 @@ purpose of this rule is to prevent generating confusing filenames such as
 \&\fIperlstyle\fR\|(1), \fIPerl::Tidy\fR\|(3)
 .SH "VERSION"
 .IX Header "VERSION"
-This man page documents perltidy version 20070508.
+This man page documents perltidy version 20070801.
 .SH "CREDITS"
 .IX Header "CREDITS"
 Michael Cartmell supplied code for adaptation to \s-1VMS\s0 and helped with

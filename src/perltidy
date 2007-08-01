@@ -1896,6 +1896,34 @@ maximum extent possible.  This will tend to produce the longest possible
 containers, regardless of type, which do not exceed the line length
 limit.
 
+=item B<-kis>,  B<--keep-interior-semicolons>
+
+Use the B<-kis> flag to prevent breaking at a semicolon if
+there was no break there in the input flag.  Normally
+perltidy places a newline after each semicolon which
+terminates a statement unless several statements are
+contained within a one-line brace block.  To illustrate,
+consider the following input lines:
+
+    dbmclose(%verb_delim); undef %verb_delim;
+    dbmclose(%expanded); undef %expanded;
+
+The default is to break after each statement, giving
+
+    dbmclose(%verb_delim);
+    undef %verb_delim;
+    dbmclose(%expanded);
+    undef %expanded;
+
+With B<perltidy -kis> the multiple statements are retained:
+
+    dbmclose(%verb_delim); undef %verb_delim;
+    dbmclose(%expanded);   undef %expanded;
+
+The statements are still subject to the specified value
+of B<maximum-line-length> and will be broken if this 
+maximum is exceeed.
+
 =back
 
 =head2 Blank Line Control
@@ -2642,7 +2670,7 @@ perlstyle(1), Perl::Tidy(3)
 
 =head1 VERSION
 
-This man page documents perltidy version 20070508.
+This man page documents perltidy version 20070801.
 
 =head1 CREDITS
 

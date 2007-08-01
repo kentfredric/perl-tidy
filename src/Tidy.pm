@@ -65,7 +65,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.67 2007/08/01 00:57:59 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.68 2007/08/01 16:22:38 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 sub streamhandle {
@@ -1348,6 +1348,7 @@ sub generate_options {
     $add_option->( 'want-break-before',                   'wbb',   '=s' );
     $add_option->( 'break-after-all-operators',           'baao',  '!' );
     $add_option->( 'break-before-all-operators',          'bbao',  '!' );
+    $add_option->( 'keep-interior-semicolons',            'kis',   '!' );
 
     ########################################
     $category = 6;    # Controlling list formatting
@@ -2890,6 +2891,7 @@ Line Break Control
  -wbb=s  want break before tokens in string
 
 Following Old Breakpoints
+ -kis    keep interior semicolons.  Allows multiple statements per line.
  -boc    break at old comma breaks: turns off all automatic list formatting
  -bol    break at old logical breakpoints: or, and, ||, && (default)
  -bok    break at old list keyword breakpoints such as map, sort (default)
@@ -5592,6 +5594,7 @@ use vars qw{
   $rOpts_format_skipping
   $rOpts_space_function_paren
   $rOpts_space_keyword_paren
+  $rOpts_keep_interior_semicolons
 
   $half_maximum_line_length
 
@@ -7176,11 +7179,12 @@ EOM
       $rOpts->{'short-concatenation-item-length'};
     $rOpts_swallow_optional_blank_lines =
       $rOpts->{'swallow-optional-blank-lines'};
-    $rOpts_ignore_old_breakpoints = $rOpts->{'ignore-old-breakpoints'};
-    $rOpts_format_skipping        = $rOpts->{'format-skipping'};
-    $rOpts_space_function_paren   = $rOpts->{'space-function-paren'};
-    $rOpts_space_keyword_paren    = $rOpts->{'space-keyword-paren'};
-    $half_maximum_line_length     = $rOpts_maximum_line_length / 2;
+    $rOpts_ignore_old_breakpoints   = $rOpts->{'ignore-old-breakpoints'};
+    $rOpts_format_skipping          = $rOpts->{'format-skipping'};
+    $rOpts_space_function_paren     = $rOpts->{'space-function-paren'};
+    $rOpts_space_keyword_paren      = $rOpts->{'space-keyword-paren'};
+    $rOpts_keep_interior_semicolons = $rOpts->{'keep-interior-semicolons'};
+    $half_maximum_line_length       = $rOpts_maximum_line_length / 2;
 
     # Note that both opening and closing tokens can access the opening
     # and closing flags of their container types.
@@ -8519,7 +8523,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.67 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.68 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -9119,6 +9123,7 @@ sub set_white_space_flag {
 
                 output_line_to_go()
                   unless ( $no_internal_newlines
+                    || ( $rOpts_keep_interior_semicolons && $j < $jmax )
                     || ( $next_nonblank_token eq '}' ) );
 
             }
@@ -27608,7 +27613,7 @@ to perltidy.
 
 =head1 VERSION
 
-This man page documents Perl::Tidy version 20070508.
+This man page documents Perl::Tidy version 20070801.
 
 =head1 AUTHOR
 

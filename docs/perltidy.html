@@ -1138,6 +1138,13 @@ code.  Perltidy will try to keep comments at least n spaces to the
 right.  The default is n=4 spaces.</p>
 </dd>
 </li>
+<dt><strong><a name="item__2dfpsc_3dn_2c__2d_2dfixed_2dposition_2dside_2dcom"><strong>-fpsc=n</strong>,  <strong>--fixed-position-side-comment=n</strong></a></strong>
+
+<dd>
+<p>This parameter tells perltidy to line up side comments in column number <strong>n</strong>
+whenever possible.  The default, n=0, is not do do this.</p>
+</dd>
+</li>
 <dt><strong><a name="item__2dhsc_2c__2d_2dhanging_2dside_2dcomments"><strong>-hsc</strong>, <strong>--hanging-side-comments</strong></a></strong>
 
 <dd>
@@ -2031,8 +2038,9 @@ break points.</p>
 <dt><strong><a name="item_controlling_whether_perltidy_breaks_before_or_afte">Controlling whether perltidy breaks before or after operators</a></strong>
 
 <dd>
-<p>Two command line parameters provide some control over whether
-a line break should be before or after specific token types.</p>
+<p>Four command line parameters provide some control over whether
+a line break should be before or after specific token types.
+Two parameters give detailed control:</p>
 </dd>
 <dd>
 <p><strong>-wba=s</strong> or <strong>--want-break-after=s</strong>, and</p>
@@ -2083,6 +2091,31 @@ with the parameter <strong>bl</strong> provided for that purpose.</p>
 <dd>
 <p><strong>WARNING</strong> Be sure to put these tokens in quotes to avoid having them
 misinterpreted by your command shell.</p>
+</dd>
+<dd>
+<p>Two additional parameters are available which, though they provide no further
+capability, can simplify input are:</p>
+</dd>
+<dd>
+<p><strong>-baao</strong> or <strong>--break-after-all-operators</strong>,</p>
+</dd>
+<dd>
+<p><strong>-bbao</strong> or <strong>--break-before-all-operators</strong>.</p>
+</dd>
+<dd>
+<p>The -baao sets the default to be to break after all of the following operators:</p>
+</dd>
+<dd>
+<pre>
+    % + - * / x != == &gt;= &lt;= =~ !~ &lt; &gt; | &amp; 
+    = **= += *= &amp;= &lt;&lt;= &amp;&amp;= -= /= |= &gt;&gt;= ||= //= .= %= ^= x=</pre>
+</dd>
+<dd>
+<p>and the <strong>-bbao</strong> flag sets the default to break before all of these operators.
+These can be used to define an initial break preference which can be fine-tuned
+with the <strong>-wba</strong> and <strong>-wbb</strong> flags.  For example, to break before all operators
+except an <strong>=</strong> one could use --bbao -wba='=' rather than listing every
+single perl operator except <strong>=</strong> on a -wbb flag.</p>
 </dd>
 </li>
 </dl>
@@ -3182,7 +3215,7 @@ purpose of this rule is to prevent generating confusing filenames such as
 </p>
 <hr />
 <h1><a name="version">VERSION</a></h1>
-<p>This man page documents perltidy version 20070508.</p>
+<p>This man page documents perltidy version 20070801.</p>
 <p>
 </p>
 <hr />

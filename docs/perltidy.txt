@@ -796,6 +796,10 @@ FORMATTING OPTIONS
         code. Perltidy will try to keep comments at least n spaces to the
         right. The default is n=4 spaces.
 
+    -fpsc=n, --fixed-position-side-comment=n
+        This parameter tells perltidy to line up side comments in column
+        number n whenever possible. The default, n=0, is not do do this.
+
     -hsc, --hanging-side-comments
         By default, perltidy tries to identify and align "hanging side
         comments", which are something like this:
@@ -1495,8 +1499,9 @@ FORMATTING OPTIONS
         break points.
 
     Controlling whether perltidy breaks before or after operators
-        Two command line parameters provide some control over whether a line
-        break should be before or after specific token types.
+        Four command line parameters provide some control over whether a
+        line break should be before or after specific token types. Two
+        parameters give detailed control:
 
         -wba=s or --want-break-after=s, and
 
@@ -1535,6 +1540,26 @@ FORMATTING OPTIONS
 
         WARNING Be sure to put these tokens in quotes to avoid having them
         misinterpreted by your command shell.
+
+        Two additional parameters are available which, though they provide
+        no further capability, can simplify input are:
+
+        -baao or --break-after-all-operators,
+
+        -bbao or --break-before-all-operators.
+
+        The -baao sets the default to be to break after all of the following
+        operators:
+
+            % + - * / x != == >= <= =~ !~ < > | & 
+            = **= += *= &= <<= &&= -= /= |= >>= ||= //= .= %= ^= x=
+
+        and the -bbao flag sets the default to break before all of these
+        operators. These can be used to define an initial break preference
+        which can be fine-tuned with the -wba and -wbb flags. For example,
+        to break before all operators except an = one could use --bbao
+        -wba='=' rather than listing every single perl operator except = on
+        a -wbb flag.
 
   Controlling List Formatting
     Perltidy attempts to place comma-separated arrays of values in tables
@@ -2340,7 +2365,7 @@ SEE ALSO
     perlstyle(1), Perl::Tidy(3)
 
 VERSION
-    This man page documents perltidy version 20070508.
+    This man page documents perltidy version 20070801.
 
 CREDITS
     Michael Cartmell supplied code for adaptation to VMS and helped with
