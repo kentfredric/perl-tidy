@@ -1,3 +1,19 @@
+# This used to take two passes to get indentation right, 
+# before I added the 'comma rule' to the tokenizer
+1 while unlink("$$.pod", "$$.in", "$$.o1", "$$.o2", "$$.o3",
+                 "pod2htmd.x~~", "pod2htmi.x~~");
+
+# Another example
+return unless $self->_print(">P1;", $seq->id(),# side comment
+                            "\n", $seq->desc(), "\n", 
+                            ">P1;", $seq->id(),"\n", 
+                            "\n",$str, "\n");
+$this .= $1
+  while s/^'([^']*)'//
+      || s/^"([^"]*)"//
+      || s/^([^'"\s\\]+)//
+      || s/^(\\[\D\d])//;
+
 # that's an if, not a flag!
 warn qq/warning: -refresh ignored for ftp URLs\n/if $refresh;
 

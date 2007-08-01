@@ -1,5 +1,51 @@
 =head1 Perltidy Change Log
 
+=head2 2007 xx xx
+
+ -Added -fpsc option (--fixed-position-side-comment). Thanks to Ueli Hugenschmidt. 
+ For example -fpsc=40 tells perltidy to put side comments in column 40 if possible.
+
+ -Added -bbao and -baao options (--break-before-all-operators and
+ --break-after-all-operators) to simplify command lines and configuration
+ files.  These define an initial preference for breaking at operators which can
+ be modified with -wba and -wbb flags.  For example to break before all operators
+ except an = one could use --bbao -wba='=' rather than listing every
+ single perl operator (except =) on a -wbb flag.
+ 
+ -Improved formatting of complex ternary statements, with indentation
+ of nested statements.  
+  OLD:
+    return defined( $cw->{Selected} )
+      ? (wantarray)
+      ? @{ $cw->{Selected} }
+      : $cw->{Selected}[0]
+      : undef;
+
+  NEW:
+    return defined( $cw->{Selected} )
+      ? (wantarray)
+          ? @{ $cw->{Selected} }
+          : $cw->{Selected}[0]
+      : undef;
+
+ -Text following un-parenthesized if/unless statements get a full level of
+ indentation.  Suggested by Jeff Armstorng and others. 
+ OLD:
+    return $ship->chargeWeapons("phaser-canon")
+      if $encounter->description eq 'klingon'
+      and $ship->firepower >= $encounter->firepower
+      and $location->status ne 'neutral';
+ NEW:
+    return $ship->chargeWeapons("phaser-canon")
+      if $encounter->description eq 'klingon'
+          and $ship->firepower >= $encounter->firepower
+          and $location->status ne 'neutral';
+
+=head2 2007 05 08
+
+ -Fixed bug where #line directives were being indented.  Thanks to
+ Philippe Bruhat.
+
 =head2 2007 05 04
 
  -Fixed problem where an extra blank line was added after an =cut when either
@@ -68,7 +114,7 @@
  replacement text (but does not reformat it).
 
  -improved vertical alignment of terminal else blocks and ternary statements.
-  thanks to chris for the suggestion. 
+  Thanks to Chris for the suggestion. 
 
   OLD:
     if    ( IsBitmap() ) { return GetBitmap(); }
@@ -203,7 +249,7 @@
  The default is not to do this.  Suggested by H.Merijn Brand.
 
  -Added patch to avoid breaking GetOpt::Long::Configure set by calling program. 
- Thanks to BOOK at CPAN. 
+ Thanks to Philippe Bruhat.
 
  -An error was fixed in which certain parameters in a .perltidyrc file given
  without the equals sign were not recognized.  That is,

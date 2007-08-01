@@ -104,3 +104,39 @@ $leading_block_text_line_length =
       . &format_line('Returns:        @')
       . '$returns' . "\n"
       . &format_line('             ~~ ^') . '$desc' . "\n.\n";
+
+{
+
+    # do not recombine into two lines after a comma if
+    # the term is complex (has parens) or changes level
+    $delta_time = sprintf "%.4f",
+      ( ( $done[0] + ( $done[1] / 1e6 ) ) -
+          ( $start[0] + ( $start[1] / 1e6 ) ) );
+
+    push @addr,
+      ( ord( substr( $uname, $_, 1 ) ) - 97 << 4 ) |
+      ( ord( substr( $uname, $_ + 4, 1 ) ) - 97 );
+}
+
+# need to join '|| (' with line having leading ? or :
+$package =
+  ref $_[0] && UNIVERSAL::isa( $_[0] => 'SOAP::Lite' )
+  ? $currenturi
+  : $package eq 'SOAP' ? ref $_[0] || (
+      $_[0] eq 'SOAP'
+    ? $currenturi || Carp::croak "URI is not specified for SOAP call"
+    : $_[0]
+  )
+  : $package eq 'main' ? $currenturi || $package
+  :                      $package;
+{{
+
+        # maybe do not recombine something like this 
+        # comma break, math, 
+        $delta_time = sprintf "%.4f", (($done[0] + ($done[1] / 1e6)) -
+                ($start[0] + ($start[1] / 1e6)));
+
+        # another example of same:
+        push @addr, ((ord (substr ($uname, $_, 1)) - 97 << 4) |
+                (ord (substr ($uname, $_ + 4, 1)) - 97));
+}}

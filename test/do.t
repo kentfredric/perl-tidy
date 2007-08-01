@@ -5,6 +5,13 @@ do {    ### local($_) = $body;
     &make_unique($body);
 } if ( $body =~ /$O/ );
 
+# closing brace is not outdented here because line does not end in ;
+do
+{
+    ++$self->{next_move};
+  } while $self->{next_move} <= 8
+  && $self->{board}[$self->{next_move}] ne $empty;
+
 {
 # a difficult block to break
         print( ( ( 1 << ( $bits - 1 ) ) == $cusp && do { use integer; 1 << ( $bits - 1 ) } == -$cusp ) ? "ok 11\n" : "not ok 11\n" );

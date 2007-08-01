@@ -1,4 +1,8 @@
 Perltidy Change Log
+  2007 05 08
+     -Fixed bug where #line directives were being indented.  Thanks to
+     Philippe Bruhat.
+
   2007 05 04
      -Fixed problem where an extra blank line was added after an =cut when either
      (a) the =cut started (not stopped) a POD section, or (b) -mbl > 1. 
@@ -198,7 +202,7 @@ Perltidy Change Log
      The default is not to do this.  Suggested by H.Merijn Brand.
 
      -Added patch to avoid breaking GetOpt::Long::Configure set by calling program. 
-     Thanks to BOOK at CPAN. 
+     Thanks to Philippe Bruhat.
 
      -An error was fixed in which certain parameters in a .perltidyrc file given
      without the equals sign were not recognized.  That is,

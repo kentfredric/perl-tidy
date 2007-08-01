@@ -476,3 +476,10 @@ print(
       : ( @_ == 1 ) ? $_[0]
       : ( @_ == 2 ) ? join( " and ",     @_ )
       :               join( "$sepchar ", @_[ 0 .. ( $#_ - 1 ) ], "and $_[-1]" );
+
+    # nested ternary
+    return defined( $cw->{Selected} )
+      ? (wantarray)
+        ? @{ $cw->{Selected} }
+        : $cw->{Selected}[0]
+      : undef;

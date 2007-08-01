@@ -65,7 +65,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.66 2007/07/31 14:43:32 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.67 2007/08/01 00:57:59 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 sub streamhandle {
@@ -8519,7 +8519,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.66 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.67 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -12934,6 +12934,26 @@ sub terminal_type {
             #   print( ( $i++ & 1 ) ? $_ : ( $change{$_} || $_ ) );
             elsif ( $next_nonblank_type eq '++' ) {
                 $bond_str = NO_BREAK;
+            }
+
+            # Breaking before a ? before a quote can cause trouble if 
+            # they are not separated by a blank.
+            # Example: a syntax error occurs if you break before the ? here
+            #  my$logic=join$all?' && ':' || ',@regexps;
+	    # From: Professional_Perl_Programming_Code/multifind.pl
+            elsif ( $next_nonblank_type eq '?' ) {
+                $bond_str = NO_BREAK 
+                  if ( $types_to_go[ $i_next_nonblank + 1 ] eq 'Q' );
+            }
+
+            # Breaking before a . followed by a number
+            # can cause trouble if there is no intervening space
+            # Example: a syntax error occurs if you break before the .2 here
+            #  $str .= pack($endian.2, ensurrogate($ord));
+	    # From: perl58/Unicode.pm
+            elsif ( $next_nonblank_type eq '.' ) {
+                $bond_str = NO_BREAK
+                  if ( $types_to_go[ $i_next_nonblank + 1 ] eq 'n' );
             }
 
             # patch to put cuddled elses back together when on multiple
@@ -24327,42 +24347,42 @@ sub is_non_structural_brace {
 # way.
 
 sub increase_nesting_depth {
-    my ( $a, $pos ) = @_;
+    my ( $aa, $pos ) = @_;
 
     # USES GLOBAL VARIABLES: $tokenizer_self, @current_depth,
     # @current_sequence_number, @depth_array, @starting_line_of_current_depth
-    my $b;
-    $current_depth[$a]++;
+    my $bb;
+    $current_depth[$aa]++;
     $total_depth++;
-    $total_depth[$a][ $current_depth[$a] ] = $total_depth;
+    $total_depth[$aa][ $current_depth[$aa] ] = $total_depth;
     my $input_line_number = $tokenizer_self->{_last_line_number};
     my $input_line        = $tokenizer_self->{_line_text};
 
     # Sequence numbers increment by number of items.  This keeps
     # a unique set of numbers but still allows the relative location
     # of any type to be determined.
-    $nesting_sequence_number[$a] += scalar(@closing_brace_names);
-    my $seqno = $nesting_sequence_number[$a];
-    $current_sequence_number[$a][ $current_depth[$a] ] = $seqno;
+    $nesting_sequence_number[$aa] += scalar(@closing_brace_names);
+    my $seqno = $nesting_sequence_number[$aa];
+    $current_sequence_number[$aa][ $current_depth[$aa] ] = $seqno;
 
-    $starting_line_of_current_depth[$a][ $current_depth[$a] ] =
+    $starting_line_of_current_depth[$aa][ $current_depth[$aa] ] =
       [ $input_line_number, $input_line, $pos ];
 
-    for $b ( 0 .. $#closing_brace_names ) {
-        next if ( $b == $a );
-        $depth_array[$a][$b][ $current_depth[$a] ] = $current_depth[$b];
+    for $bb ( 0 .. $#closing_brace_names ) {
+        next if ( $bb == $aa );
+        $depth_array[$aa][$bb][ $current_depth[$aa] ] = $current_depth[$bb];
     }
 
     # set a flag for indenting a nested ternary statement
     my $indent = 0;
-    if ( $a == QUESTION_COLON ) {
-        $nested_ternary_flag[ $current_depth[$a] ] = 0;
-        if ( $current_depth[$a] > 1 ) {
-            if ( $nested_ternary_flag[ $current_depth[$a] - 1 ] == 0 ) {
-                my $pdepth = $total_depth[$a][ $current_depth[$a] - 1 ];
+    if ( $aa == QUESTION_COLON ) {
+        $nested_ternary_flag[ $current_depth[$aa] ] = 0;
+        if ( $current_depth[$aa] > 1 ) {
+            if ( $nested_ternary_flag[ $current_depth[$aa] - 1 ] == 0 ) {
+                my $pdepth = $total_depth[$aa][ $current_depth[$aa] - 1 ];
                 if ( $pdepth == $total_depth - 1 ) {
                     $indent = 1;
-                    $nested_ternary_flag[ $current_depth[$a] - 1 ] = -1;
+                    $nested_ternary_flag[ $current_depth[$aa] - 1 ] = -1;
                 }
             }
         }
@@ -24372,35 +24392,35 @@ sub increase_nesting_depth {
 
 sub decrease_nesting_depth {
 
-    my ( $a, $pos ) = @_;
+    my ( $aa, $pos ) = @_;
 
     # USES GLOBAL VARIABLES: $tokenizer_self, @current_depth,
     # @current_sequence_number, @depth_array, @starting_line_of_current_depth
-    my $b;
+    my $bb;
     my $seqno             = 0;
     my $input_line_number = $tokenizer_self->{_last_line_number};
     my $input_line        = $tokenizer_self->{_line_text};
 
     my $outdent = 0;
     $total_depth--;
-    if ( $current_depth[$a] > 0 ) {
+    if ( $current_depth[$aa] > 0 ) {
 
         # set a flag for un-indenting after seeing a nested ternary statement
-        $seqno = $current_sequence_number[$a][ $current_depth[$a] ];
-        if ( $a == QUESTION_COLON ) {
-            $outdent = $nested_ternary_flag[ $current_depth[$a] ];
+        $seqno = $current_sequence_number[$aa][ $current_depth[$aa] ];
+        if ( $aa == QUESTION_COLON ) {
+            $outdent = $nested_ternary_flag[ $current_depth[$aa] ];
         }
 
-        # check that any brace types $b contained within are balanced
-        for $b ( 0 .. $#closing_brace_names ) {
-            next if ( $b == $a );
+        # check that any brace types $bb contained within are balanced
+        for $bb ( 0 .. $#closing_brace_names ) {
+            next if ( $bb == $aa );
 
-            unless ( $depth_array[$a][$b][ $current_depth[$a] ] ==
-                $current_depth[$b] )
+            unless ( $depth_array[$aa][$bb][ $current_depth[$aa] ] ==
+                $current_depth[$bb] )
             {
                 my $diff =
-                  $current_depth[$b] -
-                  $depth_array[$a][$b][ $current_depth[$a] ];
+                  $current_depth[$bb] -
+                  $depth_array[$aa][$bb][ $current_depth[$aa] ];
 
                 # don't whine too many times
                 my $saw_brace_error = get_saw_brace_error();
@@ -24414,7 +24434,7 @@ sub decrease_nesting_depth {
                 {
                     interrupt_logfile();
                     my $rsl =
-                      $starting_line_of_current_depth[$a][ $current_depth[$a] ];
+                      $starting_line_of_current_depth[$aa][ $current_depth[$aa] ];
                     my $sl  = $$rsl[0];
                     my $rel = [ $input_line_number, $input_line, $pos ];
                     my $el  = $$rel[0];
@@ -24428,17 +24448,17 @@ sub decrease_nesting_depth {
                     }
                     my $bname =
                       ( $diff > 0 )
-                      ? $opening_brace_names[$b]
-                      : $closing_brace_names[$b];
+                      ? $opening_brace_names[$bb]
+                      : $closing_brace_names[$bb];
                     write_error_indicator_pair( @$rsl, '^' );
                     my $msg = <<"EOM";
-Found $diff extra $bname$ess between $opening_brace_names[$a] on line $sl and $closing_brace_names[$a] on line $el
+Found $diff extra $bname$ess between $opening_brace_names[$aa] on line $sl and $closing_brace_names[$aa] on line $el
 EOM
 
                     if ( $diff > 0 ) {
                         my $rml =
-                          $starting_line_of_current_depth[$b]
-                          [ $current_depth[$b] ];
+                          $starting_line_of_current_depth[$bb]
+                          [ $current_depth[$bb] ];
                         my $ml = $$rml[0];
                         $msg .=
 "    The most recent un-matched $bname is on line $ml\n";
@@ -24451,14 +24471,14 @@ EOM
                 increment_brace_error();
             }
         }
-        $current_depth[$a]--;
+        $current_depth[$aa]--;
     }
     else {
 
         my $saw_brace_error = get_saw_brace_error();
         if ( $saw_brace_error <= MAX_NAG_MESSAGES ) {
             my $msg = <<"EOM";
-There is no previous $opening_brace_names[$a] to match a $closing_brace_names[$a] on line $input_line_number
+There is no previous $opening_brace_names[$aa] to match a $closing_brace_names[$aa] on line $input_line_number
 EOM
             indicate_error( $msg, $input_line_number, $input_line, $pos, '^' );
         }
@@ -24468,18 +24488,18 @@ EOM
 }
 
 sub check_final_nesting_depths {
-    my ($a);
+    my ($aa);
 
     # USES GLOBAL VARIABLES: @current_depth, @starting_line_of_current_depth
 
-    for $a ( 0 .. $#closing_brace_names ) {
+    for $aa ( 0 .. $#closing_brace_names ) {
 
-        if ( $current_depth[$a] ) {
-            my $rsl = $starting_line_of_current_depth[$a][ $current_depth[$a] ];
+        if ( $current_depth[$aa] ) {
+            my $rsl = $starting_line_of_current_depth[$aa][ $current_depth[$aa] ];
             my $sl  = $$rsl[0];
             my $msg = <<"EOM";
-Final nesting depth of $opening_brace_names[$a]s is $current_depth[$a]
-The most recent un-matched $opening_brace_names[$a] is on line $sl
+Final nesting depth of $opening_brace_names[$aa]s is $current_depth[$aa]
+The most recent un-matched $opening_brace_names[$aa] is on line $sl
 EOM
             indicate_error( $msg, @$rsl, '^' );
             increment_brace_error();
