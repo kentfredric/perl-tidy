@@ -1,5 +1,34 @@
 =head1 Perltidy Change Log
 
+=head2 2007 xx xx 
+
+ -Numerous minor formatting improvements.
+
+ -Line breaks in un-parenthesized lists now try to follow
+ line breaks in the input file rather than trying to fill
+ lines.  This usually works better, but if this causes
+ trouble you can use -iob to ignore any old line breaks.
+ Example for the following input snippet:
+
+    print
+    "conformability (Not the same dimension)\n",
+    "\t", $have, " is ", text_unit($hu), "\n",
+    "\t", $want, " is ", text_unit($wu), "\n",
+    ;
+
+  OLD:
+    print "conformability (Not the same dimension)\n", "\t", $have, " is ",
+      text_unit($hu), "\n", "\t", $want, " is ", text_unit($wu), "\n",;
+
+  NEW:
+    print "conformability (Not the same dimension)\n",
+      "\t", $have, " is ", text_unit($hu), "\n",
+      "\t", $want, " is ", text_unit($wu), "\n",
+      ;
+
+ -Corrected list of operators controlled by -baao -bbao to include
+   . : ? && || and or err xor
+
 =head2 2007 08 01
 
  -Added -fpsc option (--fixed-position-side-comment). Thanks to Ueli Hugenschmidt. 
@@ -15,7 +44,7 @@
 
  -Added -kis option (--keep-interior-semicolons).  Use the B<-kis> flag
  to prevent breaking at a semicolon if there was no break there in the
- input flag.  To illustrate, consider the following input lines:
+ input file.  To illustrate, consider the following input lines:
 
     dbmclose(%verb_delim); undef %verb_delim;
     dbmclose(%expanded); undef %expanded;

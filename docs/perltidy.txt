@@ -1702,6 +1702,31 @@ FORMATTING OPTIONS
         possible containers, regardless of type, which do not exceed the
         line length limit.
 
+    -kis, --keep-interior-semicolons
+        Use the -kis flag to prevent breaking at a semicolon if there was no
+        break there in the input file. Normally perltidy places a newline
+        after each semicolon which terminates a statement unless several
+        statements are contained within a one-line brace block. To
+        illustrate, consider the following input lines:
+
+            dbmclose(%verb_delim); undef %verb_delim;
+            dbmclose(%expanded); undef %expanded;
+
+        The default is to break after each statement, giving
+
+            dbmclose(%verb_delim);
+            undef %verb_delim;
+            dbmclose(%expanded);
+            undef %expanded;
+
+        With perltidy -kis the multiple statements are retained:
+
+            dbmclose(%verb_delim); undef %verb_delim;
+            dbmclose(%expanded);   undef %expanded;
+
+        The statements are still subject to the specified value of
+        maximum-line-length and will be broken if this maximum is exceeed.
+
   Blank Line Control
     Blank lines can improve the readability of a script if they are
     carefully placed. Perltidy has several commands for controlling the
@@ -2308,7 +2333,7 @@ SWITCHES WHICH MAY BE NEGATED
      dwrs dws f    fll  frm  fs  hsc html ibc  icb  icp iob  isbc lal  log
      lp   lsl ohbr okw  ola  oll opr opt  osbr otr  ple ple  pod  pvl  q
      sbc  sbl schb scp  scsb sct se  sfp  sfs  skp  sob sohb sop  sosb sot
-     ssc  st  sts  syn  t    tac tbc toc  tp   tqw  tsc w    x    bar
+     ssc  st  sts  syn  t    tac tbc toc  tp   tqw  tsc w    x    bar  kis
 
     Equivalently, the prefix 'no' or 'no-' on the corresponding long names
     may be used.

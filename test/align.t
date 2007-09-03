@@ -377,3 +377,10 @@ my $ti = [ $names, [ 'Not Done Yet', 12, 2000, '\'', '\'', 'max length', 1, 1, 3
 $message     = &rhs_wordwrap( $message, $width );
 $message_len = split( /^/,              $message );
 $tmp         = $message;
+
+# align all these => with different things to their left:
+$str = new Bio::SeqIO(
+    '-format' => 'genbank',
+    -file     => Bio::Root::IO->catfile( "t", "AF165282.gb" ),
+    verbose   => $verbosity
+);

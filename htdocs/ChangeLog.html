@@ -17,6 +17,8 @@
 	<li><a href="#perltidy_change_log">Perltidy Change Log</a></li>
 	<ul>
 
+		<li><a href="#2007_xx_xx">2007 xx xx</a></li>
+		<li><a href="#2007_08_01">2007 08 01</a></li>
 		<li><a href="#2007_05_08">2007 05 08</a></li>
 		<li><a href="#2007_05_04">2007 05 04</a></li>
 		<li><a href="#2007_04_24">2007 04 24</a></li>
@@ -56,6 +58,69 @@
 <p>
 </p>
 <h1><a name="perltidy_change_log">Perltidy Change Log</a></h1>
+<p>
+</p>
+<h2><a name="2007_xx_xx">2007 xx xx</a></h2>
+<pre>
+ -Numerous minor formatting improvements.</pre>
+<p>
+</p>
+<h2><a name="2007_08_01">2007 08 01</a></h2>
+<pre>
+ -Added -fpsc option (--fixed-position-side-comment). Thanks to Ueli Hugenschmidt. 
+ For example -fpsc=40 tells perltidy to put side comments in column 40
+ if possible.</pre>
+<pre>
+ -Added -bbao and -baao options (--break-before-all-operators and
+ --break-after-all-operators) to simplify command lines and configuration
+ files.  These define an initial preference for breaking at operators which can
+ be modified with -wba and -wbb flags.  For example to break before all operators
+ except an = one could use --bbao -wba='=' rather than listing every
+ single perl operator (except =) on a -wbb flag.</pre>
+<pre>
+ -Added -kis option (--keep-interior-semicolons).  Use the B&lt;-kis&gt; flag
+ to prevent breaking at a semicolon if there was no break there in the
+ input file.  To illustrate, consider the following input lines:</pre>
+<pre>
+    dbmclose(%verb_delim); undef %verb_delim;
+    dbmclose(%expanded); undef %expanded;
+    dbmclose(%global); undef %global;</pre>
+<pre>
+ Normally these would be broken into six lines, but 
+ perltidy -kis gives:</pre>
+<pre>
+    dbmclose(%verb_delim); undef %verb_delim;
+    dbmclose(%expanded);   undef %expanded;
+    dbmclose(%global);     undef %global;
+ 
+ -Improved formatting of complex ternary statements, with indentation
+ of nested statements.  
+  OLD:
+    return defined( $cw-&gt;{Selected} )
+      ? (wantarray)
+      ? @{ $cw-&gt;{Selected} }
+      : $cw-&gt;{Selected}[0]
+      : undef;</pre>
+<pre>
+  NEW:
+    return defined( $cw-&gt;{Selected} )
+      ? (wantarray)
+          ? @{ $cw-&gt;{Selected} }
+          : $cw-&gt;{Selected}[0]
+      : undef;</pre>
+<pre>
+ -Text following un-parenthesized if/unless/while/until statements get a
+ full level of indentation.  Suggested by Jeff Armstorng and others. 
+ OLD:
+    return $ship-&gt;chargeWeapons(&quot;phaser-canon&quot;)
+      if $encounter-&gt;description eq 'klingon'
+      and $ship-&gt;firepower &gt;= $encounter-&gt;firepower
+      and $location-&gt;status ne 'neutral';
+ NEW:
+    return $ship-&gt;chargeWeapons(&quot;phaser-canon&quot;)
+      if $encounter-&gt;description eq 'klingon'
+          and $ship-&gt;firepower &gt;= $encounter-&gt;firepower
+          and $location-&gt;status ne 'neutral';</pre>
 <p>
 </p>
 <h2><a name="2007_05_08">2007 05 08</a></h2>
@@ -134,7 +199,7 @@
  replacement text (but does not reformat it).</pre>
 <pre>
  -improved vertical alignment of terminal else blocks and ternary statements.
-  thanks to chris for the suggestion.</pre>
+  Thanks to Chris for the suggestion.</pre>
 <pre>
   OLD:
     if    ( IsBitmap() ) { return GetBitmap(); }

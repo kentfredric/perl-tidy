@@ -1,50 +1,54 @@
-<HTML>
-<HEAD>
-<TITLE>A Brief Perltidy Tutorial</TITLE>
-<LINK REV="made" HREF="mailto:perl@packages.debian.org">
-</HEAD>
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>A Brief Perltidy Tutorial</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:root@localhost" />
+</head>
 
-<BODY>
+<body style="background-color: white">
 
-<A NAME="__index__"></A>
+<p><a name="__index__"></a></p>
 <!-- INDEX BEGIN -->
 
-<UL>
+<ul>
 
-	<LI><A HREF="#a brief perltidy tutorial">A Brief Perltidy Tutorial</A></LI>
-	<UL>
+	<li><a href="#a_brief_perltidy_tutorial">A Brief Perltidy Tutorial</a></li>
+	<ul>
 
-		<LI><A HREF="#a first test">A First Test</A></LI>
-		<LI><A HREF="#indentation">Indentation</A></LI>
-		<LI><A HREF="#input flags">Input Flags</A></LI>
-		<LI><A HREF="#line length and continuation indentation.">Line Length and Continuation Indentation.</A></LI>
-		<LI><A HREF="#tabs or spaces">Tabs or Spaces?</A></LI>
-		<LI><A HREF="#input/output control">Input/Output Control</A></LI>
-		<LI><A HREF="#style variations">Style Variations</A></LI>
-		<LI><A HREF="#configuration files">Configuration Files</A></LI>
-		<LI><A HREF="#error reporting">Error Reporting</A></LI>
-		<LI><A HREF="#the log file">The Log File</A></LI>
-		<LI><A HREF="#using perltidy as a filter on selected text from an editor">Using Perltidy as a Filter on Selected Text from an Editor</A></LI>
-		<LI><A HREF="#writing an html file">Writing an HTML File</A></LI>
-		<LI><A HREF="#summary">Summary</A></LI>
-	</UL>
+		<li><a href="#a_first_test">A First Test</a></li>
+		<li><a href="#indentation">Indentation</a></li>
+		<li><a href="#input_flags">Input Flags</a></li>
+		<li><a href="#line_length_and_continuation_indentation_">Line Length and Continuation Indentation.</a></li>
+		<li><a href="#tabs_or_spaces">Tabs or Spaces?</a></li>
+		<li><a href="#input_output_control">Input/Output Control</a></li>
+		<li><a href="#style_variations">Style Variations</a></li>
+		<li><a href="#configuration_files">Configuration Files</a></li>
+		<li><a href="#error_reporting">Error Reporting</a></li>
+		<li><a href="#the_log_file">The Log File</a></li>
+		<li><a href="#using_perltidy_as_a_filter_on_selected_text_from_an_editor">Using Perltidy as a Filter on Selected Text from an Editor</a></li>
+		<li><a href="#writing_an_html_file">Writing an HTML File</a></li>
+		<li><a href="#summary">Summary</a></li>
+	</ul>
 
-</UL>
+</ul>
 <!-- INDEX END -->
 
-<HR>
-<P>
-<H1><A NAME="a brief perltidy tutorial">A Brief Perltidy Tutorial</A></H1>
-<P>Perltidy can save you a lot of tedious editing if you spend a few
+<hr />
+<p>
+</p>
+<h1><a name="a_brief_perltidy_tutorial">A Brief Perltidy Tutorial</a></h1>
+<p>Perltidy can save you a lot of tedious editing if you spend a few
 minutes learning to use it effectively.  Perltidy is highly
 configurable, but for many programmers the default parameter set will be
 satisfactory, with perhaps a few additional parameters to account for
-style preferences.</P>
-<P>This tutorial assumes that perltidy has been installed on your system.
+style preferences.</p>
+<p>This tutorial assumes that perltidy has been installed on your system.
 Installation instructions accompany the package.  To follow along with
 this tutorial, please find a small Perl script and place a copy in a
-temporary directory.  For example, here is a small (and silly) script:</P>
-<PRE>
+temporary directory.  For example, here is a small (and silly) script:</p>
+<pre>
  print &quot;Help Desk -- What Editor do you use?&quot;;
  chomp($editor = &lt;STDIN&gt;);
  if ($editor =~ /emacs/i) {
@@ -53,20 +57,21 @@ temporary directory.  For example, here is a small (and silly) script:</P>
    print &quot;Why aren't you using emacs?\n&quot;;
  } else {
    print &quot;I think that's the problem\n&quot;;
- }</PRE>
-<P>It is included in the <EM>docs</EM> section of the distribution.</P>
-<P>
-<H2><A NAME="a first test">A First Test</A></H2>
-<P>Assume that the name of your script is <EM>testfile.pl</EM>.  You can reformat it
+ }</pre>
+<p>It is included in the <em>docs</em> section of the distribution.</p>
+<p>
+</p>
+<h2><a name="a_first_test">A First Test</a></h2>
+<p>Assume that the name of your script is <em>testfile.pl</em>.  You can reformat it
 with the default options to use the style recommended in the perlstyle man
-pages with the command:</P>
-<PRE>
- perltidy testfile.pl</PRE>
-<P>For safety, perltidy never overwrites your original file.  In this case,
-its output will go to a file named <EM>testfile.pl.tdy</EM>, which you should
+pages with the command:</p>
+<pre>
+ perltidy testfile.pl</pre>
+<p>For safety, perltidy never overwrites your original file.  In this case,
+its output will go to a file named <em>testfile.pl.tdy</em>, which you should
 examine now with your editor.  Here is what the above file looks like
-with the default options:</P>
-<PRE>
+with the default options:</p>
+<pre>
  print &quot;Help Desk -- What Editor do you use?&quot;;
  chomp( $editor = &lt;STDIN&gt; );
  if ( $editor =~ /emacs/i ) {
@@ -77,159 +82,170 @@ with the default options:</P>
  }
  else {
      print &quot;I think that's the problem\n&quot;;
- }</PRE>
-<P>You'll notice an immediate style change from the ``cuddled-else'' style of
+ }</pre>
+<p>You'll notice an immediate style change from the ``cuddled-else'' style of
 the original to the default ``non-cuddled-else'' style.  This is because
 perltidy has to make some kind of default selection of formatting
 options, and this default tries to follow the suggestions in the
-perlstyle man pages.</P>
-<P>If you prefer the original ``cuddled-else'' style, don't worry, you can
-indicate that with a <STRONG>-ce</STRONG> flag.  So if you rerun with that flag</P>
-<PRE>
- perltidy -ce testfile.pl</PRE>
-<P>you will see a return to the original ``cuddled-else'' style.  There are
+perlstyle man pages.</p>
+<p>If you prefer the original ``cuddled-else'' style, don't worry, you can
+indicate that with a <strong>-ce</strong> flag.  So if you rerun with that flag</p>
+<pre>
+ perltidy -ce testfile.pl</pre>
+<p>you will see a return to the original ``cuddled-else'' style.  There are
 many more parameters for controlling style, and some of the most useful
-of these are discussed below.</P>
-<P>
-<H2><A NAME="indentation">Indentation</A></H2>
-<P>Another noticeable difference between the original and the reformatted
+of these are discussed below.</p>
+<p>
+</p>
+<h2><a name="indentation">Indentation</a></h2>
+<p>Another noticeable difference between the original and the reformatted
 file is that the indentation has been changed from 2 spaces to 4 spaces.
 That's because 4 spaces is the default.  You may change this to be a
-different number with <STRONG>-i=n</STRONG>.</P>
-<P>To get some practice, try these examples, and examine the resulting
-<EM>testfile.pl.tdy</EM> file:</P>
-<PRE>
- perltidy -i=8 testfile.pl</PRE>
-<P>This changes the default of 4 spaces per indentation level to be 8.  Now
-just to emphasize the point, try this and examine the result:</P>
-<PRE>
- perltidy -i=0 testfile.pl</PRE>
-<P>There will be no indentation at all in this case.</P>
-<P>
-<H2><A NAME="input flags">Input Flags</A></H2>
-<P>This is a good place to mention a few points regarding the input flags.
+different number with <strong>-i=n</strong>.</p>
+<p>To get some practice, try these examples, and examine the resulting
+<em>testfile.pl.tdy</em> file:</p>
+<pre>
+ perltidy -i=8 testfile.pl</pre>
+<p>This changes the default of 4 spaces per indentation level to be 8.  Now
+just to emphasize the point, try this and examine the result:</p>
+<pre>
+ perltidy -i=0 testfile.pl</pre>
+<p>There will be no indentation at all in this case.</p>
+<p>
+</p>
+<h2><a name="input_flags">Input Flags</a></h2>
+<p>This is a good place to mention a few points regarding the input flags.
 First, for each option, there are two forms, a long form and a short
-form, and either may be used.</P>
-<P>For example, if you want to change the number of columns corresponding to one
-indentation level to 3 (from the default of 4) you may use either</P>
-<PRE>
- -i=3   or  --indent-columns=3</PRE>
-<P>The short forms are convenient for entering parameters by hand, whereas
+form, and either may be used.</p>
+<p>For example, if you want to change the number of columns corresponding to one
+indentation level to 3 (from the default of 4) you may use either</p>
+<pre>
+ -i=3   or  --indent-columns=3</pre>
+<p>The short forms are convenient for entering parameters by hand, whereas
 the long forms, though often ridiculously long, are self-documenting and
 therefore useful in configuration scripts.  You may use either one or
 two dashes ahead of the parameters.  Also, the '=' sign is optional, 
 and may be a single space instead.  However, the value of a parameter
-must NOT be adjacent to the flag, like this <STRONG>-i3</STRONG> (WRONG).  Also,
-flags must be input separately, never bundled together.</P>
-<P>
-<H2><A NAME="line length and continuation indentation.">Line Length and Continuation Indentation.</A></H2>
-<P>If you change the indentation spaces you will probably also need to
-change the continuation indentation spaces with the parameter <STRONG>-ci=n</STRONG>.
+must NOT be adjacent to the flag, like this <strong>-i3</strong> (WRONG).  Also,
+flags must be input separately, never bundled together.</p>
+<p>
+</p>
+<h2><a name="line_length_and_continuation_indentation_">Line Length and Continuation Indentation.</a></h2>
+<p>If you change the indentation spaces you will probably also need to
+change the continuation indentation spaces with the parameter <strong>-ci=n</strong>.
 The continuation indentation is the extra indentation -- 2 spaces by
 default -- given to that portion of a long line which has been placed
-below the start of a statement.  For example:</P>
-<PRE>
+below the start of a statement.  For example:</p>
+<pre>
  croak &quot;Couldn't pop genome file&quot;
    unless sysread( $impl-&gt;{file}, $element, $impl-&gt;{group} )
-   and truncate( $impl-&gt;{file}, $new_end );</PRE>
-<P>There is no fixed rule for setting the value for <STRONG>-ci=n</STRONG>, but it should
+   and truncate( $impl-&gt;{file}, $new_end );</pre>
+<p>There is no fixed rule for setting the value for <strong>-ci=n</strong>, but it should
 probably not exceed one-half of the number of spaces of a full
-indentation level.</P>
-<P>In the above snippet, the statement was broken into three lines.  The
+indentation level.</p>
+<p>In the above snippet, the statement was broken into three lines.  The
 actual number is governed by a parameter, the maximum line length, as
 well as by what perltidy considers to be good break points.  The maximum
 line length is 80 characters by default.  You can change this to be any
-number <STRONG>n</STRONG> with the <STRONG>-l=n</STRONG> flag.  Perltidy tries to produce lines
+number <strong>n</strong> with the <strong>-l=n</strong> flag.  Perltidy tries to produce lines
 which do not exceed this length, and it does this by finding good break
 points.  For example, the above snippet would look like this with
-<STRONG>perltidy -l=40</STRONG>:</P>
-<PRE>
+<strong>perltidy -l=40</strong>:</p>
+<pre>
  croak &quot;Couldn't pop genome file&quot;
    unless
    sysread( $impl-&gt;{file}, $element,
      $impl-&gt;{group} )
    and
-   truncate( $impl-&gt;{file}, $new_end );</PRE>
-<P>You may be wondering what would happen with, say, <STRONG>-l=1</STRONG>.  Go 
-ahead and try it.</P>
-<P>
-<H2><A NAME="tabs or spaces">Tabs or Spaces?</A></H2>
-<P>With indentation, there is always a tab issue to resolve.  By default,
+   truncate( $impl-&gt;{file}, $new_end );</pre>
+<p>You may be wondering what would happen with, say, <strong>-l=1</strong>.  Go 
+ahead and try it.</p>
+<p>
+</p>
+<h2><a name="tabs_or_spaces">Tabs or Spaces?</a></h2>
+<p>With indentation, there is always a tab issue to resolve.  By default,
 perltidy will use leading ascii space characters instead of tabs.  The
 reason is that this will be displayed correctly by virtually all
-editors, and in the long run, will avoid maintenance problems.</P>
-<P>However, if you prefer, you may have perltidy entab the leading
-whitespace of a line with the command <STRONG>-et=n</STRONG>, where <STRONG>n</STRONG> is the number
+editors, and in the long run, will avoid maintenance problems.</p>
+<p>However, if you prefer, you may have perltidy entab the leading
+whitespace of a line with the command <strong>-et=n</strong>, where <strong>n</strong> is the number
 of spaces which will be represented by one tab.  But note that your text
 will not be displayed properly unless viewed with software that is
-configured to display <STRONG>n</STRONG> spaces per tab.</P>
-<P>
-<H2><A NAME="input/output control">Input/Output Control</A></H2>
-<P>In the first example, we saw that if we pass perltidy the name
+configured to display <strong>n</strong> spaces per tab.</p>
+<p>
+</p>
+<h2><a name="input_output_control">Input/Output Control</a></h2>
+<p>In the first example, we saw that if we pass perltidy the name
 of a file on the command line, it reformats it and creates a
-new filename by appending an extension, <EM>.tdy</EM>.  This is the
-default behavior, but there are several other options.</P>
-<P>On most systems, you may use wildcards to reformat a whole batch of
-files at once, like this for example:</P>
-<PRE>
- perltidy *.pl</PRE>
-<P>and in this case, each of the output files will be have a name equal to
-the input file with the extension <EM>.tdy</EM> appended.  If you decide that
+new filename by appending an extension, <em>.tdy</em>.  This is the
+default behavior, but there are several other options.</p>
+<p>On most systems, you may use wildcards to reformat a whole batch of
+files at once, like this for example:</p>
+<pre>
+ perltidy *.pl</pre>
+<p>and in this case, each of the output files will be have a name equal to
+the input file with the extension <em>.tdy</em> appended.  If you decide that
 the formatting is acceptable, you will want to backup your originals and
-then remove the <EM>.tdy</EM> extensions from the reformatted files.  There is
-an powerful perl script called <CODE>rename</CODE> that can be used for this
-purpose; if you don't have it, you can find it for example in <STRONG>The Perl
-Cookbook</STRONG>.</P>
-<P>If you find that the formatting done by perltidy is usually acceptable,
+then remove the <em>.tdy</em> extensions from the reformatted files.  There is
+an powerful perl script called <code>rename</code> that can be used for this
+purpose; if you don't have it, you can find it for example in <strong>The Perl
+Cookbook</strong>.</p>
+<p>If you find that the formatting done by perltidy is usually acceptable,
 you may want to save some effort by letting perltidy do a simple backup
 of the original files and then reformat them in place.  You specify this
-with a <STRONG>-b</STRONG> flag.  For example, the command</P>
-<PRE>
- perltidy -b *.pl</PRE>
-<P>will rename the original files by appending a <EM>.bak</EM> extension, and then
+with a <strong>-b</strong> flag.  For example, the command</p>
+<pre>
+ perltidy -b *.pl</pre>
+<p>will rename the original files by appending a <em>.bak</em> extension, and then
 create reformatted files with the same names as the originals.  (If you don't
-like the default backup extension choice <EM>.bak</EM>, the manual tells how to
-change it).  Each time you run perltidy with the <STRONG>-b</STRONG> option, the previous
-<EM>.bak</EM> files will be overwritten, so please make regular separate backups.</P>
-<P>If there is no input filename specified on the command line, then input
+like the default backup extension choice <em>.bak</em>, the manual tells how to
+change it).  Each time you run perltidy with the <strong>-b</strong> option, the previous
+<em>.bak</em> files will be overwritten, so please make regular separate backups.</p>
+<p>If there is no input filename specified on the command line, then input
 is assumed to come from standard input and output will go to standard
 output.  On systems with a Unix-like interface, you can use perltidy as
-a filter, like this:</P>
-<PRE>
- perltidy &lt;somefile.pl &gt;newfile.pl</PRE>
-<P>What happens in this case is that the shell takes care of the redirected
+a filter, like this:</p>
+<pre>
+ perltidy &lt;somefile.pl &gt;newfile.pl</pre>
+<p>What happens in this case is that the shell takes care of the redirected
 input files, '&lt;somefile.pl', and so perltidy never sees the filename.
 Therefore, it knows to use the standard input and standard output
-channels.</P>
-<P>If you are executing perltidy on a file and want to force the output
-to standard output, rather than create a <EM>.tdy</EM> file, you can
-indicate this with the flag <STRONG>-st</STRONG>, like this:</P>
-<PRE>
- perltidy somefile.pl -st &gt;otherfile.pl</PRE>
-<P>You can also control the name of the output file with the <STRONG>-o</STRONG> flag,
-like this:</P>
-<PRE>
- perltidy testfile.pl -o=testfile.new.pl</PRE>
-<P>
-<H2><A NAME="style variations">Style Variations</A></H2>
-<P>Perltidy has to make some kind of default selection of formatting
+channels.</p>
+<p>If you are executing perltidy on a file and want to force the output
+to standard output, rather than create a <em>.tdy</em> file, you can
+indicate this with the flag <strong>-st</strong>, like this:</p>
+<pre>
+ perltidy somefile.pl -st &gt;otherfile.pl</pre>
+<p>You can also control the name of the output file with the <strong>-o</strong> flag,
+like this:</p>
+<pre>
+ perltidy testfile.pl -o=testfile.new.pl</pre>
+<p>
+</p>
+<h2><a name="style_variations">Style Variations</a></h2>
+<p>Perltidy has to make some kind of default selection of formatting
 options, and its choice is to try to follow the suggestions in the
 perlstyle man pages.  Many programmers more or less follow these
 suggestions with a few exceptions.  In this section we will
 look at just a few of the most commonly used style parameters.  Later,
 you may want to systematically develop a set of style
 parameters with the help of
-the perltidy <STRONG>stylekey</STRONG> web page at
-<A HREF="http://perltidy.sourceforge.net/stylekey.html">http://perltidy.sourceforge.net/stylekey.html</A></P>
-<DL>
-<DT><STRONG><A NAME="item_%2Dce%2C_cuddled_elses"><STRONG>-ce</STRONG>, cuddled elses</A></STRONG><BR>
-<DD>
-If you prefer cuddled elses, use the <STRONG>-ce</STRONG> flag.
-<P></P>
-<DT><STRONG><A NAME="item_%2Dbl%2C_braces_left"><STRONG>-bl</STRONG>, braces left</A></STRONG><BR>
-<DD>
-Here is what the <CODE>if</CODE> block in the above script looks like with <STRONG>-bl</STRONG>:
-<PRE>
+the perltidy <strong>stylekey</strong> web page at
+<a href="http://perltidy.sourceforge.net/stylekey.html">http://perltidy.sourceforge.net/stylekey.html</a></p>
+<dl>
+<dt><strong><a name="item__2dce_2c_cuddled_elses"><strong>-ce</strong>, cuddled elses</a></strong>
+
+<dd>
+<p>If you prefer cuddled elses, use the <strong>-ce</strong> flag.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dbl_2c_braces_left"><strong>-bl</strong>, braces left</a></strong>
+
+<dd>
+<p>Here is what the <code>if</code> block in the above script looks like with <strong>-bl</strong>:</p>
+</dd>
+<dd>
+<pre>
  if ( $editor =~ /emacs/i )
  {
      print &quot;Why aren't you using vi?\n&quot;;
@@ -241,13 +257,17 @@ Here is what the <CODE>if</CODE> block in the above script looks like with <STRO
  else
  {
      print &quot;I think that's the problem\n&quot;;
- }</PRE>
-<P></P>
-<DT><STRONG><A NAME="item_%2Dlp%2C_Lining_up_with_parentheses"><STRONG>-lp</STRONG>, Lining up with parentheses</A></STRONG><BR>
-<DD>
-The <STRONG>-lp</STRONG> parameter can enhance the readability of lists by adding
-extra indentation.  Consider:
-<PRE>
+ }</pre>
+</dd>
+</li>
+<dt><strong><a name="item__2dlp_2c_lining_up_with_parentheses"><strong>-lp</strong>, Lining up with parentheses</a></strong>
+
+<dd>
+<p>The <strong>-lp</strong> parameter can enhance the readability of lists by adding
+extra indentation.  Consider:</p>
+</dd>
+<dd>
+<pre>
         %romanNumerals = (
             one   =&gt; 'I',
             two   =&gt; 'II',
@@ -259,9 +279,13 @@ extra indentation.  Consider:
             eight =&gt; 'VIII',
             nine  =&gt; 'IX',
             ten   =&gt; 'X'
-        );</PRE>
-<P>With the <STRONG>-lp</STRONG> flag, this is formatted as:</P>
-<PRE>
+        );</pre>
+</dd>
+<dd>
+<p>With the <strong>-lp</strong> flag, this is formatted as:</p>
+</dd>
+<dd>
+<pre>
         %romanNumerals = (
                            one   =&gt; 'I',
                            two   =&gt; 'II',
@@ -273,229 +297,243 @@ extra indentation.  Consider:
                            eight =&gt; 'VIII',
                            nine  =&gt; 'IX',
                            ten   =&gt; 'X'
-                         );</PRE>
-<P>which is preferred by some.  (I've actually used <STRONG>-lp</STRONG> and <STRONG>-cti=1</STRONG> to
-format this block.  The <STRONG>-cti=1</STRONG> flag causes the closing paren to align
-vertically with the opening paren, which works well with the <STRONG>-lp</STRONG>
-indentation style).  An advantage of <STRONG>-lp</STRONG> indentation are that it
+                         );</pre>
+</dd>
+<dd>
+<p>which is preferred by some.  (I've actually used <strong>-lp</strong> and <strong>-cti=1</strong> to
+format this block.  The <strong>-cti=1</strong> flag causes the closing paren to align
+vertically with the opening paren, which works well with the <strong>-lp</strong>
+indentation style).  An advantage of <strong>-lp</strong> indentation are that it
 displays lists nicely.  A disadvantage is that deeply nested lists can
-require a long line length.</P>
-<P></P>
-<DT><STRONG><A NAME="item_%2Dbt%2C%2Dpt%2C%2Dsbt%3A_Container_tightness"><STRONG>-bt</STRONG>,<STRONG>-pt</STRONG>,<STRONG>-sbt</STRONG>:  Container tightness</A></STRONG><BR>
-<DD>
-These are parameters for controlling the amount of space within
+require a long line length.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dbt_2c_2dpt_2c_2dsbt_3a_container_tightness"><strong>-bt</strong>,<strong>-pt</strong>,<strong>-sbt</strong>:  Container tightness</a></strong>
+
+<dd>
+<p>These are parameters for controlling the amount of space within
 containing parentheses, braces, and square brackets.  The example below
 shows the effect of the three possible values, 0, 1, and 2, for the case
-of parentheses:
-<PRE>
+of parentheses:</p>
+</dd>
+<dd>
+<pre>
  if ( ( my $len_tab = length( $tabstr ) ) &gt; 0 ) {  # -pt=0
  if ( ( my $len_tab = length($tabstr) ) &gt; 0 ) {    # -pt=1 (default)
- if ((my $len_tab = length($tabstr)) &gt; 0) {        # -pt=2</PRE>
-<P>A value of 0 causes all parens to be padded on the inside with a space,
+ if ((my $len_tab = length($tabstr)) &gt; 0) {        # -pt=2</pre>
+</dd>
+<dd>
+<p>A value of 0 causes all parens to be padded on the inside with a space,
 and a value of 2 causes this never to happen.  With a value of 1, spaces
-will be introduced if the item within is more than a single token.</P>
-<P></P></DL>
-<P>
-<H2><A NAME="configuration files">Configuration Files</A></H2>
-<P>While style preferences vary, most people would agree that it is
+will be introduced if the item within is more than a single token.</p>
+</dd>
+</li>
+</dl>
+<p>
+</p>
+<h2><a name="configuration_files">Configuration Files</a></h2>
+<p>While style preferences vary, most people would agree that it is
 important to maintain a uniform style within a script, and this is a
 major benefit provided by perltidy.  Once you have decided on which, if
 any, special options you prefer, you may want to avoid having to enter
 them each time you run it.  You can do this by creating a special file
-named <EM>.perltidyrc</EM> in either your home directory, your current
+named <em>.perltidyrc</em> in either your home directory, your current
 directory, or certain system-dependent locations.  (Note the leading ``.''
-in the file name).</P>
-<P>A handy command to know when you start using a configuration file is</P>
-<PRE>
-  perltidy -dpro</PRE>
-<P>which will dump to standard output the search that perltidy makes when
+in the file name).</p>
+<p>A handy command to know when you start using a configuration file is</p>
+<pre>
+  perltidy -dpro</pre>
+<p>which will dump to standard output the search that perltidy makes when
 looking for a configuration file, and the contents of the one that it
 selects, if any.  This is one of a number of useful ``dump and die''
 commands, in which perltidy will dump some information to standard
-output and then immediately exit.  Others include <STRONG>-h</STRONG>, which dumps
-help information, and <STRONG>-v</STRONG>, which dumps the version number.</P>
-<P>Another useful command when working with configuration files is</P>
-<PRE>
- perltidy -pro=file</PRE>
-<P>which causes the contents of <EM>file</EM> to be used as the configuration
-file instead of a <EM>.perltidyrc</EM> file.  With this command, you can
+output and then immediately exit.  Others include <strong>-h</strong>, which dumps
+help information, and <strong>-v</strong>, which dumps the version number.</p>
+<p>Another useful command when working with configuration files is</p>
+<pre>
+ perltidy -pro=file</pre>
+<p>which causes the contents of <em>file</em> to be used as the configuration
+file instead of a <em>.perltidyrc</em> file.  With this command, you can
 easily switch among several different candidate configuration files
-during testing.</P>
-<P>This <EM>.perltidyrc</EM> file is free format.  It is simply a list of
+during testing.</p>
+<p>This <em>.perltidyrc</em> file is free format.  It is simply a list of
 parameters, just as they would be entered on a command line.  Any number
 of lines may be used, with any number of parameters per line, although
 it may be easiest to read with one parameter per line.  Blank lines are
-ignored, and text after a '#' is ignored to the end of a line.</P>
-<P>Here is an example of a <EM>.perltidyrc</EM> file:</P>
-<PRE>
+ignored, and text after a '#' is ignored to the end of a line.</p>
+<p>Here is an example of a <em>.perltidyrc</em> file:</p>
+<pre>
   # This is a simple of a .perltidyrc configuration file
   # This implements a highly spaced style
   -bl    # braces on new lines
   -pt=0  # parens not tight at all
   -bt=0  # braces not tight
-  -sbt=0 # square brackets not tight</PRE>
-<P>If you experiment with this file, remember that it is in your directory,
+  -sbt=0 # square brackets not tight</pre>
+<p>If you experiment with this file, remember that it is in your directory,
 since if you are running on a Unix system, files beginning with a ``.''
-are normally hidden.</P>
-<P>If you have a <EM>.perltidyrc</EM> file, and want perltidy to ignore it,
-use the <STRONG>-npro</STRONG> flag on the command line.</P>
-<P>
-<H2><A NAME="error reporting">Error Reporting</A></H2>
-<P>Let's run through a 'fire drill' to see how perltidy reports errors.  Try
+are normally hidden.</p>
+<p>If you have a <em>.perltidyrc</em> file, and want perltidy to ignore it,
+use the <strong>-npro</strong> flag on the command line.</p>
+<p>
+</p>
+<h2><a name="error_reporting">Error Reporting</a></h2>
+<p>Let's run through a 'fire drill' to see how perltidy reports errors.  Try
 introducing an extra opening brace somewhere in a test file.  For example,
 introducing an extra brace in the file listed above produces the following
-message on the terminal (or standard error output):</P>
-<PRE>
- Please see file testfile.pl.ERR!</PRE>
-<P>Here is what <EM>testfile.pl.ERR</EM> contains:</P>
-<PRE>
+message on the terminal (or standard error output):</p>
+<pre>
+ ## Please see file testfile.pl.ERR!</pre>
+<p>Here is what <em>testfile.pl.ERR</em> contains:</p>
+<pre>
  10:    final indentation level: 1
-</PRE>
-<PRE>
-
+ 
  Final nesting depth of '{'s is 1
  The most recent un-matched '{' is on line 6
  6: } elsif ($temperature &lt; 68) {{
-                                ^</PRE>
-<P>This shows how perltidy will, by default, write error messages to a file
-with the extension <EM>.ERR</EM>, and it will write a note that it did so to
+                                ^</pre>
+<p>This shows how perltidy will, by default, write error messages to a file
+with the extension <em>.ERR</em>, and it will write a note that it did so to
 the standard error device.  If you would prefer to have the error
-messages sent to standard output, instead of to a <EM>.ERR</EM> file, use the
-<STRONG>-se</STRONG> flag.</P>
-<P>Almost every programmer would want to see error messages of this type,
+messages sent to standard output, instead of to a <em>.ERR</em> file, use the
+<strong>-se</strong> flag.</p>
+<p>Almost every programmer would want to see error messages of this type,
 but there are a number of messages which, if reported, would be
 annoying.  To manage this problem, perltidy puts its messages into two
 categories: errors and warnings.  The default is to just report the
-errors, but you can control this with input flags, as follows:</P>
-<PRE>
+errors, but you can control this with input flags, as follows:</p>
+<pre>
  flag  what this does
  ----  --------------
        default: report errors but not warnings
  -w    report all errors and warnings
- -q    quiet! do not report either errors or warnings</PRE>
-<P>The default is generally a good choice, but it's not a bad idea to check
-programs with <STRONG>-w</STRONG> occasionally, especially if your are looking for a
+ -q    quiet! do not report either errors or warnings</pre>
+<p>The default is generally a good choice, but it's not a bad idea to check
+programs with <strong>-w</strong> occasionally, especially if your are looking for a
 bug.  For example, it will ask if you really want '=' instead of '=~' in
 this line:
-</P>
-<PRE>
+</p>
+<pre>
 
-    $line = s/^\s*//;</PRE>
-<P>This kind of error can otherwise be hard to find.</P>
-<P>
-<H2><A NAME="the log file">The Log File</A></H2>
-<P>One last topic that needs to be touched upon concerns the <EM>.LOG</EM> file.
+    $line = s/^\s*//;</pre>
+<p>This kind of error can otherwise be hard to find.</p>
+<p>
+</p>
+<h2><a name="the_log_file">The Log File</a></h2>
+<p>One last topic that needs to be touched upon concerns the <em>.LOG</em> file.
 This is where perltidy records messages that are not normally of any
 interest, but which just might occasionally be useful.  This file is not
 saved, though, unless perltidy detects that it has made a mistake or you
-ask for it to be saved.</P>
-<P>There are a couple of ways to ask perltidy to save a log file.  To
-create a relatively sparse log file, use</P>
-<PRE>
- perltidy -log testfile.pl</PRE>
-<P>and for a verbose log file, use</P>
-<PRE>
- perltidy -g testfile.pl</PRE>
-<P>The difference is that the first form only saves detailed information at
+ask for it to be saved.</p>
+<p>There are a couple of ways to ask perltidy to save a log file.  To
+create a relatively sparse log file, use</p>
+<pre>
+ perltidy -log testfile.pl</pre>
+<p>and for a verbose log file, use</p>
+<pre>
+ perltidy -g testfile.pl</pre>
+<p>The difference is that the first form only saves detailed information at
 least every 50th line, while the second form saves detailed information
-about every line.</P>
-<P>So returning to our example, lets force perltidy to save a
-verbose log file by issuing the following command</P>
-<PRE>
- perltidy -g testfile.pl</PRE>
-<P>You will find that a file named <EM>testfile.pl.LOG</EM> has been
-created in your directory.</P>
-<P>If you open this file, you will see that it is a text file with a
+about every line.</p>
+<p>So returning to our example, lets force perltidy to save a
+verbose log file by issuing the following command</p>
+<pre>
+ perltidy -g testfile.pl</pre>
+<p>You will find that a file named <em>testfile.pl.LOG</em> has been
+created in your directory.</p>
+<p>If you open this file, you will see that it is a text file with a
 combination of warning messages and informative messages.  All you need
-to know for now is that it exists; someday it may be useful.</P>
-<P>
-<H2><A NAME="using perltidy as a filter on selected text from an editor">Using Perltidy as a Filter on Selected Text from an Editor</A></H2>
-<P>Most programmer's editors allow a selected group of lines to be passed
+to know for now is that it exists; someday it may be useful.</p>
+<p>
+</p>
+<h2><a name="using_perltidy_as_a_filter_on_selected_text_from_an_editor">Using Perltidy as a Filter on Selected Text from an Editor</a></h2>
+<p>Most programmer's editors allow a selected group of lines to be passed
 through an external filter.  Perltidy has been designed to work well as
 a filter, and it is well worthwhile learning the appropriate commands to
 do this with your editor.  This means that you can enter a few
 keystrokes and watch a block of text get reformatted.  If you are not
 doing this, you are missing out of a lot of fun!  You may want to supply
-the <STRONG>-q</STRONG> flag to prevent error messages regarding incorrect syntax,
+the <strong>-q</strong> flag to prevent error messages regarding incorrect syntax,
 since errors may be obvious in the indentation of the reformatted text.
-This is entirely optional, but if you do not use the <STRONG>-q</STRONG> flag, you
+This is entirely optional, but if you do not use the <strong>-q</strong> flag, you
 will need to use the undo keys in case an error message appears on the
-screen.</P>
-<P>For example, within the <STRONG>vim</STRONG> editor it is only necessary to select the
+screen.</p>
+<p>For example, within the <strong>vim</strong> editor it is only necessary to select the
 text by any of the text selection methods, and then issue the command
-!perltidy in command mode.  Thus, an entire file can be formatted using</P>
-<PRE>
- :%!perltidy -q</PRE>
-<P>or, without the <STRONG>-q</STRONG> flag, just</P>
-<PRE>
- :%!perltidy</PRE>
-<P>It isn't necessary to format an entire file, however.  Perltidy will
+!perltidy in command mode.  Thus, an entire file can be formatted using</p>
+<pre>
+ :%!perltidy -q</pre>
+<p>or, without the <strong>-q</strong> flag, just</p>
+<pre>
+ :%!perltidy</pre>
+<p>It isn't necessary to format an entire file, however.  Perltidy will
 probably work well as long as you select blocks of text whose braces,
 parentheses, and square brackets are properly balanced.  You can
-even format an <CODE>elsif</CODE> block without the leading <CODE>if</CODE> block, as
-long as the text you select has all braces balanced.</P>
-<P>For the <STRONG>emacs</STRONG> editor, first mark a region and then pipe it through
-perltidy.  For example, to format an entire file, select it with <CODE>C-x h</CODE> 
-and then pipe it with <CODE>M-1 M-|</CODE> and then <CODE>perltidy</CODE>.  The numeric
-argument, <CODE>M-1</CODE> causes the output from perltidy to replace the marked
+even format an <code>elsif</code> block without the leading <code>if</code> block, as
+long as the text you select has all braces balanced.</p>
+<p>For the <strong>emacs</strong> editor, first mark a region and then pipe it through
+perltidy.  For example, to format an entire file, select it with <code>C-x h</code> 
+and then pipe it with <code>M-1 M-|</code> and then <code>perltidy</code>.  The numeric
+argument, <code>M-1</code> causes the output from perltidy to replace the marked
 text.  See ``GNU Emacs Manual'' for more information,
-<A HREF="http://www.gnu.org/manual/emacs-20.3/html_node/emacs_toc.html">http://www.gnu.org/manual/emacs-20.3/html_node/emacs_toc.html</A></P>
-<P>If you have difficulty with an editor, try the <STRONG>-st</STRONG> flag, which will
+<a href="http://www.gnu.org/manual/emacs-20.3/html_node/emacs_toc.html">http://www.gnu.org/manual/emacs-20.3/html_node/emacs_toc.html</a></p>
+<p>If you have difficulty with an editor, try the <strong>-st</strong> flag, which will
 force perltidy to send output to standard output.  This might be needed,
 for example, if the editor passes text to perltidy as temporary filename
 instead of through the standard input.  If this works, you might put the
-<STRONG>-st</STRONG> flag in your <EM>.perltidyrc</EM> file.</P>
-<P>If you have some tips for making perltidy work with your editor, and
+<strong>-st</strong> flag in your <em>.perltidyrc</em> file.</p>
+<p>If you have some tips for making perltidy work with your editor, and
 are willing to share them, please email me (see below) and I'll try to
-incorporate them in this document or put up a link to them.</P>
-<P>After you get your editor and perltidy successfully talking to each
+incorporate them in this document or put up a link to them.</p>
+<p>After you get your editor and perltidy successfully talking to each
 other, try formatting a snippet of code with a brace error to see what
-happens.  (Do not use the quiet flag, <STRONG>-q</STRONG>, for this test).  Perltidy
-will send one line starting with <CODE>##</CODE> to standard error output.  Your
+happens.  (Do not use the quiet flag, <strong>-q</strong>, for this test).  Perltidy
+will send one line starting with <code>##</code> to standard error output.  Your
 editor may either display it at the top of the reformatted text or at
 the bottom (or even midstream!).  You probably cannot control this, and
 perltidy can't, but you need to know where to look when an actual error
-is detected.</P>
-<P>
-<H2><A NAME="writing an html file">Writing an HTML File</A></H2>
-<P>Perltidy can switch between two different output modes.  We have been
+is detected.</p>
+<p>
+</p>
+<h2><a name="writing_an_html_file">Writing an HTML File</a></h2>
+<p>Perltidy can switch between two different output modes.  We have been
 discussing what might be called its ``beautifier'' mode, but it can also
-output in HTML.  To do this, use the <STRONG>-html</STRONG> flag, like this:</P>
-<PRE>
- perltidy -html testfile.pl</PRE>
-<P>which will produce a file <EM>testfile.pl.html</EM>.  There are many
+output in HTML.  To do this, use the <strong>-html</strong> flag, like this:</p>
+<pre>
+ perltidy -html testfile.pl</pre>
+<p>which will produce a file <em>testfile.pl.html</em>.  There are many
 parameters available for adjusting the appearance of an HTML file, but a
 very easy way is to just write the HTML file with this simple command
-and then edit the stylesheet which is embedded at its top.</P>
-<P>One important thing to know about the <STRONG>-html</STRONG> flag is that perltidy can
+and then edit the stylesheet which is embedded at its top.</p>
+<p>One important thing to know about the <strong>-html</strong> flag is that perltidy can
 either send its output to its beautifier or to its HTML writer, but
 (unfortunately) not both in a single run.  So the situation can be
-represented like this:</P>
-<PRE>
+represented like this:</p>
+<pre>
                   ------------
                   |          |     ---&gt;beautifier--&gt; testfile.pl.tdy
  testfile.pl --&gt;  | perltidy | --&gt;
                   |          |     ---&gt;HTML -------&gt; testfile.pl.html
-                  ------------</PRE>
-<P>And in the future, there may be more output filters.  So if you would
+                  ------------</pre>
+<p>And in the future, there may be more output filters.  So if you would
 like to both beautify a script and write it to HTML, you need to do it
-in two steps.</P>
-<P>
-<H2><A NAME="summary">Summary</A></H2>
-<P>That's enough to get started using perltidy.  
-When you are ready to create a <EM>.perltidyrc</EM> file, you may find it
-helpful to use the <EM>stylekey</EM> page as a guide at
-<A HREF="http://perltidy.sourceforge.net/stylekey.html">http://perltidy.sourceforge.net/stylekey.html</A></P>
-<P>Many additional special
+in two steps.</p>
+<p>
+</p>
+<h2><a name="summary">Summary</a></h2>
+<p>That's enough to get started using perltidy.  
+When you are ready to create a <em>.perltidyrc</em> file, you may find it
+helpful to use the <em>stylekey</em> page as a guide at
+<a href="http://perltidy.sourceforge.net/stylekey.html">http://perltidy.sourceforge.net/stylekey.html</a></p>
+<p>Many additional special
 features and capabilities can be found in the manual pages for perltidy
 at
-<A HREF="http://perltidy.sourceforge.net/perltidy.html">http://perltidy.sourceforge.net/perltidy.html</A></P>
-<P>We hope that perltidy makes perl programming a little more fun.
+<a href="http://perltidy.sourceforge.net/perltidy.html">http://perltidy.sourceforge.net/perltidy.html</a></p>
+<p>We hope that perltidy makes perl programming a little more fun.
 Please check the perltidy
-web site <A HREF="http://perltidy.sourceforge.net">http://perltidy.sourceforge.net</A> occasionally
-for updates.</P>
-<P>The auther may be contacted at perltidy at users.sourceforge.net.</P>
+web site <a href="http://perltidy.sourceforge.net">http://perltidy.sourceforge.net</a> occasionally
+for updates.</p>
+<p>The author may be contacted at perltidy at users.sourceforge.net.</p>
 
-</BODY>
+</body>
 
-</HTML>
+</html>

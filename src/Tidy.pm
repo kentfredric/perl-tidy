@@ -65,7 +65,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.68 2007/08/01 16:22:38 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.69 2007/09/03 14:38:25 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 sub streamhandle {
@@ -213,7 +213,7 @@ sub catfile {
     my $test_file = $path . $name;
     my ( $test_name, $test_path ) = fileparse($test_file);
     return $test_file if ( $test_name eq $name );
-    return undef      if ( $^O        eq 'VMS' );
+    return undef if ( $^O eq 'VMS' );
 
     # this should work at least for Windows and Unix:
     $test_file = $path . '/' . $name;
@@ -3349,16 +3349,6 @@ sub get_line {
     return $line;
 }
 
-sub old_get_line {
-    my $self    = shift;
-    my $line    = undef;
-    my $fh      = $self->{_fh};
-    my $fh_copy = $self->{_fh_copy};
-    $line = $fh->getline();
-    if ( $line && $fh_copy ) { $fh_copy->print($line); }
-    return $line;
-}
-
 #####################################################################
 #
 # the Perl::Tidy::LineSink class supplies a write_line method for
@@ -3950,7 +3940,8 @@ sub finish {
     my $warning_count = $self->{_warning_count};
     my $saw_code_bug  = $self->{_saw_code_bug};
 
-    my $save_logfile = ( $saw_code_bug == 0 && $infile_syntax_ok == 1 )
+    my $save_logfile =
+         ( $saw_code_bug == 0 && $infile_syntax_ok == 1 )
       || $saw_code_bug == 1
       || $rOpts->{'logfile'};
     my $log_file = $self->{_log_file};
@@ -7002,7 +6993,9 @@ EOM
 
     # implement user break preferences
     my @all_operators = qw(% + - * / x != == >= <= =~ !~ < > | &
-      = **= += *= &= <<= &&= -= /= |= >>= ||= //= .= %= ^= x=);
+      = **= += *= &= <<= &&= -= /= |= >>= ||= //= .= %= ^= x=
+      . : ? && || and or err xor
+    );
 
     my $break_after = sub {
         foreach my $tok (@_) {
@@ -7036,10 +7029,10 @@ EOM
 
     # make note if breaks are before certain key types
     %want_break_before = ();
-    foreach my $tok (
-        '=',  '.',   ',',   ':', '?', '&&', '||', 'and',
-        'or', 'err', 'xor', '+', '-', '*',  '/',
-      )
+    foreach my $tok ( @all_operators, ',' )
+      ##'=',  '.',   ',',   ':', '?', '&&', '||', 'and',
+      ##'or', 'err', 'xor', '+', '-', '*',  '/',
+      ##)
     {
         $want_break_before{$tok} =
           $left_bond_strength{$tok} < $right_bond_strength{$tok};
@@ -7570,16 +7563,6 @@ EOM
           # retain any space after here doc operator ( hereerr.t)
           || ( $typel eq 'h' )
 
-          # FIXME: this needs some further work; extrude.t has test cases
-          # it is safest to retain any space after start of ? : operator
-          # because of perl's quirky parser.
-          # ie, this line will fail if you remove the space after the '?':
-          #    $b=join $comma ? ',' : ':', @_;   # ok
-          #    $b=join $comma ?',' : ':', @_;   # error!
-          # but this is ok :)
-          #    $b=join $comma?',' : ':', @_;   # not a problem!
-          ## || ($typel eq '?')
-
           # be careful with a space around ++ and --, to avoid ambiguity as to
           # which token it applies
           || ( ( $typer =~ /^(pp|mm)$/ )     && ( $tokenl !~ /^[\;\{\(\[]/ ) )
@@ -7603,9 +7586,14 @@ EOM
           #use Mail::Internet 1.28 (); (see Entity.pm, Head.pm, Test.pm)
           || ( ( $typel eq 'n' ) && ( $tokenr eq '(' ) )
 
-          # do not remove space between ? and a quote or perl
-          # may guess that the ? begins a pattern [Loca.pm, lockarea]
-          || ( ( $typel eq '?' ) && ( $typer eq 'Q' ) )
+          # We must be sure that a space between a ? and a quoted string
+          # remains if the space before the ? remains.  [Loca.pm, lockarea]
+          # ie,
+          #    $b=join $comma ? ',' : ':', @_;  # ok
+          #    $b=join $comma?',' : ':', @_;    # ok!
+          #    $b=join $comma ?',' : ':', @_;   # error!
+          # Not really required:
+          ## || ( ( $typel eq '?' ) && ( $typer eq 'Q' ) )
 
           # do not remove space between an '&' and a bare word because
           # it may turn into a function evaluation, like here
@@ -7839,7 +7827,7 @@ sub set_white_space_flag {
                     my $j_here = $j;
                     ++$j_here
                       if ( $token eq '-'
-                        && $last_token             eq '{'
+                        && $last_token eq '{'
                         && $$rtoken_type[ $j + 1 ] eq 'w' );
 
                     # $j_next is where a closing token should be if
@@ -8195,6 +8183,7 @@ sub set_white_space_flag {
         $ci_levels_to_go[$max_index_to_go]             = $ci_level;
         $mate_index_to_go[$max_index_to_go]            = -1;
         $matching_token_to_go[$max_index_to_go]        = '';
+        $bond_strength_to_go[$max_index_to_go]         = 0;
 
         # Note: negative levels are currently retained as a diagnostic so that
         # the 'final indentation level' is correctly reported for bad scripts.
@@ -8523,7 +8512,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.68 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.69 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -8697,7 +8686,7 @@ sub set_white_space_flag {
                 # make note of something like '$var = s/xxx/yyy/;'
                 # in case it should have been '$var =~ s/xxx/yyy/;'
                 if (
-                       $token               =~ /^(s|tr|y|m|\/)/
+                       $token =~ /^(s|tr|y|m|\/)/
                     && $last_nonblank_token =~ /^(=|==|!=)$/
 
                     # precededed by simple scalar
@@ -9339,7 +9328,8 @@ sub output_line_to_go {
                 my $lc = $nonblank_lines_at_depth[$last_line_leading_level];
                 if ( !defined($lc) ) { $lc = 0 }
 
-                $want_blank = $rOpts->{'blanks-before-blocks'}
+                $want_blank =
+                     $rOpts->{'blanks-before-blocks'}
                   && $lc >= $rOpts->{'long-block-line-count'}
                   && $file_writer_object->get_consecutive_nonblank_lines() >=
                   $rOpts->{'long-block-line-count'}
@@ -9435,6 +9425,9 @@ sub output_line_to_go {
               set_continuation_breaks($saw_good_break);
 
             break_all_chain_tokens( $ri_first, $ri_last );
+
+            # BUBBA: TESTING
+            break_equals( $ri_first, $ri_last );
 
             # now we do a correction step to clean this up a bit
             # (The only time we would not do this is for debugging)
@@ -9738,17 +9731,22 @@ sub set_logical_padding {
     my $max_line = @$ri_first - 1;
 
     my ( $ibeg, $ibeg_next, $ibegm, $iend, $iendm, $ipad, $line, $pad_spaces,
-        $tok_next, $has_leading_op_next, $has_leading_op );
+        $tok_next, $type_next, $has_leading_op_next, $has_leading_op );
 
     # looking at each line of this batch..
     foreach $line ( 0 .. $max_line - 1 ) {
 
         # see if the next line begins with a logical operator
-        $ibeg                = $$ri_first[$line];
-        $iend                = $$ri_last[$line];
-        $ibeg_next           = $$ri_first[ $line + 1 ];
-        $tok_next            = $tokens_to_go[$ibeg_next];
-        $has_leading_op_next = $is_chain_operator{$tok_next};
+        $ibeg      = $$ri_first[$line];
+        $iend      = $$ri_last[$line];
+        $ibeg_next = $$ri_first[ $line + 1 ];
+        $tok_next  = $tokens_to_go[$ibeg_next];
+        $type_next = $types_to_go[$ibeg_next];
+
+        $has_leading_op_next = ( $tok_next =~ /^\w/ )
+          ? $is_chain_operator{$tok_next}      # + - * / : ? && ||
+          : $is_chain_operator{$type_next};    # and, or
+
         next unless ($has_leading_op_next);
 
         # next line must not be at lesser depth
@@ -9764,14 +9762,14 @@ sub set_logical_padding {
             # if this is not first line of the batch ...
             if ( $line > 0 ) {
 
-                # and we have leading operator
+                # and we have leading operator..
                 next if $has_leading_op;
 
-                # and ..
+                # Introduce padding if..
                 # 1. the previous line is at lesser depth, or
                 # 2. the previous line ends in an assignment
                 # 3. the previous line ends in a 'return'
-                #
+                # 4. the previous line ends in a comma
                 # Example 1: previous line at lesser depth
                 #       if (   ( $Year < 1601 )      # <- we are here but
                 #           || ( $Year > 2899 )      #  list has not yet
@@ -9785,12 +9783,37 @@ sub set_logical_padding {
                 #      : $year % 100 ? 1
                 #      : $year % 400 ? 0
                 #      : 1;
+                #
+                # Example 3: previous line ending in comma:
+                #    push @expr,
+                #        /test/   ? undef
+                #      : eval($_) ? 1
+                #      : eval($_) ? 1
+                #      :            0;
 
                 # be sure levels agree (do not indent after an indented 'if')
                 next if ( $levels_to_go[$ibeg] ne $levels_to_go[$ibeg_next] );
+
+                # allow padding on first line after a comma but only if:
+                # (1) this is line 2 and
+                # (2) there are at more than three lines and
+                # (3) lines 3 and 4 have the same leading operator
+                # These rules try to prevent padding within a long
+                # comma-separated list.
+                my $ok_comma;
+                if (   $types_to_go[$iendm] eq ','
+                    && $line == 1
+                    && $max_line > 2 )
+                {
+                    my $ibeg_next_next = $$ri_first[ $line + 2 ];
+                    my $tok_next_next  = $tokens_to_go[$ibeg_next_next];
+                    $ok_comma = $tok_next_next eq $tok_next;
+                }
+
                 next
                   unless (
-                    $is_assignment{ $types_to_go[$iendm] }
+                       $is_assignment{ $types_to_go[$iendm] }
+                    || $ok_comma
                     || ( $nesting_depth_to_go[$ibegm] <
                         $nesting_depth_to_go[$ibeg] )
                     || (   $types_to_go[$iendm] eq 'k'
@@ -10820,19 +10843,23 @@ sub add_closing_side_comment {
 }
 
 sub previous_nonblank_token {
-    my ($i) = @_;
-    if ( $i <= 0 ) {
-        return "";
+    my ($i)  = @_;
+    my $name = "";
+    my $im   = $i - 1;
+    return "" if ( $im < 0 );
+    if ( $types_to_go[$im] eq 'b' ) { $im--; }
+    return "" if ( $im < 0 );
+    $name = $tokens_to_go[$im];
+
+    # prepend any sub name to an isolated -> to avoid unwanted alignments
+    # [test case is test8/penco.pl]
+    if ( $name eq '->' ) {
+        $im--;
+        if ( $im >= 0 && $types_to_go[$im] ne 'b' ) {
+            $name = $tokens_to_go[$im] . $name;
+        }
     }
-    elsif ( $types_to_go[ $i - 1 ] ne 'b' ) {
-        return $tokens_to_go[ $i - 1 ];
-    }
-    elsif ( $i > 1 ) {
-        return $tokens_to_go[ $i - 2 ];
-    }
-    else {
-        return "";
-    }
+    return $name;
 }
 
 sub send_lines_to_vertical_aligner {
@@ -10888,15 +10915,65 @@ sub send_lines_to_vertical_aligner {
             # Unbalanced containers already avoid aligning across
             # container boundaries.
             if ( $tokens_to_go[$i] eq '(' ) {
+
+                # if container is balanced on this line...
                 my $i_mate = $mate_index_to_go[$i];
                 if ( $i_mate > $i && $i_mate <= $iend ) {
                     $depth++;
                     my $seqno = $type_sequence_to_go[$i];
                     my $count = comma_arrow_count($seqno);
                     $multiple_comma_arrows[$depth] = $count && $count > 1;
+
+                    # Append the previous token name to make the container name
+                    # more unique.  This name will also be given to any commas
+                    # within this container, and it helps avoid undesirable
+                    # alignments of different types of containers.
                     my $name = previous_nonblank_token($i);
                     $name =~ s/^->//;
                     $container_name[$depth] = "+" . $name;
+
+                    # Make the container name even more unique if necessary.
+                    # If we are not vertically aligning this opening paren,
+                    # append a character count to avoid bad alignment because
+                    # it usually looks bad to align commas within continers
+                    # for which the opening parens do not align.  Here
+                    # is an example BAD alignment of commas (because
+                    # the atan2 functions are not all aligned):
+                    #    $XY =
+                    #      $X * $RTYSQP1 * atan2( $X, $RTYSQP1 ) +
+                    #      $Y * $RTXSQP1 * atan2( $Y, $RTXSQP1 ) -
+                    #      $X * atan2( $X,            1 ) -
+                    #      $Y * atan2( $Y,            1 );
+                    #
+                    # On the other hand, it is usually okay to align commas if
+                    # opening parens align, such as:
+                    #    glVertex3d( $cx + $s * $xs, $cy,            $z );
+                    #    glVertex3d( $cx,            $cy + $s * $ys, $z );
+                    #    glVertex3d( $cx - $s * $xs, $cy,            $z );
+                    #    glVertex3d( $cx,            $cy - $s * $ys, $z );
+                    #
+                    # To distinguish between these situations, this we will
+                    # append the length of the line from the previous matching
+                    # token, or beginning of line, to the function name.  This
+                    # will allow the vertical aligner to reject undesirable
+                    # matches.
+
+                    # if we are not aligning on this paren...
+                    if ( $matching_token_to_go[$i] eq '' ) {
+
+                        # Sum length from previous alignment, or start of line.
+                        # Note that we have to sum token lengths here because
+                        # padding has been done and so array $lengths_to_go
+                        # is now wrong.
+                        my $len =
+                          length(
+                            join( '', @tokens_to_go[ $i_start .. $i - 1 ] ) );
+                        $len += leading_spaces_to_go($i_start)
+                          if ( $i_start == $ibeg );
+
+                        # tack length onto the container name to make unique
+                        $container_name[$depth] .= "-" . $len;
+                    }
                 }
             }
             elsif ( $tokens_to_go[$i] eq ')' ) {
@@ -10915,26 +10992,11 @@ sub send_lines_to_vertical_aligner {
                     $tok .= "$nesting_depth_to_go[$i]";
                 }
 
-                # do any special decorations for commas to avoid unwanted
-                # cross-line alignments.
-                if ( $raw_tok eq ',' ) {
+                # also decorate commas with any container name to avoid
+                # unwanted cross-line alignments.
+                if ( $raw_tok eq ',' || $raw_tok eq '=>' ) {
                     if ( $container_name[$depth] ) {
                         $tok .= $container_name[$depth];
-                    }
-                }
-
-                # decorate '=>' with:
-                # - Nothing if this container is unbalanced on this line.
-                # - The previous token if it is balanced and multiple '=>'s
-                # - The container name if it is bananced and no other '=>'s
-                elsif ( $raw_tok eq '=>' ) {
-                    if ( $container_name[$depth] ) {
-                        if ( $multiple_comma_arrows[$depth] ) {
-                            $tok .= "+" . previous_nonblank_token($i);
-                        }
-                        else {
-                            $tok .= $container_name[$depth];
-                        }
                     }
                 }
 
@@ -10966,6 +11028,13 @@ sub send_lines_to_vertical_aligner {
 
                     if ( $types_to_go[$i_next_nonblank] eq '=>' ) {
                         $type = 'Q';
+
+                        # Patch to ignore leading minus before words,
+                        # by changing pattern 'mQ' into just 'Q',
+                        # so that we can align things like this:
+                        #  Button   => "Print letter \"~$_\"",
+                        #  -command => [ sub { print "$_[0]\n" }, $_ ],
+                        if ( $patterns[$j] eq 'm' ) { $patterns[$j] = "" }
                     }
                 }
 
@@ -10984,6 +11053,9 @@ sub send_lines_to_vertical_aligner {
                 if ( $n == 0 && $tok =~ /^(elsif|else|unless)$/ ) {
                     $tok = 'if';
                 }
+
+                # treat an 'undef' similar to numbers and quotes
+                if ( $tok eq 'undef' ) { $tok = 'Q' }
                 $patterns[$j] .= $tok;
             }
         }
@@ -11349,7 +11421,7 @@ sub lookup_opening_indentation {
 
                 # and 'cuddled parens' of the form:   ")->pack("
                 || (
-                       $terminal_type      eq '('
+                       $terminal_type eq '('
                     && $types_to_go[$ibeg] eq ')'
                     && ( $nesting_depth_to_go[$iend] + 1 ==
                         $nesting_depth_to_go[$ibeg] )
@@ -11911,7 +11983,7 @@ sub set_vertical_tightness_flags {
 
     # Check for a last line with isolated opening BLOCK curly
     elsif ($rOpts_block_brace_vertical_tightness
-        && $ibeg               eq $iend
+        && $ibeg eq $iend
         && $types_to_go[$iend] eq '{'
         && $block_type_to_go[$iend] =~
         /$block_brace_vertical_tightness_pattern/o )
@@ -12569,6 +12641,12 @@ sub terminal_type {
             # adjust bond strength bias
             #-----------------------------------------------------------------
 
+            # TESTING: add any bias set by sub scan_list at old comma
+            # break points.
+            elsif ( $type eq ',' ) {
+                $bond_str += $bond_strength_to_go[$i];
+            }
+
             elsif ( $type eq 'f' ) {
                 $bond_str += $f_bias;
                 $f_bias   += $delta_bias;
@@ -12941,13 +13019,13 @@ sub terminal_type {
                 $bond_str = NO_BREAK;
             }
 
-            # Breaking before a ? before a quote can cause trouble if 
+            # Breaking before a ? before a quote can cause trouble if
             # they are not separated by a blank.
             # Example: a syntax error occurs if you break before the ? here
             #  my$logic=join$all?' && ':' || ',@regexps;
-	    # From: Professional_Perl_Programming_Code/multifind.pl
+            # From: Professional_Perl_Programming_Code/multifind.pl
             elsif ( $next_nonblank_type eq '?' ) {
-                $bond_str = NO_BREAK 
+                $bond_str = NO_BREAK
                   if ( $types_to_go[ $i_next_nonblank + 1 ] eq 'Q' );
             }
 
@@ -12955,7 +13033,7 @@ sub terminal_type {
             # can cause trouble if there is no intervening space
             # Example: a syntax error occurs if you break before the .2 here
             #  $str .= pack($endian.2, ensurrogate($ord));
-	    # From: perl58/Unicode.pm
+            # From: perl58/Unicode.pm
             elsif ( $next_nonblank_type eq '.' ) {
                 $bond_str = NO_BREAK
                   if ( $types_to_go[ $i_next_nonblank + 1 ] eq 'n' );
@@ -13125,32 +13203,96 @@ sub pad_array_to_go {
         my $dd                 = shift;
         my $bp_count           = 0;
         my $do_not_break_apart = 0;
-        if ( $item_count_stack[$dd] && !$dont_align[$dd] ) {
 
-            my $fbc = $forced_breakpoint_count;
+        # anything to do?
+        if ( $item_count_stack[$dd] ) {
 
-            # always open comma lists not preceded by keywords,
-            # barewords, identifiers (that is, anything that doesn't
-            # look like a function call)
-            my $must_break_open = $last_nonblank_type[$dd] !~ /^[kwiU]$/;
+            # handle commas not in containers...
+            if ( $dont_align[$dd] ) {
+                do_uncontained_comma_breaks($dd);
+            }
 
-            set_comma_breakpoints_do(
-                $dd,
-                $opening_structure_index_stack[$dd],
-                $i,
-                $item_count_stack[$dd],
-                $identifier_count_stack[$dd],
-                $comma_index[$dd],
-                $next_nonblank_type,
-                $container_type[$dd],
-                $interrupted_list[$dd],
-                \$do_not_break_apart,
-                $must_break_open,
-            );
-            $bp_count = $forced_breakpoint_count - $fbc;
-            $do_not_break_apart = 0 if $must_break_open;
+            # handle commas within containers...
+            else {
+                my $fbc = $forced_breakpoint_count;
+
+                # always open comma lists not preceded by keywords,
+                # barewords, identifiers (that is, anything that doesn't
+                # look like a function call)
+                my $must_break_open = $last_nonblank_type[$dd] !~ /^[kwiU]$/;
+
+                set_comma_breakpoints_do(
+                    $dd,
+                    $opening_structure_index_stack[$dd],
+                    $i,
+                    $item_count_stack[$dd],
+                    $identifier_count_stack[$dd],
+                    $comma_index[$dd],
+                    $next_nonblank_type,
+                    $container_type[$dd],
+                    $interrupted_list[$dd],
+                    \$do_not_break_apart,
+                    $must_break_open,
+                );
+                $bp_count = $forced_breakpoint_count - $fbc;
+                $do_not_break_apart = 0 if $must_break_open;
+            }
         }
         return ( $bp_count, $do_not_break_apart );
+    }
+
+    sub do_uncontained_comma_breaks {
+
+        # Handle commas not in containers...
+        # This is a catch-all routine for commas that we
+        # don't know what to do with because the don't fall
+        # within containers.  We will bias the bond strength
+        # to break at commas which ended lines in the input
+        # file.  This usually works better than just trying
+        # to put as many items on a line as possible.  A
+        # downside is that if the input file is garbage it
+        # won't work very well. However, the user can always
+        # prevent following the old breakpoints with the
+        # -iob flag.
+        my $dd   = shift;
+        my $bias = -.01;
+        foreach my $ii ( @{ $comma_index[$dd] } ) {
+            if ( $old_breakpoint_to_go[$ii] ) {
+                $bond_strength_to_go[$ii] = $bias;
+
+                # reduce bias magnitude to force breaks in order
+                $bias *= 0.99;
+            }
+        }
+
+        # Also put a break before the first comma if
+        # (1) there was a break there in the input, and
+        # (2) that was exactly one previous break in the input
+        #
+        # For example, we will follow the user and break after
+        # 'print' in this snippet:
+        #    print
+        #      "conformability (Not the same dimension)\n",
+        #      "\t", $have, " is ", text_unit($hu), "\n",
+        #      "\t", $want, " is ", text_unit($wu), "\n",
+        #      ;
+        my $i_first_comma = $comma_index[$dd]->[0];
+        if ( $old_breakpoint_to_go[$i_first_comma] ) {
+            my $level_comma = $levels_to_go[$i_first_comma];
+            my $ibreak      = -1;
+            my $obp_count   = 0;
+            for ( my $ii = $i_first_comma - 1 ; $ii >= 0 ; $ii -= 1 ) {
+                if ( $old_breakpoint_to_go[$ii] ) {
+                    $obp_count++;
+                    last if ( $obp_count > 1 );
+                    $ibreak = $ii
+                      if ( $levels_to_go[$ii] == $level_comma );
+                }
+            }
+            if ( $ibreak >= 0 && $obp_count == 1 ) {
+                set_forced_breakpoint($ibreak);
+            }
+        }
     }
 
     my %is_logical_container;
@@ -13631,7 +13773,8 @@ sub pad_array_to_go {
                       $forced_breakpoint_count );
 
                 # update broken-sublist flag of the outer container
-                     $has_broken_sublist[$depth] = $has_broken_sublist[$depth]
+                $has_broken_sublist[$depth] =
+                     $has_broken_sublist[$depth]
                   || $has_broken_sublist[$current_depth]
                   || $is_long_term
                   || $has_comma_breakpoints;
@@ -13994,10 +14137,13 @@ sub pad_array_to_go {
             }
 
             # skip past these commas if we are not supposed to format them
-            next if ( $dont_align[$depth] );
+            ## BUBBA: TESTING, keep going
+            ## next if ( $dont_align[$depth] );
 
             # break after all commas above starting depth
-            if ( $depth < $starting_depth ) {
+            ##BUBBA: add don't
+            ##if ( $depth < $starting_depth ) {
+            if ( $depth < $starting_depth && !$dont_align[$depth] ) {
                 set_forced_breakpoint($i) unless ( $next_nonblank_type eq '#' );
                 next;
             }
@@ -14016,7 +14162,7 @@ sub pad_array_to_go {
                     && $container_environment_to_go[$i] eq 'BLOCK' )
                 {
                     $dont_align[$depth] = 1;
-                    next;
+                    ##BUBBA: NOT! TESTING: next;
                 }
             }
 
@@ -14333,7 +14479,8 @@ sub find_token_starting_list {
         if ( $rOpts_line_up_parentheses && !$must_break_open ) {
             my $columns_if_unbroken = $rOpts_maximum_line_length -
               total_line_length( $i_opening_minus, $i_opening_paren );
-            $need_lp_break_open = ( $max_length[0] > $columns_if_unbroken )
+            $need_lp_break_open =
+                 ( $max_length[0] > $columns_if_unbroken )
               || ( $max_length[1] > $columns_if_unbroken )
               || ( $first_term_length > $columns_if_unbroken );
         }
@@ -15368,6 +15515,12 @@ sub recombine_breakpoints {
             # for lines ending in a comma...
             elsif ( $types_to_go[$imid] eq ',' ) {
 
+                ##BUBBA: TESTING##
+                # Do not recombine at comma which is following the
+                # input bias.
+                # TODO: might be best to make a special flag
+                next if ( $old_breakpoint_to_go[$imid] );
+
                 # an isolated '},' may join with an identifier + ';'
                 # this is useful for the class of a 'bless' statement (bless.t)
                 if (   $types_to_go[$if] eq '}'
@@ -16019,6 +16172,97 @@ sub break_all_chain_tokens {
     }
 }
 
+sub break_equals {
+
+    # Look for assignment operators that could use a breakpoint.
+    # For example, in the following snippet
+    #
+    #    $HOME = $ENV{HOME}
+    #      || $ENV{LOGDIR}
+    #      || $pw[7]
+    #      || die "no home directory for user $<";
+    #
+    # we could break at the = to get this, which is a little nicer:
+    #    $HOME =
+    #         $ENV{HOME}
+    #      || $ENV{LOGDIR}
+    #      || $pw[7]
+    #      || die "no home directory for user $<";
+    #
+    # The logic here follows the logic in set_logical_padding, which
+    # will add the padding in the second line to improve alignment.
+    #
+    my ( $ri_left, $ri_right ) = @_;
+    my $nmax = @$ri_right - 1;
+    return unless ( $nmax >= 2 );
+
+    # scan the left ends of first two lines
+    my $tokbeg = "";
+    my $depth_beg;
+    for my $n ( 1 .. 2 ) {
+        my $il     = $$ri_left[$n];
+        my $typel  = $types_to_go[$il];
+        my $tokenl = $tokens_to_go[$il];
+
+        my $has_leading_op = ( $tokenl =~ /^\w/ )
+          ? $is_chain_operator{$tokenl}    # + - * / : ? && ||
+          : $is_chain_operator{$typel};    # and, or
+        return unless ($has_leading_op);
+        if ( $n > 1 ) {
+            return
+              unless ( $tokenl eq $tokbeg
+                && $nesting_depth_to_go[$il] eq $depth_beg );
+        }
+        $tokbeg    = $tokenl;
+        $depth_beg = $nesting_depth_to_go[$il];
+    }
+
+    # now look for any interior tokens of the same types
+    my $il = $$ri_left[0];
+    my $ir = $$ri_right[0];
+
+    # now make a list of all new break points
+    my @insert_list;
+    for ( my $i = $ir - 1 ; $i > $il ; $i-- ) {
+        my $type = $types_to_go[$i];
+        if (   $is_assignment{$type}
+            && $nesting_depth_to_go[$i] eq $depth_beg )
+        {
+            if ( $want_break_before{$type} ) {
+                push @insert_list, $i - 1;
+            }
+            else {
+                push @insert_list, $i;
+            }
+        }
+    }
+
+    return unless (@insert_list);
+
+    # One final check...
+    # scan second and thrid lines and be sure there are no assignments
+    # we want to avoid breaking at an = to make something like this:
+    #    unless ( $icon =
+    #           $html_icons{"$type-$state"}
+    #        or $icon = $html_icons{$type}
+    #        or $icon = $html_icons{$state} )
+    for my $n ( 1 .. 2 ) {
+        my $il = $$ri_left[$n];
+        my $ir = $$ri_right[$n];
+        for ( my $i = $il + 1 ; $i <= $ir ; $i++ ) {
+            my $type = $types_to_go[$i];
+            return
+              if ( $is_assignment{$type}
+                && $nesting_depth_to_go[$i] eq $depth_beg );
+        }
+    }
+
+    # ok, insert any new break point
+    if (@insert_list) {
+        insert_additional_breaks( \@insert_list, $ri_left, $ri_right );
+    }
+}
+
 sub insert_final_breaks {
 
     my ( $ri_left, $ri_right ) = @_;
@@ -16078,7 +16322,7 @@ sub in_same_container {
     return unless ( $nesting_depth_to_go[$i2] == $depth );
     if ( $i2 < $i1 ) { ( $i1, $i2 ) = ( $i2, $i1 ) }
     for ( my $i = $i1 + 1 ; $i < $i2 ; $i++ ) {
-        next   if ( $nesting_depth_to_go[$i] > $depth );
+        next if ( $nesting_depth_to_go[$i] > $depth );
         return if ( $nesting_depth_to_go[$i] < $depth );
 
         my $tok = $tokens_to_go[$i];
@@ -17544,7 +17788,7 @@ sub append_line {
             && $rvertical_tightness_flags->[2] == $cached_seqno )
         {
             $rvertical_tightness_flags->[3] ||= 1;
-            $cached_line_valid              ||= 1;
+            $cached_line_valid ||= 1;
         }
     }
 
@@ -17873,8 +18117,11 @@ sub eliminate_old_fields {
     my $old_line            = shift;
     my $maximum_field_index = $old_line->get_jmax();
 
+    ###############################################
     # this line must have fewer fields
+    # BUBBA: TESTING: DELETED
     return unless $maximum_field_index > $jmax;
+    ###############################################
 
     # Identify specific cases where field elimination is allowed:
     # case=1: both lines have comma-separated lists, and the first
@@ -18318,185 +18565,286 @@ sub fix_terminal_else {
       unless ( $rfields_old->[0] =~ /^case\s*$/ );
 }
 
-sub check_match {
+{    # sub check_match
+    my %is_good_alignment_token;
 
-    my $new_line = shift;
-    my $old_line = shift;
+    BEGIN {
 
-    # uses global variables:
-    #  $previous_minimum_jmax_seen
-    #  $maximum_jmax_seen
-    #  $maximum_line_index
-    #  $marginal_match
-    my $jmax                = $new_line->get_jmax();
-    my $maximum_field_index = $old_line->get_jmax();
-
-    # flush if this line has too many fields
-    if ( $jmax > $maximum_field_index ) { my_flush(); return }
-
-    # flush if adding this line would make a non-monotonic field count
-    if (
-        ( $maximum_field_index > $jmax )    # this has too few fields
-        && (
-            ( $previous_minimum_jmax_seen < $jmax )  # and wouldn't be monotonic
-            || ( $old_line->get_jmax_original_line() != $maximum_jmax_seen )
-        )
-      )
-    {
-        my_flush();
-        return;
+        @_ = qw( ? = { );
+        push @_, ',';
+        @is_good_alignment_token{@_} = (1) x scalar(@_);
     }
 
-    # otherwise append this line if everything matches
-    my $jmax_original_line      = $new_line->get_jmax_original_line();
-    my $is_hanging_side_comment = $new_line->get_is_hanging_side_comment();
-    my $rtokens                 = $new_line->get_rtokens();
-    my $rfields                 = $new_line->get_rfields();
-    my $rpatterns               = $new_line->get_rpatterns();
-    my $list_type               = $new_line->get_list_type();
+    sub check_match {
 
-    my $group_list_type = $old_line->get_list_type();
-    my $old_rpatterns   = $old_line->get_rpatterns();
-    my $old_rtokens     = $old_line->get_rtokens();
+        # See if the current line matches the current vertical alignment group.
+        # If not, flush the current group.
+        my $new_line = shift;
+        my $old_line = shift;
 
-    my $jlimit = $jmax - 1;
-    if ( $maximum_field_index > $jmax ) {
-        $jlimit = $jmax_original_line;
-        --$jlimit unless ( length( $new_line->get_rfields()->[$jmax] ) );
-    }
+        # uses global variables:
+        #  $previous_minimum_jmax_seen
+        #  $maximum_jmax_seen
+        #  $maximum_line_index
+        #  $marginal_match
+        my $jmax                = $new_line->get_jmax();
+        my $maximum_field_index = $old_line->get_jmax();
 
-    my $everything_matches = 1;
+        # flush if this line has too many fields
+        if ( $jmax > $maximum_field_index ) { goto NO_MATCH }
 
-    # common list types always match
-    unless ( ( $group_list_type && ( $list_type eq $group_list_type ) )
-        || $is_hanging_side_comment )
-    {
+        # flush if adding this line would make a non-monotonic field count
+        if (
+            ( $maximum_field_index > $jmax )    # this has too few fields
+            && (
+                ( $previous_minimum_jmax_seen <
+                    $jmax )                     # and wouldn't be monotonic
+                || ( $old_line->get_jmax_original_line() != $maximum_jmax_seen )
+            )
+          )
+        {
+            goto NO_MATCH;
+        }
 
-        my $leading_space_count = $new_line->get_leading_space_count();
-        my $saw_equals          = 0;
-        for my $j ( 0 .. $jlimit ) {
-            my $match = 1;
+        # otherwise see if this line matches the current group
+        my $jmax_original_line      = $new_line->get_jmax_original_line();
+        my $is_hanging_side_comment = $new_line->get_is_hanging_side_comment();
+        my $rtokens                 = $new_line->get_rtokens();
+        my $rfields                 = $new_line->get_rfields();
+        my $rpatterns               = $new_line->get_rpatterns();
+        my $list_type               = $new_line->get_list_type();
 
-            my $old_tok = $$old_rtokens[$j];
-            my $new_tok = $$rtokens[$j];
+        my $group_list_type = $old_line->get_list_type();
+        my $old_rpatterns   = $old_line->get_rpatterns();
+        my $old_rtokens     = $old_line->get_rtokens();
 
-            # Dumb down the match AFTER an equals and
-            # also dumb down after seeing a ? ternary operator ...
-            # Everything after a + is the token which preceded the previous
-            # opening paren (container name).  We won't require them to match.
-            if ( $saw_equals && $new_tok =~ /(.*)\+/ ) {
-                $new_tok = $1;
-                $old_tok =~ s/\+.*$//;
-            }
+        my $jlimit = $jmax - 1;
+        if ( $maximum_field_index > $jmax ) {
+            $jlimit = $jmax_original_line;
+            --$jlimit unless ( length( $new_line->get_rfields()->[$jmax] ) );
+        }
 
-            if ( $new_tok =~ /^[\?=]\d*$/ ) { $saw_equals = 1 }
+        my $saw_good_alignment = 0;
 
-            # we never match if the matching tokens differ
-            if (   $j < $jlimit
-                && $old_tok ne $new_tok )
-            {
-                $match = 0;
-            }
+        # handle groups of lists ..
+        if ( $group_list_type && ( $list_type eq $group_list_type ) ) {
+            for my $j ( 0 .. $jlimit ) {
+                my $old_tok = $$old_rtokens[$j];
+                next unless $old_tok;
+                my $new_tok = $$rtokens[$j];
+                next unless $new_tok;
 
-            # otherwise, if patterns match, we always have a match.
-            # However, if patterns don't match, we have to be careful...
-            elsif ( $$old_rpatterns[$j] ne $$rpatterns[$j] ) {
-
-                # We have to be very careful about aligning commas when the
-                # pattern's don't match, because it can be worse to create an
-                # alignment where none is needed than to omit one.  The current
-                # rule: if we are within a matching sub call (indicated by '+'
-                # in the matching token), we'll allow a marginal match, but
-                # otherwise not.
-                #
-                # Here's an example where we'd like to align the '='
-                #  my $cfile = File::Spec->catfile( 't',    'callext.c' );
-                #  my $inc   = File::Spec->catdir( 'Basic', 'Core' );
-                # because the function names differ.
-                # Future alignment logic should make this unnecessary.
-                #
-                # Here's an example where the ','s are not contained in a call.
-                # The first line below should probably not match the next two:
-                #   ( $a, $b ) = ( $b, $r );
-                #   ( $x1, $x2 ) = ( $x2 - $q * $x1, $x1 );
-                #   ( $y1, $y2 ) = ( $y2 - $q * $y1, $y1 );
-                if ( $new_tok =~ /^,/ ) {
-                    if ( $$rtokens[$j] =~ /[A-Za-z]/ ) {
-                        $marginal_match = 1;
-                    }
-                    else {
-                        $match = 0;
-                    }
-                }
-
-                # parens don't align well unless patterns match
-                elsif ( $new_tok =~ /^\(/ ) {
-                    $match = 0;
-                }
-
-                # Handle an '=' alignment with different patterns to
-                # the left.
-                elsif ( $new_tok =~ /^=\d*$/ ) {
-
-                    $saw_equals = 1;
-
-                    # It is best to be a little restrictive when
-                    # aligning '=' tokens.  Here is an example of
-                    # two lines that we will not align:
-                    #       my $variable=6;
-                    #       $bb=4;
-                    # The problem is that one is a 'my' declaration,
-                    # and the other isn't, so they're not very similar.
-                    # We will filter these out by comparing the first
-                    # letter of the pattern.  This is crude, but works
-                    # well enough.
-                    if (
-                        substr( $$old_rpatterns[$j], 0, 1 ) ne
-                        substr( $$rpatterns[$j], 0, 1 ) )
-                    {
-                        $match = 0;
-                    }
-
-                    # If we pass that test, we'll call it a marginal match.
-                    # Here is an example of a marginal match:
-                    #       $done{$$op} = 1;
-                    #       $op         = compile_bblock($op);
-                    # The left tokens are both identifiers, but
-                    # one accesses a hash and the other doesn't.
-                    # We'll let this be a tentative match and undo
-                    # it later if we don't find more than 2 lines
-                    # in the group.
-                    elsif ( $maximum_line_index == 0 ) {
-                        $marginal_match = 1;
-                    }
-                }
-            }
-
-            # Don't let line with fewer fields increase column widths
-            # ( align3.t )
-            if ( $maximum_field_index > $jmax ) {
-                my $pad =
-                  length( $$rfields[$j] ) - $old_line->current_field_width($j);
-
-                if ( $j == 0 ) {
-                    $pad += $leading_space_count;
-                }
-
-                # TESTING: suspend this rule to allow last lines to join
-                if ( $pad > 0 ) { $match = 0; }
-            }
-
-            unless ($match) {
-                $everything_matches = 0;
-                last;
+                # lists always match ...
+                # unless they would align any '=>'s with ','s
+                goto NO_MATCH
+                  if ( $old_tok =~ /^=>/ && $new_tok =~ /^,/
+                    || $new_tok =~ /^=>/ && $old_tok =~ /^,/ );
             }
         }
-    }
 
-    if ( $maximum_field_index > $jmax ) {
+        # do detailed check for everything else except hanging side comments
+        elsif ( !$is_hanging_side_comment ) {
 
-        if ($everything_matches) {
+            my $leading_space_count = $new_line->get_leading_space_count();
+            my $saw_equals          = 0;
+            for my $j ( 0 .. $jlimit ) {
 
+                my $old_tok = $$old_rtokens[$j];
+                my $new_tok = $$rtokens[$j];
+
+                # Note on encoding used for alignment tokens:
+                # -------------------------------------------
+                # Tokens are "decorated" with information which can help
+                # prevent unwanted alignments.  Consider for example the
+                # following two lines:
+                #   local ( $xn, $xd ) = split( '/', &'rnorm(@_) );
+                #   local ( $i, $f ) = &'bdiv( $xn, $xd );
+                # There are three alignment tokens in each line, a comma,
+                # an =, and a comma.  In the first line these three tokens
+                # are encoded as:
+                #    ,4+local-18     =3      ,4+split-7
+                # and in the second line they are encoded as
+                #    ,4+local-18     =3      ,4+&'bdiv-8
+                # Tokens always at least have token name and nesting
+                # depth.  So in this example the ='s are at depth 3 and
+                # the ,'s are at depth 4.  This prevents aligning tokens
+                # of different depths.  Commas contain additional
+                # information, as follows:
+                # ,  {depth} + {container name} - {spaces to opening paren}
+                # This allows us to reject matching the rightmost commas
+                # in the above two lines, since they are for different
+                # function calls.  This encoding is done in
+                # 'sub send_lines_to_vertical_aligner'.
+
+                # Pick off actual token.
+                # Everything up to the first digit is the actual token.
+                my $alignment_token = $new_tok;
+                if ( $alignment_token =~ /^([^\d]+)/ ) { $alignment_token = $1 }
+
+                # see if the decorated tokens match
+                my $tokens_match = $new_tok eq $old_tok
+
+                  # Exception for matching terminal : of ternary statement..
+                  # consider containers prefixed by ? and : a match
+                  || ( $new_tok =~ /^,\d*\+\:/ && $old_tok =~ /^,\d*\+\?/ );
+
+                # Note if we see any of certain "good" alignment tokens. These
+                # are tokens such as = ? and { which often look good with
+                # some vertical alginment.  Also commas in function calls to
+                # the same function.  We will use this to make decisions for
+                # some marginal cases below.
+                if ( $is_good_alignment_token{$alignment_token} ) {
+                    $saw_good_alignment = 1;
+                }
+
+                # Never align commas which are in named containers with
+                # different names.
+                #
+                # In the following example, we shouldn't align
+                # the rightmost commas because they are in different
+                # function calls (split and bdiv):
+                # local ( $xn, $xd ) = split( '/', &'rnorm(@_) );
+                # local ( $i, $f ) = &'bdiv( $xn, $xd );
+                #
+                # Here is a more subtle example. In the following example,
+                # we shouldn't align the last two atan2 commas with the
+                # first two, even though the function names are the same
+                # (atan2) because they do not have aligned opening parens.
+                # The name of the function (atan2) have been decorated
+                # with different space counts to prevent this.
+                #
+                #    $B = $X * $RTYSQP1 * atan2( $XX, $RTYSQP1 );
+                #    $C = $Y * $RTXSQP1 * atan2( $Y,  $RTXSQP1 );
+                #    $D = $X * atan2( $X,             1 );
+                #    $E = $Y * atan2( $Y,             1 );
+                if (   $alignment_token eq ','
+                    && !$tokens_match
+                    && $new_tok =~ /[A-Za-z]/ )
+                {
+                    goto NO_MATCH;
+                }
+
+                # no match if the alignment tokens differ
+                elsif ( $j < $jlimit && !$tokens_match ) {
+                    goto NO_MATCH;
+                }
+
+                # If patterns don't match, we have to be careful...
+                elsif (
+                    $$old_rpatterns[$j] ne $$rpatterns[$j]
+
+                    ##TESTING: BUBBA:
+                    && $alignment_token ne '#'
+                  )
+                {
+
+                    # flag this as a marginal match since patterns differ
+                    $marginal_match = 1
+                      if ( $marginal_match == 0 && $maximum_line_index == 0 );
+
+                    # We have to be very careful about aligning commas
+                    # when the pattern's don't match, because it can be
+                    # worse to create an alignment where none is needed
+                    # than to omit one.  Here's an example where the ','s
+                    # are not in named continers.  The first line below
+                    # should not match the next two:
+                    #   ( $a, $b ) = ( $b, $r );
+                    #   ( $x1, $x2 ) = ( $x2 - $q * $x1, $x1 );
+                    #   ( $y1, $y2 ) = ( $y2 - $q * $y1, $y1 );
+                    if ( $alignment_token eq ',' ) {
+
+                       # do not align commas unless they are in named containers
+                        goto NO_MATCH unless ( $new_tok =~ /[A-Za-z]/ );
+                    }
+
+                    # do not align parens unless patterns match;
+                    # large ugly spaces can occur in math expressions.
+                    elsif ( $alignment_token eq '(' ) {
+
+                        # But we can allow a match if the parens don't
+                        # require any padding.
+                        my $pad =
+                          length( $$rfields[$j] ) -
+                          $old_line->current_field_width($j);
+                        if ( $j == 0 ) {
+                            $pad += $leading_space_count;
+                        }
+                        if ( $pad != 0 ) { goto NO_MATCH }
+                    }
+
+                    # Handle an '=' alignment with different patterns to
+                    # the left.
+                    elsif ( $alignment_token eq '=' ) {
+
+                        # It is best to be a little restrictive when
+                        # aligning '=' tokens.  Here is an example of
+                        # two lines that we will not align:
+                        #       my $variable=6;
+                        #       $bb=4;
+                        # The problem is that one is a 'my' declaration,
+                        # and the other isn't, so they're not very similar.
+                        # We will filter these out by comparing the first
+                        # letter of the pattern.  This is crude, but works
+                        # well enough.
+                        if (
+                            substr( $$old_rpatterns[$j], 0, 1 ) ne
+                            substr( $$rpatterns[$j], 0, 1 ) )
+                        {
+                            goto NO_MATCH;
+                        }
+
+                        # If we pass that test, we'll call it a marginal match.
+                        # Here is an example of a marginal match:
+                        #       $done{$$op} = 1;
+                        #       $op         = compile_bblock($op);
+                        # The left tokens are both identifiers, but
+                        # one accesses a hash and the other doesn't.
+                        # We'll let this be a tentative match and undo
+                        # it later if we don't find more than 2 lines
+                        # in the group.
+                        elsif ( $maximum_line_index == 0 ) {
+                            $marginal_match =
+                              2;    # =2 prevents being undone below
+                        }
+                    }
+                }
+
+                # Don't let line with fewer fields increase column widths
+                # ( align3.t )
+                if ( $maximum_field_index > $jmax ) {
+                    my $pad =
+                      length( $$rfields[$j] ) -
+                      $old_line->current_field_width($j);
+
+                    if ( $j == 0 ) {
+                        $pad += $leading_space_count;
+                    }
+
+                    # Exception: suspend this rule to allow last lines to join
+                    if ( $pad > 0 ) { goto NO_MATCH; }
+                }
+            }
+
+            # Turn off the "marginal match" flag in some cases...
+            # A "marginal match" occurs when the alignment tokens agree
+            # but there are differences in the other tokens (patterns).
+            # If we leave the marginal match flag set, then the rule is
+            # that we will align only if there are more than two lines in
+            # the group.  We will turn of the flag if we almost have a match
+            # and we have seen on of the good alignment tokens like = ? {
+            if (   $marginal_match == 1
+                && $saw_good_alignment
+                && $jmax == $maximum_field_index )
+            {
+                $marginal_match = 0;
+            }
+        }
+
+        # We have a match (even if marginal).
+        # If the current line has fewer fields than the current group
+        # but otherwise matches, copy the remaining group fields to
+        # make it a perfect match.
+        if ( $maximum_field_index > $jmax ) {
             my $comment = $$rfields[$jmax];
             for $jmax ( $jlimit .. $maximum_field_index ) {
                 $$rtokens[$jmax]     = $$old_rtokens[$jmax];
@@ -18506,9 +18854,12 @@ sub check_match {
             $$rfields[$jmax] = $comment;
             $new_line->set_jmax($jmax);
         }
-    }
+        return;
 
-    my_flush() unless ($everything_matches);
+      NO_MATCH:
+        my_flush();
+        return;
+    }
 }
 
 sub check_fit {
@@ -21880,7 +22231,7 @@ sub prepare_for_a_new_file {
             if ($is_pattern) {
                 $in_quote                = 1;
                 $type                    = 'Q';
-                $allowed_quote_modifiers = '[cgimosx]'; 
+                $allowed_quote_modifiers = '[cgimosx]';
             }
             else {
                 ( $type_sequence, $indent_flag ) =
@@ -23074,7 +23425,7 @@ EOM
                         # not treated as keywords:
                         if (
                             (
-                                   $tok                      eq 'case'
+                                   $tok eq 'case'
                                 && $brace_type[$brace_depth] eq 'switch'
                             )
                             || (   $tok eq 'when'
@@ -24439,7 +24790,8 @@ sub decrease_nesting_depth {
                 {
                     interrupt_logfile();
                     my $rsl =
-                      $starting_line_of_current_depth[$aa][ $current_depth[$aa] ];
+                      $starting_line_of_current_depth[$aa]
+                      [ $current_depth[$aa] ];
                     my $sl  = $$rsl[0];
                     my $rel = [ $input_line_number, $input_line, $pos ];
                     my $el  = $$rel[0];
@@ -24500,7 +24852,8 @@ sub check_final_nesting_depths {
     for $aa ( 0 .. $#closing_brace_names ) {
 
         if ( $current_depth[$aa] ) {
-            my $rsl = $starting_line_of_current_depth[$aa][ $current_depth[$aa] ];
+            my $rsl =
+              $starting_line_of_current_depth[$aa][ $current_depth[$aa] ];
             my $sl  = $$rsl[0];
             my $msg = <<"EOM";
 Final nesting depth of $opening_brace_names[$aa]s is $current_depth[$aa]

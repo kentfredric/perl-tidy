@@ -2309,6 +2309,45 @@ containers, regardless of type, which do not exceed the line length
 limit.</p>
 </dd>
 </li>
+<dt><strong><a name="item__2dkis_2c__2d_2dkeep_2dinterior_2dsemicolons"><strong>-kis</strong>,  <strong>--keep-interior-semicolons</strong></a></strong>
+
+<dd>
+<p>Use the <strong>-kis</strong> flag to prevent breaking at a semicolon if
+there was no break there in the input file.  Normally
+perltidy places a newline after each semicolon which
+terminates a statement unless several statements are
+contained within a one-line brace block.  To illustrate,
+consider the following input lines:</p>
+</dd>
+<dd>
+<pre>
+    dbmclose(%verb_delim); undef %verb_delim;
+    dbmclose(%expanded); undef %expanded;</pre>
+</dd>
+<dd>
+<p>The default is to break after each statement, giving</p>
+</dd>
+<dd>
+<pre>
+    dbmclose(%verb_delim);
+    undef %verb_delim;
+    dbmclose(%expanded);
+    undef %expanded;</pre>
+</dd>
+<dd>
+<p>With <strong>perltidy -kis</strong> the multiple statements are retained:</p>
+</dd>
+<dd>
+<pre>
+    dbmclose(%verb_delim); undef %verb_delim;
+    dbmclose(%expanded);   undef %expanded;</pre>
+</dd>
+<dd>
+<p>The statements are still subject to the specified value
+of <strong>maximum-line-length</strong> and will be broken if this 
+maximum is exceeed.</p>
+</dd>
+</li>
 </dl>
 <p>
 </p>
@@ -3126,7 +3165,7 @@ dot is added, and the backup file will be <em>somefile.pl~</em>  .</p>
  dwrs dws f    fll  frm  fs  hsc html ibc  icb  icp iob  isbc lal  log
  lp   lsl ohbr okw  ola  oll opr opt  osbr otr  ple ple  pod  pvl  q
  sbc  sbl schb scp  scsb sct se  sfp  sfs  skp  sob sohb sop  sosb sot
- ssc  st  sts  syn  t    tac tbc toc  tp   tqw  tsc w    x    bar</pre>
+ ssc  st  sts  syn  t    tac tbc toc  tp   tqw  tsc w    x    bar  kis</pre>
 <p>Equivalently, the prefix 'no' or 'no-' on the corresponding long names may be
 used.</p>
 <p>

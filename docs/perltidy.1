@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "PERLTIDY 1"
-.TH PERLTIDY 1 "2007-07-31" "perl v5.8.8" "User Contributed Perl Documentation"
+.TH PERLTIDY 1 "2007-08-02" "perl v5.8.8" "User Contributed Perl Documentation"
 .SH "NAME"
 perltidy \- a perl script indenter and reformatter
 .SH "SYNOPSIS"
@@ -2021,6 +2021,39 @@ Use this flag to tell perltidy to ignore existing line breaks to the
 maximum extent possible.  This will tend to produce the longest possible
 containers, regardless of type, which do not exceed the line length
 limit.
+.IP "\fB\-kis\fR,  \fB\-\-keep\-interior\-semicolons\fR" 4
+.IX Item "-kis,  --keep-interior-semicolons"
+Use the \fB\-kis\fR flag to prevent breaking at a semicolon if
+there was no break there in the input file.  Normally
+perltidy places a newline after each semicolon which
+terminates a statement unless several statements are
+contained within a one-line brace block.  To illustrate,
+consider the following input lines:
+.Sp
+.Vb 2
+\&    dbmclose(%verb_delim); undef %verb_delim;
+\&    dbmclose(%expanded); undef %expanded;
+.Ve
+.Sp
+The default is to break after each statement, giving
+.Sp
+.Vb 4
+\&    dbmclose(%verb_delim);
+\&    undef %verb_delim;
+\&    dbmclose(%expanded);
+\&    undef %expanded;
+.Ve
+.Sp
+With \fBperltidy \-kis\fR the multiple statements are retained:
+.Sp
+.Vb 2
+\&    dbmclose(%verb_delim); undef %verb_delim;
+\&    dbmclose(%expanded);   undef %expanded;
+.Ve
+.Sp
+The statements are still subject to the specified value
+of \fBmaximum-line-length\fR and will be broken if this 
+maximum is exceeed.
 .Sh "Blank Line Control"
 .IX Subsection "Blank Line Control"
 Blank lines can improve the readability of a script if they are carefully
@@ -2670,7 +2703,7 @@ The following list shows all short parameter names which allow a prefix
 \& dwrs dws f    fll  frm  fs  hsc html ibc  icb  icp iob  isbc lal  log
 \& lp   lsl ohbr okw  ola  oll opr opt  osbr otr  ple ple  pod  pvl  q
 \& sbc  sbl schb scp  scsb sct se  sfp  sfs  skp  sob sohb sop  sosb sot
-\& ssc  st  sts  syn  t    tac tbc toc  tp   tqw  tsc w    x    bar
+\& ssc  st  sts  syn  t    tac tbc toc  tp   tqw  tsc w    x    bar  kis
 .Ve
 .PP
 Equivalently, the prefix 'no' or 'no\-' on the corresponding long names may be

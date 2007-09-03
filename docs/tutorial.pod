@@ -357,7 +357,7 @@ introducing an extra opening brace somewhere in a test file.  For example,
 introducing an extra brace in the file listed above produces the following
 message on the terminal (or standard error output):
 
- Please see file testfile.pl.ERR!
+ ## Please see file testfile.pl.ERR!
 
 Here is what F<testfile.pl.ERR> contains:
 
@@ -529,6 +529,6 @@ Please check the perltidy
 web site http://perltidy.sourceforge.net occasionally
 for updates.
 
-The auther may be contacted at perltidy at users.sourceforge.net.
+The author may be contacted at perltidy at users.sourceforge.net.
 
 =cut
