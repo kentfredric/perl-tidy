@@ -65,7 +65,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.69 2007/09/03 14:38:25 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.70 2007/09/07 06:06:53 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 sub streamhandle {
@@ -8512,7 +8512,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.69 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.70 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -11000,6 +11000,24 @@ sub send_lines_to_vertical_aligner {
                     }
                 }
 
+                # Patch to avoid aligning leading and trailing if, unless.
+                # Mark trailing if, unless statements with container names.
+                # This makes them different from leading if, unless which
+                # are not so marked at present.  If we ever need to name
+                # them too, we could use ci to distinguish them.
+                # Example problem to avoid:
+                #    return ( 2, "DBERROR" )
+                #      if ( $retval == 2 );
+                #    if   ( scalar @_ ) {
+                #        my ( $a, $b, $c, $d, $e, $f ) = @_;
+                #    }
+                if ($raw_tok eq '(') {
+                    my $ci=$ci_levels_to_go[$ibeg]; 
+                    if ($container_name[$depth] =~ /^\+(if|unless)/ && $ci) {
+                        $tok.= $container_name[$depth];
+                    }
+                }
+
                 # concatenate the text of the consecutive tokens to form
                 # the field
                 push( @fields,
@@ -11038,8 +11056,11 @@ sub send_lines_to_vertical_aligner {
                     }
                 }
 
-                # minor patch to make numbers and quotes align
+                # patch to make numbers and quotes align
                 if ( $type eq 'n' ) { $type = 'Q' }
+
+                # patch to ignore any ! in patterns
+                if ( $type eq '!' ) { $type = '' }
 
                 $patterns[$j] .= $type;
             }
@@ -18566,13 +18587,15 @@ sub fix_terminal_else {
 }
 
 {    # sub check_match
-    my %is_good_alignment_token;
+    my %is_good_alignment;
 
     BEGIN {
 
-        @_ = qw( ? = { );
-        push @_, ',';
-        @is_good_alignment_token{@_} = (1) x scalar(@_);
+        # Vertically aligning on certain "good" tokens is usually okay 
+        # so we can be less restrictive in marginal cases.
+        @_ = qw( { ? => = );
+        push @_, (',');
+        @is_good_alignment{@_} = (1) x scalar(@_);
     }
 
     sub check_match {
@@ -18624,9 +18647,7 @@ sub fix_terminal_else {
             --$jlimit unless ( length( $new_line->get_rfields()->[$jmax] ) );
         }
 
-        my $saw_good_alignment = 0;
-
-        # handle groups of lists ..
+        # handle comma-separated lists ..
         if ( $group_list_type && ( $list_type eq $group_list_type ) ) {
             for my $j ( 0 .. $jlimit ) {
                 my $old_tok = $$old_rtokens[$j];
@@ -18646,7 +18667,11 @@ sub fix_terminal_else {
         elsif ( !$is_hanging_side_comment ) {
 
             my $leading_space_count = $new_line->get_leading_space_count();
-            my $saw_equals          = 0;
+
+            my $max_pad   = 0;
+            my $min_pad   = 0;
+            my $saw_good_alignment;
+
             for my $j ( 0 .. $jlimit ) {
 
                 my $old_tok = $$old_rtokens[$j];
@@ -18687,56 +18712,57 @@ sub fix_terminal_else {
                   # Exception for matching terminal : of ternary statement..
                   # consider containers prefixed by ? and : a match
                   || ( $new_tok =~ /^,\d*\+\:/ && $old_tok =~ /^,\d*\+\?/ );
+                  ##print "BUBBA: new=$new_tok old=$old_tok\n";
 
-                # Note if we see any of certain "good" alignment tokens. These
-                # are tokens such as = ? and { which often look good with
-                # some vertical alginment.  Also commas in function calls to
-                # the same function.  We will use this to make decisions for
-                # some marginal cases below.
-                if ( $is_good_alignment_token{$alignment_token} ) {
+                # No match if the alignment tokens differ...
+                if ( !$tokens_match ) {
+
+                    ##print "BUBBA: new=$new_tok old=$old_tok\n";
+
+                    # ...Unless this is a side comment
+                    if ( $j == $jlimit
+
+                        # and there is either at least one alignment token 
+                        # or this is a single item following a list.  This
+                        # latter rule is required for 'December' to join
+                        # the following list:
+                        # my (@months) = (
+                        #     '',       'January',   'February', 'March',
+                        #     'April',  'May',       'June',     'July',
+                        #     'August', 'September', 'October',  'November',
+                        #     'December'
+                        # );
+                        # If it doesn't then the -lp formatting will fail.
+                        && ( $j > 0 || $old_tok=~/^,/ ) )
+                    {
+                        $marginal_match = 1
+                          if ( $marginal_match == 0
+                            && $maximum_line_index == 0 );
+                        last;
+                    }
+
+                    goto NO_MATCH;
+                } 
+
+
+                # Calculate amount of padding required to fit this in.
+                # $pad is the number of spaces by which we must increase
+                # the current field to squeeze in this field.
+                my $pad =
+                  length( $$rfields[$j] ) - $old_line->current_field_width($j);
+                if ( $j == 0 ) { $pad += $leading_space_count; }
+
+                # remember max pads to limit marginal cases
+                if ($alignment_token ne '#') { 
+                    if ( $pad > $max_pad ) { $max_pad = $pad }
+                    if ( $pad < $min_pad ) { $min_pad = $pad }
+                }
+                if ( $is_good_alignment{$alignment_token} ) {
                     $saw_good_alignment = 1;
                 }
 
-                # Never align commas which are in named containers with
-                # different names.
-                #
-                # In the following example, we shouldn't align
-                # the rightmost commas because they are in different
-                # function calls (split and bdiv):
-                # local ( $xn, $xd ) = split( '/', &'rnorm(@_) );
-                # local ( $i, $f ) = &'bdiv( $xn, $xd );
-                #
-                # Here is a more subtle example. In the following example,
-                # we shouldn't align the last two atan2 commas with the
-                # first two, even though the function names are the same
-                # (atan2) because they do not have aligned opening parens.
-                # The name of the function (atan2) have been decorated
-                # with different space counts to prevent this.
-                #
-                #    $B = $X * $RTYSQP1 * atan2( $XX, $RTYSQP1 );
-                #    $C = $Y * $RTXSQP1 * atan2( $Y,  $RTXSQP1 );
-                #    $D = $X * atan2( $X,             1 );
-                #    $E = $Y * atan2( $Y,             1 );
-                if (   $alignment_token eq ','
-                    && !$tokens_match
-                    && $new_tok =~ /[A-Za-z]/ )
-                {
-                    goto NO_MATCH;
-                }
-
-                # no match if the alignment tokens differ
-                elsif ( $j < $jlimit && !$tokens_match ) {
-                    goto NO_MATCH;
-                }
-
                 # If patterns don't match, we have to be careful...
-                elsif (
-                    $$old_rpatterns[$j] ne $$rpatterns[$j]
-
-                    ##TESTING: BUBBA:
-                    && $alignment_token ne '#'
-                  )
-                {
+                if ( $$old_rpatterns[$j] ne $$rpatterns[$j]) {
 
                     # flag this as a marginal match since patterns differ
                     $marginal_match = 1
@@ -18763,14 +18789,8 @@ sub fix_terminal_else {
 
                         # But we can allow a match if the parens don't
                         # require any padding.
-                        my $pad =
-                          length( $$rfields[$j] ) -
-                          $old_line->current_field_width($j);
-                        if ( $j == 0 ) {
-                            $pad += $leading_space_count;
-                        }
                         if ( $pad != 0 ) { goto NO_MATCH }
-                    }
+                    } 
 
                     # Handle an '=' alignment with different patterns to
                     # the left.
@@ -18791,7 +18811,7 @@ sub fix_terminal_else {
                             substr( $$rpatterns[$j], 0, 1 ) )
                         {
                             goto NO_MATCH;
-                        }
+                        } 
 
                         # If we pass that test, we'll call it a marginal match.
                         # Here is an example of a marginal match:
@@ -18806,38 +18826,37 @@ sub fix_terminal_else {
                             $marginal_match =
                               2;    # =2 prevents being undone below
                         }
-                    }
-                }
+                    } 
+                } 
 
                 # Don't let line with fewer fields increase column widths
                 # ( align3.t )
                 if ( $maximum_field_index > $jmax ) {
-                    my $pad =
-                      length( $$rfields[$j] ) -
-                      $old_line->current_field_width($j);
-
-                    if ( $j == 0 ) {
-                        $pad += $leading_space_count;
-                    }
 
                     # Exception: suspend this rule to allow last lines to join
                     if ( $pad > 0 ) { goto NO_MATCH; }
                 }
-            }
+            } ## end for my $j ( 0 .. $jlimit)
 
             # Turn off the "marginal match" flag in some cases...
             # A "marginal match" occurs when the alignment tokens agree
             # but there are differences in the other tokens (patterns).
-            # If we leave the marginal match flag set, then the rule is
-            # that we will align only if there are more than two lines in
-            # the group.  We will turn of the flag if we almost have a match
-            # and we have seen on of the good alignment tokens like = ? {
+            # If we leave the marginal match flag set, then the rule is that we
+            # will align only if there are more than two lines in the group.  
+            # We will turn of the flag if we almost have a match
+            # and either we have seen a good alignment token or we
+            # just need a small pad (2 spaces) to fit.  These rules are
+            # the result of experimentation.  Tokens which misaligned by just
+            # one or two characters are annoying.  On the other hand, 
+            # large gaps to less important alignment tokens are also annoying.
             if (   $marginal_match == 1
-                && $saw_good_alignment
-                && $jmax == $maximum_field_index )
+                && $jmax == $maximum_field_index
+                && ( $saw_good_alignment || ( $max_pad < 3 && $min_pad > -3 ) )
+              )
             {
                 $marginal_match = 0;
             }
+            ##print "marginal=$marginal_match saw=$saw_good_alignment jmax=$jmax max=$maximum_field_index maxpad=$max_pad minpad=$min_pad\n";
         }
 
         # We have a match (even if marginal).
@@ -18857,10 +18876,12 @@ sub fix_terminal_else {
         return;
 
       NO_MATCH:
+      ##print "BUBBA: no match jmax=$jmax  max=$maximum_field_index $group_list_type lines=$maximum_line_index token=$$old_rtokens[0]\n"; 
         my_flush();
         return;
     }
 }
+
 
 sub check_fit {
 

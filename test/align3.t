@@ -139,3 +139,14 @@ print "unlink $root\n"                          if $verbose;
 # looks poor; maybe reduce gap test? 
 next         if /rebuilding alias database/;
 print stderr if $flags{'e'};
+
+$hds->configure( -height       => 900 );
+$hds->configure( -scrollregion => [ $hds->bbox("all") ] );
+use constant SLICE    => 10000;
+use constant BIGSLICE => SLICE * SLICE;
+
+( $msg, $defstyle ) = do {
+        $i == 1 ? ( "First", "Color" )
+      : $i == 2 ? ( "Then",  "Rarity" )
+      :           ( "Then",  "Name" );
+};

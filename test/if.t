@@ -204,3 +204,22 @@ my $file = "junk1.pl";
 if ( -e ($file) ) { print "$file exists\n"; }
 if ( -f (_) )     { print "bubba\n" }
 doit(_);
+
+# do not align the opening if parens here:
+    die sprintf("unauthorized call ")    #
+      if ( $cl !~ /^PDF::API2/ );
+    if   ( scalar @_ ) {
+        my ( $a, $b, $c, $d, $e, $f ) = @_;
+    }
+
+# another example of this weird problem
+    return $self->{value} = $newvalue
+      if ( !defined $self->{value} );
+    if   ( $self->{value} > $newvalue ) {
+        my $child = $self->_ordered_child(0);
+        $self->{$child} = $self->new() unless $self->{$child};
+        $self->{$child}->insert($newvalue);
+    }
+
+if   ($x) { "bla" }
+else      { "blaa" }
