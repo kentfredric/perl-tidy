@@ -1,3 +1,8 @@
+# This caused an error at one time; '&~' is NOT a punctuation variable
+$self->{text}->{colorMap}
+  ->[ Prima::PodView::COLOR_CODE_FOREGROUND & ~tb::COLOR_INDEX ] =
+  $sec->{ColorCode}
+
 %# = ( foo => 'bar', baz => 'buz' );
 print keys(%#), "\n";
 

@@ -1157,6 +1157,17 @@ please be aware that since this string is used in a perl regular expression
 which identifies these comments, it must enable a valid regular expression to
 be formed.
 
+A pattern which can be useful is:
+
+    -sbcp=^#{2,}[^\s#] 
+
+This pattern requires a static block comment to have at least one character
+which is neither a # nor a space.  It allows a line containing only '#'
+characters to be rejected as a static block comment.  Such lines are often used
+at the start and end of header information in subroutines and should not be
+separated from the intervening comments, which typically begin with just a
+single '#'.
+
 =item B<-osbc>, B<--outdent-static-block-comments>
 
 The command B<-osbc> will will cause static block comments to be outdented by 2

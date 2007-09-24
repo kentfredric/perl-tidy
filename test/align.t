@@ -1,3 +1,7 @@
+# do not align these braces
+foreach ( @{$routput_array} ) { $fh->print($_) }
+eval                          { $fh->close() };
+
 # set_vertical_alignment_markers does not make opening parens
 # an alignment token here:
 $code =

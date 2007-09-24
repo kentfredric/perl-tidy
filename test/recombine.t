@@ -1,3 +1,19 @@
+# all the $ti terms will be recombined:
+print $t0 && $t1 && $t2 && $t3 && $t4 && $t5 && $t6 && $t7
+  ? "ok $i \# - $code - $name - $mapping - $status\n"
+  : "not ok $i \# - $code - $name - $mapping - $status - $t0 $t1 $t2 $t3 $t4 $t5 $t6 $t7\n";
+
+# recombine '= [' here:
+$retarray = [
+    &{ $sth->{'xbase_parsed_sql'}{'selectfn'} }( $xbase, $values,
+        $sth->{'xbase_bind_values'} ) ]
+  if defined $values;
+# recombine '= lrotate(' here
+{ { {
+            $W[$r] = lrotate(
+                $W[ $r - 3 ] ^ $W[ $r - 8 ] ^ $W[ $r - 14 ] ^ $W[ $r - 16 ],
+                1 );
+ } } } 
 {
     # do not recombine at = here with pbp
     my $moon_corrected_longitude
