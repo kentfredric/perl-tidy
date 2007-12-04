@@ -1592,7 +1592,7 @@ There is no vertical tightness control for closing block braces; with
 the exception of one-line blocks, they will normally remain on a 
 separate line.
 
-=item B<-sot>,  B<--stack-opening-token> and related flags
+=item B<-sot>,  B<--stack-opening-tokens> and related flags
 
 The B<-sot> flag tells perltidy to "stack" opening tokens
 when possible to avoid lines with isolated opening tokens.
@@ -1625,7 +1625,7 @@ controls can be used:
 
 The flag B<-sot> is a synonym for B<-sop -sohb -sosb>.
 
-=item B<-sct>,  B<--stack-closing-token> and related flags
+=item B<-sct>,  B<--stack-closing-tokens> and related flags
 
 The B<-sct> flag tells perltidy to "stack" closing tokens
 when possible to avoid lines with isolated closing tokens.
@@ -2094,7 +2094,8 @@ named F<.perltidyrc>.  If it does not find one, it will continue looking
 for one in other standard locations.  
 
 These other locations are system-dependent, and may be displayed with
-the command C<perltidy -dpro>.  Under Unix systems, it will look for a
+the command C<perltidy -dpro>.  Under Unix systems, it will first look
+for an environment variable B<PERLTIDY>.  Then it will look for a
 F<.perltidyrc> file in the home directory, and then for a system-wide
 file F</usr/local/etc/perltidyrc>, and then it will look for
 F</etc/perltidyrc>.  Note that these last two system-wide files do not

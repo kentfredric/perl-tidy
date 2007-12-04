@@ -65,7 +65,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.71 2007/09/24 16:55:11 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.72 2007/12/04 21:19:50 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 sub streamhandle {
@@ -542,9 +542,12 @@ EOM
 
         return if ($quit_now);
 
+        # make printable string of options for this run as possible diagnostic
+        my $readable_options=readable_options( $rOpts, $roption_string );
+
         # dump from command line
         if ( $rOpts->{'dump-options'} ) {
-            dump_options( $rOpts, $roption_string );
+            print STDOUT $readable_options;
             exit 1;
         }
 
@@ -877,7 +880,7 @@ EOM
                 $saw_extrude );
             write_logfile_header(
                 $rOpts,        $logger_object, $config_file,
-                $rraw_options, $Windows_type
+                $rraw_options, $Windows_type, $readable_options,
             );
             if ($$rpending_logfile_message) {
                 $logger_object->write_logfile_entry($$rpending_logfile_message);
@@ -1058,8 +1061,10 @@ sub make_extension {
 }
 
 sub write_logfile_header {
-    my ( $rOpts, $logger_object, $config_file, $rraw_options, $Windows_type ) =
-      @_;
+    my (
+        $rOpts,        $logger_object, $config_file,
+        $rraw_options, $Windows_type,  $readable_options
+    ) = @_;
     $logger_object->write_logfile_entry(
 "perltidy version $VERSION log file on a $^O system, OLD_PERL_VERSION=$]\n"
     );
@@ -1083,9 +1088,8 @@ sub write_logfile_header {
         $logger_object->write_logfile_entry(
             "------------------------------------\n");
 
-        foreach ( keys %{$rOpts} ) {
-            $logger_object->write_logfile_entry( '--' . "$_=$rOpts->{$_}\n" );
-        }
+        $logger_object->write_logfile_entry($readable_options);
+
         $logger_object->write_logfile_entry(
             "------------------------------------\n");
     }
@@ -2736,12 +2740,15 @@ sub dump_defaults {
     foreach (@_) { print STDOUT "$_\n" }
 }
 
-sub dump_options {
+sub readable_options {
 
-    # write the options back out as a valid .perltidyrc file
+    # return options for this run as a string which could be
+    # put in a perltidyrc file
     my ( $rOpts, $roption_string ) = @_;
     my %Getopt_flags;
     my $rGetopt_flags = \%Getopt_flags;
+    my $readable_options="# Final parameter set for this run.\n";
+    $readable_options .= "# See utility 'perltidyrc_dump.pl' for nicer formatting.\n";
     foreach my $opt ( @{$roption_string} ) {
         my $flag = "";
         if ( $opt =~ /(.*)(!|=.*)$/ ) {
@@ -2752,7 +2759,6 @@ sub dump_options {
             $rGetopt_flags->{$opt} = $flag;
         }
     }
-    print STDOUT "# Final parameter set for this run:\n";
     foreach my $key ( sort keys %{$rOpts} ) {
         my $flag   = $rGetopt_flags->{$key};
         my $value  = $rOpts->{$key};
@@ -2769,12 +2775,13 @@ sub dump_options {
             else {
 
                 # shouldn't happen
-                print
+                $readable_options .= 
                   "# ERROR in dump_options: unrecognized flag $flag for $key\n";
             }
         }
-        print STDOUT $prefix . $key . $suffix . "\n";
+        $readable_options .= $prefix . $key . $suffix . "\n";
     }
+    return $readable_options;
 }
 
 sub show_version {
@@ -3973,7 +3980,7 @@ sub finish {
         if ($fh) {
             my $routput_array = $self->{_output_array};
             foreach ( @{$routput_array} ) { $fh->print($_) }
-            eval                          { $fh->close() };
+            eval { $fh->close() };
         }
     }
 }
@@ -5677,7 +5684,7 @@ BEGIN {
     @is_chain_operator{@_} = (1) x scalar(@_);
 
     # We can remove semicolons after blocks preceded by these keywords
-    @_ = qw(BEGIN END CHECK INIT AUTOLOAD DESTROY continue if elsif else
+    @_ = qw(BEGIN END CHECK INIT AUTOLOAD DESTROY UNITCHECK continue if elsif else
       unless while until for foreach);
     @is_block_without_semicolon{@_} = (1) x scalar(@_);
 
@@ -6028,7 +6035,7 @@ sub write_line {
             # any other lines of type END or DATA.
             if ( $rOpts->{'delete-pod'} ) { $skip_line = 1; }
             if ( $rOpts->{'tee-pod'} )    { $tee_line  = 1; }
-            if (   !$skip_line
+            if (  !$skip_line
                 && $line_type eq 'POD_START'
                 && $last_line_type !~ /^(END|DATA)$/ )
             {
@@ -8468,7 +8475,7 @@ sub set_white_space_flag {
 
             if (
                 $rOpts->{'indent-block-comments'}
-                && ( !$rOpts->{'indent-spaced-block-comments'}
+                && (  !$rOpts->{'indent-spaced-block-comments'}
                     || $input_line =~ /^\s+/ )
                 && !$is_static_block_comment_without_leading_space
               )
@@ -8508,14 +8515,14 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.71 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.72 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
         my $is_VERSION_statement = 0;
 
         if (
-            !$saw_VERSION_in_this_file
+              !$saw_VERSION_in_this_file
             && $input_line =~ /VERSION/    # quick check to reject most lines
             && $input_line =~ /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
           )
@@ -9924,8 +9931,7 @@ sub set_logical_padding {
             $inext_next++;
         }
         my $type = $types_to_go[$ipad];
-
-        my $type_next=$types_to_go[$ipad+1];
+        my $type_next = $types_to_go[ $ipad + 1 ];
 
         # see if there are multiple continuation lines
         my $logical_continuation_lines = 1;
@@ -10078,7 +10084,7 @@ sub set_logical_padding {
             #      && !exists $Net::DNS::classesbyname{$qclass}
             #      && exists $Net::DNS::typesbyname{$qclass} )
             # We can't fix that.
-            if ( $matches_without_bang ) { $pad_spaces-- }
+            if ($matches_without_bang) { $pad_spaces-- }
 
             # make sure this won't change if -lp is used
             my $indentation_1 = $leading_spaces_to_go[$ibeg];
@@ -10905,8 +10911,7 @@ sub send_lines_to_vertical_aligner {
     if ( @$ri_first > 1 ) {
 
         # flush before a long if statement
-        if ( $types_to_go[0] eq 'k' && $tokens_to_go[0] =~ /^(if|unless)$/ )
-        {
+        if ( $types_to_go[0] eq 'k' && $tokens_to_go[0] =~ /^(if|unless)$/ ) {
             $must_flush = 1;
         }
     }
@@ -10935,10 +10940,7 @@ sub send_lines_to_vertical_aligner {
         my $outdent_long_lines = (
 
             # which are long quotes, if allowed
-            (
-                     $types_to_go[$ibeg] eq 'Q'
-                  && $rOpts->{'outdent-long-quotes'}
-            )
+            ( $types_to_go[$ibeg] eq 'Q' && $rOpts->{'outdent-long-quotes'} )
 
             # which are long block comments, if allowed
               || (
@@ -11003,7 +11005,7 @@ sub send_lines_to_vertical_aligner {
     save_opening_indentation( $ri_first, $ri_last, $rindentation_list );
 }
 
-{    # begin make_alignment_patterns
+{        # begin make_alignment_patterns
 
     my %block_type_map;
     my %keyword_map;
@@ -11013,23 +11015,25 @@ sub send_lines_to_vertical_aligner {
         # map related block names into a common name to
         # allow alignment
         %block_type_map = (
-            unless => 'if',
-            else   => 'if',
-            elsif  => 'if',
-            when   => 'if',
-            case   => 'if',
-            sort   => 'map',
-            grep   => 'map',
+            unless  => 'if',
+            else    => 'if',
+            elsif   => 'if',
+            when    => 'if',
+            default => 'if',
+            case    => 'if',
+            sort    => 'map',
+            grep    => 'map',
         );
 
         # map certain keywords to the same 'if' class to align
-        # long if/elsif sequences. my testfile: elsif.pl
+        # long if/elsif sequences. [elsif.pl]
         %keyword_map = (
-            unless => 'if',
-            else   => 'if',
-            elsif  => 'if',
-            when   => 'given',
-            case   => 'switch',
+            unless  => 'if',
+            else    => 'if',
+            elsif   => 'if',
+            when    => 'given',
+            default => 'given',
+            case    => 'switch',
 
             # treat an 'undef' similar to numbers and quotes
             'undef' => 'Q',
@@ -11042,7 +11046,7 @@ sub send_lines_to_vertical_aligner {
         # vertical aligner.  We create three arrays for one
         # output line. These arrays contain strings that can
         # be tested by the vertical aligner to see if
-        # consecutive lines can be aligned vertically. 
+        # consecutive lines can be aligned vertically.
         #
         # The three arrays are indexed on the vertical
         # alignment fields and are:
@@ -11054,9 +11058,9 @@ sub send_lines_to_vertical_aligner {
         #   alignment matches.
         # @fields - the actual text of the line between the vertical alignment
         #   tokens.
-        # @patterns - a modified list of token types, one for each alignment 
+        # @patterns - a modified list of token types, one for each alignment
         #   field.  These should normally each match before alignment is
-        #   allowed, even when the alignment tokens match. 
+        #   allowed, even when the alignment tokens match.
         my ( $ibeg, $iend ) = @_;
         my @tokens   = ();
         my @fields   = ();
@@ -11207,7 +11211,8 @@ sub send_lines_to_vertical_aligner {
 
                 # concatenate the text of the consecutive tokens to form
                 # the field
-                push( @fields, join( '', @tokens_to_go[ $i_start .. $i - 1 ] ) );
+                push( @fields,
+                    join( '', @tokens_to_go[ $i_start .. $i - 1 ] ) );
 
                 # store the alignment token for this field
                 push( @tokens, $tok );
@@ -11257,7 +11262,7 @@ sub send_lines_to_vertical_aligner {
                 my $tok = $tokens_to_go[$i];
 
                 # but map certain keywords to a common string to allow
-                # alignment.  
+                # alignment.
                 $tok = $keyword_map{$tok}
                   if ( defined( $keyword_map{$tok} ) );
                 $patterns[$j] .= $tok;
@@ -11271,7 +11276,7 @@ sub send_lines_to_vertical_aligner {
 
 }    # end make_alignment_patterns
 
-{        # begin unmatched_indexes
+{    # begin unmatched_indexes
 
     # closure to keep track of unbalanced containers.
     # arrays shared by the routines in this block:
@@ -15484,13 +15489,13 @@ sub undo_forced_breakpoint_stack {
 
     BEGIN {
 
-        @_              = qw( && || );
+        @_ = qw( && || );
         @is_amp_amp{@_} = (1) x scalar(@_);
 
-        @_              = qw( ? : );
+        @_ = qw( ? : );
         @is_ternary{@_} = (1) x scalar(@_);
 
-        @_              = qw( + - * / );
+        @_ = qw( + - * / );
         @is_math_op{@_} = (1) x scalar(@_);
     }
 
@@ -15656,7 +15661,7 @@ sub undo_forced_breakpoint_stack {
                 }
 
                 # do not recombine lines with ending &&, ||,
-                elsif ( $is_amp_amp{$types_to_go[$iend_1]}) {
+                elsif ( $is_amp_amp{ $types_to_go[$iend_1] } ) {
                     next unless $want_break_before{ $types_to_go[$iend_1] };
                 }
 
@@ -15784,10 +15789,11 @@ sub undo_forced_breakpoint_stack {
                                 $types_to_go[$ibeg_3] )
                           );
 
-                     # -lp users often prefer this:
-                     #  my $title = function($env, $env, $sysarea,
-                     #                       "bubba Borrower Entry");
-                     #  so we will recombine if -lp is used we have ending comma
+                        # -lp users often prefer this:
+                        #  my $title = function($env, $env, $sysarea,
+                        #                       "bubba Borrower Entry");
+                        #  so we will recombine if -lp is used we have ending
+                        #  comma
                         if (  !$rOpts_line_up_parentheses
                             || $types_to_go[$iend_2] ne ',' )
                         {
@@ -15857,22 +15863,38 @@ sub undo_forced_breakpoint_stack {
                 }
 
                 # handle trailing + - * /
-                elsif ( $is_math_op{$types_to_go[$iend_1]}) {
+                elsif ( $is_math_op{$types_to_go[$iend_1]} ) { 
+
+                    # combine lines if next line has single number 
+                    # or a short term followed by same operator
                     my $i_next_nonblank = $ibeg_2;
                     my $i_next_next     = $i_next_nonblank + 1;
                     $i_next_next++ if ( $types_to_go[$i_next_next] eq 'b' );
-
-                    # do not strand numbers
-                    next
-                      unless (
-                        $types_to_go[$i_next_nonblank] eq 'n'
-                        && (
-                            $i_next_nonblank == $iend_2
-                            || (   $i_next_next == $iend_2
-                                && $is_math_op{$types_to_go[$i_next_next]}) 
-                            || $types_to_go[$i_next_next] eq ';'
-                        )
+                    my $number_follows = $types_to_go[$i_next_nonblank] eq 'n'
+                      && (
+                        $i_next_nonblank == $iend_2
+                        || (   $i_next_next == $iend_2
+                            && $is_math_op{$types_to_go[$i_next_next]} )
+                        || $types_to_go[$i_next_next] eq ';'
                       );
+
+                    # find token before last operator of previous line
+                    my $iend_1_minus = $iend_1;
+                    $iend_1_minus--
+                      if ( $iend_1_minus > $ibeg_1 );
+                    $iend_1_minus--
+                      if ( $types_to_go[$iend_1_minus] eq 'b'
+                        && $iend_1_minus > $ibeg_1 );
+
+                    my $short_term_follows =
+                      (      $types_to_go[$iend_2] eq $types_to_go[$iend_1]
+                          && $types_to_go[$iend_1_minus] =~ /^[in]$/
+                          && $iend_2 <= $ibeg_2 + 2
+                          && length( $tokens_to_go[$ibeg_2] ) <
+                          $rOpts_short_concatenation_item_length );
+
+                    next
+                      unless ( $number_follows || $short_term_follows );
                 }
 
                 #----------------------------------------------------------
@@ -15893,16 +15915,17 @@ sub undo_forced_breakpoint_stack {
                 }
 
                 # handle lines with leading &&, ||
-                elsif ( $is_amp_amp{$types_to_go[$ibeg_2] }) {
+                elsif ( $is_amp_amp{ $types_to_go[$ibeg_2] } ) {
 
                     $leading_amp_count++;
 
                     # ok to recombine if it follows a ? or :
                     # and is followed by an open paren..
-                    my $ok = ($is_ternary{ $types_to_go[$ibeg_1] }
-                      && $tokens_to_go[$iend_2] eq '(')
+                    my $ok =
+                      (      $is_ternary{ $types_to_go[$ibeg_1] }
+                          && $tokens_to_go[$iend_2] eq '(' )
 
-                    # or is followed by a ? or :
+                    # or is followed by a ? or : at same depth
                     #
                     # We are looking for something like this. We can
                     # recombine the && line with the line above to make the
@@ -15926,7 +15949,9 @@ sub undo_forced_breakpoint_stack {
                     # sometimes makes things worse to check for this because
                     # it prevents multiple recombinations.  So this is not done.
                       || ( $ibeg_3 >= 0
-                        && $is_ternary{ $types_to_go[$ibeg_3] } );
+                        && $is_ternary{ $types_to_go[$ibeg_3] }
+                        && $nesting_depth_to_go[$ibeg_3] ==
+                        $nesting_depth_to_go[$ibeg_2] );
 
                     next if !$ok && $want_break_before{ $types_to_go[$ibeg_2] };
                     $forced_breakpoint_to_go[$iend_1] = 0;
@@ -15957,9 +15982,9 @@ sub undo_forced_breakpoint_stack {
                     # we will always combining a ? line following a : line
                     if ( !$follows_colon ) {
 
-                     # ...otherwise recombine only if it looks like a chain.  we
-                     # will just look at a few nearby lines to see if this looks
-                     # like a chain.
+                        # ...otherwise recombine only if it looks like a chain.
+                        # we will just look at a few nearby lines to see if
+                        # this looks like a chain.
                         my $local_count = 0;
                         foreach my $ii ( $ibeg_0, $ibeg_1, $ibeg_3, $ibeg_4 ) {
                             $local_count++
@@ -15999,9 +16024,9 @@ sub undo_forced_breakpoint_stack {
                             && $types_to_go[$ibeg_1] ne $types_to_go[$ibeg_2]
                         )
 
-                       #  ... or this would strand a short quote , like this
-                       #                . "some long qoute"
-                       #                . "\n";
+                        #  ... or this would strand a short quote , like this
+                        #                . "some long qoute"
+                        #                . "\n";
                         || (   $types_to_go[$i_next_nonblank] eq 'Q'
                             && $i_next_nonblank >= $iend_2 - 1
                             && length( $tokens_to_go[$i_next_nonblank] ) <
@@ -16023,11 +16048,11 @@ sub undo_forced_breakpoint_stack {
                                 $types_to_go[$ibeg_1] eq 'k'
                                 && $is_if_unless{ $tokens_to_go[$ibeg_1] }
 
-                             # important: only combine a very simple or
-                             # statement because the step below may have
-                             # combined a trailing 'and' with this or,
-                             # and we do not want to then combine
-                             # everything together
+                                # important: only combine a very simple or
+                                # statement because the step below may have
+                                # combined a trailing 'and' with this or,
+                                # and we do not want to then combine
+                                # everything together
                                 && ( $iend_2 - $ibeg_2 <= 7 )
                             )
                           );
@@ -16095,7 +16120,7 @@ sub undo_forced_breakpoint_stack {
                 # similar treatment of && and || as above for 'and' and 'or':
                 # NOTE: This block of code is currently bypassed because
                 # of a previous block but is retained for possible future use.
-                elsif ( $is_amp_amp{$types_to_go[$ibeg_2]}) {
+                elsif ( $is_amp_amp{ $types_to_go[$ibeg_2] } ) {
 
                     # maybe looking at something like:
                     # unless $TEXTONLY || $item =~ m%</?(hr>|p>|a|img)%i;
@@ -16112,7 +16137,7 @@ sub undo_forced_breakpoint_stack {
                 }
 
                 # handle leading + - * /
-                elsif ( $is_math_op{$types_to_go[$ibeg_2]} ) {
+                elsif ( $is_math_op{$types_to_go[$ibeg_2]}){
                     my $i_next_nonblank = $ibeg_2 + 1;
                     if ( $types_to_go[$i_next_nonblank] eq 'b' ) {
                         $i_next_nonblank++;
@@ -16121,23 +16146,45 @@ sub undo_forced_breakpoint_stack {
                     my $i_next_next = $i_next_nonblank + 1;
                     $i_next_next++ if ( $types_to_go[$i_next_next] eq 'b' );
 
+                    my $is_number = (
+                        $types_to_go[$i_next_nonblank] eq 'n'
+                          && ( $i_next_nonblank >= $iend_2 - 1
+                            || $types_to_go[$i_next_next] eq ';' )
+                    );
+
+                    my $iend_1_nonblank =
+                      $types_to_go[$iend_1] eq 'b' ? $iend_1 - 1 : $iend_1;
+                    my $iend_2_nonblank =
+                      $types_to_go[$iend_2] eq 'b' ? $iend_2 - 1 : $iend_2;
+
+                    my $is_short_term =
+                      (      $types_to_go[$ibeg_2] eq $types_to_go[$ibeg_1]
+                          && $types_to_go[$iend_2_nonblank] =~ /^[in]$/
+                          && $types_to_go[$iend_1_nonblank] =~ /^[in]$/
+                          && $iend_2_nonblank <= $ibeg_2 + 2
+                          && length( $tokens_to_go[$iend_2_nonblank] ) <
+                          $rOpts_short_concatenation_item_length );
+
+                    # Combine these lines if this line is a single
+                    # number, or if it is a short term with same
+                    # operator as the previous line.  For example, in
+                    # the following code we will combine all of the
+                    # short terms $A, $B, $C, $D, $E, $F, together
+                    # instead of leaving them one per line:
+                    #  my $time =
+                    #    $A * $B * $C * $D * $E * $F *
+                    #    ( 2. * $eps * $sigma * $area ) *
+                    #    ( 1. / $tcold**3 - 1. / $thot**3 );
+                    # This can be important in math-intensive code.
                     next
                       unless (
+                           $is_number
+                        || $is_short_term
 
-                        # unless there is just one and we can reduce
-                        # this to two lines if we do.  For example, this
-                        (
-                               $n == 2
+                        # or if we can reduce this to two lines if we do.
+                        || (   $n == 2
                             && $n == $nmax
-                            && $types_to_go[$ibeg_1] ne $types_to_go[$ibeg_2]
-                        )
-
-                        #  do not strand numbers
-                        || (
-                            $types_to_go[$i_next_nonblank] eq 'n'
-                            && (   $i_next_nonblank >= $iend_2 - 1
-                                || $types_to_go[$i_next_next] eq ';' )
-                        )
+                            && $types_to_go[$ibeg_1] ne $types_to_go[$ibeg_2] )
                       );
                 }
 
@@ -21238,7 +21285,7 @@ sub get_line {
     $line_of_tokens->{_line_type} = 'CODE';
 
     # remember if we have seen any real code
-    if (   !$tokenizer_self->{_started_tokenizing}
+    if (  !$tokenizer_self->{_started_tokenizing}
         && $input_line !~ /^\s*$/
         && $input_line !~ /^\s*#/ )
     {
@@ -22227,7 +22274,7 @@ sub prepare_for_a_new_file {
             if ($is_pattern) {
                 $in_quote                = 1;
                 $type                    = 'Q';
-                $allowed_quote_modifiers = '[cgimosx]';
+                $allowed_quote_modifiers = '[cgimosxp]';
             }
             else {    # not a pattern; check for a /= token
 
@@ -22430,7 +22477,7 @@ sub prepare_for_a_new_file {
             if ($is_pattern) {
                 $in_quote                = 1;
                 $type                    = 'Q';
-                $allowed_quote_modifiers = '[cgimosx]';
+                $allowed_quote_modifiers = '[cgimosxp]';
             }
             else {
                 ( $type_sequence, $indent_flag ) =
@@ -22726,7 +22773,7 @@ sub prepare_for_a_new_file {
     # semicolon
     # patched for SWITCH/CASE:
     my %is_zero_continuation_block_type;
-    @_ = qw( } { BEGIN END CHECK INIT AUTOLOAD DESTROY continue ;
+    @_ = qw( } { BEGIN END CHECK INIT AUTOLOAD DESTROY UNITCHECK continue ;
       if elsif else unless while until for foreach switch case given when);
     @is_zero_continuation_block_type{@_} = (1) x scalar(@_);
 
@@ -22777,12 +22824,13 @@ sub prepare_for_a_new_file {
 
     # ref: camel 3 p 147,
     # but perl may accept undocumented flags
+    # perl 5.10 adds 'p' (preserve)
     my %quote_modifiers = (
-        's'  => '[cegimosx]',
+        's'  => '[cegimosxp]',
         'y'  => '[cds]',
         'tr' => '[cds]',
-        'm'  => '[cgimosx]',
-        'qr' => '[imosx]',
+        'm'  => '[cgimosxp]',
+        'qr' => '[imosxp]',
         'q'  => "",
         'qq' => "",
         'qw' => "",
@@ -23464,7 +23512,7 @@ EOM
                     && label_ok()
                   )
                 {
-                    if ( $tok !~ /A-Z/ ) {
+                    if ( $tok !~ /[A-Z]/ ) {
                         push @{ $tokenizer_self->{_rlower_case_labels_at} },
                           $input_line_number;
                     }
@@ -24122,7 +24170,7 @@ EOM
 
 # ...and include all block types except user subs with
 # block prototypes and these: (sort|grep|map|do|eval)
-# /^(\}|\{|BEGIN|END|CHECK|INIT|AUTOLOAD|DESTROY|continue|;|if|elsif|else|unless|while|until|for|foreach)$/
+# /^(\}|\{|BEGIN|END|CHECK|INIT|AUTOLOAD|DESTROY|UNITCHECK|continue|;|if|elsif|else|unless|while|until|for|foreach)$/
                         elsif (
                             $is_zero_continuation_block_type{
                                 $routput_block_type->[$i] } )
@@ -24651,7 +24699,7 @@ sub code_block_type {
 
 # otherwise, look at previous token.  This must be a code block if
 # it follows any of these:
-# /^(BEGIN|END|CHECK|INIT|AUTOLOAD|DESTROY|continue|if|elsif|else|unless|do|while|until|eval|for|foreach|map|grep|sort)$/
+# /^(BEGIN|END|CHECK|INIT|AUTOLOAD|DESTROY|UNITCHECK|continue|if|elsif|else|unless|do|while|until|eval|for|foreach|map|grep|sort)$/
     elsif ( $is_code_block_token{$last_nonblank_token} ) {
         return $last_nonblank_token;
     }
@@ -26466,7 +26514,7 @@ sub pattern_expected {
     #  -1 - no
     my ( $i, $rtokens, $max_token_index ) = @_;
     my $next_token = $$rtokens[ $i + 1 ];
-    if ( $next_token =~ /^[cgimosx]/ ) { $i++; }    # skip possible modifier
+    if ( $next_token =~ /^[cgimosxp]/ ) { $i++; }    # skip possible modifier
     my ( $next_nonblank_token, $i_next ) =
       find_next_nonblank_token( $i, $rtokens, $max_token_index );
 
@@ -27409,7 +27457,7 @@ BEGIN {
 
     # These tokens may precede a code block
     # patched for SWITCH/CASE
-    @_ = qw( BEGIN END CHECK INIT AUTOLOAD DESTROY continue if elsif else
+    @_ = qw( BEGIN END CHECK INIT AUTOLOAD DESTROY UNITCHECK continue if elsif else
       unless do while until eval for foreach map grep sort
       switch case given when);
     @is_code_block_token{@_} = (1) x scalar(@_);
@@ -27434,6 +27482,7 @@ BEGIN {
       LE
       LT
       NE
+      UNITCHECK
       abs
       accept
       alarm

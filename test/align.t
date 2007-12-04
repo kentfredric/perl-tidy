@@ -1,3 +1,7 @@
+# OLD: Had strange alignment of eq here
+ref($self)                    eq ref($other) &&                 # same class
+  $self->canonical->as_string eq $other->canonical->as_string;
+
 # do not align these braces
 foreach ( @{$routput_array} ) { $fh->print($_) }
 eval                          { $fh->close() };

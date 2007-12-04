@@ -1,3 +1,9 @@
+# Old Problem with -pbp : do not need break at && here; recombine
+$clone->{$_}
+    = ref $value && UNIVERSAL::isa( $value => __PACKAGE__ )
+    ? $value->clone
+    : $value;
+
 # all the $ti terms will be recombined:
 print $t0 && $t1 && $t2 && $t3 && $t4 && $t5 && $t6 && $t7
   ? "ok $i \# - $code - $name - $mapping - $status\n"

@@ -2,6 +2,9 @@
 
 =head2 2007 xx xx 
 
+ -Improved perl5.10 support: Added quote modifier 'p', UNITCHECK block, better
+ formatting of given/when.
+
  -Numerous minor formatting improvements.
 
  -Line breaks in un-parenthesized lists now try to follow
@@ -28,6 +31,9 @@
 
  -Corrected list of operators controlled by -baao -bbao to include
    . : ? && || and or err xor
+
+ -Corrected very minor error in log file involving incorrect comment
+ regarding need for upper case of labels.  
 
 =head2 2007 08 01
 
