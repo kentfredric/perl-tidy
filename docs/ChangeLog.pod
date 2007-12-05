@@ -2,10 +2,18 @@
 
 =head2 2007 xx xx 
 
- -Improved perl5.10 support: Added quote modifier 'p', UNITCHECK block, better
- formatting of given/when.
+ -Improved support for perl 5.10: New quote modifier 'p', new block type UNITCHECK, 
+ new keyword break, improved formatting of given/when.
+
+ -Corrected tokenization bug of something like $var{-q}.
 
  -Numerous minor formatting improvements.
+
+ -Corrected list of operators controlled by -baao -bbao to include
+   . : ? && || and or err xor
+
+ -Corrected very minor error in log file involving incorrect comment
+ regarding need for upper case of labels.  
 
  -Line breaks in un-parenthesized lists now try to follow
  line breaks in the input file rather than trying to fill
@@ -28,12 +36,6 @@
       "\t", $have, " is ", text_unit($hu), "\n",
       "\t", $want, " is ", text_unit($wu), "\n",
       ;
-
- -Corrected list of operators controlled by -baao -bbao to include
-   . : ? && || and or err xor
-
- -Corrected very minor error in log file involving incorrect comment
- regarding need for upper case of labels.  
 
 =head2 2007 08 01
 

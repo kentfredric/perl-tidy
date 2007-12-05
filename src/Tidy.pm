@@ -65,7 +65,7 @@ use IO::File;
 use File::Basename;
 
 BEGIN {
-    ( $VERSION = q($Id: Tidy.pm,v 1.72 2007/12/04 21:19:50 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
+    ( $VERSION = q($Id: Tidy.pm,v 1.73 2007/12/05 17:51:17 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
 
 sub streamhandle {
@@ -543,7 +543,7 @@ EOM
         return if ($quit_now);
 
         # make printable string of options for this run as possible diagnostic
-        my $readable_options=readable_options( $rOpts, $roption_string );
+        my $readable_options = readable_options( $rOpts, $roption_string );
 
         # dump from command line
         if ( $rOpts->{'dump-options'} ) {
@@ -880,7 +880,7 @@ EOM
                 $saw_extrude );
             write_logfile_header(
                 $rOpts,        $logger_object, $config_file,
-                $rraw_options, $Windows_type, $readable_options,
+                $rraw_options, $Windows_type,  $readable_options,
             );
             if ($$rpending_logfile_message) {
                 $logger_object->write_logfile_entry($$rpending_logfile_message);
@@ -2746,9 +2746,10 @@ sub readable_options {
     # put in a perltidyrc file
     my ( $rOpts, $roption_string ) = @_;
     my %Getopt_flags;
-    my $rGetopt_flags = \%Getopt_flags;
-    my $readable_options="# Final parameter set for this run.\n";
-    $readable_options .= "# See utility 'perltidyrc_dump.pl' for nicer formatting.\n";
+    my $rGetopt_flags    = \%Getopt_flags;
+    my $readable_options = "# Final parameter set for this run.\n";
+    $readable_options .=
+      "# See utility 'perltidyrc_dump.pl' for nicer formatting.\n";
     foreach my $opt ( @{$roption_string} ) {
         my $flag = "";
         if ( $opt =~ /(.*)(!|=.*)$/ ) {
@@ -2775,7 +2776,7 @@ sub readable_options {
             else {
 
                 # shouldn't happen
-                $readable_options .= 
+                $readable_options .=
                   "# ERROR in dump_options: unrecognized flag $flag for $key\n";
             }
         }
@@ -5684,7 +5685,8 @@ BEGIN {
     @is_chain_operator{@_} = (1) x scalar(@_);
 
     # We can remove semicolons after blocks preceded by these keywords
-    @_ = qw(BEGIN END CHECK INIT AUTOLOAD DESTROY UNITCHECK continue if elsif else
+    @_ =
+      qw(BEGIN END CHECK INIT AUTOLOAD DESTROY UNITCHECK continue if elsif else
       unless while until for foreach);
     @is_block_without_semicolon{@_} = (1) x scalar(@_);
 
@@ -8515,7 +8517,7 @@ sub set_white_space_flag {
         #       /([\$*])(([\w\:\']*)\bVERSION)\b.*\=/
         #   Examples:
         #     *VERSION = \'1.01';
-        #     ( $VERSION ) = '$Revision: 1.72 $ ' =~ /\$Revision:\s+([^\s]+)/;
+        #     ( $VERSION ) = '$Revision: 1.73 $ ' =~ /\$Revision:\s+([^\s]+)/;
         #   We will pass such a line straight through without breaking
         #   it unless -npvl is used
 
@@ -9930,7 +9932,7 @@ sub set_logical_padding {
         if ( $types_to_go[$inext_next] eq 'b' ) {
             $inext_next++;
         }
-        my $type = $types_to_go[$ipad];
+        my $type      = $types_to_go[$ipad];
         my $type_next = $types_to_go[ $ipad + 1 ];
 
         # see if there are multiple continuation lines
@@ -15863,9 +15865,9 @@ sub undo_forced_breakpoint_stack {
                 }
 
                 # handle trailing + - * /
-                elsif ( $is_math_op{$types_to_go[$iend_1]} ) { 
+                elsif ( $is_math_op{ $types_to_go[$iend_1] } ) {
 
-                    # combine lines if next line has single number 
+                    # combine lines if next line has single number
                     # or a short term followed by same operator
                     my $i_next_nonblank = $ibeg_2;
                     my $i_next_next     = $i_next_nonblank + 1;
@@ -15874,7 +15876,7 @@ sub undo_forced_breakpoint_stack {
                       && (
                         $i_next_nonblank == $iend_2
                         || (   $i_next_next == $iend_2
-                            && $is_math_op{$types_to_go[$i_next_next]} )
+                            && $is_math_op{ $types_to_go[$i_next_next] } )
                         || $types_to_go[$i_next_next] eq ';'
                       );
 
@@ -16137,7 +16139,7 @@ sub undo_forced_breakpoint_stack {
                 }
 
                 # handle leading + - * /
-                elsif ( $is_math_op{$types_to_go[$ibeg_2]}){
+                elsif ( $is_math_op{ $types_to_go[$ibeg_2] } ) {
                     my $i_next_nonblank = $ibeg_2 + 1;
                     if ( $types_to_go[$i_next_nonblank] eq 'b' ) {
                         $i_next_nonblank++;
@@ -18365,7 +18367,6 @@ sub eliminate_old_fields {
 
     ###############################################
     # this line must have fewer fields
-    # BUBBA: TESTING: DELETED
     return unless $maximum_field_index > $jmax;
     ###############################################
 
@@ -18937,12 +18938,9 @@ sub fix_terminal_else {
                   # Exception for matching terminal : of ternary statement..
                   # consider containers prefixed by ? and : a match
                   || ( $new_tok =~ /^,\d*\+\:/ && $old_tok =~ /^,\d*\+\?/ );
-                ##print "BUBBA: new=$new_tok old=$old_tok\n";
 
                 # No match if the alignment tokens differ...
                 if ( !$tokens_match ) {
-
-                    ##print "BUBBA: new=$new_tok old=$old_tok\n";
 
                     # ...Unless this is a side comment
                     if (
@@ -22613,9 +22611,20 @@ sub prepare_for_a_new_file {
             if ( ( $expecting != OPERATOR )
                 && $is_file_test_operator{$next_tok} )
             {
-                $i++;
-                $tok .= $next_tok;
-                $type = 'F';
+                my ( $next_nonblank_token, $i_next ) =
+                  find_next_nonblank_token( $i + 1, $rtokens,
+                    $max_token_index );
+
+                # check for a quoted word like "-w=>xx";
+                # it is sufficient to just check for a following '='
+                if ( $next_nonblank_token eq '=' ) {
+                    $type = 'm';
+                }
+                else {
+                    $i++;
+                    $tok .= $next_tok;
+                    $type = 'F';
+                }
             }
             elsif ( $expecting == TERM ) {
                 my $number = scan_number();
@@ -23359,12 +23368,21 @@ EOM
                     }
                 }
 
-                # quote a bare word within braces..like xxx->{s}; note that we
-                # must be sure this is not a structural brace, to avoid
-                # mistaking {s} in the following for a quoted bare word:
-                #     for(@[){s}bla}BLA}
-                if (   ( $last_nonblank_type eq 'L' )
-                    && ( $next_nonblank_token eq '}' ) )
+     # quote a bare word within braces..like xxx->{s}; note that we
+     # must be sure this is not a structural brace, to avoid
+     # mistaking {s} in the following for a quoted bare word:
+     #     for(@[){s}bla}BLA}
+     # Also treat q in something like var{-q} as a bare word, not qoute operator
+                ##if (   ( $last_nonblank_type eq 'L' )
+                ##    && ( $next_nonblank_token eq '}' ) )
+                if (
+                    $next_nonblank_token eq '}'
+                    && (
+                        $last_nonblank_type eq 'L'
+                        || (   $last_nonblank_type eq 'm'
+                            && $last_last_nonblank_type eq 'L' )
+                    )
+                  )
                 {
                     $type = 'w';
                     next;
@@ -23597,7 +23615,13 @@ EOM
                             # note: ';' '{' and '}' in list above
                             # because continues can follow bare blocks;
                             # ':' is labeled block
-                            warning("'$tok' should follow a block\n");
+                            #
+                            ############################################
+                            # NOTE: This check has been deactivated because
+                            # continue has an alternative usage for given/when
+                            # blocks in perl 5.10
+                            ## warning("'$tok' should follow a block\n");
+                            ############################################
                         }
                     }
 
@@ -27457,7 +27481,8 @@ BEGIN {
 
     # These tokens may precede a code block
     # patched for SWITCH/CASE
-    @_ = qw( BEGIN END CHECK INIT AUTOLOAD DESTROY UNITCHECK continue if elsif else
+    @_ =
+      qw( BEGIN END CHECK INIT AUTOLOAD DESTROY UNITCHECK continue if elsif else
       unless do while until eval for foreach map grep sort
       switch case given when);
     @is_code_block_token{@_} = (1) x scalar(@_);
@@ -27491,6 +27516,7 @@ BEGIN {
       bind
       binmode
       bless
+      break
       caller
       chdir
       chmod
