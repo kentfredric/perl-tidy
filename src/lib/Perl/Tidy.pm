@@ -67,6 +67,21 @@ use File::Basename;
 BEGIN {
     ( $VERSION = q($Id: Tidy.pm,v 1.73 2007/12/05 17:51:17 perltidy Exp $) ) =~ s/^.*\s+(\d+)\/(\d+)\/(\d+).*$/$1$2$3/; # all one line for MakeMaker
 }
+use Perl::Tidy::Debugger;
+use Perl::Tidy::DevNull;
+use Perl::Tidy::Diagnostics;
+use Perl::Tidy::FileWriter;
+use Perl::Tidy::Formatter;
+use Perl::Tidy::HtmlWriter;
+use Perl::Tidy::IndentationItem;
+use Perl::Tidy::IOScalarArray;
+use Perl::Tidy::IOScalar;
+use Perl::Tidy::LineBuffer;
+use Perl::Tidy::LineSink;
+use Perl::Tidy::LineSource;
+use Perl::Tidy::Logger;
+use Perl::Tidy::Tokenizer;
+use Perl::Tidy::VerticalAligner;
 
 sub streamhandle {
 

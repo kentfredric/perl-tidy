@@ -91,6 +91,9 @@ use vars qw(
 
 );
 
+use Perl::Tidy::VerticalAligner::Line;
+use Perl::Tidy::VerticalAligner::Alignment;
+
 sub initialize {
 
     my $class;
